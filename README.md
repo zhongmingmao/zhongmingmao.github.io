@@ -39,6 +39,15 @@ env:
    - GH_REF: github.com/zhongmingmao/zhongmingmao.github.io.git
 ```
 
-## 3. Blog List
+## 3. Hexo Plugins
 
-TBC
+1. [hexo-filter-indicate-the-source](https://github.com/JamesPan/hexo-filter-indicate-the-source)
+2. [hexo-generator-seo-friendly-sitemap](https://github.com/ludoviclefevre/hexo-generator-seo-friendly-sitemap)
+
+## 4. Blog List
+
+* [ ] Git++
+    * [ ] [Git Basic](http://zhongmingmao.me/)
+    * [ ] [TBC](http://zhongmingmao.me/)
+
+
