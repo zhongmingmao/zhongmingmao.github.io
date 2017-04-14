@@ -47,7 +47,7 @@ env:
 ## 4. Blog List
 
 * [ ] Git++
-    * [ ] [Git Basic](http://zhongmingmao.me/)
-    * [ ] [TBC](http://zhongmingmao.me/)
+    * [x] [Git++ - 有趣的命令](http://zhongmingmao.me/2017/04/14/git-basic)
+    * [ ] [Git++ - 分支](http://zhongmingmao.me/)
 
 
