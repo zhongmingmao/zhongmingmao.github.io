@@ -48,6 +48,6 @@ env:
 
 * [ ] Git++
     * [x] [Git++ - 有趣的命令](http://zhongmingmao.me/2017/04/14/git-basic)
-    * [ ] [Git++ - 分支](http://zhongmingmao.me/)
+    * [x] [Git++ - 分支](http://zhongmingmao.me/2017/04/15/git-branch)
 
 
