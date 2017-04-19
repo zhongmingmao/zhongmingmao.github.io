@@ -10,7 +10,7 @@ tags:
 ---
 
 {% note info %}
-TBC
+本文将主要介绍`blob`对象，`tree`对象，`commit`对象，`tag`对象
 {% endnote %}
 
 <!-- more -->
