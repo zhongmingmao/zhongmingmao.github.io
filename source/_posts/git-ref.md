@@ -329,7 +329,37 @@ b6b0e1e7df4cd830cc399bc201911b632460f7b3
 $ git log --oneline --decorate --graph hzmajia_master
 * b6b0e1e (HEAD -> hzmajia_master) C0
 * bce4632 (hzmajia/master) Update docs
+```
 
+### remote引用规格
+1. `fetch = +<src>:<dst>`
+    - `+`在不能`Fast-Forward Merge`的情况下也强制更新引用
+    - `<src>`：`远程版本库中`的引用
+    - `<dst>`：`远程引用在本地所对应的位置`
+2. `push = +<src>:<dst>`
+    - `+`在不能`Fast-Forward Merge`的情况下也强制更新引用
+    - `<src>`：`本地版本库中`的引用
+    - `<dst>`：`远程版本库中`的引用
+  
+```
+$ git init
+Initialized empty Git repository in /home/zhongmingmao/demo/.git/
+
+$ git remote add remote_ref https://github.com/hzmajia/remote_ref.git
+
+$ git remote -v
+remote_ref	https://github.com/hzmajia/remote_ref.git (fetch)
+remote_ref	https://github.com/hzmajia/remote_ref.git (push)
+
+$ cat .git/config
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "remote_ref"]
+	url = https://github.com/hzmajia/remote_ref.git
+	fetch = +refs/heads/*:refs/remotes/remote_ref/*
 ```
 
 # 提交区间
