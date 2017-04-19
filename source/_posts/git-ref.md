@@ -10,12 +10,16 @@ tags:
 ---
 
 {% note info %}
-本文主要介绍`提交对象的引用`、`提交对象祖先的引用`，`HEAD的引用历史`，`提交历史区间`
+本文主要介绍`常见的引用`（commit对象及其祖先的的引用，branch引用，HEAD引用等）和`提交区间`
+`commit对象`，`tag对象`的内容请参照「Git++ - 对象」
 {% endnote %}
 
 <!-- more -->
 
-# 提交对象引用
+# 引用
+
+## commit对象引用
+
 `git show`：显示Git对象信息
 ```
 $ git log --oneline --decorate --graph --all
@@ -31,7 +35,7 @@ $ git show --oneline -s master
 4f6c14f add README.md
 ```
 
-# 提交对象祖先的引用
+## commit对象祖先的引用
 {% note info %}
 在`Fast Forward Merge`中，`只有一个`父提交对象，`第一父提交对象`
 在`Recursive Merge`中，合并操作发生时的当前分支所指向的提交对象是`第一父提交对象`，被合并的分支所指向的提交对象是`第二父提交对象`
@@ -77,7 +81,82 @@ $ git show --oneline -s HEAD^2~2
 4f543bb C1
 ```
 
-# HEAD引用历史
+## branch引用
+`update-ref`：更新`引用`
+```
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master) C5
+* c532bf8 C4
+| * c8910d8 (dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ git update-ref refs/heads/master HEAD~ # update master(5a08236->c532bf8)
+
+$ git log --oneline --decorate --graph --all
+* c532bf8 (HEAD -> master) C4
+| * c8910d8 (dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ cat .git/refs/heads/master
+c532bf878fe12373239698279c8ec797d51235ad
+
+$ git update-ref refs/heads/test dev # create a new branch test on dev(c8910d8)
+
+$ git log --oneline --decorate --graph --all
+* c532bf8 (HEAD -> master) C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ cat .git/refs/heads/dev
+c8910d8b249e4530edfe7c4fc410078da66a187d
+
+$ cat .git/refs/heads/test
+c8910d8b249e4530edfe7c4fc410078da66a187d
+```
+
+## HEAD引用
+`symbolic-ref`：读取、修改或删除`symbolic引用`（`符号引用`）
+```
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master) C5
+* c532bf8 C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ git symbolic-ref HEA
+refs/heads/master
+
+$ cat .git/HEAD
+ref: refs/heads/master
+
+$ git symbolic-ref HEAD refs/heads/dev # switch to branch dev
+
+$ cat .git/HEAD
+ref: refs/heads/dev
+
+$ git log --oneline --decorate --graph --all
+* 5a08236 (master) C5
+* c532bf8 C4
+| * c8910d8 (HEAD -> dev, test) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+```
+
+## HEAD引用历史
 {% note warning %}
 `git reflog`只存在于本地仓库，记录本地仓库的操作历史
 {% endnote %}
@@ -132,6 +211,125 @@ $ git log --oneline --graph --decorate --all
 |/
 * 4f543bb C1
 * f9d0737 C0
+```
+
+## tag引用
+
+### lightweight tag引用
+```
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master) C5
+* c532bf8 C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ git update-ref refs/tags/v1.0 HEAD~ # create lightweight tag
+
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master) C5
+* c532bf8 (tag: v1.0) C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ cat .git/refs/tags/v1.0 # point to a commit object directly
+c532bf878fe12373239698279c8ec797d51235ad
+
+$ git cat-file -t c532bf878fe12373239698279c8ec797d51235ad
+commit
+```
+### annotated tag引用
+```
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master) C5
+* c532bf8 (tag: v1.0) C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ git tag -a v2.0 -m 'tag v2.0' # ceeate annotated tag
+
+$ git log --oneline --decorate --graph --all
+* 5a08236 (HEAD -> master, tag: v2.0) C5
+* c532bf8 (tag: v1.0) C4
+| * c8910d8 (test, dev) C3
+| * 0a95c28 C2
+|/
+* 8ce5c36 C1
+* 0b2693b C0
+
+$ cat .git/refs/tags/v2.0 # point to a tag object
+9c335494f9fb322d93add8c274f0ef1a632920ea
+
+$ git cat-file -t 9c335494f9fb322d93add8c274f0ef1a632920ea
+tag
+
+$ git cat-file -p 9c335494f9fb322d93add8c274f0ef1a632920ea
+object 5a0823659a16f3e6aa7caa0a6fc1ee3bebf4112c
+type commit
+tag v2.0
+tagger zhongmingmao <zhongmingmao@yeah.net> 1492609041 +0800
+tag v2.0
+
+$ git cat-file -t 5a0823659a16f3e6aa7caa0a6fc1ee3bebf4112c # point to a commit object
+commit
+```
+ 
+## remote引用
+`remote引用`在本地仓库是只读的，`git commit`不会更新`remote引用`，更新发生在`git fetch`和`git pull`执行时
+```
+$ git remote add hzmajia https://github.com/hzmajia/hzmajia.github.io
+
+$ git remote -v
+hzmajia	https://github.com/hzmajia/hzmajia.github.io (fetch)
+hzmajia	https://github.com/hzmajia/hzmajia.github.io (push)
+
+$ git fetch hzmajia
+warning: no common commits
+remote: Counting objects: 145, done.
+remote: Compressing objects: 100% (119/119), done.
+remote: Total 145 (delta 15), reused 140 (delta 10), pack-reused 0
+Receiving objects: 100% (145/145), 531.53 KiB | 496.00 KiB/s, done.
+Resolving deltas: 100% (15/15), done.
+From https://github.com/hzmajia/hzmajia.github.io
+ * [new branch]      blog_source -> hzmajia/blog_source
+ * [new branch]      master     -> hzmajia/master
+
+$ git checkout -b hzmajia_master hzmajia/master
+Branch hzmajia_master set up to track remote branch master from hzmajia.
+Switched to a new branch 'hzmajia_master'
+
+$ cat .git/refs/remotes/hzmajia/master
+bce4632694ed70ae303ea2433930afa910f8e800
+
+$ cat .git/refs/heads/hzmajia_master
+bce4632694ed70ae303ea2433930afa910f8e800
+
+$ git log --oneline --decorate --graph hzmajia_master
+* bce4632 (HEAD -> hzmajia_master, hzmajia/master) Update docs
+
+$ cn=C0 && touch $cn && git add . && git commit -m $cn
+[hzmajia_master b6b0e1e] C0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 C0
+
+$ cat .git/refs/remotes/hzmajia/master # change nothing
+bce4632694ed70ae303ea2433930afa910f8e800
+
+$ cat .git/refs/heads/hzmajia_master
+b6b0e1e7df4cd830cc399bc201911b632460f7b3
+
+$ git log --oneline --decorate --graph hzmajia_master
+* b6b0e1e (HEAD -> hzmajia_master) C0
+* bce4632 (hzmajia/master) Update docs
+
 ```
 
 # 提交区间
@@ -191,16 +389,6 @@ $ git log --oneline --decorate --left-right dev...master
 < 187060b (dev) C3
 < 451ee07 C2
 ```
-
-
-
-
-
-
-
-
-
-
 
 <!-- indicate-the-source -->
 
