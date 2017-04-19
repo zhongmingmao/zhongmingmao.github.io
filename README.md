@@ -46,8 +46,16 @@ env:
 
 ## 4. Blog List
 
-* [ ] Git++
+* [x] Git++
     * [x] [Git++ - 有趣的命令](http://zhongmingmao.me/2017/04/14/git-basic)
     * [x] [Git++ - 分支](http://zhongmingmao.me/2017/04/15/git-branch)
+    * [x] [Git++ - 引用和提交区间](http://zhongmingmao.me/2017/04/15/git-ref)
+    * [x] [Git++ - Stash](http://zhongmingmao.me/2017/04/16/git-stash)
+    * [x] [Git++ - 重写提交历史](http://zhongmingmao.me/2017/04/17/git-rewrite-commit)
+    * [x] [Git++ - Reset](http://zhongmingmao.me/2017/04/17/git-reset)
+    * [x] [Git++ - 合并](http://zhongmingmao.me/2017/04/18/git-merge)
+    * [x] [Git++ - 对象](http://zhongmingmao.me/2017/04/19/git-object)
+    * [x] [Git++ - 仓库瘦身](http://zhongmingmao.me/2017/04/19/git-reduce)
+    * [x] [Git++ - Git Flow](http://zhongmingmao.me/2017/04/20/git-flow)
 
 
