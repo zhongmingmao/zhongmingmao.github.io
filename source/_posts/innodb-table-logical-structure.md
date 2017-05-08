@@ -122,7 +122,7 @@ total 112K
 1. `Extent`是由连续页（默认页大小为`16KB`）组成，在`默认页大小`时，为`64个连续页`，大小为`64*16KB=1MB`
     - 不同页大小：`4KB*256` or `8KB*128` or `16KB*64` or `32KB*64` or `64KB*64`
 2. 为了保证`页的连续性`，InnoDB可以一次性从磁盘申请`4个Extent`
-3. 为了`节省磁盘空间`，如表的数据量很小（`Leaf node segment`和`Non-Leaf node segment`都很小）或`Rollback segment`，Segment一开始`不会直接申请Extent`，而是先用`32个碎片页`（用于`叶子节点`）来存放数据，用完之后才继续对`Extent(1MB)`的申请
+3. 为了`节省磁盘空间`，如表的数据量很小（`Leaf node segment`和`Non-Leaf node segment`都很小）或`Rollback segment`，Segment一开始`不会直接申请Extent`，而是先用`32个碎片页`（用于`叶子节点`）来存放数据，用完之后才继续对`Extent(1MB)`的申请（下面实例是`Leaf Node Segment`的对空间的申请过程）
 
 {% note warning %}
 下列操作过程中涉及到了`ROW_FORMAT`的部分内容，本文并没有详细展开，只为佐证结果
@@ -176,7 +176,7 @@ File Segment inode: 1
 0000fff0: 0000 0000 0070 0063 18f8 857f 4087 2c32  .....p.c....@.,2
 ```
 
-1. `py_innodb_page_info.py`是姜承尧大神用Python写的用来分析表空间中的各页类型和信息的工具，向大神致敬
+1. `py_innodb_page_info.py`是姜承尧大神用Python写的用来分析表空间中的各页类型和信息的工具
 2. `b VARCHAR(7000)`能保证`一个页中最多存放两条记录`，2 < 16KB/7000B < 3
 3. 单独表空间`t.ibd`的默认大小为`96KB`
 4. 单独表空间`t.ibd`目前`只有一个B+Tree叶子节点`（`page level <0000>`），还有`两个可用页`（`Freshly Allocated Page`）
@@ -330,7 +330,7 @@ File Segment inode: 1
 
 1. 插入第3条记录后，表空间大小依旧为`96KB`，因为插入之前还有`两个可用页`，有足够的空间让`B+Tree分裂`
 2. `page offset=3`的`page level`为`<0001>`，表示这是`倒数第一层`的`B+Tree索引节点`
-3. 实际的记录存放在`page offset`为`4`和`5`的`B+Tree叶子节点`，即上一操作的可用页
+3. 实际的记录存放在`page offset`为`4`和`5`的`B+Tree叶子节点`，即上一操作后的可用页
 4. 第1条记录位于page offset=4的页，地址范围为`0x10078 ~ 0x11be8`，占用`7025 Byte`
 5. 第2条记录位于page offset=4的页，地址范围为`0x11be9 ~ 0x13759`，占用`7025 Byte`
     - 第2条记录同时也位于page offset=5的页，地址范围为`0x14078 ~ 0x15be8`，占用`7025 Byte`
@@ -387,8 +387,8 @@ File Segment inode: 1
 ```
 
 1. 此时，表空间大小依旧小于`Extent`大小（1MB），目前还是通过`碎片页`来申请数据空间
-2. 上一步操作中，默认的表空间大小已无法再容纳新的同样长度的记录，且已使用了`2个B+Tree叶子节点`，申请`Extent`前可以再使用`30个B+Tree叶子节点`，所以再插入60条记录（每页只能容纳2条记录）
-3. 此时处于`临界状态`，`B+Tree叶子节点为32个`，再插入同样长度的记录时，将进行`Extent`的申请
+2. 上一步操作中，默认的表空间大小已无法再容纳新的同样长度的记录，且已使用了`2个B+Tree叶子节点`，`Leaf Node Segment`在申请`Extent`前可以再使用`30个B+Tree叶子节点`，所以再插入60条记录（每页只能容纳2条记录）
+3. 此时处于`临界状态`，`B+Tree叶子节点为32个`，再插入同样长度的记录时，`Leaf Node Segment`将进行`Extent`的申请
 
 ## 插入第64条记录
 ```SQL
@@ -428,7 +428,7 @@ B-tree Node: 34
 File Segment inode: 1
 ```
 
-1. 插入第64条记录时，就需要进行`Extent`的申请，从`page offset=0x40`处申请一个`Extent`（`0x40*16KB=1MB`），之前的部分空间作为`可用页`，此时表空间大小为`2MB`
+1. 插入第64条记录时，`Leaf Node Segment`就需要进行`Extent`的申请，从`page offset=0x40`处申请一个`Extent`（`0x40*16KB=1MB`），此时表空间大小为`2MB`
 
 # Page
 
