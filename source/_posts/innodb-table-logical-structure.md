@@ -158,7 +158,7 @@ B-tree Node: 1
 File Segment inode: 1
 ```
 ```
-# 查看表空间文件十六进制（Vim,%!xxd）
+# 查看表空间文件十六进制（Vim,:%!xxd）
 # page offset=3
 0000c000: 18f8 857f 0000 0003 ffff ffff ffff ffff  ................
 0000c010: 0000 0000 4087 2c32 45bf 0000 0000 0000  ....@.,2E.......
@@ -216,7 +216,7 @@ B-tree Node: 1
 File Segment inode: 1
 ```
 ```
-# 查看表空间文件十六进制（Vim,%!xxd）
+# 查看表空间文件十六进制（Vim,:%!xxd）
 # page offset=3
 0000c000: f185 f4c0 0000 0003 ffff ffff ffff ffff  ................
 0000c010: 0000 0000 4087 697e 45bf 0000 0000 0000  ....@.i~E.......
@@ -276,7 +276,7 @@ B-tree Node: 3
 File Segment inode: 1
 ```
 ```
-# 查看表空间文件十六进制（Vim,%!xxd）
+# 查看表空间文件十六进制（Vim,:%!xxd）
 # page offset=4
 00010000: 669d db54 0000 0004 ffff ffff 0000 0005  f..T............
 00010010: 0000 0000 4087 e2e4 45bf 0000 0000 0000  ....@...E.......
