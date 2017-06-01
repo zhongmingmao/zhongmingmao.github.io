@@ -1,5 +1,5 @@
 ---
-title: Java8回忆录 - Lambda
+title: Java 8小记 - Lambda
 date: 2017-05-30 00:06:25
 categories:
     - 网易这两年
@@ -11,7 +11,7 @@ tags:
 ---
 
 {% note info %}
-本文主要介绍`Java8`的 `Lambda` 表达式
+本文主要介绍`Java 8`的 `Lambda` 表达式的简单使用
 {% endnote %}
 
 <!-- more -->
