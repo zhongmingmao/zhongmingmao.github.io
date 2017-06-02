@@ -67,4 +67,13 @@ env:
 * [x] [InnoDB备忘录 - B+Tree索引](http://zhongmingmao.me/2017/05/13/innodb-btree-index/)
 * [x] [InnoDB备忘录 - Next-Key Lock](http://zhongmingmao.me/2017/05/19/innodb-next-key-lock/)
 
+### 4.3 [Java 8小记](http://zhongmingmao.me/tags/Java-8/)
+
+* [x] [Java 8小记 - 行为参数化](http://zhongmingmao.me/2017/05/29/java8-behavioral-parameterization/)
+* [x] [Java 8小记 - Lambda](http://zhongmingmao.me/2017/05/30/java8-lambda/)
+* [x] [Java 8小记 - Stream](http://zhongmingmao.me/2017/06/01/java8-stream/)
+* [x] [Java 8小记 - Default Method](http://zhongmingmao.me/2017/06/02/java8-default/)
+* [x] [Java 8小记 - Optional](http://zhongmingmao.me/2017/06/03/java8-optional/)
+
+
 
