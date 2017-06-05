@@ -37,6 +37,11 @@ branches:
 env:
  global:
    - GH_REF: github.com/zhongmingmao/zhongmingmao.github.io.git
+
+notifications:
+  email:
+    recipients:
+      - zhongmingmao0625@gmail.com
 ```
 
 ## 3. Hexo Plugins
