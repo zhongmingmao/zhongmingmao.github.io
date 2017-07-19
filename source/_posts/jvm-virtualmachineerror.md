@@ -7,9 +7,6 @@ categories:
 tags:
     - 网易这两年
     - JVM
-    - VirtualMachineError
-    - StackOverflowError
-    - OutOfMemoryError
 ---
 
 {% note info %}
