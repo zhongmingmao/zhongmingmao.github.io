@@ -1,5 +1,5 @@
 ---
-title: 对象内存布局 - Instrumentation + sa-jdi
+title: 对象内存布局 - Instrumentation + sa-jdi 工具构建
 date: 2016-06-27 00:06:25
 categories:
     - 网易这两年
@@ -87,7 +87,8 @@ public class SizeOfObjectUtil {
                     Field[] fields = tmpObjClass.getDeclaredFields();
                     for (Field field : fields) {
                         if (Modifier.isStatic(field.getModifiers()) // 静态不计
-                                || field.getType().isPrimitive()) { // 基本类型不重复计
+                                || field.getType().isPrimitive() // 基本类型不重复计
+                                || field.getName().contains("this")) {  // 内部类实例对外部类实例的引用不再重复计算
                             continue;
                         }
                         
@@ -173,17 +174,16 @@ public class CreateObjectUtil {
         try {
             Class<?> klass = Class.forName(className);
             if (className.contains("$")) {
+                // 不能单独实例化内部类
                 outClassSet.add(className.substring(0, className.lastIndexOf("$")));
                 return;
             }
             Object object = klass.newInstance();
             objects.add(object);
-            if (!outClassSet.contains(className)) {
-                System.out.println(String.format("%20s : shallow size = %d Bytes , retained size= %s Bytes",
-                        klass.getCanonicalName(),
-                        sizeOf(object),
-                        fullSizeOf(object)));
-            }
+            System.out.println(String.format("%20s : shallow size = %d Bytes , retained size= %s Bytes",
+                    klass.getCanonicalName(),
+                    sizeOf(object),
+                    fullSizeOf(object)));
             
         } catch (Exception e) {
             e.printStackTrace();
