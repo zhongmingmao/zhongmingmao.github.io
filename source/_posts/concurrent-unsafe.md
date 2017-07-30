@@ -280,13 +280,13 @@ public class UnsafeArray {
         
         // users[0]的偏移
         int baseOffset = unsafe.arrayBaseOffset(User[].class);
-        System.out.println(baseOffset);
+        System.out.println(baseOffset); // 16
         int indexScale = unsafe.arrayIndexScale(User[].class);
-        System.out.println(indexScale);
+        System.out.println(indexScale); // 4
         
         // users[1]
         Object object = unsafe.getObject(users, baseOffset + indexScale + 0L);
-        System.out.println(object);
+        System.out.println(object); // UnsafeArray.User(name=zhongmingmao_1, age=1)
     }
 }
 ```
