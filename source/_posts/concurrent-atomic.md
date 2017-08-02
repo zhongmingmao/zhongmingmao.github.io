@@ -1,5 +1,5 @@
 ---
-title: 并发 - JUC - Atomic系列
+title: 并发 - JUC - Atomic包 - 源码剖析
 date: 2016-08-06 00:06:25
 categories:
     - 网易这两年
@@ -13,7 +13,7 @@ tags:
 {% note info %}
 本文主要介绍`java.util.concurrent.atomic`包下的`AtomicInteger`、`AtomicReference`、`AtomicIntegerArray`、`AtomicIntegerFieldUpdater`和`AtomicStampedReference`
 代码托管在https://github.com/zhongmingmao/concurrent_demo
-关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」,本文不在赘述
+关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」，本文不在赘述
 {% endnote %}
 
 <!-- more -->
