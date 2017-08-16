@@ -15,6 +15,8 @@ tags:
 代码托管在https://github.com/zhongmingmao/concurrent_demo
 {% endnote %}
 
+<!-- more -->
+
 # synchronized 概述
 
 ## Mark Word
@@ -570,8 +572,6 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 1. `Before wait`阶段，`锁标志位`为`00`，处于`轻量级锁`
 2. `After wait`阶段，`锁标志位`为`10`，处于`重量级锁`
 
-
-<!-- more -->
 <!-- indicate-the-source -->
 
 
