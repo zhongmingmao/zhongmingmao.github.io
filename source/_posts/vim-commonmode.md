@@ -59,7 +59,7 @@ G：动作命令，表示到尾行
 `{number}<C-x>`：正向查找第一个数字，并`减`number
 `0`开头的数字为`8`进制；`0x`开头的数字为`16`进制
 
-![common_mode_daw.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_CaCx.gif)
+![common_mode_CaCx.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_CaCx.gif)
 
 ## 作用于当前行{operator}{operator} ： >>，gUU(gUgU)，dd
 ![common_mode_opertor_opertor.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_opertor_opertor.gif)
