@@ -116,7 +116,7 @@ q/ ➔ 打开查找命令历史的命令行窗口
 演示例子中，将:w，:%p，:!python3 %在命令行窗口中合成一个命令并执行
 ![command_mode_cmdwin.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_cmdwin.gif)
 
-#### 7. 运行Shell命令
+## 运行Shell命令
 
 `%`：代表当前文件
 调用外部命令
