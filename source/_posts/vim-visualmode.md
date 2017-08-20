@@ -10,7 +10,7 @@ tags:
 ---
 
 {% note info %}
-本文将介绍`Vim`中的`插入模式`
+本文将介绍`Vim`中的`可视模式`
 {% endnote %}
 
 <!-- more -->
