@@ -2,13 +2,12 @@
 title: 对象内存布局 - JOL使用教程 3
 date: 2016-07-04 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
     - JOL
-    - 并发
+    - Concurrent
 ---
 
 {% note info %}

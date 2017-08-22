@@ -2,10 +2,9 @@
 title: Git++ - 分支
 date: 2017-04-15 13:35:44
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

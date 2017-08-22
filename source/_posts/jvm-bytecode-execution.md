@@ -2,10 +2,9 @@
 title: 字节码 - JVM字节码执行过程
 date: 2016-07-06 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

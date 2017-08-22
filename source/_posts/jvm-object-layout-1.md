@@ -2,10 +2,9 @@
 title: 对象内存布局 - Instrumentation + sa-jdi 工具构建
 date: 2016-06-27 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

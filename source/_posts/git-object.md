@@ -2,10 +2,9 @@
 title: Git++ - 对象
 date: 2017-04-19 15:12:31
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

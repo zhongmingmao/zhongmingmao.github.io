@@ -2,10 +2,10 @@
 title: InnoDB备忘录 - 逻辑存储
 date: 2017-05-06 16:48:03
 categories:
-    - 网易这两年
+    - MySQL
     - InnoDB
 tags:
-    - 网易这两年
+    - Netease
     - MySQL
     - InnoDB
 ---

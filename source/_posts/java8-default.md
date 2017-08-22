@@ -2,10 +2,9 @@
 title: Java 8小记 - Default Method
 date: 2017-06-02 00:06:25
 categories:
-    - 网易这两年
     - Java 8
 tags:
-    - 网易这两年
+    - Netease
     - Java 8
 ---
 

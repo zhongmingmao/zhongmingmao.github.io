@@ -2,10 +2,9 @@
 title: Git++ - Stash
 date: 2017-04-16 13:16:27
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

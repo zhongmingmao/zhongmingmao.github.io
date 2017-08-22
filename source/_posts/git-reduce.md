@@ -2,10 +2,9 @@
 title: Git++ - 仓库瘦身
 date: 2017-04-19 16:22:50
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

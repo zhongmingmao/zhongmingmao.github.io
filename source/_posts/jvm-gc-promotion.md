@@ -2,10 +2,9 @@
 title: 垃圾回收 - 晋升规则
 date: 2016-07-10 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
     - GC
 ---

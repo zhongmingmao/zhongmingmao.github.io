@@ -2,10 +2,9 @@
 title: 类加载 - 类初始化
 date: 2016-07-15 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

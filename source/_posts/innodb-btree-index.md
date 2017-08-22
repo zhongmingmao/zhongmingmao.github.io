@@ -2,10 +2,10 @@
 title: InnoDB备忘录 - B+Tree索引
 date: 2017-05-13 00:06:25
 categories:
-    - 网易这两年
+    - MySQL
     - InnoDB
 tags:
-    - 网易这两年
+    - Netease
     - MySQL
     - InnoDB
 ---

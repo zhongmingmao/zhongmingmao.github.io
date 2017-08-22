@@ -2,12 +2,11 @@
 title: 分布式互斥锁InterProcessMutex代码剖析
 date: 2017-07-14 00:06:25
 categories:
-    - 网易这两年
     - Zookeeper
 tags:
-    - 网易这两年
+    - Netease
     - Zookeeper
-    - 分布式锁
+    - Distributed Lock
 ---
 
 {% note info %}

@@ -2,10 +2,9 @@
 title: Java 8小记 - Lambda
 date: 2017-05-30 00:06:25
 categories:
-    - 网易这两年
     - Java 8
 tags:
-    - 网易这两年
+    - Netease
     - Java 8
     - Lambda
 ---

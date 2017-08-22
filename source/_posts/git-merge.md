@@ -2,10 +2,9 @@
 title: Git++ - 合并
 date: 2017-04-18 00:28:16
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

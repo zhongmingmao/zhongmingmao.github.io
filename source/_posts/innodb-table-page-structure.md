@@ -2,10 +2,10 @@
 title: InnoDB备忘录 - 数据页结构
 date: 2017-05-09 00:28:37
 categories:
-    - 网易这两年
+    - MySQL
     - InnoDB
 tags:
-    - 网易这两年
+    - Netease
     - MySQL
     - InnoDB
 ---

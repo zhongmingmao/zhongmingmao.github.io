@@ -2,10 +2,9 @@
 title: Git++ - Reset
 date: 2017-04-17 13:17:28
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

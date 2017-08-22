@@ -2,10 +2,9 @@
 title: Vim小记 - 插入模式
 date: 2015-11-05 00:06:25
 categories:
-    - 网易这两年
     - Vim
 tags:
-    - 网易这两年
+    - Netease
     - Vim
 ---
 

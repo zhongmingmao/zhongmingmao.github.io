@@ -2,11 +2,10 @@
 title: 并发 - synchronized与锁优化
 date: 2016-08-01 00:06:25
 categories:
-    - 网易这两年
-    - 并发
+    - Concurrent
 tags:
-    - 网易这两年
-    - 并发
+    - Netease
+    - Concurrent
     - JVM
 ---
 

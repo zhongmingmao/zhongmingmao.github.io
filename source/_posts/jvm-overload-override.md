@@ -2,10 +2,9 @@
 title: 字节码 - 方法重载 + 方法重写
 date: 2016-07-07 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

@@ -2,10 +2,9 @@
 title: VirtualMachineError实例
 date: 2016-06-25 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

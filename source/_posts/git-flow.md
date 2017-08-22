@@ -2,10 +2,9 @@
 title: Git++ - Git Flow
 date: 2017-04-20 00:00:01
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

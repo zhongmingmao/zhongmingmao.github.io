@@ -2,10 +2,9 @@
 title: Git++ - 有趣的命令
 date: 2017-04-14 13:35:57
 categories:
-    - 网易这两年
     - Git++
 tags:
-    - 网易这两年
+    - Netease
     - Git++
 ---
 

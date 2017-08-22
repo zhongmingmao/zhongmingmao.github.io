@@ -2,10 +2,9 @@
 title: 字节码 - 伪泛型
 date: 2016-07-08 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
 ---
 

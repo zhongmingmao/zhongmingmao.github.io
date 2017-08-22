@@ -2,10 +2,9 @@
 title: Vim小记 - 普通模式
 date: 2015-11-04 00:06:25
 categories:
-    - 网易这两年
     - Vim
 tags:
-    - 网易这两年
+    - Netease
     - Vim
 ---
 

@@ -2,11 +2,10 @@
 title: 并发 - volatile的可见性
 date: 2016-08-04 00:06:25
 categories:
-    - 网易这两年
-    - 并发
+    - Concurrent
 tags:
-    - 网易这两年
-    - 并发
+    - Netease
+    - Concurrent
 ---
 
 {% note info %}

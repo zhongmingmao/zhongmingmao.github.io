@@ -2,10 +2,9 @@
 title: 对象内存布局 - JOL使用教程 2
 date: 2016-07-03 00:06:25
 categories:
-    - 网易这两年
     - JVM
 tags:
-    - 网易这两年
+    - Netease
     - JVM
     - JOL
 ---
