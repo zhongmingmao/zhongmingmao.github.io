@@ -288,7 +288,7 @@ File Segment inode: 1
 ### 逆序放置
 1. `0xfff6~0xfff7`为`0x0063`，`0xc000+0x0063=0xc063`，指向的是**`Infimum Record`**（逻辑下界）的`伪列`（CHAR(8),'infimum'）
 
-2. `0xffc4~0xffc5`为`0x0070`，`0xc070+0x0070=0xc070`，指向的是**`Supremum Record`**（逻辑上界）的`伪列`（CHAR(8),'supremum'）
+2. `0xffc4~0xffc5`为`0x0070`，`0xc000+0x0070=0xc070`，指向的是**`Supremum Record`**（逻辑上界）的`伪列`（CHAR(8),'supremum'）
 
 ### 二分查找
 下面以查找`主键a=25`为例，展示利用`Page Directory`进行`二分查找`的过程
