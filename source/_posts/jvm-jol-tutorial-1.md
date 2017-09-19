@@ -31,12 +31,12 @@ tags:
 ```Java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_01_Basic {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(A.class).toPrintable());
     }
-    
+
     public static class A {
         boolean f;
     }
@@ -74,12 +74,12 @@ Space losses: 0 bytes internal + 3 bytes external = 3 bytes total
 ```Java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_02_Alignment {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(A.class).toPrintable());
     }
-    
+
     public static class A {
         long f;
     }
@@ -98,7 +98,7 @@ public class JOLSample_02_Alignment {
 me.zhongmingmao.jol.JOLSample_02_Alignment$A object internals:
  OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
       0    12        (object header)                           N/A
-     12     4        (alignment/padding gap)                  
+     12     4        (alignment/padding gap)
      16     8   long A.f                                       N/A
 Instance size: 24 bytes
 Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
@@ -117,12 +117,12 @@ Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
 ```Java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_03_Packing {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(A.class).toPrintable());
     }
-    
+
     public static class A {
         boolean bo1, bo2;
         byte b1, b2;
@@ -132,7 +132,7 @@ public class JOLSample_03_Packing {
         int i1, i2;
         long l1, l2;
         short s1, s2;
-    }  
+    }
 }
 ```
 
@@ -185,23 +185,23 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 ```Java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_04_Inheritance {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(C.class).toPrintable());
     }
-    
+
     public static class A {
         int a;
     }
-    
+
     public static class B extends A {
         int b;
     }
-    
+
     public static class C extends B {
         int c;
-    } 
+    }
 }
 ```
 
@@ -236,24 +236,25 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 ```Java
 // -Djol.tryWithSudo=true
 public class JOLSample_05_InheritanceBarrier {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(C.class).toPrintable());
     }
-    
+
     public static class A {
         long a;
     }
-    
+
     public static class B extends A {
-        int b;
+        long b;
     }
-    
+
     public static class C extends B {
-        int c;
-        long d;
+        long c;
+        int d;
     }
+
 }
 ```
 
@@ -269,7 +270,7 @@ public class JOLSample_05_InheritanceBarrier {
 me.zhongmingmao.jol.JOLSample_05_InheritanceBarrier$C object internals:
  OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
       0    12        (object header)                           N/A
-     12     4        (alignment/padding gap)                  
+     12     4        (alignment/padding gap)
      16     8   long A.a                                       N/A
      24     8   long B.b                                       N/A
      32     8   long C.c                                       N/A
@@ -293,20 +294,20 @@ Space losses: 4 bytes internal + 4 bytes external = 8 bytes total
 ```Java
 // -Djol.tryWithSudo=true
 public class JOLSample_06_Gaps {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(C.class).toPrintable());
     }
-    
+
     public static class A {
         boolean a;
     }
-    
+
     public static class B extends A {
         boolean b;
     }
-    
+
     public static class C extends B {
         boolean c;
     }
@@ -326,9 +327,9 @@ me.zhongmingmao.jol.JOLSample_06_Gaps$C object internals:
  OFFSET  SIZE      TYPE DESCRIPTION                               VALUE
       0    12           (object header)                           N/A
      12     1   boolean A.a                                       N/A
-     13     3           (alignment/padding gap)                  
+     13     3           (alignment/padding gap)
      16     1   boolean B.b                                       N/A
-     17     3           (alignment/padding gap)                  
+     17     3           (alignment/padding gap)
      20     1   boolean C.c                                       N/A
      21     3           (loss due to the next object alignment)
 Instance size: 24 bytes
@@ -343,5 +344,3 @@ Space losses: 6 bytes internal + 3 bytes external = 9 bytes total
 2. 由于`继承补全`的限制，因此在`B.b`没有存放在`13`的位置，而是等A继承对齐后，存放在`16`的位置
 
 <!-- indicate-the-source -->
-
-
