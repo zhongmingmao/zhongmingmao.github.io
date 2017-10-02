@@ -13,7 +13,7 @@ tags:
 {% note info %}
 本文将剖析`LockSupport`的源码及其实现原理，在博文末尾再补充`线程中断`的内容
 代码托管在https://github.com/zhongmingmao/concurrent_demo
-关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」，本文不在赘述
+关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」，本文不再赘述
 {% endnote %}
 
 <!-- more -->
@@ -34,7 +34,7 @@ public class LockSupport {
             UNSAFE = sun.misc.Unsafe.getUnsafe();
             Class<?> tk = Thread.class;
             // 获取java.lang.Thread中parkBlocker实例域在Thread对象内存布局中的偏移量
-            // 详细请参考博文「并发 - Unsafe类的简单使用」，不在赘述
+            // 详细请参考博文「并发 - Unsafe类的简单使用」，不再赘述
             parkBlockerOffset = UNSAFE.objectFieldOffset(tk.getDeclaredField("parkBlocker"));
         } catch (Exception ex) { throw new Error(ex); }
     }
@@ -72,7 +72,7 @@ public static void park(Object blocker) {
     setBlocker(t, blocker);
     // 阻塞当前线程，与park()函数一致
     UNSAFE.park(false, 0L);
-    // 重置当前线程的实例域parkBlocker
+    // 执行到这里线程已经退出休眠状态，需要重置当前线程的实例域parkBlocker
     // 如果不重置，同一线程下次调用getBlocker时，会返回上一次park(Object blocker)设置的blocker，不符合逻辑
     setBlocker(t, null);
 }
@@ -120,7 +120,9 @@ public static void parkUntil(Object blocker, long deadline) {
 
 ### unpark(Thread thread)
 ```Java
-// 如果给定线程的许可尚不可用，则使其可用：如果线程阻塞在park上，解除其阻塞状态；否则保证下一次调用park不会被阻塞（比wait()/notify()/notifyAll()灵活）
+// 如果给定线程的许可尚不可用，则使其可用：
+//  1. 如果线程阻塞在park上，则解除其阻塞状态；
+//  2. 否则保证下一次调用park不会被阻塞（比wait()/notify()/notifyAll()灵活，wait()必须在notify()/notifyAll()之前触发）
 // 如果给定的线程尚未启动，无法保证unpark操作有效果
 public static void unpark(Thread thread) {
     if (thread != null)
@@ -140,7 +142,7 @@ public static void unpark(Thread thread) {
  */
 public class WaitAndNotify {
     private static Object LOCK = new Object();
-    
+
     private static Thread waitThread = new Thread(() -> {
         try {
             synchronized (LOCK) {
@@ -152,7 +154,7 @@ public class WaitAndNotify {
             e.printStackTrace();
         }
     }, "waitThread");
-    
+
     private static Thread notifyThread = new Thread(() -> {
         synchronized (LOCK) {
             log("before LOCK.notifyAll()");
@@ -160,16 +162,17 @@ public class WaitAndNotify {
             log("after LOCK.notifyAll()");
         }
     }, "notifyThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         notifyThread.start();
         TimeUnit.MILLISECONDS.sleep(100);
+        // notifyAll发生在wait之前，waitThread一直等待被唤醒
         waitThread.start();
         /*
         输出：
@@ -188,7 +191,7 @@ public class WaitAndNotify {
  */
 public class ParkAndUnpark {
     private static Object BLOCKER = new Object();
-    
+
     private static Thread parkThread = new Thread(() -> {
         try {
             TimeUnit.SECONDS.sleep(1); // 休眠1秒，确保unparkThread执行完
@@ -199,19 +202,19 @@ public class ParkAndUnpark {
         LockSupport.park(BLOCKER);
         log("after LockSupport.park(BLOCKER)");
     }, "parkThread");
-    
+
     private static Thread unparkThread = new Thread(() -> {
         log("before LockSupport.unpark(parkThread)");
         LockSupport.unpark(parkThread);
         log("after LockSupport.unpark(parkThread)");
     }, "unparkThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) {
         parkThread.start();// parkThread必须要先启动，否则无法确保LockSupport.unpark(parkThread)能让许可证有效
         unparkThread.start();
@@ -233,25 +236,25 @@ public class ParkAndUnpark {
  */
 public class InterruptPark {
     private static Object BLOCKER = new Object();
-    
+
     private static Thread parkThread = new Thread(() -> {
         log("before LockSupport.park(BLOCKER)");
         LockSupport.park(BLOCKER);
         log("after LockSupport.park(BLOCKER)");
     }, "parkThread");
-    
+
     private static Thread interruptThread = new Thread(() -> {
         log("before parkThread.interrupt()");
         parkThread.interrupt();
         log("after parkThread.interrupt()");
     }, "interruptThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         parkThread.start();
         TimeUnit.SECONDS.sleep(1);
@@ -276,6 +279,7 @@ public方法
 ```Java
 private volatile Interruptible blocker;
 private final Object blockerLock = new Object();
+// 实例方法
 // 中断线程，仅仅设置中断标志
 // 如果线程因为调用Object.wait()、Thread.sleep()和Thread.join()而阻塞，中断状态将被重置并抛出InterruptedException
 // 如果中断一个非阻塞的状态，只会设置中断状态
@@ -284,22 +288,22 @@ public void interrupt() {
     if (this != Thread.currentThread())
         // 除了线程自中断，都需要检查访问权限
         checkAccess();
-    
+
     synchronized (blockerLock) {
         Interruptible b = blocker;
         if (b != null) {
             interrupt0(); // 仅仅设置中断标志
-            b.interrupt(this); 
+            b.interrupt(this);
             return;
         }
     }
     interrupt0(); // 仅仅设置中断标志
 }
-// 线程是否被中断，不重置中断状态
+// 实例方法，判断某个线程是否被中断，不重置中断状态
 public boolean isInterrupted() {
     return isInterrupted(false);
 }
-// 线程是否被中断，重置中断状态
+// 类方法，判断当前线程是否被中断，重置中断状态
 public static boolean interrupted() {
    return currentThread().isInterrupted(true);
 }
@@ -325,24 +329,24 @@ public class InterruptSleep {
             log("after TimeUnit.SECONDS.sleep(10)");
         } catch (InterruptedException e) {
             log("interrupted when sleeping!!");
-            // 中断状态被重置
+            // 抛出InterruptedException异常并重置中断状态
             log(String.format("interrupt status [%s]", Thread.currentThread().isInterrupted()));
         }
-        
+
     }, "sleepThread");
-    
+
     private static Thread interruptThread = new Thread(() -> {
         log("before sleepThread.interrupt()");
         sleepThread.interrupt();
         log("after sleepThread.interrupt()");
     }, "interruptThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         sleepThread.start();
         TimeUnit.MILLISECONDS.sleep(100);
@@ -376,19 +380,19 @@ public class InterruptRunning {
             }
         }
     }, "runningThread");
-    
+
     private static Thread interruptThread = new Thread(() -> {
         log("before runningThread.interrupt()");
         runningThread.interrupt();
         log("after runningThread.interrupt()");
     }, "interruptThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         runningThread.start();
         TimeUnit.MILLISECONDS.sleep(100);
@@ -413,7 +417,7 @@ public class InterruptRunning {
  */
 public class InterruptSynchronized {
     private static Object LOCK = new Object();
-    
+
     private static Thread holdLockThread = new Thread(() -> {
         log("hold LOCK forever!!");
         synchronized (LOCK) {
@@ -422,25 +426,25 @@ public class InterruptSynchronized {
             }
         }
     }, "holdLockThread");
-    
+
     private static Thread acquireLockThread = new Thread(() -> {
         log("try to acquire LOCK");
         synchronized (LOCK) {
             log("hold LOCK successfully!!");
         }
     }, "acquireLockThread");
-    
+
     private static Thread interruptThread = new Thread(() -> {
         log(" interrupt acquireLockThread!!");
         acquireLockThread.interrupt();
     }, "interruptThread");
-    
+
     private static void log(String message) {
         System.out.println(String.format("%s : %s",
                 Thread.currentThread().getName(),
                 message));
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         holdLockThread.start();
         TimeUnit.SECONDS.sleep(1); // 确保holdLockThread持有锁
@@ -457,5 +461,3 @@ public class InterruptSynchronized {
 }
 ```
 <!-- indicate-the-source -->
-
-
