@@ -21,7 +21,7 @@ tags:
 ## Mark Word
 关于`对象的内存布局`，请参考「对象内存布局 - Instrumentation + sa-jdi 实例分析」，这里不再赘述
 `Mark Word`是`synchronized`锁机制的`核心数据结构`，[markOop.hpp](http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp)的代码注释如下（仅仅列出`32-bit`）：
-```Java
+```java
 //  32 bits:
 //  --------
 //             hash:25 ------------>| age:4    biased_lock:1 lock:2 (normal object)
@@ -52,7 +52,7 @@ ObjectMonitor() {
     _recursions   = 0;
     _object       = NULL;
     _owner        = NULL; // 获得锁的线程
-    _WaitSet      = NULL; // 调用wait()方法被阻塞的线程 
+    _WaitSet      = NULL; // 调用wait()方法被阻塞的线程
     _WaitSetLock  = 0 ;
     _Responsible  = NULL ;
     _succ         = NULL ;
@@ -81,10 +81,10 @@ ObjectMonitor() {
 ### 同步块
 
 #### 代码
-```Java
+```java
 public class SyncBlock {
     private int i;
-    
+
     public void increase() {
         synchronized (this) {
             i++;
@@ -135,10 +135,10 @@ public void increase();
 ### 同步方法
 
 #### 代码
-```Java
+```java
 public class SyncMethod {
     private int i;
-    
+
     public synchronized void increase() {
         i++;
     }
@@ -175,21 +175,21 @@ public synchronized void increase();
 ### Mark Word
 
 #### 代码
-```Java
+```java
 // JVM Args : -XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0 -Djol.tryWithSudo=true
 public class BiasedLockingMarkWorld {
     static class A {
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         Layouter layouter = new HotSpotLayouter(new X86_32_DataModel());
-        
+
         final A a = new A();
 
         ClassLayout layout = ClassLayout.parseInstance(a, layouter);
         out.println("**** Fresh object");
         out.println(layout.toPrintable());
-        
+
         synchronized (a) {
             out.println("**** With the lock");
             out.println(layout.toPrintable());
@@ -236,12 +236,12 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 ### 性能对比
 
 #### 代码
-```Java
+```java
 // JVM Args : -XX:BiasedLockingStartupDelay=10000
 // JVM Args : -XX:BiasedLockingStartupDelay=0
 public class BiasedLockingSpeedTest {
     static Number number = new Number();
-    
+
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
         long i = 0;
@@ -250,10 +250,10 @@ public class BiasedLockingSpeedTest {
         }
         System.out.println(String.format("%sms", System.currentTimeMillis() - start));
     }
-    
+
     static class Number {
         int i;
-        
+
         public synchronized void increase() {
             i++;
         }
@@ -285,26 +285,26 @@ public class BiasedLockingSpeedTest {
 ### Mark Word
 
 #### 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class ThinLockingMarkWord {
     static class A {
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         Layouter layouter = new HotSpotLayouter(new X86_32_DataModel());
-        
+
         final A a = new A();
-        
+
         ClassLayout layout = ClassLayout.parseInstance(a, layouter);
         out.println("**** Fresh object");
         out.println(layout.toPrintable());
-        
+
         synchronized (a) {
             out.println("**** With the lock");
             out.println(layout.toPrintable());
         }
-        
+
         out.println("**** After the lock");
         out.println(layout.toPrintable());
     }
@@ -347,7 +347,7 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 ### 性能对比
 
 #### 代码
-```Java
+```java
 /**
  * 重量级锁的性能测试
  */
@@ -355,8 +355,8 @@ public class FatLockingSpeedTest {
     static Number number = new Number();
     static final int THREAD_COUNT = 2;
     static CountDownLatch countDownLatch = new CountDownLatch(1000000000);
-    
-    
+
+
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
         for (int i = 0; i < THREAD_COUNT; i++) {
@@ -365,18 +365,18 @@ public class FatLockingSpeedTest {
         countDownLatch.await();
         System.out.println(String.format("%sms", System.currentTimeMillis() - start));
     }
-    
+
     static class Number {
         int i;
-        
+
         public synchronized void increase() {
             i++;
             countDownLatch.countDown();
         }
     }
-    
+
     static class Task implements Runnable {
-        
+
         @Override
         public void run() {
             while (countDownLatch.getCount() > 0) {
@@ -412,22 +412,22 @@ public class FatLockingSpeedTest {
 ### Mark Word
 
 #### 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class FatLockingMarkWord {
     static class A {
     }
-    
+
     public static void main(String[] args) throws Exception {
         Layouter layouter = new HotSpotLayouter(new X86_32_DataModel());
-        
+
         final A a = new A();
-        
+
         ClassLayout layout = ClassLayout.parseInstance(a, layouter);
-        
+
         out.println("**** Fresh object");
         out.println(layout.toPrintable());
-        
+
         Thread t = new Thread(() -> {
             synchronized (a) {
                 try {
@@ -437,24 +437,24 @@ public class FatLockingMarkWord {
                 }
             }
         });
-        
+
         t.start();
-        
+
         TimeUnit.SECONDS.sleep(1);
-        
+
         out.println("**** Before the lock");
         out.println(layout.toPrintable());
-        
+
         synchronized (a) {
             out.println("**** With the lock");
             out.println(layout.toPrintable());
         }
-        
+
         out.println("**** After the lock");
         out.println(layout.toPrintable());
-        
+
         System.gc();
-        
+
         out.println("**** After System.gc()");
         out.println(layout.toPrintable());
     }
@@ -519,11 +519,11 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 调用`Object.wait()`方法会让`轻量级锁`升级为`重量级锁`
 
 #### 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class FatLockingWaitMarkWord {
     static Object object = new Object();
-    
+
     public static void main(String[] args) throws InterruptedException {
         Layouter layouter = new HotSpotLayouter(new X86_32_DataModel());
         ClassLayout layout = ClassLayout.parseInstance(object, layouter);
@@ -572,5 +572,3 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 2. `After wait`阶段，`锁标志位`为`10`，处于`重量级锁`
 
 <!-- indicate-the-source -->
-
-

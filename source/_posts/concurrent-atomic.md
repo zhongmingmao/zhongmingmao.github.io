@@ -13,7 +13,7 @@ tags:
 {% note info %}
 本文主要介绍`java.util.concurrent.atomic`包下的`AtomicInteger`、`AtomicReference`、`AtomicIntegerArray`、`AtomicIntegerFieldUpdater`和`AtomicStampedReference`
 代码托管在https://github.com/zhongmingmao/concurrent_demo
-关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」，本文不在赘述
+关于`Unsafe`类的内容请参考「并发 - Unsafe类的简单使用」，本文不再赘述
 {% endnote %}
 
 <!-- more -->
@@ -24,7 +24,7 @@ tags:
 `AtomicBoolean`、`AtomicInteger`和`AtomicLong`都是通过`原子方式`更新`基本类型`，实现原理类似，下面以**`AtomicInteger`**为例进行分析
 
 ## 源码概要
-```Java
+```java
 public class AtomicInteger extends Number implements java.io.Serializable {
     // 获取Unsafe实例
     private static final Unsafe unsafe = Unsafe.getUnsafe();
@@ -125,14 +125,14 @@ public class AtomicInteger extends Number implements java.io.Serializable {
 
 ## incrementAndGet()
 AtomicInteger
-```Java
+```java
 // 当前值value加1，返回新值，底层CAS操作
 public final int incrementAndGet() {
    return unsafe.getAndAddInt(this, valueOffset, 1) + 1;
 }
 ```
 Unsafe
-```Java
+```java
 // 1.8新增，给定对象o，根据获取内存偏移量指向的字段，将其增加delta，
 // 这是一个CAS操作过程，直到设置成功方能退出循环，返回旧值
 public final int getAndAddInt(Object o, long offset, int delta) {
@@ -147,24 +147,24 @@ public final int getAndAddInt(Object o, long offset, int delta) {
 ## 简单使用
 
 ### 并发安全
-```Java
+```java
 /**
  * 验证基于CAS实现的AtomicInteger是否并发安全
  */
 public class AtomicIntegerCAS {
     private static final int THREAD_COUNT = 4;
     private static final long TASK_COUNT = 500 * 1000 * 1000;
-    
+
     public static void main(String[] args) throws NoSuchFieldException, InterruptedException {
         AtomicInteger counter = new AtomicInteger();
-        
+
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         IntStream.range(0, THREAD_COUNT).forEach(i ->
                 pool.submit(() -> LongStream.range(0, TASK_COUNT)
                         .forEach(j -> counter.incrementAndGet())));
         pool.shutdown();
         pool.awaitTermination(10, TimeUnit.MINUTES);
-        
+
         // 基于CAS实现的AtomicInteger能保证并发安全
         System.out.println(counter.get()); // 2,000,000,000 = THREAD_COUNT * TASK_COUNT
     }
@@ -172,27 +172,27 @@ public class AtomicIntegerCAS {
 ```
 
 ### CAS与synchronized
-```Java
+```java
 /**
  * 比对CAS(无锁)和synchronize(锁)速度
  */
 public class CasAndsynchronizedTest {
     private static final int THREAD_COUNT = 4;
     private static final long TASK_COUNT = 100 * 1000 * 1000;
-    
+
     @Data
     static class Counter {
         private long count;
-        
+
         public synchronized long incrementAndGet() {
             return ++count;
         }
     }
-    
+
     private static void runWithCas() throws InterruptedException {
         LocalDateTime start = LocalDateTime.now();
         AtomicInteger counter = new AtomicInteger();
-        
+
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         IntStream.range(0, THREAD_COUNT).forEach(i ->
                 pool.submit(() -> LongStream.range(0, TASK_COUNT)
@@ -202,11 +202,11 @@ public class CasAndsynchronizedTest {
         System.out.println(String.format("cas takes %sms",
                 Duration.between(start, LocalDateTime.now()).toMillis())); // cas takes 6552ms
     }
-    
+
     private static void runWithSynchronized() throws InterruptedException {
         LocalDateTime start = LocalDateTime.now();
         Counter counter = new Counter();
-        
+
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         IntStream.range(0, THREAD_COUNT).forEach(i ->
                 pool.submit(() -> LongStream.range(0, TASK_COUNT)
@@ -216,7 +216,7 @@ public class CasAndsynchronizedTest {
         System.out.println(String.format("synchronized takes %sms",
                 Duration.between(start, LocalDateTime.now()).toMillis())); // synchronized takes 17974ms
     }
-    
+
     public static void main(String[] args) throws NoSuchFieldException, InterruptedException {
         runWithCas();
         runWithSynchronized();
@@ -229,7 +229,7 @@ public class CasAndsynchronizedTest {
 
 ## 源码概要
 跟`AtomicInteger`类似的内容不再标注
-```Java
+```java
 // AtomicReference是一个泛型类（虽然Java是伪泛型）
 public class AtomicReference<V> implements java.io.Serializable {
     private static final Unsafe unsafe = Unsafe.getUnsafe();
@@ -303,7 +303,7 @@ public class AtomicReference<V> implements java.io.Serializable {
 `AtomicReference`与`AtomicInteger`类似，都是基于`CAS`的`无锁`实现
 
 ## 简单使用
-```Java
+```java
 public class AtomicReferenceDemo {
     @Data
     @AllArgsConstructor
@@ -311,13 +311,13 @@ public class AtomicReferenceDemo {
         private String name;
         private String location;
     }
-    
+
     public static void main(String[] args) {
         AtomicReference<User> atomicReference = new AtomicReference<>();
         User expectUser = new User("zhongmingmao", "ZhongShan");
         atomicReference.set(expectUser);
         User updateUser = new User("zhongmingwu", "GuangZhou");
-        
+
         expectUser.setLocation("HangZhou"); // 修改实例域不影响结果
         boolean casOK = atomicReference.compareAndSet(expectUser, updateUser);
         System.out.println(casOK); // true
@@ -331,7 +331,7 @@ public class AtomicReferenceDemo {
 
 ## 源码概要
 跟`AtomicInteger`类似的内容不再标注
-```Java
+```java
 public class AtomicIntegerArray implements java.io.Serializable {
     private static final Unsafe unsafe = Unsafe.getUnsafe();
     // array[0]的偏移量
@@ -469,14 +469,14 @@ public class AtomicIntegerArray implements java.io.Serializable {
 `AtomicIntegerArray`跟`AtomicInteger`实现原理类似，无非是由`value`变成了`array`，对数组中的`单个元素`进行`CAS`操作
 
 ## 简单使用
-```Java
+```java
 public class AtomicIntegerArrayDemo {
     private static final int THREAD_COUNT = 4;
     private static final int TASK_COUNT = 1000 * 1000;
-    
+
     public static void main(String[] args) throws InterruptedException {
         AtomicIntegerArray array = new AtomicIntegerArray(THREAD_COUNT);
-        
+
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         IntStream.range(0, THREAD_COUNT).forEach(i ->
                 pool.submit(() -> IntStream.range(0, TASK_COUNT)
@@ -499,7 +499,7 @@ public class AtomicIntegerArrayDemo {
 ## 源码概要
 
 ### AtomicIntegerFieldUpdater
-```Java
+```java
 public abstract class AtomicIntegerFieldUpdater<T> {
     @CallerSensitive
     public static <U> AtomicIntegerFieldUpdater<U> newUpdater(Class<U> tclass, String fieldName) {
@@ -616,7 +616,7 @@ public abstract class AtomicIntegerFieldUpdater<T> {
 }
 ```
 ### AtomicIntegerFieldUpdaterImpl
-```Java
+```java
 private static final class AtomicIntegerFieldUpdaterImpl<T> extends AtomicIntegerFieldUpdater<T> {
    private static final sun.misc.Unsafe U = sun.misc.Unsafe.getUnsafe();
    private final long offset;
@@ -633,11 +633,11 @@ private static final class AtomicIntegerFieldUpdaterImpl<T> extends AtomicIntege
                        return tclass.getDeclaredField(fieldName);
                    }
                });
-           // 获取字段修饰符    
+           // 获取字段修饰符
            modifiers = field.getModifiers();
            // 对字段的访问权限进行检查，不在访问范围内抛异常
            sun.reflect.misc.ReflectUtil.ensureMemberAccess(
-               caller, tclass, null, modifiers);    
+               caller, tclass, null, modifiers);
            ClassLoader cl = tclass.getClassLoader();
            ClassLoader ccl = caller.getClassLoader();
            if ((ccl != null) && (ccl != cl) &&
@@ -649,7 +649,7 @@ private static final class AtomicIntegerFieldUpdaterImpl<T> extends AtomicIntege
        } catch (Exception ex) {
            throw new RuntimeException(ex);
        }
-       
+
        // 判断是否为原生int类型
        if (field.getType() != int.class)
            throw new IllegalArgumentException("Must be integer type");
@@ -754,16 +754,16 @@ private static final class AtomicIntegerFieldUpdaterImpl<T> extends AtomicIntege
 
 
 ## 简单使用
-```Java
+```java
 public class AtomicIntegerFieldUpdaterDemo {
     private static final int THREAD_COUNT = 4;
     private static final int TASK_COUNT = 1000 * 1000;
-    
+
     @Data
     static class Counter {
         volatile int count; // 让原本没有原子更新能力的count具有原子更新能力
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         AtomicIntegerFieldUpdater<Counter> fieldUpdater = AtomicIntegerFieldUpdater.newUpdater(Counter.class, "count");
         Counter counter = new Counter();
@@ -782,7 +782,7 @@ public class AtomicIntegerFieldUpdaterDemo {
 `AtomicStampedReference`是为了解决`CAS中的ABA问题`
 
 ## 源码概要
-```Java
+```java
 public class AtomicStampedReference<V> {
     // 存储数据和时间戳
     private static class Pair<T> {
@@ -820,7 +820,7 @@ public class AtomicStampedReference<V> {
         Pair<V> current = pair;
         return
             expectedReference == current.reference && expectedStamp == current.stamp &&
-            ((newReference == current.reference && newStamp == current.stamp) 
+            ((newReference == current.reference && newStamp == current.stamp)
                 || casPair(current, Pair.of(newReference, newStamp)));
     }
     private boolean casPair(Pair<V> cmp, Pair<V> val) {
@@ -856,27 +856,27 @@ public class AtomicStampedReference<V> {
 ```
 
 ## 简单使用
-```Java
+```java
 /**
  * 通过AtomicStampedReference解决ABA问题
  */
 public class AtomicStampedReferenceDemo {
     public static void main(String[] args) throws InterruptedException {
         AtomicStampedReference<Integer> stampedReference = new AtomicStampedReference<>(10, 0);
-        
+
         Thread t1 = new Thread(() -> { // 构造ABA问题
             int stamp = stampedReference.getStamp();
             // 要注意autoboxing
             boolean success = stampedReference.compareAndSet(10, 20, stamp, stamp + 1);
             System.out.println(String.format("thread: %s , compareAndSet success : %s , current value : %s",
                     Thread.currentThread().getName(), success, stampedReference.getReference()));
-            
+
             stamp = stampedReference.getStamp();
             success = stampedReference.compareAndSet(20, 10, stamp, stamp + 1);
             System.out.println(String.format("thread: %s , compareAndSet success : %s , current value : %s",
                     Thread.currentThread().getName(), success, stampedReference.getReference()));
         });
-        
+
         Thread t2 = new Thread(() -> { // 遇到ABA问题，无法更新
             int stamp = stampedReference.getStamp();
             try {
@@ -888,7 +888,7 @@ public class AtomicStampedReferenceDemo {
             System.out.println(String.format("thread: %s , compareAndSet success : %s , current value : %s",
                     Thread.currentThread().getName(), success, stampedReference.getReference()));
         });
-        
+
         t2.start();
         TimeUnit.MILLISECONDS.sleep(200);
         t1.start();
@@ -904,5 +904,3 @@ thread: Thread-1 , compareAndSet success : false , current value : 10
 ```
 
 <!-- indicate-the-source -->
-
-

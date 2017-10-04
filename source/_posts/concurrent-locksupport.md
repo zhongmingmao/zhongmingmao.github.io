@@ -24,7 +24,7 @@ tags:
 ![locksupport_uml.png](http://otr5jjzeu.bkt.clouddn.com/locksupport_uml.png)
 
 ## 实例域
-```Java
+```java
 public class LockSupport {
     private static final sun.misc.Unsafe UNSAFE;
     private static final long parkBlockerOffset;
@@ -40,14 +40,14 @@ public class LockSupport {
     }
 }
 ```
-```Java
+```java
 public class Thread implements Runnable {
     // 提供给java.util.concurrent.locks.LockSupport调用
     volatile Object parkBlocker;
 }
 ```
 ## 构造函数
-```Java
+```java
 // 私有构造函数，无法实例化
 private LockSupport() {}
 ```
@@ -55,7 +55,7 @@ private LockSupport() {}
 ## park函数
 
 ### park()
-```Java
+```java
 public static void park() {
     // 阻塞当前线程并处于无限期的休眠状态，除非许可证可用（最近调用过unpark），如果许可证可用，那么立即返回，比wait()/notify()/notifyAll()灵活
     // 退出休眠状态的3种情况：其他线程unpark当前线程；其他线程中断当前线程；该调用毫无理由地返回（这个不是很理解）
@@ -64,7 +64,7 @@ public static void park() {
 ```
 
 ### park(Object blocker)
-```Java
+```java
 public static void park(Object blocker) {
     // 获取当前线程
     Thread t = Thread.currentThread();
@@ -77,12 +77,12 @@ public static void park(Object blocker) {
     setBlocker(t, null);
 }
 ```
-```Java
+```java
 private static void setBlocker(Thread t, Object arg) {
     UNSAFE.putObject(t, parkBlockerOffset, arg);
 }
 ```
-```Java
+```java
 public static Object getBlocker(Thread t) {
     if (t == null)
         throw new NullPointerException();
@@ -91,7 +91,7 @@ public static Object getBlocker(Thread t) {
 ```
 
 ### parkNanos(Object blocker,long nanos)
-```Java
+```java
 // 与上面parkpark(Object blocker)类似，只是最多等待nanos纳秒(相对时间)
 public static void parkNanos(Object blocker, long nanos) {
     if (nanos > 0) {
@@ -105,7 +105,7 @@ public static void parkNanos(Object blocker, long nanos) {
 ```
 
 ### parkUntil(Object blocker,long deadline)
-```Java
+```java
 // 与上面parkpark(Object blocker)类似，只是最多等待到deadline（Uninx时间戳，单位毫秒，绝对时间）
 public static void parkUntil(Object blocker, long deadline) {
     Thread t = Thread.currentThread();
@@ -119,7 +119,7 @@ public static void parkUntil(Object blocker, long deadline) {
 ## unpark函数
 
 ### unpark(Thread thread)
-```Java
+```java
 // 如果给定线程的许可尚不可用，则使其可用：
 //  1. 如果线程阻塞在park上，则解除其阻塞状态；
 //  2. 否则保证下一次调用park不会被阻塞（比wait()/notify()/notifyAll()灵活，wait()必须在notify()/notifyAll()之前触发）
@@ -136,7 +136,7 @@ public static void unpark(Thread thread) {
 `park/unpark`相对于`wait/notify`更灵活
 
 ### wait/notify
-```Java
+```java
 /**
  * 验证notify()/notifyAll()必须在wait()之后
  */
@@ -185,7 +185,7 @@ public class WaitAndNotify {
 ```
 
 ### park/unpark
-```Java
+```java
 /**
  * 验证unpark(Thread thread)可以在park(Object blocker)前面（前提：被park的线程需要在执行unpark操作之前启动）
  */
@@ -230,7 +230,7 @@ public class ParkAndUnpark {
 ```
 
 ## 中断响应
-```Java
+```java
 /**
  * 验证park能响应中断
  */
@@ -276,7 +276,7 @@ public class InterruptPark {
 ## Thread中断
 Thread提供了5个关于中断的方法
 public方法
-```Java
+```java
 private volatile Interruptible blocker;
 private final Object blockerLock = new Object();
 // 实例方法
@@ -309,7 +309,7 @@ public static boolean interrupted() {
 }
 ```
 private方法
-```Java
+```java
 // 仅仅设置中断标志
 private native void interrupt0();
 // 线程是否被中断，依据ClearInterrupted是否重置中断状态
@@ -317,7 +317,7 @@ private native boolean isInterrupted(boolean ClearInterrupted);
 ```
 
 ## interrupt sleep
-```Java
+```java
 /**
  * 验证因sleep而被阻塞的线程被中断时，会抛出InterruptedException并重置中断状态
  */
@@ -364,7 +364,7 @@ public class InterruptSleep {
 ```
 
 ## interrupt running
-```Java
+```java
 /**
  * 验证中断一个正在运行状态的线程，只会设置中断状态，而不会抛出InterruptedException
  */
@@ -411,7 +411,7 @@ public class InterruptRunning {
 ## interrupt synchronized
 `synchronized`关键字**`无法响应中断`**，要么获得锁，要么一直等待
 后续博文介绍的`ReentrantLock比synchronized灵活`，能够响应中断
-```Java
+```java
 /**
  * 验证synchronized无法响应中断，要么获得锁，要么一直等待
  */

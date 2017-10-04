@@ -25,7 +25,7 @@ tags:
 
 ## Lock接口
 `ReentrantLock`实现了`java.util.concurrent.locks.Lock`，其中定义了`lock()`、`tryLock()`、`unlock()`等核心方法
-```Java
+```java
 public interface Lock {
     // 加锁
     void lock();
@@ -52,7 +52,7 @@ public interface Lock {
 ![reentrantlock_aqs.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs.png)
 
 ### 核心结构
-```Java
+```java
 // AQS中存在两种队列：同步队列（sync queue）和条件队列（condition queue）
 // 本文仅关注同步队列，不关注条件队列
 // 同步队列实际上由Node构成的的双向非循环链表
@@ -74,7 +74,7 @@ public abstract class AbstractOwnableSynchronizer implements java.io.Serializabl
 
 ## Node
 `Node`用于`包装线程`，是`同步队列`中的节点
-```Java
+```java
 static final class Node {
     // 本文不关注该模式
     static final Node SHARED = new Node();
@@ -141,7 +141,7 @@ static final class Node {
 `ReentrantLock`支持`公平锁`和`非公平锁`，锁的管理分别由`FairSync`和`NonfairSync`来具体控制，
 
 ### ReentrantLock构造函数
-```Java
+```java
 // Sync为抽象类，进行锁的管理，两个实现类为FairSync（公平锁）和NonfairSync（非公平锁）
 private final Sync sync;
 
@@ -162,7 +162,7 @@ public ReentrantLock(boolean fair) {
 # 源码分析 - 非公平锁
 
 ## ReentrantLock.lock
-```Java
+```java
 // From ReentrantLock
 public void lock() {
     // 采用非公平锁时，实际调用的是NonfairSync.lock()
@@ -171,7 +171,7 @@ public void lock() {
 ```
 
 ### NonfairSync.lock
-```Java
+```java
 // From NonfairSync
 // 首先尝试快速抢占独占锁，如果失败，则回退到正常的独占锁请求流程
 final void lock() {
@@ -189,7 +189,7 @@ final void lock() {
         acquire(1);
 }
 ```
-```Java
+```java
 // From AbstractOwnableSynchronizer
 // 记录持有独占锁的线程
 protected final void setExclusiveOwnerThread(Thread thread) {
@@ -200,7 +200,7 @@ protected final void setExclusiveOwnerThread(Thread thread) {
 ### AQS.acquire
 `AQS`即`AbstractQueuedSynchronizer`的简称，下面分析不再重复说明这一点
 `acquire(int arg)`是正常的独占锁请求流程
-```Java
+```java
 // From AQS
 // 请求独占锁，不响应中断
 // 至少调用一次tryAcquire来尝试获得独占锁，tryAcquire有公平和非公平的两种策略，这里先关注非公平策略
@@ -215,7 +215,7 @@ public final void acquire(int arg) {
       selfInterrupt();
 }
 ```
-```Java
+```java
 // From AQS
 // 当前线程自我中断，设置中断标志
 static void selfInterrupt() {
@@ -224,7 +224,7 @@ static void selfInterrupt() {
 ```
 
 #### Sync.nonfairTryAcquire
-```Java
+```java
 // From Sync
 // 非公平策略tryAcquire
 // 如果当前线程能成功获得独占锁，返回true，否则返回false，具体逻辑如下：
@@ -262,7 +262,7 @@ final boolean nonfairTryAcquire(int acquires) {
 
 #### AQS.addWaiter
 `tryAcquire`失败后（**`即独占锁被其他线程持有`**），首先调用`addWaiter`，进行入队
-```Java
+```java
 // From AQS
 // 尝试获取锁失败后，封装当前线程成一个节点，并进行入队（同步队列）操作，并返回刚刚创建的节点
 // 首先尝试快速版本的入队操作，失败后再进行完整版本的入队操作
@@ -292,7 +292,7 @@ private Node addWaiter(Node mode) {
     return node;
 }
 ```
-```Java
+```java
 // From AQS
 // 当 队列为空时 或 CAS入队失败 采用完整版的入队操作
 // 进行head与tail的懒初始化 + 通过自旋进行CAS竞争入队操作
@@ -325,7 +325,7 @@ private Node enq(final Node node) {
 #### AQS.acquireQueued
 `acquireQueued(final Node node, int arg)`是非公平锁的`lock`执行路径上**`最为重要的的方法`**！！
 `addWaiter`之后，当前线程对相应的节点已经成功地添加到`同步队列`的`"队尾"`
-```Java
+```java
 // From AQS
 // 当前线程进入一个自旋过程，待条件满足时会尝试获取独占锁，如果成功获取独占锁则从同步队列退出，并结束自旋
 final boolean acquireQueued(final Node node, int arg) {
@@ -366,7 +366,7 @@ final boolean acquireQueued(final Node node, int arg) {
     }
 }
 ```
-```Java
+```java
 // From AQS
 // 将head更新为当前线程对应的节点，并且去除无用的线程信息和前驱节点信息，但仍然需要保留等待状态信息
 private void setHead(Node node) {
@@ -377,7 +377,7 @@ private void setHead(Node node) {
 ```
 
 ##### AQS.shouldParkAfterFailedAcquire
-```Java
+```java
 // From AQS
 // 当前线程不持有独占锁，判断能否安全地挂起线程
 // 在本文仅需关注等待状态的3个可能值：CANCELLED(1)、SIGNAL(-1)、0
@@ -419,7 +419,7 @@ private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
 ```
 
 ##### AQS.parkAndCheckInterrupt
-```Java
+```java
 // From AQS
 // 挂起当前线程，进入休眠状态，在退出休眠状态后，返回当前线程是否由于中断而退出休眠状态
 private final boolean parkAndCheckInterrupt() {
@@ -435,7 +435,7 @@ private final boolean parkAndCheckInterrupt() {
 
 
 ## ReentrantLock.unlock
-```Java
+```java
 // From ReentrantLock
 public void unlock() {
     // lock实际是acquire(1)，unlock实际是relase(1)
@@ -443,7 +443,7 @@ public void unlock() {
     sync.release(1);
 }
 ```
-```Java
+```java
 // From AQS
 // 释放独占锁
 public final boolean release(int arg) {
@@ -459,7 +459,7 @@ public final boolean release(int arg) {
 ```
 
 ### Sync.tryRelease
-```Java
+```java
 // From Sync
 // 尝试释放锁
 protected final boolean tryRelease(int releases) {
@@ -480,7 +480,7 @@ protected final boolean tryRelease(int releases) {
 ```
 
 ### AQS.unparkSuccessor
-```Java
+```java
 // From AQS
 // 唤醒后继节点
 private void unparkSuccessor(Node node) {
@@ -517,7 +517,7 @@ private void unparkSuccessor(Node node) {
 `unlock`的实现在`AQS.release(int arg)`中，没有公平与否的差异，主要差异在`lock`操作，下面关注`lock`操作的差异
 
 ## ReentrantLock.lock
-```Java
+```java
 // From FairSync
 final void lock() {
     // 非公平锁会首先执行compareAndSetState(0,1)来尝试抢占锁，失败后才会执行acquire(1)
@@ -525,7 +525,7 @@ final void lock() {
     acquire(1);
 }
 ```
-```Java
+```java
 // From AQS
 public final void acquire(int arg) {
     // tryAcquire有公平策略和非公平策略，上面已经分析过了非公平策略，这里关注公平策略
@@ -534,7 +534,7 @@ public final void acquire(int arg) {
         selfInterrupt();
 }
 ```
-```Java
+```java
 // From FairSync
 // 公平策略的tryAcquire
 protected final boolean tryAcquire(int acquires) {
@@ -558,7 +558,7 @@ protected final boolean tryAcquire(int acquires) {
     return false;
 }
 ```
-```Java
+```java
 // From AQS
 // 查询是否有线程比当前线程等待了更长时间
 // 如果当前线程对应的节点之前是否存在有效节点（即非head），返回true
@@ -583,7 +583,7 @@ public final boolean hasQueuedPredecessors() {
 
 ## ReentrantLock.lockInterruptibly
 `lock`是不响应中断的，`lockInterruptibly`是可以**`响应中断`**的
-```Java
+```java
 // From ReentrantLock
 public void lockInterruptibly() throws InterruptedException {
     // 实际调用的是AQS.acquireInterruptibly
@@ -592,7 +592,7 @@ public void lockInterruptibly() throws InterruptedException {
 ```
 
 ### AQS.acquireInterruptibly
-```Java
+```java
 // From AQS
 public final void acquireInterruptibly(int arg) throws InterruptedException {
     if (Thread.interrupted())
@@ -604,7 +604,7 @@ public final void acquireInterruptibly(int arg) throws InterruptedException {
         doAcquireInterruptibly(arg);
 }
 ```
-```Java
+```java
 // From AQS
 // 代码结构acquireQueued非常类似，仅标注差异的地方
 private void doAcquireInterruptibly(int arg) throws InterruptedException {
@@ -635,7 +635,7 @@ private void doAcquireInterruptibly(int arg) throws InterruptedException {
 
 ### AQS.cancelAcquire
 这是`lockInterruptibly`执行路径上**`最为重要的方法`**！！
-```Java
+```java
 // From AQS
 // 取消请求锁
 private void cancelAcquire(Node node) {
@@ -692,7 +692,7 @@ private void cancelAcquire(Node node) {
 ```
 
 ## ReentrantLock.tryLock(long timeout,TimeUnit unit)
-```Java
+```java
 // From AQS
 // 实际调用的是sync.tryAcquireNanos(1, unit.toNanos(timeout))
 public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException {
@@ -701,7 +701,7 @@ public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException 
 ```
 
 ### AQS.tryAcquireNanos
-```Java
+```java
 // From AQS
 public final boolean tryAcquireNanos(int arg, long nanosTimeout) throws InterruptedException {
     if (Thread.interrupted())
@@ -710,7 +710,7 @@ public final boolean tryAcquireNanos(int arg, long nanosTimeout) throws Interrup
                 || doAcquireNanos(arg, nanosTimeout); // 获取锁失败后，当前线程并未持有锁
 }
 ```
-```Java
+```java
 // From AQS
 // 代码结构doAcquireInterruptibly非常类似，仅标注差异的地方
 private boolean doAcquireNanos(int arg, long nanosTimeout) throws InterruptedException {
@@ -758,7 +758,7 @@ private boolean doAcquireNanos(int arg, long nanosTimeout) throws InterruptedExc
 已经分析了产生`CANCELLED`节点的代码，以`中断`产生`CANCELLED`节点为例，下面是有`CANCELLED`节点参与的逻辑示意图
 
 ### 代码
-```Java
+```java
 /**
  * Debug查看lockInterruptibly的时同步队列的变化过程
  */

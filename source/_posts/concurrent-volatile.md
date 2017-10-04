@@ -49,7 +49,7 @@ tags:
 
 ## 原子性、可见性、有序性
 1. `原子性`：一个操作是`不可中断`的；能够实现原子性的关键词：`synchronized`
-2. `可见性`：当一个线程修改了某一个共享变量的值，其他线程是否能够**`立即知道`**这个修改；能够实现可见性的关键词：`synchronized`、`volatile`、`final` 
+2. `可见性`：当一个线程修改了某一个共享变量的值，其他线程是否能够**`立即知道`**这个修改；能够实现可见性的关键词：`synchronized`、`volatile`、`final`
 3. `有序性`（理解有待加深）：如果在`本线程内观察`，所有操作都是`有序`的；如果`在一个线程中观察另一个线程`，所有操作都是`无序`的。前半句是指`线程内表现为串行语义`，后半句是指`指令重排序`现象和`工作内存中主内存同步延迟`现象；能实现有序性的关键字：`synchronized`、`volatile`
 
 | 特性 | 关键字 |
@@ -96,7 +96,7 @@ tags:
 2. 线程T对`volatile变量V的assign动作`，必须与`store`、`write`动作相关联，必须连续一起出现；**`在工作内存中，每次修改V后都必须立刻同步回到主内存中`**，用于保证其他线程可以看到自己对变量V所做的修改
 
 ### 代码
-```Java
+```java
 /**
  * 结合happens-before说明volatile的可见性
  * @author zhongmingmao zhongmingmao0625@gmail.com
@@ -105,25 +105,25 @@ public class VolatileVisibility {
     static class A {
         private int x = 0;
         private volatile int y = 0; // 如果y不声明为volatile，程序将无法结束
-        
+
         private void write() {
             x = 5;
             y = 1;
             System.out.println("update x = 5");
         }
-        
+
         private void read() {
             while (y < Integer.MAX_VALUE && x != 5) {
             }
             System.out.println("read x = 5");
         }
     }
-    
+
     public static void main(String[] args) throws Exception {
         A a = new A();
         Thread writeThread = new Thread(() -> a.write());
         Thread readThread = new Thread(() -> a.read());
-        
+
         readThread.start();
         Thread.sleep(100); // 休眠一段时间，确保readThread已经在运行，验证volatile的可见性
         writeThread.start();
@@ -141,23 +141,23 @@ public class VolatileVisibility {
 ## 不保证并发安全
 
 ### 代码
-```Java
+```java
 /**
  * volatile能保证可见性，但不保证并发安全
  */
 public class ConcurrentNotSafe {
     private static final int POOL_SIZE = 4;
-    
+
     private static volatile int i = 0;
     private static CountDownLatch countDownLatch = new CountDownLatch(1000 * 1000);
-    
+
     private static void increase() {
         while (countDownLatch.getCount() > 0) {
             ++i;
             countDownLatch.countDown();
         }
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         ExecutorService pool = Executors.newFixedThreadPool(POOL_SIZE);
         IntStream.range(0, POOL_SIZE).forEach(value -> pool.submit(ConcurrentNotSafe::increase));
@@ -209,5 +209,3 @@ volatile内存语义的实现主要依赖于`内存屏障（Memory Barrier）`�
 
 
 <!-- indicate-the-source -->
-
-

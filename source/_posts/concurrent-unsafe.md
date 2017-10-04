@@ -11,7 +11,7 @@ tags:
 {% note info %}
 本文主要介绍`sun.misc.Unsafe`类的简单使用
 代码托管在https://github.com/zhongmingmao/concurrent_demo
-关于`JOL`的内容请参考「对象内存布局 - JOL使用教程 1」,本文不在赘述
+关于`JOL`的内容请参考「对象内存布局 - JOL使用教程 1」,本文不再赘述
 {% endnote %}
 
 <!-- more -->
@@ -47,7 +47,7 @@ $ sudo cp sun.zip /Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Ho
 # 获取Unsafe实例
 
 ## Unsafe.getUnsafe()
-```Java
+```java
 @CallerSensitive
 public static Unsafe getUnsafe() {
    Class<?> caller = Reflection.getCallerClass();
@@ -60,7 +60,7 @@ public static Unsafe getUnsafe() {
 2. [Stack Overflow](https://stackoverflow.com/questions/10829281/is-it-possible-to-use-java-unsafe-in-user-code)提供了两种解决方法，下面将采用`反射`的方式来实例化`sun.misc.Unsafe`类
 
 ## 反射
-```Java
+```java
 /**
  * Unsafe工具类
  */
@@ -80,7 +80,7 @@ public class UnsafeUtil {
             throw new SecurityException("Unsafe");
         }
     }
-    
+
     public static void main(String[] args) {
         System.out.println(getUnsafe()); // sun.misc.Unsafe@2626b418
     }
@@ -90,13 +90,13 @@ public class UnsafeUtil {
 # 内存管理
 
 ## Unsafe方法
-```Java
+```java
 // 操作系统的内存页大小
 public native int pageSize();
 
 // 分配内存指定大小的内存
 public native long allocateMemory(long bytes);
-// 根据给定的内存地址address设置重新分配指定大小的内存 
+// 根据给定的内存地址address设置重新分配指定大小的内存
 public native long reallocateMemory(long address, long bytes);
 // 用于释放allocateMemory和reallocateMemory申请的内存
 public native void freeMemory(long address);
@@ -110,12 +110,12 @@ public native long getLong(long address);
 ```
 
 ## 测试代码
-```Java
+```java
 public class UnsafeMemory {
     public static void main(String[] args) {
         Unsafe unsafe = UnsafeUtil.getUnsafe();
         System.out.println(unsafe.pageSize()); // 4096
-        
+
         long address = unsafe.allocateMemory(1024);
         System.out.println(address);
         unsafe.putLong(address, 1024);
@@ -128,7 +128,7 @@ public class UnsafeMemory {
 # 对象管理
 
 ## Unsafe方法
-```Java
+```java
 // 传入一个Class对象并创建该实例对象，但不会调用构造方法
 public native Object allocateInstance(Class<?> cls) throws InstantiationException;
 
@@ -161,7 +161,7 @@ public native void putOrderedInt(Object o, long offset, int x);
 ```
 
 ## 测试代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class UnsafeObject {
     @AllArgsConstructor
@@ -171,14 +171,14 @@ public class UnsafeObject {
         private int age;
         private static String location = "ZhongShan";
     }
-    
+
     public static void main(String[] args) throws InstantiationException, NoSuchFieldException {
         Unsafe unsafe = UnsafeUtil.getUnsafe();
-        
+
         //通过allocateInstance直接创建对象，但未运行任何构造函数
         User user = (User) unsafe.allocateInstance(User.class);
         System.out.println(user); // UnsafeObject.User(name=null, age=0, location=ZhongShan)
-    
+
         // 通过JOL打印对象内存布局
         /*
         me.zhongmingmao.unsafe.UnsafeObject$User object internals:
@@ -193,24 +193,24 @@ public class UnsafeObject {
         Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
          */
         System.out.println(ClassLayout.parseInstance(user).toPrintable());
-        
+
         // Class && Field
         Class<? extends User> userClass = user.getClass();
         Field name = userClass.getDeclaredField("name");
         Field age = userClass.getDeclaredField("age");
         Field location = userClass.getDeclaredField("location");
-        
+
         // 获取实例域name和age在对象内存中的偏移量并设置值
         System.out.println(unsafe.objectFieldOffset(name)); // 16
         unsafe.putObject(user, unsafe.objectFieldOffset(name), "zhongmingmao");
         System.out.println(unsafe.objectFieldOffset(age)); // 12
         unsafe.putInt(user, unsafe.objectFieldOffset(age), 99);
         System.out.println(user); // UnsafeObject.User(name=zhongmingmao, age=99, location=ZhongShan)
-        
+
         // 获取定义location字段的类
         Object staticFieldBase = unsafe.staticFieldBase(location);
         System.out.println(staticFieldBase); // class me.zhongmingmao.unsafe.UnsafeObject$User
-        
+
         // 获取static变量location的偏移量
         long staticFieldOffset = unsafe.staticFieldOffset(location);
         // 获取static变量location的值
@@ -225,7 +225,7 @@ public class UnsafeObject {
 # 数组
 
 ## Unsafe方法
-```Java
+```java
 // 获取数组第一个元素的偏移地址
 public native int arrayBaseOffset(Class<?> arrayClass);
 // 数组中一个元素占据的内存空间,arrayBaseOffset与arrayIndexScale配合使用，可定位数组中每个元素在内存中的位置
@@ -233,7 +233,7 @@ public native int arrayIndexScale(Class<?> arrayClass);
 ```
 
 ## 测试代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class UnsafeArray {
     @Data
@@ -242,10 +242,10 @@ public class UnsafeArray {
         private String name;
         private int age;
     }
-    
+
     public static void main(String[] args) {
         Unsafe unsafe = UnsafeUtil.getUnsafe();
-        
+
         // 通过JOL打印虚拟机信息
         /*
         # Running 64-bit HotSpot VM.
@@ -256,12 +256,12 @@ public class UnsafeArray {
         # Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]
          */
         System.out.println(VM.current().details());
-        
+
         // 实例化User[]
         User[] users = new User[3];
         IntStream.range(0, users.length).forEach(i ->
                 users[i] = new User(String.format("zhongmingmao_%s", i), i));
-        
+
         // 通过JOL打印users的内存布局
         /*
         [Lme.zhongmingmao.unsafe.UnsafeArray$User; object internals:
@@ -276,13 +276,13 @@ public class UnsafeArray {
         Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
          */
         System.out.println(ClassLayout.parseInstance(users).toPrintable());
-        
+
         // users[0]的偏移
         int baseOffset = unsafe.arrayBaseOffset(User[].class);
         System.out.println(baseOffset); // 16
         int indexScale = unsafe.arrayIndexScale(User[].class);
         System.out.println(indexScale); // 4
-        
+
         // users[1]
         Object object = unsafe.getObject(users, baseOffset + indexScale + 0L);
         System.out.println(object); // UnsafeArray.User(name=zhongmingmao_1, age=1)
@@ -293,14 +293,14 @@ public class UnsafeArray {
 # CAS
 
 ## Unsafe方法
-```Java
+```java
 // 第一个参数o为给定对象，offset为对象内存的偏移量，通过这个偏移量迅速定位字段并设置或获取该字段的值，
 // expected表示期望值，x表示要设置的值，下面3个方法都通过CAS原子指令执行操作。
-public final native boolean compareAndSwapObject(Object o, long offset, Object expected, Object x);                                                                                                  
+public final native boolean compareAndSwapObject(Object o, long offset, Object expected, Object x);
 public final native boolean compareAndSwapInt(Object o, long offset, int expected,int x);
 public final native boolean compareAndSwapLong(Object o, long offset, long expected,long x);
 ```
-```Java
+```java
 // 1.8新增，给定对象o，根据获取内存偏移量指向的字段，将其增加delta，
 // 这是一个CAS操作过程，直到设置成功方能退出循环，返回旧值
 public final int getAndAddInt(Object o, long offset, int delta) {
@@ -350,31 +350,31 @@ public final Object getAndSetObject(Object o, long offset, Object newValue) {
 ```
 
 ## 测试代码
-```Java
+```java
 public class UnsafeCAS {
-    
+
     private static final int THREAD_COUNT = 4;
     private static final long TASK_COUNT = 500 * 1000 * 1000;
-    
+
     @Data
     @AllArgsConstructor
     static class Counter {
         private long count;
     }
-    
+
     public static void main(String[] args) throws NoSuchFieldException, InterruptedException {
         Unsafe unsafe = UnsafeUtil.getUnsafe();
         Field count = Counter.class.getDeclaredField("count");
         long offset = unsafe.objectFieldOffset(count);
         Counter counter = new Counter(0);
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
-        
+
         IntStream.range(0, THREAD_COUNT).forEach(i ->
                 pool.submit(() -> LongStream.range(0, TASK_COUNT)
                         .forEach(j -> unsafe.getAndAddInt(counter, offset, 1))));
         pool.shutdown();
         pool.awaitTermination(10, TimeUnit.MINUTES);
-        
+
         // CAS实现并发安全
         System.out.println(counter.getCount()); // 2,000,000,000 = THREAD_COUNT * TASK_COUNT
     }
@@ -384,25 +384,25 @@ public class UnsafeCAS {
 # park/unpark
 
 ## Unsafe方法
-```Java
-// 线程调用该方法，线程将一直阻塞直到超时，或者是中断条件出现。  
-public native void park(boolean isAbsolute, long time);  
-// 终止挂起的线程，恢复正常.java.util.concurrent包中挂起操作都是在LockSupport类实现的，其底层正是使用这两个方法，  
-public native void unpark(Object thread); 
+```java
+// 线程调用该方法，线程将一直阻塞直到超时，或者是中断条件出现。
+public native void park(boolean isAbsolute, long time);
+// 终止挂起的线程，恢复正常.java.util.concurrent包中挂起操作都是在LockSupport类实现的，其底层正是使用这两个方法，
+public native void unpark(Object thread);
 ```
 
 ## 测试代码
-```Java
+```java
 public class UnsafePark {
     private static Thread mainThread;
-    
+
     public static void main(String[] args) {
         Unsafe unsafe = UnsafeUtil.getUnsafe();
         mainThread = Thread.currentThread();
-        
+
         System.out.println(String.format("park %s", mainThread.getName())); // park main
         unsafe.park(false, TimeUnit.SECONDS.toNanos(1));
-        
+
         new Thread(() -> {
             System.out.println(String.format("%s unpark %s",
                     Thread.currentThread().getName(),
@@ -414,5 +414,3 @@ public class UnsafePark {
 ```
 
 <!-- indicate-the-source -->
-
-
