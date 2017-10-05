@@ -26,7 +26,7 @@ tags:
 # 源码分析
 
 ## 构造函数
-```Java
+```java
 // 与ReentrantLock非常类似，默认是非公平策略
 // permits：允许颁发的许可
 public Semaphore(int permits) {
@@ -40,7 +40,7 @@ public Semaphore(int permits, boolean fair) {
 
 ## acquireUninterruptibly
 
-```Java
+```java
 // From Semaphore
 // acquire方法列表，实现都非常类似，本文仅分析acquireUninterruptibly
 public void acquire() throws InterruptedException
@@ -48,7 +48,7 @@ public void acquire(int permits) throws InterruptedException
 public void acquireUninterruptibly()
 public void acquireUninterruptibly(int permits)
 ```
-```Java
+```java
 // From Semaphore
 // 请求一个许可，不响应中断
 public void acquireUninterruptibly() {
@@ -57,7 +57,7 @@ public void acquireUninterruptibly() {
 ```
 
 ### acquireShared
-```Java
+```java
 // From AQS
 public final void acquireShared(int arg) {
     // 自旋获取许可，满足特定条件后退出自旋
@@ -68,7 +68,7 @@ public final void acquireShared(int arg) {
 ```
 
 #### tryAcquireShared
-```Java
+```java
 // From FairSync
 // 公平策略
 // 自旋获取许可，退出自旋需要满足3个条件之一：
@@ -97,7 +97,7 @@ public final boolean hasQueuedPredecessors() {
     return h != t && ((s = h.next) == null || s.thread != Thread.currentThread());
 }
 ```
-```Java
+```java
 // From NonfairSync
 // 非公平策略
 protected int tryAcquireShared(int acquires) {
@@ -115,7 +115,7 @@ final int nonfairTryAcquireShared(int acquires) {
 ```
 
 #### doAcquireShared
-```Java
+```java
 // From AQS
 // 这段代码与「并发 - JUC - CountDownLatch - 源码剖析」中分析的doAcquireSharedInterruptibly类似，不再赘述
 // 大致的作用：线程进入同步队列，以自旋的方式观察条件是否满足条件，如果满足，则退出自旋
@@ -148,7 +148,7 @@ private void doAcquireShared(int arg) {
 ```
 
 ## release
-```Java
+```java
 // From Semaphore
 public void release() {
     sync.releaseShared(1);
@@ -156,7 +156,7 @@ public void release() {
 ```
 
 ### releaseShared
-```Java
+```java
 // From AQS
 public final boolean releaseShared(int arg) {
     // 以自旋的方式返回许可
@@ -170,7 +170,7 @@ public final boolean releaseShared(int arg) {
 ```
 
 #### tryReleaseShared
-```Java
+```java
 // From Semaphore
 // 以自旋的方式返回许可
 protected final boolean tryReleaseShared(int releases) {
@@ -185,7 +185,7 @@ protected final boolean tryReleaseShared(int releases) {
 }
 ```
 现在回顾下`CountDownLatch`中`tryReleaseShared`的具体实现，没有用到参数`releases`，直接采用"`-1`"
-```Java
+```java
 // From CountDownLatch
 protected boolean tryReleaseShared(int releases) {
     for (;;) {
@@ -200,7 +200,7 @@ protected boolean tryReleaseShared(int releases) {
 ```
 
 #### doReleaseShared
-```Java
+```java
 // From AQS
 // 这段代码在博文「并发 - JUC - CountDownLatch - 源码剖析」已经分析过了，不再赘述
 // 大致的作用：唤醒所有等待线程

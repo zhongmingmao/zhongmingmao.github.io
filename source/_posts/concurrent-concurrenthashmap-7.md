@@ -27,7 +27,7 @@ tags:
 ## 核心结构
 
 ### ConcurrentHashMap
-```Java
+```java
 // ConcurrentHashMap类似于一张大的Hash表，将数据切分成一段一段，每段数据由Segment负责管理
 public class ConcurrentHashMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V>, Serializable {
     static final int DEFAULT_INITIAL_CAPACITY = 16;
@@ -49,7 +49,7 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V> implements Concur
 ```
 
 ### Segment
-```Java
+```java
 // Segment继承自ReentrantLock，相当于一把可重入锁，本文中会称之为段
 // Segment与HashMap的结构非常类似，数组+链表结构
 // Segment是实现ConcurrentHashMap锁分离技术的核心
@@ -64,7 +64,7 @@ static final class Segment<K,V> extends ReentrantLock implements Serializable {
 ```
 
 ### HashEntry
-```Java
+```java
 // HashEntry用于存储的实际键值对信息，本文中会称之为节点
 static final class HashEntry<K,V> {
     final int hash;
@@ -75,7 +75,7 @@ static final class HashEntry<K,V> {
 ```
 
 ## 构造函数
-```Java
+```java
 public ConcurrentHashMap() {
     this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_CONCURRENCY_LEVEL);
 }
@@ -132,7 +132,7 @@ public ConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyL
 ![chm7_constructer.png](http://otr5jjzeu.bkt.clouddn.com/chm7_constructer.png)
 
 ## put(K key,V value)
-```Java
+```java
 // From ConcurrentHashMap
 public V put(K key, V value) {
     Segment<K,V> s;
@@ -150,7 +150,7 @@ public V put(K key, V value) {
 ```
 
 ### ensureSegment
-```Java
+```java
 // From ConcurrentHashMap
 // 返回segments[k]，如果segments[k]尚未初始化，采用自旋+CAS的方式进行初始化
 private Segment<K,V> ensureSegment(int k) {
@@ -186,7 +186,7 @@ private Segment<K,V> ensureSegment(int k) {
 ```
 
 ### put(K key,int hash,V value,boolean onlyIfAbsent)
-```Java
+```java
 // From Segment
 // put操作的核心代码
 final V put(K key, int hash, V value, boolean onlyIfAbsent) {
@@ -243,7 +243,7 @@ final V put(K key, int hash, V value, boolean onlyIfAbsent) {
 ```
 
 #### scanAndLockForPut
-```Java
+```java
 // From Segment
 // tryLock失败后会执行scanAndLockForPut
 // 遍历链表，直到查找对应节点，如果没有对应节点就创建一个新节点，然后进入自旋tryLock
@@ -292,7 +292,7 @@ static final int MAX_SCAN_RETRIES = Runtime.getRuntime().availableProcessors() >
 ```
 
 ##### entryForHash
-```Java
+```java
 // From ConcurrentHashMap
 // 获取链表头节点：table[(tab.length - 1) & h)]
 static final <K,V> HashEntry<K,V> entryForHash(Segment<K,V> seg, int h) {
@@ -304,7 +304,7 @@ static final <K,V> HashEntry<K,V> entryForHash(Segment<K,V> seg, int h) {
 ```
 
 #### entryAt
-```Java
+```java
 // From ConcurrentHashMap
 // tab[i]，volatile读
 static final <K,V> HashEntry<K,V> entryAt(HashEntry<K,V>[] tab, int i) {
@@ -315,7 +315,7 @@ static final <K,V> HashEntry<K,V> entryAt(HashEntry<K,V>[] tab, int i) {
 ```
 
 #### setNext
-```Java
+```java
 // From HashEntry
 final void setNext(HashEntry<K,V> n) {
     // 更新后继节点，延时写
@@ -328,7 +328,7 @@ final void setNext(HashEntry<K,V> n) {
 ```
 
 #### setEntryAt
-```Java
+```java
 // From Segment
 static final <K,V> void setEntryAt(HashEntry<K,V>[] tab, int i, HashEntry<K,V> e) {
     // 更新链表头结点，延时写
@@ -338,7 +338,7 @@ static final <K,V> void setEntryAt(HashEntry<K,V>[] tab, int i, HashEntry<K,V> e
 ```
 
 #### rehash
-```Java
+```java
 // From Segment
 // 重建Segment
 private void rehash(HashEntry<K,V> node) {
@@ -388,7 +388,7 @@ private void rehash(HashEntry<K,V> node) {
 ```
 
 ### 逻辑示意图
-```Java
+```java
 public static void main(String[] args) {
     ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
     map.put("zhongmingmao", 1);
@@ -397,7 +397,7 @@ public static void main(String[] args) {
 ![chm7_put.png](http://otr5jjzeu.bkt.clouddn.com/chm7_put.png)
 
 ## remove(Object key)
-```Java
+```java
 // From ConcurrentHashMap
 public V remove(Object key) {
     int hash = hash(key);
@@ -408,7 +408,7 @@ public V remove(Object key) {
 ```
 
 ### segmentForHash
-```Java
+```java
 // From ConcurrentHashMap
 private Segment<K,V> segmentForHash(int h) {
     long u = (((h >>> segmentShift) & segmentMask) << SSHIFT) + SBASE;
@@ -418,7 +418,7 @@ private Segment<K,V> segmentForHash(int h) {
 ```
 
 ### remove(Object key, int hash, Object value)
-```Java
+```java
 // From Segment
 // remove操作的核心操作
 final V remove(Object key, int hash, Object value) {
@@ -460,7 +460,7 @@ final V remove(Object key, int hash, Object value) {
 ```
 
 #### scanAndLock
-```Java
+```java
 // From Segment
 // 与scanAndLockForPut非常类似，只是少了创建节点而已，不再赘述
 private void scanAndLock(Object key, int hash) {
@@ -488,7 +488,7 @@ private void scanAndLock(Object key, int hash) {
 ```
 
 ## get(Object key)
-```Java
+```java
 // From ConcurrentHashMap
 // 代码非常简单，需要注意的是，get操作不需要先持有锁的
 // 在put操作中我们知道，新节点时在链表头，并未修改原节点next属性，不影响get操作中遍历
@@ -513,7 +513,7 @@ public V get(Object key) {
 ```
 
 ## clear()
-```Java
+```java
 // From ConcurrentHashMap
 public void clear() {
     final Segment<K,V>[] segments = this.segments;
@@ -527,7 +527,7 @@ public void clear() {
 ```
 
 ### segmentAt
-```Java
+```java
 // From ConcurrentHashMap
 static final <K,V> Segment<K,V> segmentAt(Segment<K,V>[] ss, int j) {
     long u = (j << SSHIFT) + SBASE;
@@ -537,7 +537,7 @@ static final <K,V> Segment<K,V> segmentAt(Segment<K,V>[] ss, int j) {
 ```
 
 ### clear
-```Java
+```java
 // From Segment
 // 对整个表进行操作，自旋获得锁的可能性不大，放弃自旋tryLock，直接lock
 final void clear() {
@@ -555,7 +555,7 @@ final void clear() {
 ```
 
 ## size()
-```Java
+```java
 // From ConcurrentHashMap
 // 先尝试若干次无锁比较，如果都失败，升级为持有所有Segment的锁，锁定整个ConcurrentHashMap
 public int size() {

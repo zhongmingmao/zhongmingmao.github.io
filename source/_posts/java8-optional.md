@@ -14,7 +14,7 @@ tags:
 
 <!-- more -->
 ## Address
-```Java
+```java
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,7 +26,7 @@ public class Address {
 
 # of + ofNullable 
 相关代码托管在[java8_demo](https://github.com/zhongmingmao/java8_demo)
-```Java
+```java
 @Test(expected = NoSuchElementException.class)
 public void emptyTest() {
    // 声明一个空的Optional对象
@@ -54,7 +54,7 @@ public void ofNullTest() {
 
 ![java8-optional-map](http://oqsopcxo1.bkt.clouddn.com/java8-optional-map.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
 
-```Java
+```java
 @Test
 public void mapTest() {
    String province = "Guangdong";
@@ -74,7 +74,7 @@ public void mapTest() {
 
 ![java8-optional-flatmap](http://oqsopcxo1.bkt.clouddn.com/java8-optional-flatmap.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
 
-```Java
+```java
 @Test
 public void flatmapTest() {
    String province = "Guangdong";
@@ -90,7 +90,7 @@ public void flatmapTest() {
 ```
 
 # 解引用
-```Java
+```java
 @Test(expected = UnsupportedOperationException.class)
 public void dereferenceTest() {
    // get：最简单 + 最不安全
@@ -120,7 +120,7 @@ public void dereferenceTest() {
 ```
 
 # filter
-```Java
+```java
 @Test
 public void filterTest() {
    assertTrue(addressOptional.filter(address -> address.getCity().contains("Z")).isPresent());

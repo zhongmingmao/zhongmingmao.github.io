@@ -21,7 +21,7 @@ tags:
 
 ## 测量对象大小
 通过`Instrumentation`测量`对象占用的空间大小`
-```Java
+```java
 /**
  * 对象占用字节大小工具类<br/>
  * see http://yueyemaitian.iteye.com/blog/2033046
@@ -119,7 +119,7 @@ public class SizeOfObjectUtil {
 
 ## 创建对象
 通过`反射`创建对象，这些对象都是具有代表性的实例，下一博文继续分析
-```Java
+```java
 /**
  * 通过反射实例化类<br/>
  * java -cp create-object-1.0-SNAPSHOT.jar -javaagent:./size-of-object-1.0-SNAPSHOT.jar
@@ -199,7 +199,7 @@ public class CreateObjectUtil {
 
 ## 打印内存布局
 通过`Hotspot JVM`提供的工具，打印`JVM进程的内存映像`到磁盘文件，便于后续继续分析
-```Java
+```java
 package me.zhongmingmao.layout;
 
 import sun.jvm.hotspot.oops.HeapPrinter;

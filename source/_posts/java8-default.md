@@ -29,7 +29,7 @@ tags:
 
 ## 类与接口定义
 相关代码托管在[java8_demo](https://github.com/zhongmingmao/java8_demo)
-```Java
+```java
 interface A {
     default String hello() {
         return "Hello From A";
@@ -82,7 +82,7 @@ class H implements B, G {
 ![java8-default-classes](http://oqsopcxo1.bkt.clouddn.com/java8-default-classes.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
 
 ## 类或父类中的方法
-```Java
+```java
  @Test
 public void fatherTest() {
    Supplier<D> dSupplier = D::new;
@@ -99,7 +99,7 @@ public void selfTest() {
 2. 类 `E` 有自己的重载版本，优先级高于间接父类`C`的重写版本和接口的 `default` 方法，选择自身的重写版本
 
 ## 子接口的default方法
-```Java
+```java
 @Test
 public void sonInterfaceTest() {
    Supplier<F> fSupplier = F::new;
@@ -109,7 +109,7 @@ public void sonInterfaceTest() {
 类 `F` 实现接口 `B`和`A`，而`B`有继承 `A`，子接口`B`的优先级更高，选择接口 `B`的 `default` 实现
 
 ## 显式选择
-```Java
+```java
 @Test
 public void explicitTest() {
    Supplier<H> hSupplier = H::new;

@@ -26,7 +26,7 @@ tags:
 # 源码分析
 
 ## 核心结构
-```Java
+```java
 public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E>, java.io.Serializable {
     // 定长数组，final修饰，一旦初始化，长度不再变化
     final Object[] items;
@@ -46,7 +46,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQ
 ```
 
 ## 构造函数
-```Java
+```java
 public ArrayBlockingQueue(int capacity) {
     this(capacity, false); // 默认是非公平锁
 }
@@ -88,7 +88,7 @@ public ArrayBlockingQueue(int capacity, boolean fair, Collection<? extends E> c)
 ```
 
 ### 逻辑示意图
-```Java
+```java
 public static void main(String[] args) {
     ArrayBlockingQueue queue = new ArrayBlockingQueue(10, false,
                         Arrays.asList("zhong", "ming", "mao"));
@@ -97,7 +97,7 @@ public static void main(String[] args) {
 ![arrayblockingqueue_constructer.png](http://otr5jjzeu.bkt.clouddn.com/arrayblockingqueue_constructer.png)
 
 ## add(E e)
-```Java
+```java
 // 入队操作列表，都比较类似，仅仅分析add(E e)
 // 如果立即可行且不超过队列容量，将指定元素插入到队列尾部，成功时返回true，队列已满时抛出IllegalStateException
 public boolean add(E e)
@@ -108,7 +108,7 @@ public boolean offer(E e, long timeout, TimeUnit unit)
 // 将指定元素插入到队列尾部，如果队列已满，则不限时等待可用空间，被中断时抛出InterruptedException
 public void put(E e) throws InterruptedException
 ```
-```Java
+```java
 // From ArrayBlockingQueue
 public boolean add(E e) {
     // 调用直接父类AbstractQueue的add(E e)方法
@@ -117,7 +117,7 @@ public boolean add(E e) {
 ```
 
 ### AbstractQueue.add
-```Java
+```java
 // From AbstractQueue
 // 队列未满时，入队成功并返回true；队列已满时，抛出IllegalStateException
 public boolean add(E e) {
@@ -131,7 +131,7 @@ public boolean add(E e) {
 ```
 
 ### offer(E e)
-```Java
+```java
 // From ArrayBlockingQueue
 // 队列未满时，入队成功并返回true；队列已满时，入队失败并返回false
 public boolean offer(E e) {
@@ -152,7 +152,7 @@ public boolean offer(E e) {
     }
 }
 ```
-```Java
+```java
 private static void checkNotNull(Object v) {
     if (v == null)
         throw new NullPointerException();
@@ -160,7 +160,7 @@ private static void checkNotNull(Object v) {
 ```
 
 ### enqueue
-```Java
+```java
 // From ArrayBlockingQueue
 // 入队并唤醒线程，需要先持有锁
 private void enqueue(E x) {
@@ -175,7 +175,7 @@ private void enqueue(E x) {
 ```
 
 ## poll()
-```Java
+```java
 // 入队操作列表，都比较类似，仅仅分析poll()
 // 获取并移除队列头部，如果队列为空，返回null
 public E poll()
@@ -186,7 +186,7 @@ public boolean remove(Object o)
 // 与poll()类似，只是允许在队列为空时，不限时等待可用元素，被中断时抛出InterruptedException
 public E take() throws InterruptedException
 ```
-```Java
+```java
 // From ArrayBlockingQueue
 public E poll() {
     final ReentrantLock lock = this.lock;
@@ -202,7 +202,7 @@ public E poll() {
 ```
 
 ### dequeue
-```Java
+```java
 // From ArrayBlockingQueue
 // 获取队列头部，并唤醒线程
 private E dequeue() {

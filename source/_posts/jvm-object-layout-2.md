@@ -36,7 +36,7 @@ tags:
 # 指针压缩
 
 ## 代码
-```Java
+```java
 public class CompressedOopsTestClass {
     
     int intValue;
@@ -102,7 +102,7 @@ ObjArray @ 0x000000011602da20 (object size = 48)
 # 实例域重排序
 
 ## 代码
-```Java
+```java
 public class ReorderingTestClass {
     Object   objectRef;
     Integer integerRef;
@@ -150,7 +150,7 @@ Oop for me/zhongmingmao/create/classes/ReorderingTestClass @ 0x00000007bfe2c750 
 # 内部类
 
 ## 代码
-```Java
+```java
 public class OuterClass {
     InnerClass innerClassRef;
     
@@ -190,7 +190,7 @@ Oop for me/zhongmingmao/create/classes/OuterClass$InnerClass @ 0x00000007bfe30b5
 # 继承
 
 ## 代码
-```Java
+```java
 public class Father {
     
     int intValue;
@@ -202,7 +202,7 @@ public class Father {
     
 }
 ```
-```Java
+```java
 public class Son extends Father {
     
     byte byteValue;
@@ -210,7 +210,7 @@ public class Son extends Father {
     Integer[] integerArrayRef = new Integer[3];
 }
 ```
-```Java
+```java
 public class GranSon extends Son {
     
     boolean booleanValue;

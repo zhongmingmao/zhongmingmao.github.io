@@ -19,7 +19,7 @@ tags:
 # Throwable
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_07_Exceptions {
     
@@ -56,7 +56,7 @@ Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
 2. 下面尝试用`反射`的机制访问`Throwable.backtrace`
 
 ## 反射测试代码
-```Java
+```java
 @Test(expected = NoSuchFieldException.class)
 public void backtraceTest() throws NoSuchFieldException {
    try {
@@ -72,7 +72,7 @@ public void backtraceTest() throws NoSuchFieldException {
 # Class
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_08_Class {
     
@@ -121,7 +121,7 @@ Space losses: 36 bytes internal + 4 bytes external = 40 bytes total
 # Object Header
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_11_ClassWord {
     
@@ -176,7 +176,7 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
 # HashCode
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_15_IdentityHashCode {
     
@@ -241,7 +241,7 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
 3. `Mark Word`的格式请参考[markOop.hpp](http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp)
 
 ## 手动计算HashCode
-```Java
+```java
 @Test
 public void haseCodeTest() throws NoSuchFieldException, IllegalAccessException {
    ClassLayout layout = ClassLayout.parseClass(Object.class);

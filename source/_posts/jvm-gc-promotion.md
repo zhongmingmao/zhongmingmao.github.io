@@ -35,7 +35,7 @@ tags:
 # 大对象直接晋升
 
 ## 代码
-```Java
+```java
 // JVM Args : -Xms20m -Xmx20m -Xmn10m -XX:SurvivorRatio=8 -XX:+UseSerialGC -XX:+PrintGCDetails
 // 堆大小：20M
 // 新生代大小：10M
@@ -119,7 +119,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 对象每经历一次`Minor GC`，年龄就会增加`1`，到了一定的阈值(`-XX:MaxTenuringThreshold`，默认是`15`)，就会`晋升`到老年代
 
 ## 代码
-```Java
+```java
 /**
  * 校验JVM参数 -XX:MaxTenuringThreshold
  *
@@ -266,7 +266,7 @@ Address[5] : 33181729784 , GC Age : 3
 在`Minor GC`时，如果在`Survivor`中**`相同年龄的所有对象大小之和`** ≧ `0.5 * sizeof(Survivor)` ⇒ **`大于或等于`**该年龄的对象**`直接晋升`**到老年代，无须考虑`MaxTenuringThreshold`
 
 ## 代码
-```Java
+```java
 /**
  * 验证动态晋升<br/>
  *

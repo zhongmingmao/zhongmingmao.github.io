@@ -30,7 +30,7 @@ tags:
     - 操作数栈可以容纳任意的`Java`数据类型，`32-bit`数据类型所占用的栈容量为`1`，`64-bit`数据类型所以占用的栈容量为`2`
 
 # 代码
-```Java
+```java
 package me.zhongmingmao.test;
 public class BytecodeExecution {
     public int calc() {

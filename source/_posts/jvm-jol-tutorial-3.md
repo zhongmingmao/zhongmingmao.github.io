@@ -26,7 +26,7 @@ tags:
 5. http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/tip/src/share/classes/sun/misc/Contended.java
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true  -XX:-RestrictContended
 public class JOLSample_09_Contended {
     
@@ -66,7 +66,7 @@ Space losses: 128 bytes internal + 0 bytes external = 128 bytes total
 3. `@Contended`注解的相关概念请查看代码[Contended.java](http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/tip/src/share/classes/sun/misc/Contended.java)
 
 ## 性能对比代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true  -XX:-RestrictContended
 public class FalseSharingTest {
     
@@ -157,7 +157,7 @@ ContendedLong , duration : PT11.047S
 # DataModel
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_10_DataModels {
     
@@ -237,7 +237,7 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
 之前显示的都是`internals size`（即`shallow size`），这里展示`externals size`（`retained size`=`internals size`+`externals size`）
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_16_AL_LL {
     
@@ -286,7 +286,7 @@ me.zhongmingmao.jol.JOLSample_16_AL_LL$A@7de26db8d, me.zhongmingmao.jol.JOLSampl
 # 数组对齐
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_26_ArrayAlignment {
     

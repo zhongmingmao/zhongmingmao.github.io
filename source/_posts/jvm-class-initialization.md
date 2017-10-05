@@ -23,7 +23,7 @@ tags:
 
 
 ### 代码
-```Java
+```java
 public interface InterfaceClinit {
     class InnerClass {
     }
@@ -67,7 +67,7 @@ static {};
 4. `static{}块`只能读取定义在`static{}块`之前的`static变量`，但能为定义在`static{}块`之后的`static变量`赋值
 
 ### 代码
-```Java
+```java
 public class ClassClinit {
     static class InnerClass {
     }
@@ -118,7 +118,7 @@ static {};
 `clinit`方法对于`类或接口`来说**`并不是必需`**的，如果一个类中没有`static{}块`，也没有对`static变量的赋值操作`，那么编译器可以不为这个类生成`clinit`方法
 
 ### 代码
-```Java
+```java
 public class EmptyClassClinit {
     // 字节码中不会有<clinit>()方法
 }
@@ -133,7 +133,7 @@ interface EmptyInterfaceClinit {
 2. 其他线程被阻塞，但如果执行clinit方法的线程退出clinit方法后，其他线程唤醒之后**`不会再次进入`**clinit方法
 
 ### 代码
-```Java
+```java
 public class ClinitConcurrencyTest {
     static class A {
         static {
@@ -182,7 +182,7 @@ t1 run over
 ## new指令
 
 ### 代码
-```Java
+```java
 public class NewTest {
     static class A {
         static {
@@ -222,7 +222,7 @@ public static void main(java.lang.String[]);
 ## putstatic/getstatic指令
 
 ### 代码
-```Java
+```java
 public class StaticTest {
     static class A {
         static String name;
@@ -277,7 +277,7 @@ public static void main(java.lang.String[]);
 ## invokestatic指令
 
 ### 代码
-```Java
+```java
 public class InvokestaticTest {
     static class A {
         static {
@@ -320,7 +320,7 @@ public static void main(java.lang.String[]);
 `Class.forName`方法可以通过`参数initialize`来确定是否触发类的初始化
 
 #### 代码
-```Java
+```java
 public class ClassForNameTest {
     static class A {
         
@@ -357,7 +357,7 @@ Class B Initialization
 
 #### 分析
 `Class.forName`实际调用的是`native`方法（对应的CPP代码暂未研究）`forName0`，有一个标志位`initialize`，是否进行`类的初始化`
-```Java
+```java
 private static native Class<?> forName0(String name, boolean initialize,
                                        ClassLoader loader,
                                        Class<?> caller) throws ClassNotFoundException;
@@ -368,7 +368,7 @@ private static native Class<?> forName0(String name, boolean initialize,
 2. `Class.newInstance`会触发类的初始化
 
 #### 代码
-```Java
+```java
 public class LoadClassTest {
     static class A {
         
@@ -397,7 +397,7 @@ Class A Initialization
 当初始化一个类的时候，如果发现其`父类`还没有进行过初始化，则`首先触发其父类的初始化`
 
 ### 代码
-```Java
+```java
 public class InheritTest {
     static class Father {
         
@@ -447,7 +447,7 @@ public static void main(java.lang.String[]);
 当JVM启动时，用户需要指定一个要执行的主类，JVM会先初始化这个主类
 
 ### 代码
-```Java
+```java
 public class MainClassTest {
     static {
         System.out.println("Class MainClassTest Initialization");
@@ -470,7 +470,7 @@ Class MainClassTest Initialization
 2. 通过子类来引用父类中定义的static字段，只会触发父类的初始化而不会触发子类的初始化
 
 ### 代码
-```Java
+```java
 public class StaticFieldTest {
     static class Father {
         static String FATHER_CLASS_NAME = Father.class.getName();
@@ -521,7 +521,7 @@ public static void main(java.lang.String[]);
 通过`数组`定义来引用类，不会触发类的初始化
 
 ### 代码
-```Java
+```java
 public class ArrayRefTest {
     static class A {
         static {
@@ -558,7 +558,7 @@ public static void main(java.lang.String[]);
 `常量`在`编译阶段`会存入`Class文件常量池`（`Constant pool`）中，编译时便会**`直接替换`**，本质上并没有直接引用绑定到定义常量的类，不会触发定义常量类的初始化
 
 ### 代码
-```Java
+```java
 public class ConstantValueTest {
     static class A {
         static final String NAME = "zhongmingmao";

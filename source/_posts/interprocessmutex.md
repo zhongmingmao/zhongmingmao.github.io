@@ -19,7 +19,7 @@ tags:
 `InterProcessMutex`基于`Zookeeper`实现了**`分布式的公平可重入互斥锁`**，类似于单个JVM进程内d`ReentrantLock(fair=true)`
 
 # 构造过程
-```Java
+```java
 // 最常用
 public InterProcessMutex(CuratorFramework client, String path){
     this(client, path, new StandardLockInternalsDriver());
@@ -40,7 +40,7 @@ InterProcessMutex(CuratorFramework client, String path, String lockName, int max
 # 获取锁
 
 ## InterProcessMutex.acquire
-```Java
+```java
 // 无限等待
 public void acquire() throws Exception{
     if ( !internalLock(-1, null) ){
@@ -55,7 +55,7 @@ public boolean acquire(long time, TimeUnit unit) throws Exception{
 ```
 
 ## InterProcessMutex.internalLock
-```Java
+```java
 private boolean internalLock(long time, TimeUnit unit) throws Exception{
     Thread currentThread = Thread.currentThread();
     LockData lockData = threadData.get(currentThread);
@@ -77,12 +77,12 @@ private boolean internalLock(long time, TimeUnit unit) throws Exception{
     return false;
 }
 ```
-```Java
+```java
 // 映射表
 // 记录线程与锁信息的映射关系
 private final ConcurrentMap<Thread, LockData> threadData = Maps.newConcurrentMap();
 ```
-```Java
+```java
 // 锁信息
 // Zookeeper中一个临时顺序节点对应一个“锁”，但让锁生效激活需要排队，下面会继续分析
 private static class LockData{
@@ -98,7 +98,7 @@ private static class LockData{
 ```
 
 ## LockInternals.attemptLock
-```Java
+```java
 String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception{
     final long      startMillis = System.currentTimeMillis();
     // 无限等待时，millisToWait为null
@@ -142,7 +142,7 @@ String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Except
     return null;
 }
 ```
-```Java
+```java
 // Class:StandardLockInternalsDriver
 public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception{
     String ourPath;
@@ -165,7 +165,7 @@ public String createsTheLock(CuratorFramework client, String path, byte[] lockNo
 ```
 
 ## LockInternals.internalLockLoop
-```Java
+```java
 private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception {
     // 是否已经持有锁
     boolean haveTheLock = false;
@@ -230,7 +230,7 @@ private boolean internalLockLoop(long startMillis, Long millisToWait, String our
     return haveTheLock;
 }
 ```
-```Java
+```java
 // Class:StandardLockInternalsDriver
 public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception{
 // 之前创建的临时顺序节点在排序后的子节点列表中的索引
@@ -258,7 +258,7 @@ static void validateOurIndex(String sequenceNodeName, int ourIndex) throws Keepe
     }
 }
 ```
-```Java
+```java
 // Class:LockInternals
 private final Watcher watcher = new Watcher(){
     @Override
@@ -270,7 +270,7 @@ private synchronized void notifyFromWatcher(){
    notifyAll(); // 唤醒所有等待LockInternals实例的线程
 }
 ```
-```Java
+```java
 // Class:LockInternals
 private void deleteOurPath(String ourPath) throws Exception{
     try{
@@ -287,7 +287,7 @@ private void deleteOurPath(String ourPath) throws Exception{
 弄明白了获取锁的原理，释放锁的逻辑就很清晰了
 
 ## InterProcessMutex.release
-```Java
+```java
 public void release() throws Exception{
     Thread currentThread = Thread.currentThread();
     LockData lockData = threadData.get(currentThread);
@@ -316,14 +316,14 @@ public void release() throws Exception{
 ```
 
 ## LockInternals.releaseLock
-```Java
+```java
 void releaseLock(String lockPath) throws Exception{
    revocable.set(null);
    // 删除临时顺序节点，只会触发后一顺序节点去获取锁，理论上不存在竞争，只排队，非抢占，公平锁，先到先得
    deleteOurPath(lockPath);
 }
 ```
-```Java
+```java
 // Class:LockInternals
 private void deleteOurPath(String ourPath) throws Exception{
     try{

@@ -49,7 +49,7 @@ tags:
 ## Java7 + 策略模式
 
 ### Apple
-```Java
+```java
 @Data
 @AllArgsConstructor
 public class Apple {
@@ -61,14 +61,14 @@ public class Apple {
 ```
 
 ### PredicateJava7 
-```Java
+```java
 public interface PredicateJava7 { // 函数式接口
     boolean test(Apple apple);
 }
 ```
 
 ### ColorPredicate
-```Java
+```java
 public class ColorPredicate implements PredicateJava7 { // 模板代码
     public boolean test(Apple apple) { // 模板代码
         // 实际的策略代码
@@ -78,7 +78,7 @@ public class ColorPredicate implements PredicateJava7 { // 模板代码
 ```
 
 ### WeightPredicate
-```Java
+```java
 public class WeightPredicate implements PredicateJava7 { // 模板代码
     public boolean test(Apple apple) { // 模板代码
         // 实际的策略代码
@@ -88,7 +88,7 @@ public class WeightPredicate implements PredicateJava7 { // 模板代码
 ```
 
 ### FilterJava7
-```Java
+```java
 public class FilterJava7 {
     public static List<Apple> filterJava7(List<Apple> apples, PredicateJava7 predicateJava7) {
         List<Apple> result = new ArrayList<Apple>();
@@ -103,7 +103,7 @@ public class FilterJava7 {
 ```
 
 ### PredicateJavaTest
-```Java
+```java
 public class PredicateJavaTest {
     
     private List<Apple> apples = null;
@@ -126,14 +126,14 @@ public class PredicateJavaTest {
 ## Java8 + Lambda + 泛型
 
 ### PredicateJava8
-```Java
+```java
 public interface PredicateJava8<T> { // 函数式接口 + 泛型
     boolean test(T t);
 }
 ```
 
 ### FilterJava8
-```Java
+```java
 public class FilterJava8 {
     
     public static <T> List<T> filterJava8(List<T> list, PredicateJava8<T> predicateJava8) {
@@ -151,7 +151,7 @@ public class FilterJava8 {
 
 ### PredicateJavaTest
 增加测试用例`predicateJava8Test`
-```Java
+```java
 @Test
 public void predicateJava8Test() {
     // Lambda 表达式

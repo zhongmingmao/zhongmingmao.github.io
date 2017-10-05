@@ -40,7 +40,7 @@ tags:
 # 源码分析
 
 ## 核心结构
-```Java
+```java
 public class PriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E>, java.io.Serializable {
     // 数组默认大小
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
@@ -64,7 +64,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E> implements Blocki
 ```
 
 ## 构造函数
-```Java
+```java
 public PriorityBlockingQueue() {
     this(DEFAULT_INITIAL_CAPACITY, null);
 }
@@ -86,14 +86,14 @@ public PriorityBlockingQueue(Collection<? extends E> c)
 ```
 
 ## add
-```Java
+```java
 public boolean add(E e) {
     return offer(e);
 }
 ```
 
 ### offer
-```Java
+```java
 public boolean offer(E e) {
     if (e == null)
         // 不接受null元素
@@ -124,7 +124,7 @@ public boolean offer(E e) {
 ```
 
 ### tryGrow
-```Java
+```java
 // 扩容
 // 先释放独占锁，允许多线程以CAS的方式创建新数组，然后重新竞争锁，进行数组复制
 private void tryGrow(Object[] array, int oldCap) {
@@ -171,7 +171,7 @@ private void tryGrow(Object[] array, int oldCap) {
 ```
 
 ### siftUpComparable
-```Java
+```java
 // 节点上冒，采用自然排序
 private static <T> void siftUpComparable(int k, T x, Object[] array) {
     Comparable<? super T> key = (Comparable<? super T>) x;
@@ -191,7 +191,7 @@ private static <T> void siftUpComparable(int k, T x, Object[] array) {
 ```
 
 ### siftUpUsingComparator
-```Java
+```java
 // 节点上冒，采用cmp指定的排序规则
 // 跟siftUpComparable非常类似，不再赘述
 private static <T> void siftUpUsingComparator(int k, T x, Object[] array, Comparator<? super T> cmp) {
@@ -208,7 +208,7 @@ private static <T> void siftUpUsingComparator(int k, T x, Object[] array, Compar
 ```
 
 ### 逻辑示意图
-```Java
+```java
 public static void main(String[] args) {
     int initCap = 15;
     PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue(initCap);
@@ -220,7 +220,7 @@ public static void main(String[] args) {
 
 
 ## poll
-```Java
+```java
 public E poll() {
     final ReentrantLock lock = this.lock;
     lock.lock(); // 获取独占锁
@@ -233,7 +233,7 @@ public E poll() {
 ```
 
 ### dequeue
-```Java
+```java
 private E dequeue() {
     int n = size - 1;
     if (n < 0)
@@ -258,7 +258,7 @@ private E dequeue() {
 ```
 
 ### siftDownComparable
-```Java
+```java
 // 节点下冒，采用自然排序
 // k：需要填充的位置，poll操作时，默认为0
 // x：需要插入的元素，poll操作时，为原尾节点
@@ -296,7 +296,7 @@ private static <T> void siftDownComparable(int k, T x, Object[] array, int n) {
 ```
 
 ### siftDownUsingComparator
-```Java
+```java
 // 节点下冒，采用cmp指定的排序规则
 // // 跟siftDownComparable非常类似，不再赘述
 private static <T> void siftDownUsingComparator(int k, T x, Object[] array, int n, Comparator<? super T> cmp) {
@@ -319,7 +319,7 @@ private static <T> void siftDownUsingComparator(int k, T x, Object[] array, int 
 ```
 
 ### 逻辑示意图
-```Java
+```java
 public static void main(String[] args) {
     PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue(15);
     Arrays.asList(1,             // 第1层
@@ -334,7 +334,7 @@ public static void main(String[] args) {
 
 
 ## remove
-```Java
+```java
 // remove操作结合了上冒操作和下冒操作
 public boolean remove(Object o) {
     final ReentrantLock lock = this.lock;
@@ -353,7 +353,7 @@ public boolean remove(Object o) {
 ```
 
 ### indexOf
-```Java
+```java
 // 变量数组，匹配成功，返回索引，否则返回-1
 private int indexOf(Object o) {
     if (o != null) {
@@ -369,7 +369,7 @@ private int indexOf(Object o) {
 
 ### removeAt
 
-```Java
+```java
 // 先下冒，在上冒（不一定存在）
 // 上冒和上冒的过程请参照上面的分析
 private void removeAt(int i) {
@@ -407,7 +407,7 @@ private void removeAt(int i) {
 
 ### 逻辑示意图
 
-```Java
+```java
 public static void main(String[] args) {
     PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue(15);
     Arrays.asList(0,                        // 第1层

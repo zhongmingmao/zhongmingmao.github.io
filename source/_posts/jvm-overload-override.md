@@ -17,7 +17,7 @@ tags:
 # 方法重载
 
 ## 代码
-```Java
+```java
 package me.zhongmingmao.test;
 
 public class StaticDispatch {
@@ -117,7 +117,7 @@ public static void main(java.lang.String[]);
 # 方法重写
 
 ## 代码
-```Java
+```java
 package me.zhongmingmao.test;
 
 public class DynamicDispatch {

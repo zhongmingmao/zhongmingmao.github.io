@@ -22,7 +22,7 @@ tags:
 ```
 ## Apple
 相关代码托管在[java8_demo](https://github.com/zhongmingmao/java8_demo)
-```Java
+```java
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -35,7 +35,7 @@ public class Apple {
 ```
 
 ## 实例
-```Java
+```java
 (String s) -> s.length()
 // 等价于
 int f(String s){ return s.length(); }
@@ -80,7 +80,7 @@ boolean f(Apple a1 , Apple a2){ return a1.getWeight() > a2.getWeight;}
 # 自定义函数式接口
 
 ## 函数式接口
-```Java
+```java
 @FunctionalInterface
 public interface Change { // 只有一个抽象方法
     Integer action(Integer param);
@@ -89,7 +89,7 @@ public interface Change { // 只有一个抽象方法
 函数描述符：`Integer -> Integer`
 
 ## 单元测试
-```Java
+```java
 private int localChange(int param, Change change) {
    return change.action(param);
 }
@@ -122,7 +122,7 @@ public void multipyTest() {
 ## Predicate<T>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface Predicate<T> {
     boolean test(T t);
@@ -131,7 +131,7 @@ public interface Predicate<T> {
 函数描述符：`T -> boolean`
 
 ### 实例
-```Java
+```java
 private <T> List<T> predicate(List<T> list, Predicate<T> predicate) {
    List<T> result = new ArrayList<>();
    for (T t : list) {
@@ -152,7 +152,7 @@ public void predicateTest() {
 ## Consumer<T>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface Consumer<T> {
     void accept(T t);
@@ -161,7 +161,7 @@ public interface Consumer<T> {
 函数描述符：`T -> void`
 
 ### 实例
-```Java
+```java
 private <T> void consume(List<T> list, Consumer<T> consumer) {
    for (T t : list) {
        consumer.accept(t);
@@ -177,7 +177,7 @@ public void consumerTest() {
 ## Supplier<T>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface Supplier<T> {
     T get();
@@ -186,7 +186,7 @@ public interface Supplier<T> {
 函数描述符：`() -> T`
 
 ### 实例
-```Java
+```java
 private <T> T supply(Supplier<T> supplier) {
    return supplier.get();
 }
@@ -199,7 +199,7 @@ public void supplierTest() {
 
 ## Function<T,R>
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface Function<T, R> {
     R apply(T t);
@@ -208,7 +208,7 @@ public interface Function<T, R> {
 函数描述符：`T -> R`
 
 ### 实例
-```Java
+```java
 private <T, R> R function(T t, Function<T, R> func) {
    return func.apply(t);
 }
@@ -222,7 +222,7 @@ public void functionTest() {
 ## BiFunction<T, U, R>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface BiFunction<T, U, R> {
     R apply(T t, U u);
@@ -231,7 +231,7 @@ public interface BiFunction<T, U, R> {
 函数描述符：`(T,U) -> R`
 
 ### 实例
-```Java
+```java
 private <T, U, R> R biFunction(T t, U u, BiFunction<T, U, R> biFunc) {
    return biFunc.apply(t, u);
 }
@@ -245,7 +245,7 @@ public void biFunctionTest() {
 ## BiPredicate<T, U>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface BiPredicate<T, U> {
     boolean test(T t, U u);
@@ -254,7 +254,7 @@ public interface BiPredicate<T, U> {
 函数描述符：`(T,U) -> boolean`
 
 ### 实例
-```Java
+```java
 private <T, U> boolean biPredicate(T t, U u, BiPredicate<T, U> biPred) {
    return biPred.test(t, u);
 }
@@ -268,7 +268,7 @@ public void biPredicateTest() {
 ## BinaryOperator<T>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface BinaryOperator<T> extends BiFunction<T,T,T> {
 }
@@ -276,7 +276,7 @@ public interface BinaryOperator<T> extends BiFunction<T,T,T> {
 函数描述符：`(T,T) -> T`
 
 ### 实例
-```Java
+```java
 private <T> T binaryOperator(T t, BinaryOperator<T> bOp) {
    return bOp.apply(t, t);
 }
@@ -290,7 +290,7 @@ public void binaryOperatorTest() {
 ## BiConsumer<T, U>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface BiConsumer<T, U> {
     void accept(T t, U u);
@@ -299,7 +299,7 @@ public interface BiConsumer<T, U> {
 函数描述符：`(T,U) -> void`
 
 ### 实例
-```Java
+```java
 private <T, U> void biConsumer(T t, U u, BiConsumer<T, U> bCon) {
    bCon.accept(t, u);
 }
@@ -313,7 +313,7 @@ public void biConsumerTest() {
 ## UnaryOperator<T>
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface UnaryOperator<T> extends Function<T, T> {
 }
@@ -321,7 +321,7 @@ public interface UnaryOperator<T> extends Function<T, T> {
 函数描述符：`T -> T`
 
 ### 实例
-```Java
+```java
 private <T> T unaryOperator(T t, UnaryOperator<T> uOp) {
    return uOp.apply(t);
 }
@@ -337,7 +337,7 @@ public void unaryOperatorTest() {
 2. 类似函数式接口的还有 `LongPredicate`、`IntFunction<R>` 等
 
 ### 定义
-```Java
+```java
 @FunctionalInterface
 public interface IntPredicate {
     boolean test(int value);
@@ -345,7 +345,7 @@ public interface IntPredicate {
 ```
 
 ### 实例
-```Java
+```java
 @Test
 public void intPredicateTest() {
    IntPredicate intPredicate = value -> value % 2 == 0;
@@ -369,7 +369,7 @@ public void intPredicateTest() {
 # 类型检查
 
 引用上面的例子进行分析
-```Java
+```java
 // 函数定义
 private <T> List<T> predicate(List<T> list, Predicate<T> predicate) {...}
 // 函数调用
@@ -387,7 +387,7 @@ predicate(Arrays.asList("zhongmingmao", "", null), s -> null == s || s.isEmpty()
 1. Lambda：`(args) -> ClassName.staticMethod(args)`
 2. 方法引用：`ClassName::staticMethod`
 
-```Java
+```java
 Function<String, Integer> str2Integer = s -> Integer.parseInt(s);
 str2Integer = Integer::parseInt;
 ```
@@ -396,7 +396,7 @@ str2Integer = Integer::parseInt;
 1. Lambda：`(arg0,rest) -> arg0.instanceMethod(rest)`（`arg0`是 `ClassName` 类型）
 2. 方法引用：`ClassName::instanceMethod`
 
-```Java
+```java
 BiPredicate<List<String>, String> contains = (strings, s) -> strings.contains(s);
 contains = List::contains;
 ```
@@ -405,14 +405,14 @@ contains = List::contains;
 1. Lambda：`(args) -> expr.instanceMethod(args)`
 2. 方法引用：`expr::instanceMethod`
 
-```Java
+```java
 List<String> list = Arrays.asList("a", "b", "A", "B");
 Predicate<String> contain = s -> list.contains(s);
 contain = list::contains;
 ```
 
 ## 构造函数
-```Java
+```java
 Supplier<Apple> c1 = () -> new Apple();
 c1 = Apple::new;// 默认构造函数
 Apple apple = c1.get();
@@ -425,7 +425,7 @@ apple = c2.apply(Apple.COLOR.GREEN, Integer.valueOf(200));
 # 复合Lambda
 
 ## Comparator复合
-```Java
+```java
 @FunctionalInterface
 public interface Comparator<T> {
     int compare(T o1, T o2);
@@ -440,7 +440,7 @@ Comparator<Apple> linkedComparator = Comparator.comparing(Apple::getWeight).reve
 ```
 
 ## Predicate复合
-```Java
+```java
 Predicate<Apple> greenApple = apple -> Apple.COLOR.GREEN.equals(apple.getColor());
 Predicate<Apple> notGreenApple = greenApple.negate();
 Predicate<Apple> heavyApple = apple -> apple.getWeight() > Apple.HEAVY_WEIGHT;
@@ -452,7 +452,7 @@ Predicate<Apple> redOrGreenAndHeavyApple = redApple.or(greenApple).and(heavyAppl
 ```
 
 ## Function复合
-```Java
+```java
 Function<Integer, Integer> f = integer -> integer + 1;
 Function<Integer, Integer> g = integer -> integer * 2;
 Function<Integer, Integer> h = f.andThen(g); // g(f(x)) = (x+1)*2

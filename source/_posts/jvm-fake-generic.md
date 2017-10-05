@@ -19,7 +19,7 @@ tags:
 2. 在`运行期`，`ArrayList<Integer>`与`ArrayList<String>`就是`同一个类`，在Java中并不存在类似与`ArrayList<Integer>`这种`泛型类型`
 
 # 代码
-```Java
+```java
 public class FakeGeneric {
     
     static class Father {
@@ -86,7 +86,7 @@ public static void main(java.lang.String[]);
 
 ## new HashMap<>()
 在Java代码中，创建map时是带有泛型信息的
-```Java
+```java
 Map<Father, Father> map = new HashMap<>(); 
 ```
 对应的JVM字节码
@@ -101,7 +101,7 @@ Map<Father, Father> map = new HashMap<>();
 
 ## map.put(father, son)
 在Java代码中，Map接口的`put`方法签名也是带有泛型信息的
-```Java
+```java
 V put(K key, V value);
 ```
 对应的JVM字节码
@@ -138,7 +138,7 @@ checkFather(map.get(father));
 
 # 伴随的问题
 Java的伪泛型会带来一些语法上的`尴尬`，例如重载
-```Java
+```java
 public static void method(List<String> list){ 
 }
     

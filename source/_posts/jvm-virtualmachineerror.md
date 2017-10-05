@@ -37,7 +37,7 @@ tags:
 ## VM Stack - StackOverflowError
 
 ### 代码
-```Java
+```java
 public class VMStackSOF {
     private int stackDepth = 0;
     
@@ -80,7 +80,7 @@ stackDepth:1890
 ## Heap - OutOfMemoryError
 
 ### 代码
-```Java
+```java
 public class HeapOOM {
     static class OOMObject {
         private static final int _1_MB = 1 * 1024 * 1024;
@@ -139,7 +139,7 @@ No shared spaces configured.
 ### JDK6 - PermGen
 
 #### 代码
-```Java
+```java
 // JDK ➔ 6
 // JVM Args ➔ -Xms60m -Xmx60m -XX:PermSize=50m -XX:MaxPermSize=50m -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC
 // -XX:PermSize ➔ PermGen的初始大小
@@ -177,7 +177,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: PermGen space
 ### JDK8 - Heap
 
 #### 代码
-```Java
+```java
 // JDK ➔ 8
 // JVM Args ➔ -Xms600m -Xmx600m -XX:MetaspaceSize=50m -XX:MaxMetaspaceSize=50m -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC
 // -XX:MetaspaceSize ➔ Metaspace的初始大小，在JDK8开始，PermGen已经被移除，采用Metaspace来替代

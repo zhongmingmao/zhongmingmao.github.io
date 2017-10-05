@@ -19,13 +19,13 @@ tags:
 # 基础
 
 ## Runnable + Callable
-```Java
+```java
 @FunctionalInterface
 public interface Runnable {
     public abstract void run();
 }
 ```
-```Java
+```java
 // Callable相对于Runnable，允许返回运行结果和抛出异常
 @FunctionalInterface
 public interface Callable<V> {
@@ -34,7 +34,7 @@ public interface Callable<V> {
 ```
 
 ## Future
-```Java
+```java
 // Future接口代表异步计算的结果
 public interface Future<V> {
     // 尝试取消执行任务
@@ -61,11 +61,11 @@ public interface Future<V> {
 ```
 
 ## FutureTask
-```Java
+```java
 // FutureTask实现RunnableFuture接口
 public class FutureTask<V> implements RunnableFuture<V>
 ```
-```Java
+```java
 // RunnableFuture接口继承自Runnable接口和Future接口
 public interface RunnableFuture<V> extends Runnable, Future<V> {
     void run();
@@ -75,7 +75,7 @@ public interface RunnableFuture<V> extends Runnable, Future<V> {
 # 源码分析
 
 ## 核心结构
-```Java
+```java
 public class FutureTask<V> implements RunnableFuture<V> {
     // 底层实际调用的callable，执行完成后置为null
     private Callable<V> callable;
@@ -125,7 +125,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private static final int INTERRUPTED  = 6;
 }
 ```
-```Java
+```java
 // 等待线程链表的节点
 static final class WaitNode {
     volatile Thread thread;
@@ -140,7 +140,7 @@ static final class WaitNode {
 
 
 ## 构造函数
-```Java
+```java
 public FutureTask(Callable<V> callable) {
     if (callable == null)
         throw new NullPointerException();
@@ -156,7 +156,7 @@ public FutureTask(Runnable runnable, V result) {
 ```
 
 ### callable
-```Java
+```java
 // From Executors
 public static <T> Callable<T> callable(Runnable task, T result) {
     if (task == null)
@@ -166,7 +166,7 @@ public static <T> Callable<T> callable(Runnable task, T result) {
 ```
 
 ### RunnableAdapter
-```Java
+```java
 // From Executors
 static final class RunnableAdapter<T> implements Callable<T> {
     final Runnable task;
@@ -183,21 +183,21 @@ static final class RunnableAdapter<T> implements Callable<T> {
 ```
 
 ## isCancelled
-```Java
+```java
 public boolean isCancelled() {
     return state >= CANCELLED; // CANCELLED / INTERRUPTING / INTERRUPTED
 }
 ```
 
 ## isDone
-```Java
+```java
 public boolean isDone() {
     return state != NEW;
 }
 ```
 
 ## run
-```Java
+```java
 public void run() {
     // 1. 任务的运行状态不为NEW，说明任务已经开始执行但没有执行完成或者任务已经完成（正常完成、发生异常或者被取消）
     // 2. 任务的运行状态为NEW，以CAS的方式将runner设置为当前线程，CAS操作失败直接返回
@@ -235,7 +235,7 @@ public void run() {
 ```
 
 ### setException
-```Java
+```java
 // 任务运行状态转移：NEW -> COMPLETING -> EXCEPTIONAL
 // 异常原因保存在outcome
 // 唤醒等待线程链表中节点的对应线程
@@ -253,7 +253,7 @@ protected void setException(Throwable t) {
 ```
 
 ### set
-```Java
+```java
 // 任务运行状态转移：NEW -> COMPLETING -> NORMAL
 // 任务的执行结果保存在outcome
 // 唤醒等待线程链表中节点的对应线程
@@ -271,7 +271,7 @@ protected void set(V v) {
 ```
 
 ### finishCompletion
-```Java
+```java
 // 唤醒等待线程链表中节点的对应线程
 private void finishCompletion() {
     for (WaitNode q; (q = waiters) != null;) { // 循环，直到waiters为null
@@ -302,7 +302,7 @@ protected void done() { }
 ```
 
 ### handlePossibleCancellationInterrupt
-```Java
+```java
 // 自旋等待运行状态设置为INTERRUPTED
 private void handlePossibleCancellationInterrupt(int s) {
     if (s == INTERRUPTING)
@@ -313,7 +313,7 @@ private void handlePossibleCancellationInterrupt(int s) {
 ```
 
 ## cancel
-```Java
+```java
 public boolean cancel(boolean mayInterruptIfRunning) {
     // 1. 任务的运行状态不为NEW，说明任务已经开始执行但没有执行完成或者任务已经完成（正常完成、发生异常或者被取消）
     //    直接返回false，无法取消
@@ -345,7 +345,7 @@ public boolean cancel(boolean mayInterruptIfRunning) {
 ```
 
 ## get
-```Java
+```java
 public V get() throws InterruptedException, ExecutionException {
     int s = state;
     if (s <= COMPLETING) // NEW或者COMPLETING
@@ -360,7 +360,7 @@ public V get() throws InterruptedException, ExecutionException {
 ```
 
 ### awaitDone
-```Java
+```java
 // 阻塞等待，返回运行状态
 private int awaitDone(boolean timed, long nanos) throws InterruptedException {
     // 等待截止时间，无限时等待时为0
@@ -413,7 +413,7 @@ private int awaitDone(boolean timed, long nanos) throws InterruptedException {
 ```
 
 ### report
-```Java
+```java
 // 依据不同的任务运行状态做相应的处理：返回执行结果或抛出异常
 private V report(int s) throws ExecutionException {
     Object x = outcome;

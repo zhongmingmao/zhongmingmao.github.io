@@ -28,7 +28,7 @@ tags:
 # 基本使用
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_01_Basic {
 
@@ -71,7 +71,7 @@ Space losses: 0 bytes internal + 3 bytes external = 3 bytes total
 # 字节对齐
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_02_Alignment {
 
@@ -114,7 +114,7 @@ Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
 # 实例域重排序
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_03_Packing {
 
@@ -182,7 +182,7 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 # 继承
 
 ## 代码
-```Java
+```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_04_Inheritance {
 
@@ -233,7 +233,7 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 # 继承栅栏
 
 ## 代码
-```Java
+```java
 // -Djol.tryWithSudo=true
 public class JOLSample_05_InheritanceBarrier {
 
@@ -291,7 +291,7 @@ Space losses: 4 bytes internal + 4 bytes external = 8 bytes total
 继承对齐只是我个人的表述，指的是在继承关系中，`Hotspot JVM`会通过`Padding`的的方式将`每个类自身定义的实例域总空间`填充为`引用大小(4 Bytes/8 Bytes)的整数倍`
 
 ## 代码
-```Java
+```java
 // -Djol.tryWithSudo=true
 public class JOLSample_06_Gaps {
 
