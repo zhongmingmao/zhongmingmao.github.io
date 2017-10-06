@@ -14,16 +14,15 @@ tags:
 {% note info %}
 本文将通过剖析`CyclicBarrier`的源码来介绍其实现原理
 代码托管在https://github.com/zhongmingmao/concurrent_demo
-关于`ReentrantLock`的基本内容请参考「并发 - JUC - ReentrantLock - 源码剖析」，本文不在赘述
-关于`ConditionObject`的基本内容请参考「并发 - JUC - ConditionObject - 源码剖析」，本文不在赘述
+关于`ReentrantLock`的基本内容请参考「并发 - JUC - ReentrantLock - 源码剖析」，本文不再赘述
+关于`ConditionObject`的基本内容请参考「并发 - JUC - ConditionObject - 源码剖析」，本文不再赘述
+关于`CountDownLatch`的基本内容请参考「并发 - JUC - CountDownLatch - 源码剖析」，本文不再赘述
 {% endnote %}
 
 <!-- more -->
 
 # 基础
-`CyclicBarrier`可以大致理解为`可重复的CountDownLatch`；
-但`CountDownLatch`是基于`AQS的共享模式`（相关内容请参考「并发 - JUC - CountDownLatch - 源码剖析」）；
-而`CyclicBarrier`基于`ReentrantLock`和`ConditionObject`，相关内容请参考「并发 - JUC - ReentrantLock - 源码剖析」和「并发 - JUC - ConditionObject - 源码剖析」
+`CyclicBarrier`可以大致理解为`可重复使用的CountDownLatch`，但`CountDownLatch`是基于`AQS的共享模式`，而`CyclicBarrier`则是基于`AQS的共享模式`（实际为`ReentrantLock`和`ConditionObject`）
 
 # 源码分析
 
@@ -102,7 +101,8 @@ public void reset() {
 
 ## getNumberWaiting
 ```java
-// 已经到达CyclicBarrier的线程数：parties-count = 参与的线程数-还未到达CyclicBarrier的线程数
+// 已经到达CyclicBarrier的线程数 = 参与的线程数 - 还未到达CyclicBarrier的线程数
+// = parties - count
 public int getNumberWaiting() {
     final ReentrantLock lock = this.lock;
     lock.lock();
@@ -130,7 +130,10 @@ public boolean isBroken() {
 
 ## await(long timeout,TimeUnit unit)
 ```java
-public int await(long timeout, TimeUnit unit) throws InterruptedException,BrokenBarrierException,TimeoutException {
+public int await(long timeout, TimeUnit unit)
+                    throws InterruptedException,
+                           BrokenBarrierException,
+                           TimeoutException {
     return dowait(true, unit.toNanos(timeout));
 }
 ```
@@ -138,14 +141,19 @@ public int await(long timeout, TimeUnit unit) throws InterruptedException,Broken
 ### dowait(boolean timed,long nanos)
 **核心代码**
 ```java
-private int dowait(boolean timed, long nanos) throws InterruptedException, BrokenBarrierException,TimeoutException {
+private int dowait(boolean timed, long nanos)
+                    throws InterruptedException,
+                           BrokenBarrierException,
+                           TimeoutException {
     final ReentrantLock lock = this.lock;
     lock.lock(); // 首先持有锁lock
     try {
-        final Generation g = generation; // 当前代
+        final Generation g = generation; // 获取当前代
 
         if (g.broken)
             // 如果CyclicBarrier处于broken状态，直接抛出BrokenBarrierException
+            // 例如CyclicBarrier(3)，线程A.await()被中断会执行breakBarrier()
+            // 线程B.await()执行到这里，直接抛出BrokenBarrierException
             throw new BrokenBarrierException();
 
         if (Thread.interrupted()) {
@@ -154,67 +162,85 @@ private int dowait(boolean timed, long nanos) throws InterruptedException, Broke
             throw new InterruptedException();
         }
 
-        // 当前线程调用了await，已经到达了CyclicBarrier，count代表还未到达CyclicBarrier的线程数，因此需要--count
-        // index表示当前线程到达CyclicBarrier，还未到达CyclicBarrier的线程数
+        // 当前线程调用了await()，表示当前线程到达了CyclicBarrier
+        // count：当前线程到达CyclicBarrier之前，还未到达CyclicBarrier的线程数
+        // index：当前线程到达CyclicBarrier之后，还未到达CyclicBarrier的线程数
         int index = --count;
-        if (index == 0) { // index==0，说明最后一个线程到达了CyclicBarrier
-            boolean ranAction = false; // 执行barrierCommand是否有抛出异常，初始值为false
+
+        // ===== 最后一个线程到达了CyclicBarrier
+        // 如果执行barrierCommand的过程中无异常，执行nextGeneration
+        // 如果执行barrierCommand的过程中抛出异常，执行breakBarrier
+        if (index == 0) {
+            // ranAction：执行barrierCommand是否有抛出异常，初始值为false
+            boolean ranAction = false;
             try {
                 // barrierCommand：最后一个到达CyclicBarrier后，在越过CyclicBarrier之前要执行的动作
                 final Runnable command = barrierCommand;
                 if (command != null)
                     command.run();
-                // 执行到这里，说明无需执行command或执行command的时候没有抛出异常
+                // 执行到这里，说明 无需执行command 或 执行command的过程中没有抛出异常
                 ranAction = true;
                 // 唤醒当代所有线程，并开启新一代
                 nextGeneration();
-                return 0; // 正常返回
+                return 0; // 最后一个线程已经到达了CyclicBarrier + 运行Command无异常
             } finally {
                 if (!ranAction)
-                    // ranAction=false，说明执行barrierCommand的时候发生了异常
-                    // 需要标记当代已经被打破，并唤醒当代所有线程，被唤醒的线程抛出BrokenBarrierException
+                    // ranAction=false：说明执行barrierCommand的过程中抛出了异常
+                    // 需要标记当代已经被打破，并唤醒当代所有线程，被唤醒的线程将抛出BrokenBarrierException
                     breakBarrier();
             }
         }
 
-        // 执行到这里，说明当前线程不是最后一个到达CyclicBarrier，自旋等待直到下面几种情况发生：
-        // 1. 最后一个线程到达CyclicBarrier后，唤醒当代的所有线程
-        // 2. CyclicBarrier处于broken状态
-        // 3. 当前线程被中断
-        // 4. 超时
-        for (;;) { // 自旋
+        // ===== 最后一个线程尚未到达CyclicBarrier，当前线程进入自旋等待
+        // 执行到这里，说明当前线程不是最后一个到达CyclicBarrier的线程，进入自旋等待，直到下面3种情况发生：
+        // 1. 当前线程被中断
+        // 2. 当前线程被唤醒
+        //    2.1 最后一个线程到达CyclicBarrier后，运行Command无异常，在nextGeneration()中唤醒当代的所有线程
+        //    2.2 最后一个线程到达CyclicBarrier后，运行Command发生异常，在breakBarrier()中唤醒当代的所有线程
+        //    2.3 其他线程执行reset方法
+        // 3. 超时
+        for (;;) { // 自旋等待
             try {
                 if (!timed)
-                    trip.await(); // 不限时等待
+                    trip.await();
                 else if (nanos > 0L)
-                    nanos = trip.awaitNanos(nanos); // nanos == deadline - System.nanoTime()
+                    // nanos == deadline - System.nanoTime()
+                    nanos = trip.awaitNanos(nanos);
             } catch (InterruptedException ie) {
-                // Condition.awaitNanos()或Condition.await()阻塞的过程中被中断
-                if (g == generation && ! g.broken) {
-                    // g == generation：判断有开启新一代，true表示没有
-                    // 如果没有开启新一代且当前代没有被标记为已打破，则标记当代已经被打破，并唤醒当代所有线程，最后抛出InterruptedException
+                // 当前线程由于中断而退出休眠状态
+                if (g == generation && !g.broken) {
+                    // 执行到这里，说明没有开启新一代且当前代没有被标记为已打破
+                    // 而当前线程属于当代，如果当前线程被中断，那当代也就没有意义了
+                    // 所以标记当代已经被打破，并唤醒当代所有线程，其他线程被唤醒后会抛出BrokenBarrierException
+                    // 最后当前线程抛出InterruptedException
                     breakBarrier();
                     throw ie;
                 } else {
-                    // 执行到这里有两种情况
-                    // 1. g != generation，说明已经开启了新的一代，而能对generation赋值的方法只有nextGeneration()，
-                    //    而能调用的nextGeneration()只有dowait(boolean timed,long nanos)和reset()：
-                    //    - dowait(boolean timed,long nanos)中是由于最后一个线程到达了CyclicBarrier而触发nextGeneration()，
-                    //      就是当前线程被中断的时候，最后一个线程也到达了CyclicBarrier，因此无需再抛出InterruptedException，这里设置中断状态即可
-                    //    - reset()，即当前线程被中断的时候，其他线程触发了reset()，会将CyclicBarrier置为broken状态
-                    //      应该由后续代码抛出BrokenBarrierException，这里设置中断状态
-                    // 2. g.broken == true，能对generation.broken赋值的方法只有breakBarrier()，
-                    //    说明CyclicBarrier处于broken状态，应该由后续代码抛出BrokenBarrierException，这里设置中断状态即可
+                    // 执行到这里有2种情况
+                    // 1. g!=generation，说明已经开启了新的一代，而能对generation赋值的方法只有nextGeneration()，
+                    //    而能调用的nextGeneration()只有dowait(boolean timed,long nanos)和reset()方法
+                    //    1.1 dowait(boolean timed,long nanos)中是由于最后一个线程到达了CyclicBarrier而触发nextGeneration()，
+                    //        就是当前线程被中断的时候，最后一个线程也到达了CyclicBarrier，因此无需再抛出InterruptedException，
+                    //        这里只需要设置中断状态即可
+                    //    1.2 reset()，即当前线程被中断的时候，其他线程触发了reset()，会将CyclicBarrier置为broken状态
+                    //        应该由后续代码抛出BrokenBarrierException，这里只需要设置中断状态即可
+                    // 2. g.broken==true，能对generation.broken赋值的方法只有breakBarrier()，
+                    //    说明CyclicBarrier已经处于broken状态，应该由后续代码抛出BrokenBarrierException，这里只需要设置中断状态即可
+                    //
+                    // 总结：
+                    // 1. g != generation，已经开启新的一代，不能执行breakBarrier，这会让新一代处于Broken状态，当前线程被中断，只需当前线
+                    //    程归属的一代处于Broken状态既可
+                    // 2. g.broken，说明已经有与当前线程同属于同一代的线程触发了breakBarrier，无需再次触发，当前线程应该在后续代码抛出BrokenBarrierException
                     Thread.currentThread().interrupt();
                 }
             }
 
             if (g.broken)
-                // 当前线程由于被唤醒或被中断而退出休眠状态后，检查CyclicBarrier是否处于broken状态，如果是抛出CyclicBarrier
+                // 如果检测到CyclicBarrier是否处于broken状态，那么抛出BrokenBarrierException异常
                 throw new BrokenBarrierException();
 
             if (g != generation)
-                // 根据上述分析，执行到这里说明最后线程达到了CyclicBarrier，可以退出自旋
+                // 已经开启了新一代，可以退出自旋
                 return index;
 
             // 执行到这里说明g.broken==false && g==generation，因此考虑超时限制
@@ -224,6 +250,7 @@ private int dowait(boolean timed, long nanos) throws InterruptedException, Broke
                 throw new TimeoutException();
             }
         }
+
     } finally {
         lock.unlock(); // 最终释放锁
     }
@@ -288,7 +315,7 @@ public class CyclicBarrierCommandException {
 
     private static CyclicBarrier barrier = new CyclicBarrier(THREAD_COUNT, () -> {
         // 最后一个到达barrier的线程后会先执行barrierCommand
-        // barrierCommand抛出异常，最后一个线程唤醒其他所有线程，并抛出InterruptedException
+        // barrierCommand抛出异常，最后一个线程唤醒其他所有线程
         // 其他线程被唤醒后抛出BrokenBarrierException
         log("run barrierCommand , throw BarrierCommandException");
         throw new RuntimeException("BarrierCommandException");
@@ -316,6 +343,7 @@ public class CyclicBarrierCommandException {
         new Thread(awaitRunnable, "t1").start();
         TimeUnit.MILLISECONDS.sleep(100);
         // 重置barrier到初始状态
+        // generation = new Generation()，为非Broken状态
         barrier.reset();
         new Thread(awaitRunnable, "t2").start(); // 不会抛出异常
         /*
@@ -448,7 +476,7 @@ public class CyclicBarrierInterruptAfterAwait {
 ## reset
 ```java
 /**
- * 验证还有未到达线程时，触发Reset的场景
+ * 验证还有未到达线程时，触发reset的场景
  */
 public class CyclicBarrierReset {
     private static final int THREAD_COUNT = 3;
