@@ -21,7 +21,7 @@ tags:
 # 基础
 1. `Semaphore`与`CountDownLatch`非常类似，都是基于`AQS`的`共享模式`，`CountDownLatch`可以大致理解为`简化版的Semaphore`
 2. `CountDownLatch.await`等待的是`state=0`，`Semaphore.acquire`（如果需要等待）等待的是`Semaphore.release`
-3. `Semaphore`与`CountDownLatch`的源码非常类似，因此有些共通或类似的代码不再重复分析，请先行阅读博文「并发 - JUC - CountDownLatch - 源码剖析」
+3. `Semaphore`与`CountDownLatch`的源码非常类似，因此有些共通或类似的代码不再重复分析
 
 # 源码分析
 
@@ -39,7 +39,6 @@ public Semaphore(int permits, boolean fair) {
 ```
 
 ## acquireUninterruptibly
-
 ```java
 // From Semaphore
 // acquire方法列表，实现都非常类似，本文仅分析acquireUninterruptibly
@@ -72,20 +71,20 @@ public final void acquireShared(int arg) {
 // From FairSync
 // 公平策略
 // 自旋获取许可，退出自旋需要满足3个条件之一：
-// 1. 有排队更久的线程
-// 2. 剩余可颁发的许可不满足需求
+// 1. 有排队更久的线程（需要进入同步队列进行等待）
+// 2. 剩余可颁发的许可不满足需求（需要进入同步队列进行等待）
 // 3. 剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功
 protected int tryAcquireShared(int acquires) {
     for (;;) {
         // 与非公平策略的唯一区别是：先判断是否有排队时间更久的线程，如果有，退出自旋，进入同步队列
         if (hasQueuedPredecessors())
-            return -1;
+            return -1; // 有排队更久的线程（需要进入同步队列进行等待）
         int available = getState(); // 剩余可颁发的许可
         int remaining = available - acquires;
         if (remaining < 0 || compareAndSetState(available, remaining))
-            // available < acquires ➔ 剩余可颁发的许可不满足需求
-            // available >= acquires && compareAndSetState(available, remaining) ➔ 剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功
-            // 退出自旋，进入同步队列
+            // 1. available < acquires ➔ 剩余可颁发的许可不满足需求（需要进入同步队列进行等待）
+            // 2. available >= acquires && compareAndSetState(available, remaining)
+            //                      ➔ 剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功
             return remaining;
     }
 }
@@ -106,6 +105,7 @@ protected int tryAcquireShared(int acquires) {
 // From AQS
 final int nonfairTryAcquireShared(int acquires) {
     for (;;) {
+        // 与公平策略比较，仅仅少了hasQueuedPredecessors的判断
         int available = getState();
         int remaining = available - acquires;
         if (remaining < 0 || compareAndSetState(available, remaining))
@@ -118,7 +118,7 @@ final int nonfairTryAcquireShared(int acquires) {
 ```java
 // From AQS
 // 这段代码与「并发 - JUC - CountDownLatch - 源码剖析」中分析的doAcquireSharedInterruptibly类似，不再赘述
-// 大致的作用：线程进入同步队列，以自旋的方式观察条件是否满足条件，如果满足，则退出自旋
+// 请求共享锁，以广播的方式唤醒线程，被唤醒的线程竞争许可，竞争失败则进行休眠，等待下一轮唤醒
 private void doAcquireShared(int arg) {
     final Node node = addWaiter(Node.SHARED);
     boolean failed = true;
@@ -127,8 +127,10 @@ private void doAcquireShared(int arg) {
         for (;;) {
             final Node p = node.predecessor();
             if (p == head) {
+                // CountDownLatch中state只能不断减少，一直到0，因此所有被唤醒的线程r必然为1
+                // Semaphore中state的含义是许可，有限的，因此r<0是有可能，所以被唤醒的线程有可能再次休眠
                 int r = tryAcquireShared(arg);
-                if (r >= 0) {
+                if (r >= 0) { // 剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功
                     setHeadAndPropagate(node, r);
                     p.next = null;
                     if (interrupted)
@@ -161,7 +163,7 @@ public void release() {
 public final boolean releaseShared(int arg) {
     // 以自旋的方式返回许可
     if (tryReleaseShared(arg)) {
-        // 唤醒所有等待线程
+        // 以广播的方式唤醒线程
         doReleaseShared();
         return true;
     }
@@ -173,11 +175,12 @@ public final boolean releaseShared(int arg) {
 ```java
 // From Semaphore
 // 以自旋的方式返回许可
+// 自旋state+releases，直到CAS成功或溢出
 protected final boolean tryReleaseShared(int releases) {
     for (;;) {
         int current = getState();
         int next = current + releases;
-        if (next < current) // overflow
+        if (next < current) // 溢出
             throw new Error("Maximum permit count exceeded");
         if (compareAndSetState(current, next))
             return true;
@@ -187,6 +190,7 @@ protected final boolean tryReleaseShared(int releases) {
 现在回顾下`CountDownLatch`中`tryReleaseShared`的具体实现，没有用到参数`releases`，直接采用"`-1`"
 ```java
 // From CountDownLatch
+// 自旋state-1，如果刚好是1->0，返回true
 protected boolean tryReleaseShared(int releases) {
     for (;;) {
         int c = getState();
@@ -202,8 +206,8 @@ protected boolean tryReleaseShared(int releases) {
 #### doReleaseShared
 ```java
 // From AQS
-// 这段代码在博文「并发 - JUC - CountDownLatch - 源码剖析」已经分析过了，不再赘述
-// 大致的作用：唤醒所有等待线程
+// 这段代码在博文「并发 - JUC - CountDownLatch - 源码剖析」已经分析过了，非常晦涩，不再赘述
+// 以广播的方式唤醒线程
 private void doReleaseShared() {
     for (;;) {
         Node h = head;
@@ -224,4 +228,3 @@ private void doReleaseShared() {
 ```
 
 <!-- indicate-the-source -->
-
