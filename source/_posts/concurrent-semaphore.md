@@ -70,6 +70,7 @@ public final void acquireShared(int arg) {
 ```java
 // From FairSync
 // 公平策略
+// 请求共享锁，剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功，才算持有共享锁
 // 自旋获取许可，退出自旋需要满足3个条件之一：
 // 1. 有排队更久的线程（需要进入同步队列进行等待）
 // 2. 剩余可颁发的许可不满足需求（需要进入同步队列进行等待）
@@ -127,10 +128,12 @@ private void doAcquireShared(int arg) {
         for (;;) {
             final Node p = node.predecessor();
             if (p == head) {
-                // CountDownLatch中state只能不断减少，一直到0，因此所有被唤醒的线程r必然为1
-                // Semaphore中state的含义是许可，有限的，因此r<0是有可能，所以被唤醒的线程有可能再次休眠
+                // 1. CountDownLatch中持有共享锁的条件：state==0。而在CountDownLatch中，state一旦为0，
+                //    则不会再改变，因此，被唤醒的线程必然会持有共享锁
+                // 2. Semaphore中中持有共享锁的条件：剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功。
+                //    而许可是有限的，因此所以被唤醒的线程不一定会持有共享锁，将再次休眠
                 int r = tryAcquireShared(arg);
-                if (r >= 0) { // 剩余可颁发的许可满足需求并且并发抢占（CAS）许可成功
+                if (r >= 0) { // 持有共享锁
                     setHeadAndPropagate(node, r);
                     p.next = null;
                     if (interrupted)
@@ -219,7 +222,7 @@ private void doReleaseShared() {
             unparkSuccessor(h);
         }
         else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
-            continue;】
+            continue;
         }
         if (h == head)
             break;

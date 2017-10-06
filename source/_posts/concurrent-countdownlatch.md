@@ -140,6 +140,7 @@ public final void acquireSharedInterruptibly(int arg) throws InterruptedExceptio
 #### tryAcquireShared
 ```java
 // From AQS
+// 请求共享锁，只要state==0，即持有共享锁
 protected int tryAcquireShared(int acquires) {
     return (getState() == 0) ? 1 : -1;
 }
@@ -160,7 +161,7 @@ private void doAcquireSharedInterruptibly(int arg) throws InterruptedException {
             final Node p = node.predecessor(); // 前驱节点
             if (p == head) { // 当前节点的前驱节点为同步队列的头结点，即head<->node
                 int r = tryAcquireShared(arg); // (getState() == 0) ? 1 : -1
-                if (r >= 0) {
+                if (r >= 0) { // 持有共享锁
                     // 执行到这里说明node.prev==head，state==0，r==1
                     // 即state已经被消耗完了，尝试以广播的方式唤醒同步队列中的线程
                     setHeadAndPropagate(node, r); // 核心代码，看下面详细分析
@@ -296,7 +297,7 @@ protected boolean tryReleaseShared(int releases) {
 
 区别2：
 1. `独占模式`：`线程自身任务优先`。线程c唤醒线程t1，线程t1必须先执行完本身任务以后在唤醒线程t2，以此类推
-2. `共享模式`：`唤醒其他线程优先`。线程c唤醒线程t1，线程c和线程t1首先竞争着唤醒t2（c也有可能直接退出，不参与竞争），再去执行本身任务，以此类推
+2. `共享模式`：`唤醒其他线程优先`（唤醒其他线程的前提：当前线程已经获得`共享锁`，`CountDownLatch`的共享锁和`Semaphore`的共享锁含义是不一样的）。线程c唤醒线程t1，线程c和线程t1首先竞争着唤醒t2（c也有可能直接退出，不参与竞争），再去执行本身任务，以此类推
 
 
 ```java
