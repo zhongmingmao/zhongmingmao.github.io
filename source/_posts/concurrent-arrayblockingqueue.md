@@ -20,14 +20,14 @@ tags:
 <!-- more -->
 
 # 基础
-`ArrayBlockingQueue`是基于`数组`实现的`有界阻塞`队列
-`ArrayBlockingQueue`是通过`ReentrantLock`和`ConditionObject`来实现同步的，相关内容请参考博文「并发 - JUC - ReentrantLock - 源码剖析」和「并发 - JUC - ConditionObject - 源码剖析」
+`ArrayBlockingQueue`是基于`数组`实现的`有界阻塞`队列，`ArrayBlockingQueue`是通过`ReentrantLock`和`ConditionObject`来实现同步的
 
 # 源码分析
 
 ## 核心结构
 ```java
-public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E>, java.io.Serializable {
+public class ArrayBlockingQueue<E> extends AbstractQueue<E>
+                                implements BlockingQueue<E>, java.io.Serializable {
     // 定长数组，final修饰，一旦初始化，长度不再变化
     final Object[] items;
     // 下一次 take/poll/peek/remove 操作的索引位置
@@ -36,8 +36,8 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E> implements BlockingQ
     int putIndex;
     // 队列中元素的数量
     int count;
-    
-    // 所有操作共用同一个可重复锁
+
+    // 所有操作共用同一个可重入锁
     final ReentrantLock lock;
     // 出队条件
     private final Condition notEmpty;
@@ -64,7 +64,7 @@ public ArrayBlockingQueue(int capacity, boolean fair) {
 public ArrayBlockingQueue(int capacity, boolean fair, Collection<? extends E> c) {
     this(capacity, fair);
     final ReentrantLock lock = this.lock;
-    // 这里加锁是为了保证内存可见性，而不是为了互斥
+    // 这里加锁是为了保证内存可见性，而不是为了互斥！！
     // 释放锁的时候会自动写入主内存
     lock.lock();
     try {
@@ -119,7 +119,8 @@ public boolean add(E e) {
 ### AbstractQueue.add
 ```java
 // From AbstractQueue
-// 队列未满时，入队成功并返回true；队列已满时，抛出IllegalStateException
+// 队列未满时，入队成功并返回true
+// 队列已满时，抛出IllegalStateException
 public boolean add(E e) {
     if (offer(e))
         // 队列未满时，入队成功并返回true
@@ -133,7 +134,8 @@ public boolean add(E e) {
 ### offer(E e)
 ```java
 // From ArrayBlockingQueue
-// 队列未满时，入队成功并返回true；队列已满时，入队失败并返回false
+// 队列未满时，入队成功并返回true
+// 队列已满时，入队失败并返回false
 public boolean offer(E e) {
     checkNotNull(e);
     final ReentrantLock lock = this.lock;
@@ -170,7 +172,7 @@ private void enqueue(E x) {
         putIndex = 0; // 重置putIndex
     count++;
     // 唤醒等待notEmpty的线程，需要先持有锁
-    notEmpty.signal(); 
+    notEmpty.signal();
 }
 ```
 
@@ -192,7 +194,7 @@ public E poll() {
     final ReentrantLock lock = this.lock;
     lock.lock();
     try {
-        return (count == 0) ? 
+        return (count == 0) ?
                         null : // 队列为空时直接返回null，不等待
                         dequeue(); // 队列不为空时，获取队列头部，并唤醒线程
     } finally {
@@ -221,5 +223,3 @@ private E dequeue() {
 ```
 
 <!-- indicate-the-source -->
-
-
