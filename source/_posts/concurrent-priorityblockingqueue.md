@@ -22,15 +22,15 @@ tags:
 
 ## 概述
 `PriorityBlockingQueue`是`支持优先级`的`无界阻塞队列`
-`PriorityBlockingQueue`默认采用`自然升序`，可以在`初始化`时通过传入`Comparator`指定排序规则
+`PriorityBlockingQueue`默认采用`自然升序`，也可以在`初始化`时通过传入`Comparator`指定排序规则
 `PriorityBlockingQueue`底层通过**`二叉堆`**实现优先级队列
 
 ## 二叉堆
 
 ### 结构
 结构类似于二叉树，父节点的键值`总是`小于等于（或大于等于）子节点的键值，父节点的`左子树`和`右子树`都是一个`二叉堆`
-最大堆：父节点的键值总是大于等于子节点的键值
-最小堆：父节点的键值总是小于等于子节点的键值
+最`大`堆：父节点的键值总是`大于等于`子节点的键值
+最`小`堆：父节点的键值总是`小于等于`子节点的键值
 ![priorityblockingqueue_min_max_heap_1.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_min_max_heap_1.png)
 
 ### 存储
@@ -41,14 +41,15 @@ tags:
 
 ## 核心结构
 ```java
-public class PriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E>, java.io.Serializable {
+public class PriorityBlockingQueue<E> extends AbstractQueue<E>
+                                    implements BlockingQueue<E>, java.io.Serializable {
     // 数组默认大小
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
     // 数组最大大小
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
     // 表示堆的数组
     private transient Object[] queue;
-    // 对大小
+    // 堆大小
     private transient int size;
     // 排序规则
     private transient Comparator<? super E> comparator;
@@ -126,13 +127,16 @@ public boolean offer(E e) {
 ### tryGrow
 ```java
 // 扩容
-// 先释放独占锁，允许多线程以CAS的方式创建新数组，然后重新竞争锁，进行数组复制
+// 先释放独占锁，允许多线程以CAS的方式创建新数组，然后重新竞争独占锁，进行数组复制
 private void tryGrow(Object[] array, int oldCap) {
     lock.unlock(); // 先释放独占锁
+
+    // ===== 1. 以自旋锁的方式并发创建新数组
     Object[] newArray = null;
     // CAS方式抢占自旋锁
-    if (allocationSpinLock == 0 && UNSAFE.compareAndSwapInt(this, allocationSpinLockOffset, 0, 1)) {
-        // 当前线程持有自旋锁，并发时只有一个线程能进入到这里
+    if (allocationSpinLock == 0 &&
+            UNSAFE.compareAndSwapInt(this, allocationSpinLockOffset, 0, 1)) {
+        // 当前线程持有自旋锁，并发时只有一个线程能执行到这里
         try {
         // 新容量
         int newCap = oldCap + ((oldCap < 64) ? (oldCap + 2) : (oldCap >> 1));
@@ -143,27 +147,29 @@ private void tryGrow(Object[] array, int oldCap) {
                 throw new OutOfMemoryError();
             newCap = MAX_ARRAY_SIZE; // 采用最大容量
         }
+
         if (newCap > oldCap && queue == array)
             // 1. 既然扩容，必然要求newCap > oldCap
             // 2. finally会释放自旋锁，其他线程就有可能获得自旋锁，
-            //    而刚刚释放自旋锁的线程可能已经扩容成功了，因此需要判断queue==array
+            //    queue!=array，说明已经在进行扩容处理，当前线程无需再创建新数组
+            //    queue!=array，也表明当前线程检测到竞争，放弃创建新数组
             newArray = new Object[newCap];
         } finally {
             allocationSpinLock = 0; // 释放自旋锁
         }
     }
+
     if (newArray == null)
-        // newArray==null说明其他线程正在进行扩容处理，让出CPU资源
+        // newArray==null说明当前线程检测到冲突
+        // 其他线程正在进行扩容处理，已经执行了下面的queue=newArray语句（恰好当前线程读取到了最新的queue）
+        // 当前线程让出CPU资源，让正在进行扩容处理的线程尽快完成扩容
         Thread.yield();
-    lock.lock(); // 获取独占锁
+
+    // ===== 2. 以独占锁的方式复制数组
+    lock.lock(); // 当前线程再次获取独占锁，获取公共内存中最新的queue
     if (newArray != null && queue == array) {
-        // newArray!=null说明新数组内存分配已经完成（但不一定是当前线程完成的）
-        // queue==array说明其他线程尚未完成扩容
-        // 反过来说：
-        // 1. 如果newArray==null，说明其他线程正在进行扩容处理，进入下一个循环判断，
-        //    由于当前线程持有独占锁，其他线程无法完成queue=newArray语句，只能等待，
-        //    因此当前线程会再次进入tryGrow（释放独占锁）
-        // 2. 如果queue!=array，说明其他线程已经完成了扩容，无需再次扩容
+        // newArray!=null：说明新数组内存分配已经完成
+        // queue==array：说明扩容尚未完成，否则扩容已经完成，没必要重复扩容
         queue = newArray;
         System.arraycopy(array, 0, newArray, 0, oldCap); // 数组复制
     }
@@ -183,7 +189,7 @@ private static <T> void siftUpComparable(int k, T x, Object[] array) {
             break;
         // 子节点 < 父节点，将原先父节点的值移动到子节点的位置
         // 这时array[parent]形成可覆盖的空穴，下一次循环时（可能）被覆盖
-        array[k] = e; 
+        array[k] = e;
         k = parent; // 准备下一次上冒
     }
     array[k] = key;
@@ -236,8 +242,7 @@ public E poll() {
 ```java
 private E dequeue() {
     int n = size - 1;
-    if (n < 0)
-        // 队列为空，返回null
+    if (n < 0) // 队列为空，返回null
         return null;
     else {
         Object[] array = queue;
@@ -265,24 +270,25 @@ private E dequeue() {
 // array：表示堆的数组
 // n：现在堆大小，为原先堆大小-1，尾节点保存在x
 private static <T> void siftDownComparable(int k, T x, Object[] array, int n) {
-    if (n > 0) {// n==0，说明原先堆只有一个节点，无需下冒
+    if (n > 0) { // n==0，说明原先堆只有一个节点，无需下冒
         Comparable<? super T> key = (Comparable<? super T>)x;
         int half = n >>> 1;
-        // k>=half表示array[k]为叶子节点，无法继续下冒，直接退出
+        // k>=half表示array[k]为叶子节点，无法继续下冒，直接退出，具体解释如下：
         // 在dequeue中，n=(size-1)，尾节点为a[size-1]=a[n]，dequeue会置空a[n]
         // 1. 假若尾节点为其父节点的左子节点，即a[n]=a[2*j+1]，父节点为a[j]，half=n>>>1=j，
         //    置空a[n]后，a[j]失去了唯一的子节点，成为叶子节点，因为a[k<half=j]为非叶子节点
         // 2. 假若尾节点为其父节点的右子节点，即a[n]=a[2*j+2]，父节点为a[j]，half=n>>>1=j+1，
         //    置空a[n]后，a[j]仍拥有左子节点，a[j]为非叶子节点，a[j+1]为叶子节点，因此a[k<half=j+1]为非叶子节点
-        while (k < half) { 
+        while (k < half) {
             // child表示a[k]左右子节点中较小节点的索引，暂时表示左子节点的索引
             int child = (k << 1) + 1;
             // c表示a[k]左右子节点中较小节点的值，暂时表示左子节点的值
             Object c = array[child];
             // a[k]右子节点的索引
             int right = child + 1;
-            if (right < n && ((Comparable<? super T>) c).compareTo((T) array[right]) > 0)
-                // a[k]右子节点存在+a[k]左子节点的值大于a[k]右子节点的值，更新child和c
+            if (right < n &&
+                    ((Comparable<? super T>) c).compareTo((T) array[right]) > 0)
+                // a[k]右子节点存在 并且 a[k]左子节点的值大于a[k]右子节点的值，更新child和c
                 c = array[child = right];
             if (key.compareTo((T) c) <= 0)
                 // 如果key（即原尾节点的值）不大于a[k]左右子节点中较小节点，就没必要继续下冒，退出循环
@@ -298,7 +304,7 @@ private static <T> void siftDownComparable(int k, T x, Object[] array, int n) {
 ### siftDownUsingComparator
 ```java
 // 节点下冒，采用cmp指定的排序规则
-// // 跟siftDownComparable非常类似，不再赘述
+// 跟siftDownComparable非常类似，不再赘述
 private static <T> void siftDownUsingComparator(int k, T x, Object[] array, int n, Comparator<? super T> cmp) {
     if (n > 0) {
         int half = n >>> 1;
@@ -354,7 +360,7 @@ public boolean remove(Object o) {
 
 ### indexOf
 ```java
-// 变量数组，匹配成功，返回索引，否则返回-1
+// 遍历数组，匹配成功，返回索引，否则返回-1
 private int indexOf(Object o) {
     if (o != null) {
         Object[] array = queue;
@@ -368,15 +374,13 @@ private int indexOf(Object o) {
 ```
 
 ### removeAt
-
 ```java
 // 先下冒，在上冒（不一定存在）
 // 上冒和上冒的过程请参照上面的分析
 private void removeAt(int i) {
     Object[] array = queue;
     int n = size - 1;
-    if (n == i)
-        // 移除最后一个元素
+    if (n == i) // 要移除的元素恰好是堆的最后一个元素
         array[i] = null;
     else {
         E moved = (E) array[n]; // 暂存尾节点
@@ -387,12 +391,15 @@ private void removeAt(int i) {
             siftDownComparable(i, moved, array, n);
         else
             siftDownUsingComparator(i, moved, array, n, cmp);
-        // 这个地方很关键，array[i]==moved说明在下冒过程中，尾节点直接移动到索引为i的节点，
-        // 这仅仅只能保证以array[i]为根节点的子树能保证堆的特性，但无法保证以array[0]根的子树能保证堆的特性，
+
+        // 这个地方很关键！！
+        // array[i]==moved说明在下冒过程中，尾节点直接移动到索引为i的节点
+        // 这仅仅只能保证以array[i]为根节点的子树能满足堆的特性，但无法保证以array[0]根节点的子树也能满足堆的特性
         // 因为array[i]有可能小于父节点array[(i-1)/2]，因此还需要进行一次上冒过程
-        // 如果array[i]!=moved，说明moved已经下冒到array[i]的子树中去，
-        // 而array[i]是以前子树中的一员必然大于等于父节点array[(i-1)/2]
-        if (array[i] == moved) { 
+        // 如果array[i]!=moved，说明moved已经下冒到array[i]的子树中去
+        // 而当前的array[i]是以前该子树中的一员，按照堆的特性，必然大于等于父节点array[(i-1)/2]
+        // 因此moved必然大于等于array[(i-1)/2]，以array[0]根节点的子树已经能满足堆的特性
+        if (array[i] == moved) {
             if (cmp == null)
                 // 原尾节点从索引i开始上冒过程
                 siftUpComparable(i, moved, array);
@@ -404,9 +411,7 @@ private void removeAt(int i) {
 }
 ```
 
-
 ### 逻辑示意图
-
 ```java
 public static void main(String[] args) {
     PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue(15);
@@ -420,5 +425,3 @@ public static void main(String[] args) {
 ```
 ![priorityblockingqueue_heap_remove.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_heap_remove.png)
 <!-- indicate-the-source -->
-
-
