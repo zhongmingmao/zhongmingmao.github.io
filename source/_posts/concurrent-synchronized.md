@@ -42,7 +42,7 @@ tags:
 ![mark_word.png](http://otr5jjzeu.bkt.clouddn.com/mark_word.png)
 
 ## monitor
-`重量级锁`也就是常说的`对象锁`，锁标志位为`10`，其中的指针指向的`monitor对象`（也称为`管程`或`对象监视器`）的起始地址，每个`Java对象`都存在一个`monitor对象`与之关联
+`重量级锁`也就是我们常说的`对象锁`，锁标志位为`10`，`Mark Word`的指针字段指向`monitor对象`（也称为`管程`或`对象监视器`）的起始地址，每个`Java对象`都存在一个与之关联的`monitor对象`
 在`Hotspot JVM`中，`monitor`由`ObjectMonitor`实现，主要数据结构如下（代码：[objectMonitor.hpp](http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/runtime/objectMonitor.hpp)）
 ```CPP
 ObjectMonitor() {
@@ -52,7 +52,7 @@ ObjectMonitor() {
     _recursions   = 0;
     _object       = NULL;
     _owner        = NULL; // 获得锁的线程
-    _WaitSet      = NULL; // 调用wait()方法被阻塞的线程
+    _WaitSet      = NULL; // 调用wait()/wait(long timeout)方法的线程
     _WaitSetLock  = 0 ;
     _Responsible  = NULL ;
     _succ         = NULL ;
@@ -128,7 +128,7 @@ public void increase();
                 0      25     0  this   Lme/zhongmingmao/_synchronized/SyncBlock;
 ```
 1. 在JVM字节码可知，同步块的实现是使用了`monitorenter`和`monitorexit`
-2. 当执行`monitorenter`时，当前线程尝试获取`monitor的持有权`，当`monitor`的`_count`为`0`时，可以成功取得monitor的持有权，并将`_count置为1`（`重入时加1`），若其他线程已经持有`monitor`的持有权，那么当前线程将被`阻塞`
+2. 当执行`monitorenter`时，当前线程尝试获取`monitor的持有权`，当`monitor`的`_count`为`0`时，可以成功取得monitor的持有权，并将`_count置为1`（`重入时加1`），若其他线程已经持有`monitor`的持有权，那么当前线程将进入`WAITING`或`TIMED_WAITING`状态（线程状态请参照代码`java.lang.Thread$State`）
 3. 当执行`monitorexit`时，当前线程释放`monitor的持有权`，将当`monitor`的`_count`减`1`
 4. 为保证`异常情况`下，`monitorenter`与`monitorexit`成对执行，采用`2个monitorexit`指令
 
@@ -163,7 +163,7 @@ public synchronized void increase();
             Start  Length  Slot  Name   Signature
                 0      11     0  this   Lme/zhongmingmao/_synchronized/SyncMethod;
 ```
-1. 当方法调用时，首先会检查方法是否有`ACC_SYNCHRONIZED`标志，如果设置了，则尝试“竞争”`monitor`的持有权（如果持有成功，其他线程如果想持有，会被阻塞），然后再执行方法
+1. 当方法调用时，首先会检查方法是否有`ACC_SYNCHRONIZED`标志，如果设置了，则尝试“竞争”`monitor`的持有权，然后再执行方法
 2. 如果同步方法在执行期间抛出了异常，且方法内部无法处理，当前线程所持有的`monitor`将在异常抛到同步方法之外时`自动释放`
 
 # synchronized 锁优化
@@ -230,7 +230,7 @@ me.zhongmingmao._synchronized.BiasedLockingMarkWorld$A object internals:
 Instance size: 16 bytes
 Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 ```
-1. `Intel`是`小端模式`，因此`Fresh object`时的`低8bit`为`00000101`，处于`偏向锁`模式，但此时尚未有现在持有对象a的`monitor`，因此没有数据
+1. `Intel`是`小端模式`，因此`Fresh object`时的`低8bit`为`00000101`，处于`偏向锁`模式，但此时没有线程持有对象a的`monitor`，因此没有数据
 2. `With the lock`阶段和`After the lock`阶段的`Mark Word`一致，均处于`偏向锁`模式，且有`指向栈中锁记录的指针`，没有竞争的情况下，说明退出同步块后，依然保留偏向锁的的信息
 
 ### 性能对比
@@ -278,9 +278,10 @@ public class BiasedLockingSpeedTest {
 2. 由运行结果可见，在`无竞争`的情况下，`偏向锁的性能提升`还是很明显的（实际是`偏向锁`与`轻量级锁`的对比）
 
 ## 乐观 - 轻量级锁
-1. 如果`偏向锁失败`，那么系统就会进行`轻量级锁`的操作，尝试`在应用层面解决线程同步问题`，而不触发操作系统的互斥操作（`重量级锁`）
-2. 轻量级锁是为了`减少多线程进入互斥的几率`，`并非要替代互斥`
-3. 利用CPU原语`Compare-And-Swap`（`CAS`），具体过程请参考[深入理解Java虚拟机（第2版）](https://book.douban.com/subject/24722612/)
+1. 如果`偏向锁失败`，那么就会升级为`轻量级锁`
+2. `轻量级锁`尝试`在应用层面解决线程同步问题`，而不触发操作系统的互斥操作（`重量级锁`）
+3. `轻量级锁`是为了**`减少多线程进入互斥的几率`**，并非要替代互斥
+4. `轻量级锁`利用了CPU原语`Compare-And-Swap`（`CAS`），具体过程请参考[深入理解Java虚拟机（第2版）](https://book.douban.com/subject/24722612/)
 
 ### Mark Word
 
@@ -403,9 +404,9 @@ public class FatLockingSpeedTest {
 
 ## 乐观 - 自旋锁
 1. 如果`轻量级锁`失败，可能直接升级为`重量级锁`，也可能尝试尝试`自旋锁`
-2. 乐观地认为线程线程可以`很快获得锁`，可以让线程自旋（`空循环`），并不直接采用操作系统的互斥操作
-3. 如果`自旋成功`，可以`避免操作系统的互斥操作`
-4. 如果`自旋失败`，依然会升级为`重量级锁`
+2. `自旋锁`乐观地认为线程线程可以`很快获得锁`，可以让线程自旋（`空循环`），并不直接采用操作系统的互斥操作
+3. `自旋锁`如果`自旋成功`，可以`避免操作系统的互斥操作`
+4. `自旋锁`如果`自旋失败`，依然会升级为`重量级锁`
 
 ## 悲观 - 重量级锁
 
@@ -510,8 +511,8 @@ Space losses: 0 bytes internal + 8 bytes external = 8 bytes total
 ```
 对Mark Word的分析与上述类似，不过多赘述
 1. `Fresh object`阶段，`锁标志位`为`01`，`是否偏向锁标志位`为`0`，处于`无锁状态`
-2. `Before the lock`阶段，`锁标志位`为`00`，处于`轻量级锁`
-3. `With the lock`阶段，`锁标志位`为`10`，膨胀为`重量级锁`
+2. `Before the lock`阶段，`锁标志位`为`00`，处于`轻量级锁`，此时`t线程`已经持有锁且`main线程`尚未请求锁，即此时`无竞争`
+3. `With the lock`阶段，`锁标志位`为`10`，膨胀为`重量级锁`，此时`t线程`已经释放锁且`main线程`等待锁成功，即此时存在`竞争`
 4. `After the lock`阶段，依旧为`重量级锁`，不会自动降级
 5. `After System.gc()`阶段，恢复为`无锁状态`，GC年龄变为`1`
 
