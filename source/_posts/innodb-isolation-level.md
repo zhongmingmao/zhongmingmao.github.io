@@ -12,6 +12,7 @@ tags:
 
 {% note info %}
 本文主要介绍`InnoDB`的`事务隔离级别`
+关于`Next-Key Lock`的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述
 {% endnote %}
 
 <!-- more -->
@@ -220,8 +221,8 @@ mysql> SELECT * FROM t;
 
 ### RR与幻读
 1. `REPEATABLE-READ`解决了`READ-COMMITTED`存在的`不可重复读`问题，解决方法是采用`一致性非锁定读`，读取`事务初始时的快照版本`，但这样仍然存在`幻读`问题
-2. `REPEATABLE-READ`结合`Next-Key Locking`，可以解决`幻读`问题
-3. 在`REPEATABLE-READ`下，`MVCC`可以这样理解：`MV(Multi Version)`用于解决`脏读`和`不可重复读`，而`CC(Concurrency Control)`则是利用`Next-Key Locking`解决`幻读`问题
+2. **`REPEATABLE-READ`结合`Next-Key Lock`，可以解决`幻读`问题**。`幻读`问题关注的是`Insert`和`Delete`，而`Next-Key Locking = Record Lock + Gap Lock`，`Gap Lock`可以防止`Insert`，`Record Lock`可以防止`Delete`。（关于`Next-Key Locking`的详细内容，请参照博文「InnoDB备忘录 - Next-Key Lock」）
+3. 在`REPEATABLE-READ`下，`MVCC`可以这样理解：**`MV(Multi Version)`用于解决`脏读`和`不可重复读`**，而**`CC(Concurrency Control)`则是利用`Next-Key Lock`解决`幻读`问题**
 4. `REPEATABLE READ`为`InnoDB`的`默认事务隔离级别`，`REPEATABLE READ`已经完全保证事务的`隔离性`要求，即达到`SERIALIZABLE`隔离级别
 5. 隔离级别越低，`事务请求的锁`越少或`保持锁的时间`就越短，因此大多数数据库系统（`Oracle`、`SQL Server`）的默认事务隔离级别是`READ COMMITTED`
 6. `InnoDB`中选择`REPEATABLE READ`的事务隔离级别`不会有任何性能的损失`，同样地，即使使用`READ COMMITTED`的隔离级别，用户也`不会得到性能上的大幅度提升`
@@ -324,9 +325,9 @@ mysql> SELECT * FROM t WHERE a < 25 FOR UPDATE; # 一致性锁定读，采用Nex
 +----+-----+
 3 rows in set (0.00 sec)
 ```
-`SELECT...FOR UPDATE`属于`一致性锁定读`，获取`最新的快照版本`，然后利用`Next-Key Locking`进行加锁
-加锁的情况：在`a = 0,10,20,30`上加`X Lock`，在`a ∈ (-∞,0)∪(0,10)∪(10,20)∪(20,30)`加`Gap Lock`
-关于`Next-Key Locking`的详细内容，请参照博文「InnoDB备忘录 - Next-Key Lock」
+`SELECT...FOR UPDATE`属于`一致性锁定读`，获取**`最新的快照版本`**，然后利用`Next-Key Locking`进行加锁
+加锁的情况：在`a = 0,10,20,30`上加**`X Lock`**，在`a ∈ (-∞,0)∪(0,10)∪(10,20)∪(20,30)`加**`Gap Lock`**
+（关于`Next-Key Locking`的详细内容，请参照博文「InnoDB备忘录 - Next-Key Lock」）
 
 #### Session B
 ```sql

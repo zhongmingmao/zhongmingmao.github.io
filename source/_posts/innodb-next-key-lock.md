@@ -27,9 +27,9 @@ InnoDB支持4种事务隔离级别（`Isolation Level`）
 
 | 隔离级别 | 描述 |
 | --- | --- |
-| `READ UNCOMMITTED` | 可以读取到其他事务中`尚未提交`的内容，生产环境中不会使用 |
-| `READ COMMITTED(RC)` | 可以读取到其他事务中`已经提交`的内容，`Current Read会加锁`，`存在幻读现象`，`Oracle`和`SQL Server`的默认事务隔离级别为`RC` |
-| `REPEATABLE READ(RR)` | 保证事务的`隔离性`，`Current Read会加锁`，同时会加`Gap Lock`，`不存在幻读现象`，`InnoDB`的默认事务隔离级别为`RR` |
+| `READ UNCOMMITTED (RUC)` | 可以读取到其他事务中`尚未提交`的内容，生产环境中不会使用 |
+| `READ COMMITTED (RC)` | 可以读取到其他事务中`已经提交`的内容，`Current Read会加锁`，`存在幻读现象`，`Oracle`和`SQL Server`的默认事务隔离级别为`RC` |
+| `REPEATABLE READ (RR)` | 保证事务的`隔离性`，`Current Read会加锁`，同时会加`Gap Lock`，`不存在幻读现象`，`InnoDB`的默认事务隔离级别为`RR` |
 | `SERIALIZABLE` | MVCC退化为`LBCC`，不区分`Snapshot Read`和`Current Read`，`读`操作加`S Lock`，`写`操作加`X Lock`，读写冲突，并发性能差 |
 
 # 行锁
@@ -48,23 +48,24 @@ InnoDB支持4种事务隔离级别（`Isolation Level`）
 
 ## Record Lock
 1. `Record Lock`即行锁，用于锁住`Index Record`（索引记录），分为`S Lock`和`X Lock`
-2. 如果表中没有`显式定义的主键`或`唯一非NULL索引`，InnoDB将自动创建`6Byte的ROWID`隐藏列作为主键
+2. 如果表中没有`显式定义的主键`或`非NULL唯一的索引`，InnoDB将自动创建`6 Bytes的ROWID`的隐藏主键
 
 ## Gap Lock
 1. 用于锁住`Index Record`之间的间隙
 2. 如果是`通过唯一索引来搜索一行记录`的时候，不需要使用`Gap Lock`，此时`Next-Key`降级为`Record Lock`
 3. `Gap S-Lock`与`Gap X-Lock`是兼容的
-4. `Gap Lock`只能阻止其他事务在`该Gap中插入记录`，但**`无法阻止`**其他事务获取`同一个Gap`上的`Gap Lock`
+4. `Gap Lock`只能_**`阻止其他事务在该Gap中插入记录`**_，但**`无法阻止`**其他事务获取`同一个Gap`上的`Gap Lock`
 5. 禁用`Gap Lock`的两种方式
     - 将事务隔离级别设置为`READ COMMITTED`
     - 将变量`innodb_locks_unsafe_for_binlog`（已弃用）设置为`1`
 
 ## Next-Key Lock
-1. `Next-Key Lock` = `Record Lock` + `Gap Lock`
-2. 若索引a为10、11、13、20，可锁定的区间为`(negative infinity, 10]`、`(10, 11]`、`(11, 13]`、`(13, 20]`、`(20, positive infinity)`
+1. **`Next-Key Lock` = `Record Lock` + `Gap Lock`**
+2. 若索引a为10、11、13、20，可锁定的区间为`(-∞, 10]`、`(10, 11]`、`(11, 13]`、`(13, 20]`、`(20, +∞)`
     - 若执行`Select...Where a=13 For Update`，将在`a=13`上有1个`X Lock`和在`(11, 13)`有1个`Gap Lock`
     - `a=13`的下一个键为`a=20`，将在`a=20`有1个`X Lock`，在`(13, 20)`有1个`Gap Lock`
     - 因此，在`a=13`上有1个`X Lock`，在`(11, 20]`上的有1个`Gap Lock`
+    - 也可以分解为在`a=13`和`a=20`上有2个`X Lock`，在`(11,13)`和`(13,20)`上有2个`Gap Lock`
 3. 在InnoDB默认事务隔离级别`REPEATABLE READ(RR)`下，支持`Next-Key Lock`
 
 # 11个实例
@@ -76,6 +77,8 @@ InnoDB支持4种事务隔离级别（`Isolation Level`）
 1. 事务隔离级别`READ COMMITTED(RC)`或`REPEATABLE READ(RR)`
 2. 存在`显式定义`主键
 3. `WHERE`等值匹配成功
+
+注：`RR`支持`Next-Key Lock`，在`通过唯一索引来搜索一行记录`时，`Next-Key Lock`降级为`Record Lock`，此时与`RC`一致，下面实例仅以`RC`进行说明
 
 ### 表初始化
 ```SQL
@@ -164,7 +167,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 +-------------------+-------------------+-----------------+------------------+
 1 row in set, 1 warning (1.18 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -223,7 +226,7 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> SELECT * FROM t WHERE a=35 FOR UPDATE;
 Empty set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -254,7 +257,7 @@ mysql> INSERT INTO t SELECT 35;
 Query OK, 1 row affected (0.00 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -293,7 +296,7 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> SELECT * FROM t WHERE a=35 FOR UPDATE;
 Empty set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -338,7 +341,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 +-------------------+-------------------+-----------------+------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -419,7 +422,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 +-------------------+-------------------+-----------------+------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -480,7 +483,7 @@ mysql> SELECT * FROM t WHERE a>15 AND a<45 FOR UPDATE;
 +----+
 3 rows in set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                    
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -493,7 +496,8 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 
 ### Session B
 ```SQL
-mysql> SET SESSION TX_ISOLATION='READ-COMMITTED';      
+mysql> SET SESSION TX_ISOLATION='READ-COMMITTED';
+Query OK, 0 rows affected (0.00 sec)
 
 mysql> BEGIN;
 Query OK, 0 rows affected (0.00 sec)
@@ -559,34 +563,39 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> BEGIN;
 Query OK, 0 rows affected (0.00 sec)
 
-mysql> SELECT * FROM t WHERE a>15 AND a<35 FOR UPDATE;
+mysql> SELECT * FROM t WHERE a>15 AND a<25 FOR UPDATE;
 +----+
 | a  |
 +----+
 | 20 |
-| 30 |
 +----+
 2 rows in set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
-| 1324370 | RUNNING   | NULL                  | REPEATABLE READ     |
+| 1332194 | RUNNING   | NULL                  | REPEATABLE READ     |
 +---------+-----------+-----------------------+---------------------+
 1 row in set (0.00 sec)
 ```
 1. 将`Session A`的事务隔离级别设置为`REPEATABLE READ`
-2. 事务`1324370`将获得`聚集索引a`上`20`、`30`的`X Lock`，并将对应地获得`(10,20)`和`(20,30)`上的`Gap Lock`
-3. 依据`Next-Key Lock`，事务`1324370`还将获得`聚集索引a`上`40`的`X Lock`以及`(30,40)`上的`Gap Lock`
+2. 事务`1332194`将获得`聚集索引a`上`20`的`X Lock`，并将对应地获得`(10,20)`上的`Gap Lock`
+3. 依据`Next-Key Lock`，事务`1332194`还将获得`聚集索引a`上`30`的`X Lock`以及`(20,30)`上的`Gap Lock`
 
 ### Session B
 ```SQL
-mysql> SET SESSION TX_ISOLATION='REPEATABLE-READ';                                                                                     Query OK, 0 rows affected (0.00 sec)
+mysql> SET SESSION TX_ISOLATION='REPEATABLE-READ';
+Query OK, 0 rows affected (0.00 sec)
 
-mysql> BEGIN;                                                                                                                          Query OK, 0 rows affected (0.00 sec)
+mysql> BEGIN;
+Query OK, 0 rows affected (0.00 sec)
 
 mysql> INSERT INTO t SELECT 5;
+Query OK, 1 row affected (0.00 sec)
+Records: 1  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO t SELECT 35;
 Query OK, 1 row affected (0.00 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -598,40 +607,49 @@ mysql> INSERT INTO t SELECT 55;
 Query OK, 1 row affected (0.00 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-mysql> INSERT INTO t SELECT 39; # Blocked
+mysql> INSERT INTO t SELECT 29; # Blocked
 ```
 1. 将`Session B`的事务隔离级别设置为`REPEATABLE READ`
-2. 成功插入`5`、`45`、`55`，表明事务`1324370`并没有持有`(negative infinity,10)`、`(40,50)`和`(50,positive infinity)`上的`Gap Lock`
-3. 事务`1324370`已持有`(30,40)`上的`Gap Lock`，因此事务`1324371`插入`39`会被阻塞（详细信息见下节）
+2. 成功插入`5`、`35`、`45`、`55`，表明事务`1332194`并没有持有`(-∞,10)`、`(30,40)`、`(40,50)`和`(50,+∞)`上的`Gap Lock`
+3. 事务`1332194`已持有`(20,30)`上的`Gap Lock`，因此事务`1332194`插入`29`会被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
-mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
-+-------------------+-------------------+-----------------+------------------+
-| requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |
-+-------------------+-------------------+-----------------+------------------+
-| 1324371           | 1324371:404:3:5   | 1324370         | 1324370:404:3:5  |
-+-------------------+-------------------+-----------------+------------------+
-1 row in set, 1 warning (0.00 sec)
-
 mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 | lock_id         | lock_trx_id | lock_mode | lock_type | lock_table | lock_index | lock_space | lock_page | lock_rec | lock_data |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
-| 1324371:404:3:5 | 1324371     | X,GAP     | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        5 | 40        |
-| 1324370:404:3:5 | 1324370     | X         | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        5 | 40        |
+| 1332195:486:3:4 | 1332195     | X,GAP     | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        4 | 30        |
+| 1332194:486:3:4 | 1332194     | X         | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        4 | 30        |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 2 rows in set, 1 warning (0.00 sec)
+
+mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
++-------------------+-------------------+-----------------+------------------+
+| requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |
++-------------------+-------------------+-----------------+------------------+
+| 1332195           | 1332195:486:3:4   | 1332194         | 1332194:486:3:4  |
++-------------------+-------------------+-----------------+------------------+
+1 row in set, 1 warning (0.00 sec)
+
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
++---------+-----------+-----------------------+---------------------+
+| trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
++---------+-----------+-----------------------+---------------------+
+| 1332195 | LOCK WAIT | 1332195:486:3:4       | REPEATABLE READ     |
+| 1332194 | RUNNING   | NULL                  | REPEATABLE READ     |
++---------+-----------+-----------------------+---------------------+
+2 rows in set (0.00 sec)
 ```
 
 ### Session B
 ```SQL
-mysql> INSERT INTO t SELECT 39; # Timeout
+mysql> INSERT INTO t SELECT 29; # Timeout
 ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
 
 mysql> INSERT INTO t SELECT 11; # Blocked
 ```
-事务`1324371`插入`11`会被阻塞，原因同插入39一致，不再赘述，详细信息见下节
+事务`1332195`插入`11`会被阻塞，原因同插入`29`一致，不再赘述，详细信息见下节
 
 ### Session A
 ```SQL
@@ -639,8 +657,8 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 | lock_id         | lock_trx_id | lock_mode | lock_type | lock_table | lock_index | lock_space | lock_page | lock_rec | lock_data |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
-| 1324371:404:3:3 | 1324371     | X,GAP     | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        3 | 20        |
-| 1324370:404:3:3 | 1324370     | X         | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        3 | 20        |
+| 1332195:486:3:3 | 1332195     | X,GAP     | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        3 | 20        |
+| 1332194:486:3:3 | 1332194     | X         | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        3 | 20        |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 2 rows in set, 1 warning (0.00 sec)
 
@@ -648,9 +666,18 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 +-------------------+-------------------+-----------------+------------------+
 | requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |
 +-------------------+-------------------+-----------------+------------------+
-| 1324371           | 1324371:404:3:3   | 1324370         | 1324370:404:3:3  |
+| 1332195           | 1332195:486:3:3   | 1332194         | 1332194:486:3:3  |
 +-------------------+-------------------+-----------------+------------------+
 1 row in set, 1 warning (0.00 sec)
+
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
++---------+-----------+-----------------------+---------------------+
+| trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
++---------+-----------+-----------------------+---------------------+
+| 1332195 | LOCK WAIT | 1332195:486:3:3       | REPEATABLE READ     |
+| 1332194 | RUNNING   | NULL                  | REPEATABLE READ     |
++---------+-----------+-----------------------+---------------------+
+2 rows in set (0.00 sec)
 ```
 
 ### Session B
@@ -666,34 +693,43 @@ mysql> SELECT * FROM t WHERE a=10 FOR UPDATE;
 +----+
 1 row in set (0.00 sec)
 
-mysql> SELECT * FROM t WHERE a=40 FOR UPDATE; # Blocked
+mysql> SELECT * FROM t WHERE a=30 FOR UPDATE; # Blocked
 ```
-1. 事务`1324370`并不持有`聚集索引a`上`10`的`X Lock`，事务`1324371`可以顺利获取`聚集索引a`上`10`的`X Lock`
-2. 事务`1324370`持有`聚集索引a`上`40`的`X Lock`，事务`1324371`被阻塞（详细信息见下节）
+1. 事务`1332194`并不持有`聚集索引a`上`10`的`X Lock`，事务`1332195`可以顺利获取`聚集索引a`上`10`的`X Lock`
+2. 事务`1332194`持有`聚集索引a`上`30`的`X Lock`，事务`1332195`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
-mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
-+-------------------+-------------------+-----------------+------------------+
-| requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |
-+-------------------+-------------------+-----------------+------------------+
-| 1324371           | 1324371:404:3:5   | 1324370         | 1324370:404:3:5  |
-+-------------------+-------------------+-----------------+------------------+
-1 row in set, 1 warning (0.01 sec)
-
 mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 | lock_id         | lock_trx_id | lock_mode | lock_type | lock_table | lock_index | lock_space | lock_page | lock_rec | lock_data |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
-| 1324371:404:3:5 | 1324371     | X         | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        5 | 40        |
-| 1324370:404:3:5 | 1324370     | X         | RECORD    | `test`.`t` | PRIMARY    |        404 |         3 |        5 | 40        |
+| 1332195:486:3:4 | 1332195     | X         | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        4 | 30        |
+| 1332194:486:3:4 | 1332194     | X         | RECORD    | `test`.`t` | PRIMARY    |        486 |         3 |        4 | 30        |
 +-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+
 2 rows in set, 1 warning (0.00 sec)
+
+mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
++-------------------+-------------------+-----------------+------------------+
+| requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |
++-------------------+-------------------+-----------------+------------------+
+| 1332195           | 1332195:486:3:4   | 1332194         | 1332194:486:3:4  |
++-------------------+-------------------+-----------------+------------------+
+1 row in set, 1 warning (0.00 sec)
+
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
++---------+-----------+-----------------------+---------------------+
+| trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
++---------+-----------+-----------------------+---------------------+
+| 1332195 | LOCK WAIT | 1332195:486:3:4       | REPEATABLE READ     |
+| 1332194 | RUNNING   | NULL                  | REPEATABLE READ     |
++---------+-----------+-----------------------+---------------------+
+2 rows in set (0.01 sec)
 ```
 
 ### 示意图
 
-![lock_rr_primary_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/10/dy/10|imageslim)
+![lock_rr_primary_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_range_1.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/10/dy/10|imageslim)
 
 ## RC+Secondary Unique Index+Range
 1. 事务隔离级别`READ COMMITTED(RC)`
@@ -732,7 +768,7 @@ mysql> SELECT * FROM t WHERE b>25 AND b<45 FOR UPDATE;
 +----+----+
 2 rows in set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -848,7 +884,7 @@ mysql> SELECT * FROM t WHERE b>55 AND b<85 FOR UPDATE;
 +----+----+
 3 rows in set (0.00 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -857,8 +893,8 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 1 row in set (0.01 sec)
 ```
 1. 将`Session A`的事务隔离级别设置为`REPEATABLE READ`
-2. 事务`1324512`将获得`唯一辅助索引b`上`60`、`70`、`80`上的`X Lock`以及`(50,60)`、`(60,70)`、`(70,80)`上的`Gap Lock`，相应地也会获得`聚集索引a`上`40`、`50`、`30`上的`X Lock`
-3. 依据`Next-Key Lock`，事务`1324512`将获得`唯一辅助索引b`上`90`上的`X Lock`以及`(80,90)`上的`Gap Lock`
+2. 事务`1324512`将获得`唯一辅助索引b`上`60`、`70`、`80`上的`X Lock`以及`(50,60)`、`(60,70)`、`(70,80)`上的`Gap Lock`，相应地也会获得`聚集索引a`上`40`、`50`、`30`的`X Lock`
+3. 依据`Next-Key Lock`，事务`1324512`将获得`唯一辅助索引b`上`90`上的`X Lock`以及`(80,90)`上的`Gap Lock`，相应地获得`聚集索引a`上`10`的`X Lock`
 4. 事务`1324512`不会在`聚集索引a`上进行`Gap Lock`
 
 ### Session B
@@ -869,7 +905,8 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> BEGIN;
 Query OK, 0 rows affected (0.00 sec)
 
-mysql> SELECT * FROM t WHERE b=50 FOR UPDATE;                                                                                          +----+----+
+mysql> SELECT * FROM t WHERE b=50 FOR UPDATE;
++----+----+
 | a  | b  |
 +----+----+
 | 20 | 50 |
@@ -945,11 +982,12 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 mysql> SELECT * FROM t WHERE a=10 FOR UPDATE; # Timeout
 ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
 
-mysql> INSERT INTO t VALUES (5,45);                                                                                                    Query OK, 1 row affected (0.00 sec)
+mysql> INSERT INTO t VALUES (5,45);
+Query OK, 1 row affected (0.00 sec)
 
 mysql> INSERT INTO t VALUES (6,55); # Blocked
 ```
-1. `唯一聚集索引b`上`(negative infinity,50)`的尚未被其他事务锁定，因此事务`1324513`成功插入`(5,45)`
+1. `唯一聚集索引b`上`(-∞,50)`的尚未被其他事务锁定，因此事务`1324513`成功插入`(5,45)`
 2. 事务`1324512`持有`唯一聚集索引b`上`(50,60)`的`Gap Lock`，因此事务`1324513`插入`(6,55)`时会被阻塞（详细信息见下节）
 
 ### Session A
@@ -1024,7 +1062,7 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 1 row in set (0.01 sec)
 ```
 1. 将`Session A`的事务隔离级别设置为`READ COMMITTED`
-2. 事务`1324589`持有`辅助索引b`上`(20,80)`、`(20,110)`、`(30,70)`、`(30,100)`的`X Lock`，并相应地持有`聚集索引a`上`(80,20)`、`(110,20)`、`(70,30)`、`(100,30)`的`X Lock`
+2. 事务`1324589`持有`辅助索引b`上`(b=20,a=80)`、`(b=20,a=110)`、`(b=30,a=70)`、`(b=30,a=100)`的`X Lock`，并相应地持有`聚集索引a`上`(a=80,b=20)`、`(a=110,b=20)`、`(a=70,b=30)`、`(a=100,b=30)`的`X Lock`
 
 ### Session B
 ```SQL
@@ -1053,8 +1091,8 @@ mysql> SELECT * FROM t WHERE b=40 FOR UPDATE;
 mysql> SELECT * FROM t WHERE b=30 FOR UPDATE; # Blocked
 ```
 1. 将`Session B`的事务隔离级别设置为`READ COMMITTED`
-2. `辅助索引b`上`(10,120)`和`(40,90)`尚未被其他事务锁定，事务`1324590`能成功获取`辅助索引b`上`(10,120)`和`(40,90)`的`X Lock`
-3. 事务`1324589`持有辅助索引b上`(30,70)`的`X Lock`，因此事务`1324590`被阻塞（详细信息见下节）
+2. `辅助索引b`上`(b=10,a=120)`和`(b=40,a=90)`尚未被其他事务锁定，事务`1324590`能成功获取`辅助索引b`上`(b=10,a=120)`和`(b=40,a=90)`的`X Lock`
+3. 事务`1324589`持有辅助索引b上`(b=30,a=70)`的`X Lock`，因此事务`1324590`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1099,8 +1137,8 @@ mysql> SELECT * FROM t WHERE a=90 FOR UPDATE;
 
 mysql> SELECT * FROM t WHERE a=100 FOR UPDATE; # Blocked
 ```
-1. `聚集索引a`上`(120,10)`和`(90,40)`尚未被其他事务锁定，事务`1324590`能成功获取`聚集索引a`上`(120,10)`和`(90,40)`的`X Lock`
-2. 事务`1324589`持有`聚集索引a`上`(100,30)`的`X Lock`，因此事务`1324590`被阻塞（详细信息见下节）
+1. `聚集索引a`上`(a=120,b=10)`和`(a=90,b=40)`尚未被其他事务锁定，事务`1324590`能成功获取`聚集索引a`上`(a=120,b=10)`和`(a=90,b=40)`的`X Lock`
+2. 事务`1324589`持有`聚集索引a`上`(a=100,b=30)`的`X Lock`，因此事务`1324590`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1165,7 +1203,7 @@ mysql> SELECT * FROM t WHERE b>15 AND b<35 FOR UPDATE;
 +-----+----+
 4 rows in set (1.97 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -1174,8 +1212,10 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 1 row in set (0.00 sec)
 ```
 1. 将`Session A`的事务隔离级别设置为`REPEATABLE READ`
-2. 事务`1324567`持有`辅助索引b`上`(20,80)`、`(20,110)`、`(30,70)`、`(30,100)`的`X Lock`和`(10,120)~(20,80)`、`(20,80)~(20,110)`、`(20,110)~(30,70)`、`(30,70)~(30,100)`、`(30,100)~(40,90)`上的`Gap Lock`，并相应地持有`聚集索引a`上`(80,20)`、`(110,20)`、`(70,30)`、`(100,30)`的`X Lock`
-3. 依据`Next-Key Lock`， 事务`1324567`还持有`辅助索引b`上`(40,90)`的`X Lock`和`(30,100)~(40,90)`上的`Gap Lock`，并相应地持有`聚集索引a`上`(90,40)`的`X Lock`
+2. 事务`1324567`持有`辅助索引b`上的`X Lock`：`(b=20,a=80)`、`(b=20,a=110)`、`(b=30,a=70)`、`(b=30,a=100)`
+3. 事务`1324567`持有`辅助索引b`上的`Gap Lock`：`(b=10,a=120)~(b=20,a=80)`、`(b=20,a=80)~(b=20,a=110)`、`(b=20,a=110)~(b=30,a=70)`、`(b=30,a=70)~(b=30,a=100)`
+4. 事务`1324567`持有`聚集索引a`上的`X Lock`：`(a=80,b=20)`、`(a=110,b=20)`、`(a=70,b=30)`、`(a=100,b=30)`
+3. 依据`Next-Key Lock`， 事务`1324567`还持有`辅助索引b`上`(b=40,a=90)`的`X Lock`和`(b=30,a=100)~(b=40,a=90)`上的`Gap Lock`，并相应地持有`聚集索引a`上`(a=90,b=40)`的`X Lock`
 
 ### Session B
 ```SQL
@@ -1196,8 +1236,8 @@ mysql> SELECT * FROM t WHERE b=10 FOR UPDATE;
 mysql> SELECT * FROM t WHERE b=40 FOR UPDATE; # Blocked
 ```
 1. 将`Session B`的事务隔离级别设置为`REPEATABLE READ`
-2. `辅助索引b`上`(10,120)`尚未被其他事务锁定，事务`1324568`能成功获取`辅助索引b`上`(10,120)`的`X Lock`
-3. 事务`1324567`持有`辅助索引b`上`(40,90)`的`X Lock`，因此事务`1324568`被阻塞（详细信息见下节）
+2. `辅助索引b`上`(b=10,a=120)`尚未被其他事务锁定，事务`1324568`能成功获取`辅助索引b`上`(b=10,a=120)`的`X Lock`
+3. 事务`1324567`持有`辅助索引b`上`(b=40,a=90)`的`X Lock`，因此事务`1324568`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1234,8 +1274,8 @@ mysql> SELECT * FROM t WHERE a=120 FOR UPDATE;
 
 mysql> SELECT * FROM t WHERE a=90 FOR UPDATE; # Blocked
 ```
-1. `聚集索引a`上`(120,10)`尚未被其他事务锁定，事务`1324568`能成功获取`聚集索引a`上`(120,10)`的`X Lock`
-2. 事务`1324567`持有`聚集索引a`上`(90,40)`的`X Lock`，因此事务`1324568`被阻塞（详细信息见下节）
+1. `聚集索引a`上`(a=120,b=10)`尚未被其他事务锁定，事务`1324568`能成功获取`聚集索引a`上`(a=120,b=10)`的`X Lock`
+2. 事务`1324567`持有`聚集索引a`上`(a=90,b=40)`的`X Lock`，因此事务`1324568`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1267,8 +1307,8 @@ Query OK, 1 row affected (0.01 sec)
 
 mysql> INSERT INTO t VALUES (75,20); # Blocked
 ```
-1. `辅助索引b`上`(40,90)~(50,60)`不存在`Gap Lock`，事务`1324568`能成功插入`(95,40)`
-2. 事务`1324567`持有`辅助索引b`上`(10,120)~(20,80)`的`Gap Lock`，事务`1324568`插入`(75,20)`被阻塞（详细信息见下节）
+1. `辅助索引b`上`(b=40,a=90)~(b=50,a=60)`不存在`Gap Lock`，事务`1324568`能成功插入`(a=95,b=40)`
+2. 事务`1324567`持有`辅助索引b`上`(b=10,a=120)~(b=20,a=80)`的`Gap Lock`，事务`1324568`插入`(a=75,b=20)`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1297,7 +1337,7 @@ ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
 
 mysql> INSERT INTO t VALUES (115,20); # Blocked
 ```
-事务`1324567`持有`辅助索引b`上`(20,110)~(30,70)`的`Gap Lock`，事务`1324568`插入`(115,20)`被阻塞（详细信息见下节）
+事务`1324567`持有`辅助索引b`上`(b=20,a=110)~(b=30,a=70)`的`Gap Lock`，事务`1324568`插入`(a=115,b=20)`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1321,7 +1361,7 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rr_key_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_key_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+![lock_rr_key_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_key_range_1.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
 
 在`RR`隔离级别下，类似`SELECT ... FOR UPDATE`这种`Current Read`，使用`Gap Lock`能保证过滤出来的范围不被其他事务插入新的记录，防止`幻读`的产生
 
@@ -1358,7 +1398,7 @@ mysql> SELECT * FROM t WHERE b=70 OR b=90 FOR UPDATE;
 +----+----+
 2 rows in set (0.01 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                        
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
 +---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
@@ -1371,7 +1411,8 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 
 ### Session B
 ```SQL
-mysql> SET SESSION TX_ISOLATION='READ-COMMITTED';                                                                                      Query OK, 0 rows affected (0.00 sec)
+mysql> SET SESSION TX_ISOLATION='READ-COMMITTED';
+Query OK, 0 rows affected (0.00 sec)
 
 mysql> BEGIN;
 Query OK, 0 rows affected (0.00 sec)
@@ -1491,7 +1532,8 @@ mysql> SELECT * FROM t WHERE b=70 FOR UPDATE;
 +----+----+
 1 row in set (0.01 sec)
 
-mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;                           +---------+-----------+-----------------------+---------------------+
+mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;
++---------+-----------+-----------------------+---------------------+
 | trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |
 +---------+-----------+-----------------------+---------------------+
 | 1324610 | RUNNING   | NULL                  | REPEATABLE READ     |
@@ -1499,7 +1541,7 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 1 row in set (0.00 sec)
 ```
 1. 将`Session A`的事务隔离级别设置为`REPEATABLE READ`
-2. 由于`列b上无索引`，只能通过`聚集索引a`进行`全表扫描`，事务`1324610`将持有`聚集索引a`上`10`、`20`、`30`、`40`、`50`的`X Lock`，并持有`聚集索引a`上`(negative infinity,10)`、`(10,20)`、`(20,30)`、`(30,40)`、`(40,50)`、`(50,positive infinity)`上的`Gap Lock`
+2. 由于`列b上无索引`，只能通过`聚集索引a`进行`全表扫描`，事务`1324610`将持有`聚集索引a`上`10`、`20`、`30`、`40`、`50`的`X Lock`，并持有`聚集索引a`上`(-∞,10)`、`(10,20)`、`(20,30)`、`(30,40)`、`(40,50)`、`(50,+∞)`上的`Gap Lock`
 
 ### Session B
 ```SQL
@@ -1569,8 +1611,8 @@ ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
 
 mysql> INSERT INTO t VALUES (55,100); # Blocked
 ```
-1. `positive infinity`即`supremum pseudo-record`，相关信息请参照「InnoDB备忘录 - 数据页格式」
-2. 事务`1324610`持有`聚集索引a`上`(50,positive infinity)`的`Gap Lock`，事务`1324611`插入`(55,100)`被阻塞（详细信息见下节）
+1. `+∞`即`supremum pseudo-record`，相关信息请参照「InnoDB备忘录 - 数据页格式」
+2. 事务`1324610`持有`聚集索引a`上`(50,+∞)`的`Gap Lock`，事务`1324611`插入`(55,100)`被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
@@ -1635,5 +1677,3 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 6. [The INFORMATION_SCHEMA INNODB_LOCK_WAITS Tabl](https://dev.mysql.com/doc/refman/5.5/en/innodb-lock-waits-table.html)
 
 <!-- indicate-the-source -->
-
-

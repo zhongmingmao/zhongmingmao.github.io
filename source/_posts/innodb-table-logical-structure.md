@@ -45,7 +45,8 @@ mysql>  SHOW VARIABLES LIKE 'innodb_data_file_path';
 +-----------------------+------------------------+
 1 row in set (0.01 sec)
 
-mysql>  SHOW VARIABLES LIKE '%datadir%';                                                                                               +---------------+-----------------+
+mysql>  SHOW VARIABLES LIKE '%datadir%';
++---------------+-----------------+
 | Variable_name | Value           |
 +---------------+-----------------+
 | datadir       | /var/lib/mysql/ |
@@ -453,5 +454,3 @@ mysql>  SHOW VARIABLES LIKE 'innodb_page_size';
 1. [MySQL技术内幕 - InnoDB存储引擎 V2](https://book.douban.com/subject/24708143/)
 2. [MySQL 5.7 Reference Manual](https://dev.mysql.com/doc/refman/5.7/en)
 <!-- indicate-the-source -->
-
-

@@ -347,9 +347,3 @@ File Segment inode: 1
 1. [MySQL技术内幕 - InnoDB存储引擎 V2](https://book.douban.com/subject/24708143/)
 2. [InnoDB Page Structure](https://dev.mysql.com/doc/internals/en/innodb-page-structure.html)
 <!-- indicate-the-source -->
-
-
-
-
-
-

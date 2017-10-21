@@ -60,7 +60,7 @@ mysql>  SHOW VARIABLES LIKE '%row%format%';
 1. 当`行记录的长度`没有超过`行记录最大长度`时，`所有数据`都会存储在`当前页`
 2. 当`行记录的长度`超过`行记录最大长度`时，变长列（`variable-length column`）会选择外部溢出页（`overflow page`，一般是`Uncompressed BLOB Page`）进行存储
     - `Compact` + `Redundant`：保留前`768Byte`在当前页（`B+Tree叶子节点`），其余数据存放在`溢出页`。`768Byte`后面跟着`20Byte`的数据，用来存储`指向溢出页的指针`
-    
+
     - `Dynamic` + `Compressed`：仅存储`20Byte`数据，存储`指向溢出页的指针`，这时比`Compact`和`Redundant`更高效，因为一个`B+Tree叶子节点`能`存放更多的行记录`
 
 ![overflowt](http://opjezmuy7.bkt.clouddn.com/overflow.png?imageMogr2/auto-orient/thumbnail/301x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
@@ -440,7 +440,7 @@ File Segment inode: 1
 9. c
     - `CHAR(10)`为`NULL`时，`不占用空间`
 10. d（`35 35 35`）
-    - 字符`555`，VARCHAR(10)，`3个字符`只占用了`3Byte` 
+    - 字符`555`，VARCHAR(10)，`3个字符`只占用了`3Byte`
 
 # Dynamic和Compressed
 1. `Dynamic`和`Compressed`是`Compact`的变种形式
@@ -555,5 +555,3 @@ Records: 1  Duplicates: 0  Warnings: 0
 6. [DYNAMIC and COMPRESSED Row Formats](https://dev.mysql.com/doc/refman/5.7/en/innodb-row-format-dynamic.html)
 
 <!-- indicate-the-source -->
-
-

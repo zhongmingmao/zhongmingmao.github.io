@@ -22,7 +22,7 @@ tags:
 <!-- more -->
 
 # 基础
-`CyclicBarrier`可以大致理解为`可重复使用的CountDownLatch`，但`CountDownLatch`是基于`AQS的共享模式`，而`CyclicBarrier`则是基于`AQS的共享模式`（实际为`ReentrantLock`和`ConditionObject`）
+`CyclicBarrier`可以大致理解为`可重复使用的CountDownLatch`，但`CountDownLatch`是基于`AQS的共享模式`，而`CyclicBarrier`则是基于`AQS的独占模式`（实际为`ReentrantLock`和`ConditionObject`）
 
 # 源码分析
 

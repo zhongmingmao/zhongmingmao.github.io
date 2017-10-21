@@ -24,7 +24,7 @@ tags:
 2. `叶子节点`包含`关键字信息`
 3. `叶子节点`本身构成`单向有序链表`
 4. `叶子节点`内部的记录也构成`单向有序链表`
-4. `索引节点`不包含`关键字信息`，能容纳更多的索引信息，`树高很低`，查找效率很高
+4. `索引节点`不包含`关键字信息`，这样能容纳更多的索引信息，B+Tree的`高度很低`，查找效率很高
 
 关于B+Tree的更多内容请查看[维基百科](https://en.wikipedia.org/wiki/B-tree)
 
@@ -39,10 +39,10 @@ tags:
 ![btree_index_btree_myisam](http://opjezmuy7.bkt.clouddn.com/btree_index_btree_myisam.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/10|imageslim)
 
 ## InnoDB
-1. `数据文件`本身是按照`B+Tree`组织的索引结构（`主索引`，`聚集索引`、`Primary Index`，`Clustered Index`），而`叶子节点data域`记录的是**`完整的数据信息`**
-2. InnoDB**`必须有主键`**，如果没有`显式定义主键`或`唯一非NULL索引`，InnoDB会自动生成`6Byte的ROWID`作为主键
+1. `数据文件`本身是按照`B+Tree`组织的索引结构（`主索引:Primary Index`或`聚集索引:Clustered Index`），而`叶子节点data域`记录的是**`完整的数据信息`**
+2. InnoDB**`必须有主键`**，如果没有`显式定义主键`或`非NULL的唯一索引`，InnoDB会自动生成`6 Bytes的ROWID`作为主键
 3. `辅助索引`（`Secondary Index`）也是按`B+Tree`组织，`叶子节点data域`记录的是**`主键值`**，因此`主键不宜定义太大`
-3. `辅助索引`搜索需要`遍历两遍索引`，首先通过辅助索引获得主键，再用主键值在主索引中获取实际数据
+3. 搜索`辅助索引`需要`遍历两遍索引`，首先通过`辅助索引`获得主键值，再用主键值在`主索引`中获取实际数据
 
 ![btree_index_btree_innodb](http://opjezmuy7.bkt.clouddn.com/btree_index_btree_innodb.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/10|imageslim)
 
@@ -133,8 +133,8 @@ File Segment inode: 1
 1. 插入第5条记录`a=50`后，`10 20 30 40 50`无法完全容纳在`page offset=3`的`Leaf Page`，需要进行分裂
 2. 中间节点是`30`，将`30`（包括最小值`10`）提取到`page Offset=3`的`Index Page`（保存的是`主键a与页偏移的映射`）
 3. 将`10 20`提取到`page offset=4`的`Leaf Page`（保存的是`行记录`）
-4. 将`30 40 50`提取到`page offset=5`的`Leaf Page`
-    - 如果插入的是`25`，分组为`10 20 25`和`30 40`  
+4. 将`30 40 50`提取到`page offset=5`的`Leaf Page`（保存的是`行记录`）
+    - 如果插入的是`25`，分组为`10 20 25`和`30 40`
 
 
 | 地址 | 值（16进制） | 描述 |
@@ -199,7 +199,7 @@ File Segment inode: 1
 | 0x11c0a~0x11c0d | 8000 000f | 主键`a=15`的行记录的`ROWID`字段 |
 
 
-1. 在`page offset=4`内可见，物理存储顺序为`10，20，15`，`非物理有序`，通过`Page Directory`和`next_record`保持`逻辑有序`（`单向有序列表`）
+1. 在`page offset=4`内可见，物理存储顺序为`10，20，15`，**`非物理有序`**，通过`Page Directory`和`next_record`保持**`逻辑有序`**（`单向有序链表`）
 2. `行记录格式`和`数据页结构`的内容请参照「InnoDB备忘录 - 行记录格式」和「InnoDB备忘录 - 数据页结构」
 
 ![btree_index_insert_02](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_02.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75)
@@ -474,7 +474,7 @@ File Segment inode: 1
 | 80 00 00 30 | 00 00 00 05 | 包含行记录：0x30、0x40、0x50、0x60 |
 | 80 00 00 70 | 00 00 00 06 | 包含行记录：0x70、0x80 |
 
-1. `DELETE`操作仅仅是将记录`标记为删除`（`deleted_flag=1`），实际的删除操作是在`Purge线程`中完成的
+1. `DELETE`操作仅仅是将记录**`标记为删除`**（`deleted_flag=1`），实际的删除操作是在`Purge线程`中完成的
 2. `Index Page`最小的行记录依旧是`0x10`（查找所有主键小于`0x30`的行记录都将`page offset=4`的`Leaf Page`载入内存）
 
 ![btree_index_delete_01](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_01.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
@@ -814,7 +814,7 @@ File Segment inode: 1
 
 ![btree_index_update_00](http://opjezmuy7.bkt.clouddn.com/btree_index_update_00.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
 
-1. 更新主键`a:0x70->0x68`，首先是逻辑删除`0x70`（`MVCC`特性），然后再插入`0x68`
+1. 更新主键`a:0x70->0x68`，首先是**`逻辑删除`**`0x70`（`MVCC`特性），然后再插入`0x68`
 2. 如果插入的过程中会影响查询过程，会同步更新`Index Page`
 
 ### 更新非主键列
@@ -975,14 +975,13 @@ File Segment inode: 1
 ![btree_index_clustered_secondary](http://opjezmuy7.bkt.clouddn.com/btree_index_clustered_secondary.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/11|imageslim)
 
 # 联合索引
-当表中有`联合索引(a,b)`，能有效利用联合索引的查询（因为索引已经按a,b的顺序进行排序的）
+当表中有`联合索引(a,b)`，能有效利用联合索引的查询（因为索引已经按a，b的顺序进行排序）
 
 1. `WHERE a=xxx AND b=xxx`
 2. `WHERE a=xxx`
 3. `WHERE a=xxx ORDER BY b`
 
-不能有效利用联合索引的查询：`WHERE a=xxx`，因为没有一个索引`(b)`或`(b,a)`
-
+不能有效利用联合索引的查询：`WHERE b=xxx`，因为没有索引`(b)`或索引`(b,a)`
 
 ```SQL
 mysql> CREATE TABLE t (
@@ -1049,5 +1048,3 @@ File Segment inode: 1
 2. [Clustered and Secondary Indexes](https://dev.mysql.com/doc/refman/5.7/en/innodb-index-types.html)
 
 <!-- indicate-the-source -->
-
-
