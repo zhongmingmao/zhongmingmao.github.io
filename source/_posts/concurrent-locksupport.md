@@ -57,8 +57,12 @@ private LockSupport() {}
 ### park()
 ```java
 public static void park() {
-    // 阻塞当前线程并处于无限期的休眠状态，除非许可证可用（最近调用过unpark），如果许可证可用，那么立即返回，比wait()/notify()/notifyAll()灵活
-    // 退出休眠状态的3种情况：其他线程unpark当前线程；其他线程中断当前线程；该调用毫无理由地返回（这个不是很理解）
+    // 当前线程进入无限期的等待状态（WAITING状态），除非许可证可用（最近调用过unpark）
+    // 如果许可证可用，那么立即返回，比wait()/notify()/notifyAll()灵活！！
+    // 退出WAITING状态的3种情况
+    //   1. 其他线程unpark当前线程
+    //   2. 其他线程中断当前线程
+    //   3. 该调用毫无理由地返回（这个不是很理解）
     UNSAFE.park(false, 0L);
 }
 ```
@@ -70,9 +74,9 @@ public static void park(Object blocker) {
     Thread t = Thread.currentThread();
     // 设置当前线程的实例域parkBlocker
     setBlocker(t, blocker);
-    // 阻塞当前线程，与park()函数一致
+    // 当前线程进入无限期的等待状态（WAITING状态），与park()函数一致
     UNSAFE.park(false, 0L);
-    // 执行到这里线程已经退出休眠状态，需要重置当前线程的实例域parkBlocker
+    // 执行到这里线程已经退出WAITING状态，需要重置当前线程的实例域parkBlocker
     // 如果不重置，同一线程下次调用getBlocker时，会返回上一次park(Object blocker)设置的blocker，不符合逻辑
     setBlocker(t, null);
 }
@@ -93,11 +97,16 @@ public static Object getBlocker(Thread t) {
 ### parkNanos(Object blocker,long nanos)
 ```java
 // 与上面parkpark(Object blocker)类似，只是最多等待nanos纳秒(相对时间)
+// 当前线程进入限时等待状态（TIMED_WAITING状态）
 public static void parkNanos(Object blocker, long nanos) {
     if (nanos > 0) {
         Thread t = Thread.currentThread();
         setBlocker(t, blocker);
-        // 退出休眠状态的4种情况：其他线程unpark当前线程；其他线程中断当前线程；等待超时（相对时间）；该调用毫无理由地返回（这个不是很理解）
+        // 退出TIMED_WAITING状态的4种情况
+        //    1. 其他线程unpark当前线程
+        //    2. 其他线程中断当前线程
+        //    3. 等待超时（相对时间）
+        //    4. 该调用毫无理由地返回（这个不是很理解）
         UNSAFE.park(false, nanos);
         setBlocker(t, null);
     }
@@ -107,10 +116,15 @@ public static void parkNanos(Object blocker, long nanos) {
 ### parkUntil(Object blocker,long deadline)
 ```java
 // 与上面parkpark(Object blocker)类似，只是最多等待到deadline（Uninx时间戳，单位毫秒，绝对时间）
+// 当前线程进入限时等待状态（TIMED_WAITING状态）
 public static void parkUntil(Object blocker, long deadline) {
     Thread t = Thread.currentThread();
     setBlocker(t, blocker);
-    // 退出休眠状态的4种情况：其他线程unpark当前线程；其他线程中断当前线程；等待超时（绝对时间）；该调用毫无理由地返回（这个不是很理解）
+    // 退出TIMED_WAITING状态的4种情况
+    //    1. 其他线程unpark当前线程
+    //    2. 其他线程中断当前线程
+    //    3. 等待超时（相对时间）
+    //    4. 该调用毫无理由地返回（这个不是很理解）
     UNSAFE.park(true, deadline);
     setBlocker(t, null);
 }
@@ -121,8 +135,10 @@ public static void parkUntil(Object blocker, long deadline) {
 ### unpark(Thread thread)
 ```java
 // 如果给定线程的许可尚不可用，则使其可用：
-//  1. 如果线程阻塞在park上，则解除其阻塞状态；
-//  2. 否则保证下一次调用park不会被阻塞（比wait()/notify()/notifyAll()灵活，wait()必须在notify()/notifyAll()之前触发）
+//  1. 如果线程等待在park/parkNanos/parkUntil上，则解除其等待状态；
+//  2. 否则保证下一次调用park/parkNanos/parkUntil的线程不会进入等待状态
+//        比wait()/notify()/notifyAll()灵活，wait()必须在notify()/notifyAll()之前触发
+//
 // 如果给定的线程尚未启动，无法保证unpark操作有效果
 public static void unpark(Thread thread) {
     if (thread != null)
@@ -271,7 +287,7 @@ public class InterruptPark {
 ```
 
 # 再谈中断
-之前的博文没有详细讨论过`中断`，这里补充一下
+之前的博文没有详细地讨论过`中断`，这里补充一下
 
 ## Thread中断
 Thread提供了5个关于中断的方法
@@ -280,10 +296,14 @@ public方法
 private volatile Interruptible blocker;
 private final Object blockerLock = new Object();
 // 实例方法
-// 中断线程，仅仅设置中断标志
-// 如果线程因为调用Object.wait()、Thread.sleep()和Thread.join()而阻塞，中断状态将被重置并抛出InterruptedException
-// 如果中断一个非阻塞的状态，只会设置中断状态
-// 中断一个非存活的线程，不会有任何影响
+// 中断线程，仅仅设置中断状态
+//
+// 1. 对于存活线程
+//    1.1. 如果线程因为调用Object.wait、Thread.sleep和Thread.join而进入
+//         WAITING或TIMED_WAITING状态，重置中断状态并抛出InterruptedException
+//    1.2. 否则只会设置中断状态
+// 2. 对于非存活线程
+//    2.1 中断一个非存活的线程，不会有任何影响
 public void interrupt() {
     if (this != Thread.currentThread())
         // 除了线程自中断，都需要检查访问权限
@@ -292,12 +312,12 @@ public void interrupt() {
     synchronized (blockerLock) {
         Interruptible b = blocker;
         if (b != null) {
-            interrupt0(); // 仅仅设置中断标志
+            interrupt0(); // 仅仅设置中断状态
             b.interrupt(this);
             return;
         }
     }
-    interrupt0(); // 仅仅设置中断标志
+    interrupt0(); // 仅仅设置中断状态
 }
 // 实例方法，判断某个线程是否被中断，不重置中断状态
 public boolean isInterrupted() {
@@ -310,7 +330,7 @@ public static boolean interrupted() {
 ```
 private方法
 ```java
-// 仅仅设置中断标志
+// 仅仅设置中断状态
 private native void interrupt0();
 // 线程是否被中断，依据ClearInterrupted是否重置中断状态
 private native boolean isInterrupted(boolean ClearInterrupted);
@@ -319,7 +339,7 @@ private native boolean isInterrupted(boolean ClearInterrupted);
 ## interrupt sleep
 ```java
 /**
- * 验证因sleep而被阻塞的线程被中断时，会抛出InterruptedException并重置中断状态
+ * 验证因sleep而进入TIMED_WAITING状态的线程被中断时，会抛出InterruptedException并重置中断状态
  */
 public class InterruptSleep {
     private static Thread sleepThread = new Thread(() -> {
@@ -366,7 +386,7 @@ public class InterruptSleep {
 ## interrupt running
 ```java
 /**
- * 验证中断一个正在运行状态的线程，只会设置中断状态，而不会抛出InterruptedException
+ * 验证中断一个处于RUNNABLE状态的线程，只会设置中断状态，而不会抛出InterruptedException
  */
 public class InterruptRunning {
     private static Thread runningThread = new Thread(() -> {
@@ -413,7 +433,7 @@ public class InterruptRunning {
 后续博文介绍的`ReentrantLock比synchronized灵活`，能够响应中断
 ```java
 /**
- * 验证synchronized无法响应中断，要么获得锁，要么一直等待
+ * 验证因synchronized而进入阻塞状态的线程是无法响应中断的，线程要么获得锁，要么一直等待
  */
 public class InterruptSynchronized {
     private static Object LOCK = new Object();
@@ -450,7 +470,7 @@ public class InterruptSynchronized {
         TimeUnit.SECONDS.sleep(1); // 确保holdLockThread持有锁
         acquireLockThread.start(); // 尝试获得锁，进入阻塞状态
         TimeUnit.MILLISECONDS.sleep(100); // 确保acquireLockThread进入阻塞状态
-        interruptThread.start(); // 尝试中断在等待锁的acquireLockThread，acquireLockThread不会响应中断
+        interruptThread.start(); // 尝试中断在处于阻塞状态的acquireLockThread，acquireLockThread并不会响应中断
         /*
         输出：
         holdLockThread : hold LOCK forever!!

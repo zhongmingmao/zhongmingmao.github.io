@@ -17,7 +17,7 @@ tags:
 <!-- more -->
 
 # 概述
-1. `sun.misc.Unsafe`类提供底层（`low-leve`）的，不安全（`unsafe`）的方法
+1. `sun.misc.Unsafe`类提供底层（`low-level`）的，不安全（`unsafe`）的方法
 2. 提供与`并发`相关的**`CAS`**、**`park/unpark`**等操作
 
 

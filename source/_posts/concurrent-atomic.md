@@ -815,6 +815,7 @@ public class AtomicStampedReference<V> {
         return pair.reference;
     }
     // 只有旧的reference和stamp相等，才会执行casPair，底层CAS操作，是解决ABA问题的核心
+    // AtomicReference<V>.compareAndSet(V expect, V update)只会比较reference
     public boolean compareAndSet(V   expectedReference, V   newReference,
                                  int expectedStamp, int newStamp) {
         Pair<V> current = pair;
@@ -884,7 +885,7 @@ public class AtomicStampedReferenceDemo {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            boolean success = stampedReference.compareAndSet(100, 300, stamp, stamp + 1);
+            boolean success = stampedReference.compareAndSet(10, 30, stamp, stamp + 1);
             System.out.println(String.format("thread: %s , compareAndSet success : %s , current value : %s",
                     Thread.currentThread().getName(), success, stampedReference.getReference()));
         });
