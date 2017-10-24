@@ -22,7 +22,7 @@ tags:
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_07_Exceptions {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(Throwable.class).toPrintable());
@@ -42,7 +42,7 @@ public class JOLSample_07_Exceptions {
 java.lang.Throwable object internals:
  OFFSET  SIZE                            TYPE DESCRIPTION                               VALUE
       0    12                                 (object header)                           N/A
-     12     4                                 (alignment/padding gap)                  
+     12     4                                 (alignment/padding gap)
      16     4                java.lang.String Throwable.detailMessage                   N/A
      20     4             java.lang.Throwable Throwable.cause                           N/A
      24     4   java.lang.StackTraceElement[] Throwable.stackTrace                      N/A
@@ -75,11 +75,11 @@ public void backtraceTest() throws NoSuchFieldException {
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_08_Class {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(Class.class).toPrintable());
-    }   
+    }
 }
 ```
 
@@ -98,7 +98,7 @@ java.lang.Class object internals:
      12     4                     java.lang.reflect.Constructor Class.cachedConstructor                   N/A
      16     4                                   java.lang.Class Class.newInstanceCallerCache              N/A
      20     4                                  java.lang.String Class.name                                N/A
-     24     4                                                   (alignment/padding gap)                  
+     24     4                                                   (alignment/padding gap)
      28     4                       java.lang.ref.SoftReference Class.reflectionData                      N/A
      32     4   sun.reflect.generics.repository.ClassRepository Class.genericInfo                         N/A
      36     4                                java.lang.Object[] Class.enumConstants                       N/A
@@ -106,7 +106,7 @@ java.lang.Class object internals:
      44     4                    java.lang.Class.AnnotationData Class.annotationData                      N/A
      48     4             sun.reflect.annotation.AnnotationType Class.annotationType                      N/A
      52     4                java.lang.ClassValue.ClassValueMap Class.classValueMap                       N/A
-     56    32                                                   (alignment/padding gap)                  
+     56    32                                                   (alignment/padding gap)
      88     4                                               int Class.classRedefinedCount                 N/A
      92     4                                                   (loss due to the next object alignment)
 Instance size: 96 bytes
@@ -124,17 +124,17 @@ Space losses: 36 bytes internal + 4 bytes external = 40 bytes total
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_11_ClassWord {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseInstance(new A()).toPrintable());
         out.println(ClassLayout.parseInstance(new B()).toPrintable());
     }
-    
+
     public static class A {
         // no fields
     }
-    
+
     public static class B {
         // no fields
     }
@@ -179,24 +179,24 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_15_IdentityHashCode {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
-        
+
         final A a = new A();
-        
+
         ClassLayout layout = ClassLayout.parseInstance(a);
-        
+
         out.println("**** Fresh object");
         out.println(layout.toPrintable());
-        
+
         out.println("hashCode: " + Integer.toHexString(a.hashCode()));
         out.println();
-        
+
         out.println("**** After identityHashCode()");
         out.println(layout.toPrintable());
     }
-    
+
     public static class A {
         // no fields
     }
@@ -248,12 +248,12 @@ public void haseCodeTest() throws NoSuchFieldException, IllegalAccessException {
    Object object = new Object();
    // 未调用hashCode()，Mark Word没有相应的值
    System.out.println(layout.toPrintable(object));
-   
+
    String realHashCode = Integer.toHexString(object.hashCode());
    System.out.println(String.format("realHashCode : 0x%s\n", realHashCode));
    // 确认HashCode已经添加到Mark Word中
    System.out.println(layout.toPrintable(object));
-   
+
    // 手动计算HashCode
    Field field = Unsafe.class.getDeclaredField("theUnsafe");
    field.setAccessible(true);
@@ -271,5 +271,3 @@ public void haseCodeTest() throws NoSuchFieldException, IllegalAccessException {
 在`Hotspot JVM`计算对象的`HashCode`后，通过`Mark Word`可以手动计算`HashCode`，如果哪位大神知道个中原理，麻烦不吝赐教
 
 <!-- indicate-the-source -->
-
-

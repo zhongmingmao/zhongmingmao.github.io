@@ -71,7 +71,7 @@ public int calc();
 ```
 
 1. `stack=2`，这个在分析下面`16个JVM字节码指令`的运行过程后就能验证这是正确的，从`Java源代码`是无法直观的得出这个值
-2. `locals=4`，从`Java源代码`可以看出，`calc()`只定义了`a`、`b`、`c`三个局部变量，而`calc()`又是`实例方法`，局部变量表`第1个slot`默认会有记录`this`，因此能得出`locals=4`（这这里slot没有进行复用）
+2. `locals=4`，从`Java源代码`可以看出，`calc()`只定义了`a`、`b`、`c`三个局部变量，而`calc()`又是`实例方法`，局部变量表`第1个slot`默认会有记录`this`，因此能得出`locals=4`（在这里slot没有进行复用）
 3. 在`JVM字节码`中的`LocalVariableTable`属性，很清晰表述了`局部变量表`的布局，其中需要注意的是`Start`指的是局部变量`生命周期开始的字节码偏移量`，`Length`指的是`作用范围覆盖的长度`，而并非变量本身的长度
 4. `args_size=1`，`实例方法`默认会传入`this`，因此`args_size=1`
 
@@ -102,5 +102,3 @@ public int calc();
 ![bytecode_execution_8.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_8.png)
 
 <!-- indicate-the-source -->
-
-

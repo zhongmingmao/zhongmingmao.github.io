@@ -21,21 +21,21 @@ tags:
 # 代码
 ```java
 public class FakeGeneric {
-    
+
     static class Father {
     }
-    
+
     static class Son extends Father {
     }
     
     private static void checkFather(Father father) {
     }
-    
+
     public static void main(String[] args) {
         Map<Father, Father> map = new HashMap<>(); // Map<K,V> , HashMap<K,V>
         Father father = new Father();
         Father son = new Son();
-        
+
         map.put(father, son); // V put(K key, V value);
         checkFather(map.get(father)); // V get(Object key);
     }
@@ -87,7 +87,7 @@ public static void main(java.lang.String[]);
 ## new HashMap<>()
 在Java代码中，创建map时是带有泛型信息的
 ```java
-Map<Father, Father> map = new HashMap<>(); 
+Map<Father, Father> map = new HashMap<>();
 ```
 对应的JVM字节码
 ```
@@ -139,9 +139,9 @@ checkFather(map.get(father));
 # 伴随的问题
 Java的伪泛型会带来一些语法上的`尴尬`，例如重载
 ```java
-public static void method(List<String> list){ 
+public static void method(List<String> list){
 }
-    
+
 public static void method(List<Integer> list){
 }
 ```
@@ -150,5 +150,3 @@ public static void method(List<Integer> list){
 
 
 <!-- indicate-the-source -->
-
-

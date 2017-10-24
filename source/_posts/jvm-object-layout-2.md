@@ -38,7 +38,7 @@ tags:
 ## 代码
 ```java
 public class CompressedOopsTestClass {
-    
+
     int intValue;
     Integer integerRef;
     Integer[] integerArrayRef = new Integer[3];
@@ -153,11 +153,11 @@ Oop for me/zhongmingmao/create/classes/ReorderingTestClass @ 0x00000007bfe2c750 
 ```java
 public class OuterClass {
     InnerClass innerClassRef;
-    
+
     public OuterClass() {
         this.innerClassRef = new InnerClass();
     }
-    
+
     class InnerClass {
         Integer integerRef;
     }
@@ -192,19 +192,19 @@ Oop for me/zhongmingmao/create/classes/OuterClass$InnerClass @ 0x00000007bfe30b5
 ## 代码
 ```java
 public class Father {
-    
+
     int intValue;
     Integer integerRef;
-    
+
     public Father() {
         integerRef = new Integer(1 << 10);
     }
-    
+
 }
 ```
 ```java
 public class Son extends Father {
-    
+
     byte byteValue;
     short shortValue;
     Integer[] integerArrayRef = new Integer[3];
@@ -212,16 +212,16 @@ public class Son extends Father {
 ```
 ```java
 public class GranSon extends Son {
-    
+
     boolean booleanValue;
     Father[] fatherArrayRef = new Father[3];
-    
+
     public GranSon() {
         for (int i = 0; i < fatherArrayRef.length; ++i) {
             fatherArrayRef[i] = new Father();
         }
     }
-    
+
 }
 ```
 
@@ -314,5 +314,3 @@ Oop for java/lang/Integer @ 0x00000007bfe36630 (object size = 16)
     - 240 = (24 + 16) * 3 + 32 + 32 +16 + 40
 
 <!-- indicate-the-source -->
-
-

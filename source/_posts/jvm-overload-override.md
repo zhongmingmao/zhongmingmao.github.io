@@ -23,29 +23,29 @@ package me.zhongmingmao.test;
 public class StaticDispatch {
     interface Human {
     }
-    
+
     static class Man implements Human {
     }
-    
+
     static class Woman implements Human {
     }
-    
+
     public static void sayHello(Human human) {
         System.out.println("Hello , I'm a human");
     }
-    
+
     public static void sayHello(Man man) {
         System.out.println("Hello , I'm a man");
     }
-    
+
     public static void sayHello(Woman woman) {
         System.out.println("Hello , I'm a woman");
     }
-    
+
     public static void main(String[] args) {
         Human man = new Man();          // 静态类型是Human，实际类型是Man
         Human woman = new Woman();      // 静态类型是Human，实际类型是Woman
-        
+
         sayHello(man);                  // 静态类型是Human，实际类型是Man
         sayHello(woman);                // 静态类型是Human，实际类型是Woman
         sayHello((Man) man);            // 静态类型是Man，实际类型是Man
@@ -121,34 +121,34 @@ public static void main(java.lang.String[]);
 package me.zhongmingmao.test;
 
 public class DynamicDispatch {
-    
+
     interface Human {
         default void sayHello() {
             System.out.println("Hello , I'm a human");
         }
     }
-    
+
     static class Man implements Human {
         @Override
         public void sayHello() {
             System.out.println("Hello , I'm a man");
         }
     }
-    
+
     static class Woman implements Human {
         @Override
         public void sayHello() {
             System.out.println("Hello , I'm a woman");
         }
     }
-    
+
     public static void main(String[] args) {
         Human man = new Man();
         Human woman = new Woman();
-        
+
         man.sayHello();
         woman.sayHello();
-        
+
         man = new Woman();
         man.sayHello();
     }
@@ -206,15 +206,13 @@ public static void main(java.lang.String[]);
 2. `3: dup` ：`复制栈顶元素`（即刚刚创建的Man引用），**`再次入栈`**，此时栈有`2个一样的Man引用`，主要是为了后面有`2个出栈操作`
 3. `4: invokespecial` ：`弹出栈顶元素`，即Man引用，调用`<init>`方法（即JVM为我们生成的**`合成构造器`**方法）
 4. `7: astore_1` ：`弹出栈顶元素`，同样也是Man引用，并将其存入`局部变量表中偏移为1的slot`中
-5. `15: astore_2` ：这条指令执行完以后，局部变量表中`偏移为1的slot`中存储的是`man实例的引用`，`偏移为2的slot`中存储的是woman实例的引用
+5. `15: astore_2` ：这条指令执行完以后，局部变量表中`偏移为1的slot`中存储的是`man实例的引用`，`偏移为2的slot`中存储的是`woman实例的引用`
 
 #### 多态查找
 这里仅分析第一个`man.sayHello();`，其他的都是类似的原理
 1. `16: aload_1` ： 将局部变量表中`偏移为1的slot`中的值`压入到操作数栈`中，此时`栈顶元素`为`man实例的引用`
 2. `17: invokeinterface` ：弹出栈顶元素，并调用接口方法（中间还有校验等步骤，这里忽略），即调用`Man类型的实现`
 
-`JVM字节码指令的执行`伴随着`操作数栈的出栈和入栈操作`，`多态调用`也是在`运行期`才能确定调用的是哪一个重写版本的
+`JVM字节码指令的执行`伴随着`操作数栈的出栈和入栈操作`，`多态调用`也是在`运行期`才能确定调用的是哪一个重写版本
 
 <!-- indicate-the-source -->
-
-

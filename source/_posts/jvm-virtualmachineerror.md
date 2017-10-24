@@ -40,17 +40,17 @@ tags:
 ```java
 public class VMStackSOF {
     private int stackDepth = 0;
-    
+
     public void stackLeak() {
         ++stackDepth;
         stackLeak();
     }
-    
+
     @Override
     public String toString() {
         return String.format("stackDepth:%s", stackDepth);
     }
-    
+
     // JDK ➔ 7
     // JVM Args ➔ -Xss256k
     // -Xss ➔ VM Stack大小
@@ -86,7 +86,7 @@ public class HeapOOM {
         private static final int _1_MB = 1 * 1024 * 1024;
         private final byte[] body = new byte[_1_MB];
     }
-    
+
     // JDK ➔ 7
     // JVM Args ➔ -Xms10M -Xmx10M -XX:+HeapDumpOnOutOfMemoryError -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC
     // -Xms ➔ 初始堆内存大小
@@ -105,12 +105,12 @@ public class HeapOOM {
 
 ### 运行结果
 ```
-[GC[DefNew: 2542K->320K(3072K), 0.0030860 secs] 2542K->1392K(9920K), 0.0031220 secs] [Times: user=0.00 sys=0.01, real=0.01 secs] 
-[GC[DefNew: 2520K->0K(3072K), 0.0036840 secs] 3593K->3440K(9920K), 0.0037070 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-[GC[DefNew: 2094K->0K(3072K), 0.0024930 secs] 5534K->5489K(9920K), 0.0025120 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-[GC[DefNew: 2078K->2078K(3072K), 0.0000150 secs][Tenured: 5488K->6512K(6848K), 0.0062400 secs] 7567K->7537K(9920K), [Perm : 2973K->2973K(21248K)], 0.0062960 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
-[Full GC[Tenured: 6512K->6512K(6848K), 0.0043250 secs] 8569K->8562K(9920K), [Perm : 2982K->2982K(21248K)], 0.0043490 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-[Full GC[Tenured: 6512K->6475K(6848K), 0.0054820 secs] 8562K->8525K(9920K), [Perm : 2982K->2981K(21248K)], 0.0055010 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC[DefNew: 2542K->320K(3072K), 0.0030860 secs] 2542K->1392K(9920K), 0.0031220 secs] [Times: user=0.00 sys=0.01, real=0.01 secs]
+[GC[DefNew: 2520K->0K(3072K), 0.0036840 secs] 3593K->3440K(9920K), 0.0037070 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+[GC[DefNew: 2094K->0K(3072K), 0.0024930 secs] 5534K->5489K(9920K), 0.0025120 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+[GC[DefNew: 2078K->2078K(3072K), 0.0000150 secs][Tenured: 5488K->6512K(6848K), 0.0062400 secs] 7567K->7537K(9920K), [Perm : 2973K->2973K(21248K)], 0.0062960 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
+[Full GC[Tenured: 6512K->6512K(6848K), 0.0043250 secs] 8569K->8562K(9920K), [Perm : 2982K->2982K(21248K)], 0.0043490 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
+[Full GC[Tenured: 6512K->6475K(6848K), 0.0054820 secs] 8562K->8525K(9920K), [Perm : 2982K->2981K(21248K)], 0.0055010 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 java.lang.OutOfMemoryError: Java heap space
 Dumping heap to java_pid96337.hprof ...
 Heap dump file created [9431959 bytes in 0.064 secs]
@@ -133,7 +133,7 @@ No shared spaces configured.
 1. 当线程运行main方法时，list是在的`VM Stack`的`Current Stack Frame`定义的`强引用(Strong Reference)`，且为`GC ROOT`，哪怕JVM堆内存不足的时候，触发`Full GC`，也不会将其回收，最后导致`OutOfMemoryError`
 2. 由GC日志可以看出，`新生代的Eden区`存有`2`个OOMObject对象，`老年代`存有`6`个OOMObject对象，已经无法再容纳新的OOMObject对象，抛出`OutOfMemoryError`
 
-## Interned Strings 
+## Interned Strings
 `Interned Strings`（字面量）在`JDK6`会存储在`PermGen`，从`JDK7`开始存储在`Java Heap`，减少`OOM`和`性能问题`
 
 ### JDK6 - PermGen
@@ -145,7 +145,7 @@ No shared spaces configured.
 // -XX:PermSize ➔ PermGen的初始大小
 // -XX:MaxPermSize ➔ PermGen的最大值
 public static void main(String[] args) throws Throwable {
-   
+
    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
    System.out.println("waiting for input...");
    reader.readLine();
@@ -160,12 +160,12 @@ public static void main(String[] args) throws Throwable {
 
 #### 运行结果
 ```
-[GC [DefNew: 17587K->784K(18432K), 0.0078576 secs] 17587K->1928K(59392K), 0.0078864 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
-[GC [DefNew: 17168K->1764K(18432K), 0.0065362 secs] 18312K->2909K(59392K), 0.0065645 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-[GC [DefNew: 18148K->12K(18432K), 0.0087651 secs] 19293K->3794K(59392K), 0.0087963 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
-[Full GC [Tenured: 3781K->3783K(40960K), 0.1019995 secs] 7657K->3783K(59392K), [Perm : 51199K->51199K(51200K)], 0.1033236 secs] [Times: user=0.10 sys=0.00, real=0.10 secs] 
-[Full GC [Tenured: 3783K->3783K(40960K), 0.1647300 secs] 3783K->3783K(59392K), [Perm : 51199K->51199K(51200K)], 0.1659092 secs] [Times: user=0.16 sys=0.00, real=0.17 secs] 
-[Full GC [Tenured: 3783K->1152K(40960K), 0.0483188 secs] 4020K->1152K(59392K), [Perm : 51199K->13270K(51200K)], 0.0497827 secs] [Times: user=0.05 sys=0.00, real=0.05 secs] 
+[GC [DefNew: 17587K->784K(18432K), 0.0078576 secs] 17587K->1928K(59392K), 0.0078864 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
+[GC [DefNew: 17168K->1764K(18432K), 0.0065362 secs] 18312K->2909K(59392K), 0.0065645 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+[GC [DefNew: 18148K->12K(18432K), 0.0087651 secs] 19293K->3794K(59392K), 0.0087963 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+[Full GC [Tenured: 3781K->3783K(40960K), 0.1019995 secs] 7657K->3783K(59392K), [Perm : 51199K->51199K(51200K)], 0.1033236 secs] [Times: user=0.10 sys=0.00, real=0.10 secs]
+[Full GC [Tenured: 3783K->3783K(40960K), 0.1647300 secs] 3783K->3783K(59392K), [Perm : 51199K->51199K(51200K)], 0.1659092 secs] [Times: user=0.16 sys=0.00, real=0.17 secs]
+[Full GC [Tenured: 3783K->1152K(40960K), 0.0483188 secs] 4020K->1152K(59392K), [Perm : 51199K->13270K(51200K)], 0.0497827 secs] [Times: user=0.05 sys=0.00, real=0.05 secs]
 Exception in thread "main" java.lang.OutOfMemoryError: PermGen space
 ```
 ![StringInternJDK6.png](http://ot85c3jox.bkt.clouddn.com/StringInternJDK6.png)
@@ -183,7 +183,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: PermGen space
 // -XX:MetaspaceSize ➔ Metaspace的初始大小，在JDK8开始，PermGen已经被移除，采用Metaspace来替代
 // -XX:MaxMetaspaceSize ➔ Metaspace的最大值
 public static void main(String[] args) throws Throwable {
-   
+
    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
    System.out.println("waiting for input...");
    reader.readLine();
@@ -198,12 +198,12 @@ public static void main(String[] args) throws Throwable {
 
 #### 运行结果
 ```
-[GC (Allocation Failure) [DefNew: 161762K->20480K(184320K), 0.4081917 secs] 161762K->108735K(593920K), 0.4082377 secs] [Times: user=0.31 sys=0.06, real=0.41 secs] 
-[GC (Allocation Failure) [DefNew: 180388K->20480K(184320K), 0.5512956 secs] 268644K->242289K(593920K), 0.5513318 secs] [Times: user=0.44 sys=0.08, real=0.55 secs] 
-[GC (Allocation Failure) [DefNew: 163946K->20480K(184320K), 0.5983332 secs] 385755K->362517K(593920K), 0.5983566 secs] [Times: user=0.46 sys=0.07, real=0.60 secs] 
-[GC (Allocation Failure) [DefNew: 184320K->184320K(184320K), 0.0000114 secs][Tenured: 342037K->409599K(409600K), 2.0193780 secs] 526357K->497464K(593920K), [Metaspace: 9048K->9048K(1058816K)], 2.0194333 secs] [Times: user=1.89 sys=0.08, real=2.02 secs] 
-[Full GC (Allocation Failure) [Tenured: 409599K->409599K(409600K), 2.0671005 secs] 546537K->542781K(593920K), [Metaspace: 9065K->9065K(1058816K)], 2.0671389 secs] [Times: user=1.95 sys=0.03, real=2.07 secs] 
-[Full GC (Allocation Failure) [Tenured: 409599K->409599K(409600K), 2.1368935 secs] 542781K->542354K(593920K), [Metaspace: 9065K->9065K(1058816K)], 2.1370422 secs] [Times: user=2.08 sys=0.02, real=2.14 secs] 
+[GC (Allocation Failure) [DefNew: 161762K->20480K(184320K), 0.4081917 secs] 161762K->108735K(593920K), 0.4082377 secs] [Times: user=0.31 sys=0.06, real=0.41 secs]
+[GC (Allocation Failure) [DefNew: 180388K->20480K(184320K), 0.5512956 secs] 268644K->242289K(593920K), 0.5513318 secs] [Times: user=0.44 sys=0.08, real=0.55 secs]
+[GC (Allocation Failure) [DefNew: 163946K->20480K(184320K), 0.5983332 secs] 385755K->362517K(593920K), 0.5983566 secs] [Times: user=0.46 sys=0.07, real=0.60 secs]
+[GC (Allocation Failure) [DefNew: 184320K->184320K(184320K), 0.0000114 secs][Tenured: 342037K->409599K(409600K), 2.0193780 secs] 526357K->497464K(593920K), [Metaspace: 9048K->9048K(1058816K)], 2.0194333 secs] [Times: user=1.89 sys=0.08, real=2.02 secs]
+[Full GC (Allocation Failure) [Tenured: 409599K->409599K(409600K), 2.0671005 secs] 546537K->542781K(593920K), [Metaspace: 9065K->9065K(1058816K)], 2.0671389 secs] [Times: user=1.95 sys=0.03, real=2.07 secs]
+[Full GC (Allocation Failure) [Tenured: 409599K->409599K(409600K), 2.1368935 secs] 542781K->542354K(593920K), [Metaspace: 9065K->9065K(1058816K)], 2.1370422 secs] [Times: user=2.08 sys=0.02, real=2.14 secs]
 Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ```
 ![StringInternJDK8.png](http://ot85c3jox.bkt.clouddn.com/StringInternJDK8.png)
@@ -212,7 +212,5 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 1. `String.valueOf(i++).intern()`会在`Heap`（`valueOf`）中分配存储空间，并返回引用到`strings`进行保存（强引用，不会被GC回收）
 2. 从GC日志可以看出，`Full GC`时，`Old Gen`接近填满（`Tenured: 409599K->409599K(409600K)`）
 
- 
+
 <!-- indicate-the-source -->
-
-

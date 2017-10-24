@@ -27,13 +27,13 @@ tags:
  * see http://yueyemaitian.iteye.com/blog/2033046
  */
 public class SizeOfObjectUtil {
-    
+
     static Instrumentation inst;
-    
+
     public static void premain(String args, Instrumentation instP) {
         inst = instP;
     }
-    
+
     /**
      * 直接计算当前对象占用空间大小<br/>
      * 包括
@@ -56,7 +56,7 @@ public class SizeOfObjectUtil {
     public static long sizeOf(Object obj) {
         return inst.getObjectSize(obj);
     }
-    
+
     /**
      * 递归计算当前对象占用空间总大小，包括当前类和超类的实例字段大小以及实例字段引用对象大小
      */
@@ -90,7 +90,7 @@ public class SizeOfObjectUtil {
                                 || field.getName().contains("this")) {  // 内部类实例对外部类实例的引用不再重复计算
                             continue;
                         }
-                        
+
                         field.setAccessible(true);
                         Object fieldValue = field.get(obj);
                         if (fieldValue == null) {
@@ -104,7 +104,7 @@ public class SizeOfObjectUtil {
         }
         return size;
     }
-    
+
     /**
      * String.intern的对象不计；计算过的不计，也避免死循环
      */
@@ -128,12 +128,12 @@ public class SizeOfObjectUtil {
  * @author zhongmingmao zhongmingmao0625@gmail.com
  */
 public class CreateObjectUtil {
-    
+
     /**
      * 实例化对象的列表
      */
     static List<Object> objects = new ArrayList<>();
-    
+
     /**
      * 通过反射实例化类，考虑jar包和非jar包的情况
      */
@@ -141,7 +141,7 @@ public class CreateObjectUtil {
         String packageName = clazz.getName().substring(0, clazz.getName().lastIndexOf("."));
         String resourcePath = clazz.getResource("").getPath();
         Set<String> outClassSet = new HashSet<>();
-        
+
         if (resourcePath.contains("!")) {
             // 打包成jar包后路径会含有!字符
             String jarFilePath = resourcePath.substring(resourcePath.indexOf(":") + 1, resourcePath.lastIndexOf("!"));
@@ -165,7 +165,7 @@ public class CreateObjectUtil {
             }
         }
     }
-    
+
     /**
      * 实例化
      */
@@ -183,12 +183,12 @@ public class CreateObjectUtil {
                     klass.getCanonicalName(),
                     sizeOf(object),
                     fullSizeOf(object)));
-            
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
+
     public static void main(String[] args) throws Exception {
         createObject(CompressedOopsTestClass.class);
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -220,7 +220,7 @@ public class PrintObjectMemLayout extends Tool {
         HeapVisitor heapVisitor = new HeapPrinter(System.out);
         objHeap.iterate(heapVisitor);
     }
-    
+
     public static void main(String[] args) throws InterruptedException {
         PrintObjectMemLayout layout = new PrintObjectMemLayout();
         layout.execute(args);
@@ -267,11 +267,9 @@ $ du -sh heap_oops_compress.txt
 # 通过导出的JVM内存映像就能对对象的内存布局进行分析
 $ cat heap_oops_compress.txt | grep CompressedOopsTestClass | head -n 1
 "me/zhongmingmao/create/classes/CompressedOopsTestClass.class" @ 0x00000007bfa31ea0 (object size = 24)
-``` 
+```
 
 # 待续
 下一博文将通过`Instrumentation` + `sa-jdi`来分析对象的内存布局
 
 <!-- indicate-the-source -->
-
-

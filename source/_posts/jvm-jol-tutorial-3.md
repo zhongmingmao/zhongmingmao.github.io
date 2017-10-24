@@ -29,12 +29,12 @@ tags:
 ```java
 // JVM Args : -Djol.tryWithSudo=true  -XX:-RestrictContended
 public class JOLSample_09_Contended {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseClass(A.class).toPrintable());
     }
-    
+
     @sun.misc.Contended
     public static class A {
         int a;
@@ -54,7 +54,7 @@ public class JOLSample_09_Contended {
 me.zhongmingmao.jol.JOLSample_09_Contended$A object internals:
  OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
       0    12        (object header)                           N/A
-     12   128        (alignment/padding gap)                  
+     12   128        (alignment/padding gap)
     140     4    int A.a                                       N/A
 Instance size: 144 bytes
 Space losses: 128 bytes internal + 0 bytes external = 128 bytes total
@@ -69,9 +69,9 @@ Space losses: 128 bytes internal + 0 bytes external = 128 bytes total
 ```java
 // JVM Args : -Djol.tryWithSudo=true  -XX:-RestrictContended
 public class FalseSharingTest {
-    
+
     public final static int THREAD_COUNT = 4;
-    
+
     @Ignore("take too long")
     @Test
     public void falseSharingTest() throws InterruptedException {
@@ -79,7 +79,7 @@ public class FalseSharingTest {
         long contendedDuration = duration(ContendedLong.class); // 11.047s
         assertTrue(commonDuration / (contendedDuration + 0.0) > 1); // 29.189/11.047 ≈ 2.64，性能提升很明显
     }
-    
+
     private long duration(Class<? extends VolatileLong> clazz) throws InterruptedException {
         out.println(ClassLayout.parseClass(clazz).toPrintable());
         VolatileLong[] longs = new VolatileLong[THREAD_COUNT];
@@ -90,7 +90,7 @@ public class FalseSharingTest {
                 e.printStackTrace();
             }
         });
-        
+
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         IntStream.range(0, THREAD_COUNT).forEach(value -> pool.submit(new Task(value, longs)));
         pool.shutdown();
@@ -101,29 +101,29 @@ public class FalseSharingTest {
         out.println(String.format("%s , duration : %s\n", clazz.getSimpleName(), duration));
         return duration.toNanos();
     }
-    
-    
+
+
     @AllArgsConstructor
     private class Task implements Runnable {
         public static final long ITERATIONS = 500L * 1000L * 1000L;
         private final int index;
         private final VolatileLong[] longs;
-        
+
         @Override
         public void run() {
             LongStream.range(0, ITERATIONS).forEach(longs[index]::setValue);
         }
     }
-    
+
     private interface VolatileLong {
         void setValue(long value);
     }
-    
+
     @Data
     private static class CommonLong implements VolatileLong {
         public volatile long value = 0L; // 暴露因缓存行而导致的伪共享问题
     }
-    
+
     @Data
     @sun.misc.Contended
     private static class ContendedLong implements VolatileLong {
@@ -136,7 +136,7 @@ public class FalseSharingTest {
 me.zhongmingmao.jol.FalseSharingTest$CommonLong object internals:
  OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
       0    12        (object header)                           N/A
-     12     4        (alignment/padding gap)                  
+     12     4        (alignment/padding gap)
      16     8   long CommonLong.value                          N/A
 Instance size: 24 bytes
 Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
@@ -146,7 +146,7 @@ CommonLong , duration : PT29.189S
 me.zhongmingmao.jol.FalseSharingTest$ContendedLong object internals:
  OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
       0    12        (object header)                           N/A
-     12   132        (alignment/padding gap)                  
+     12   132        (alignment/padding gap)
     144     8   long ContendedLong.value                       N/A
 Instance size: 152 bytes
 Space losses: 132 bytes internal + 0 bytes external = 132 bytes total
@@ -160,27 +160,27 @@ ContendedLong , duration : PT11.047S
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_10_DataModels {
-    
+
     public static void main(String[] args) throws Exception {
         Layouter layouter;
-        
+
         layouter = new CurrentLayouter();
         System.out.println("***** " + layouter);
         System.out.println(ClassLayout.parseClass(A.class, layouter).toPrintable());
-        
+
         layouter = new HotSpotLayouter(new X86_32_DataModel());
         System.out.println("***** " + layouter);
         System.out.println(ClassLayout.parseClass(A.class, layouter).toPrintable());
-        
+
         layouter = new HotSpotLayouter(new X86_64_DataModel());
         System.out.println("***** " + layouter);
         System.out.println(ClassLayout.parseClass(A.class, layouter).toPrintable());
-        
+
         layouter = new HotSpotLayouter(new X86_64_COOPS_DataModel());
         System.out.println("***** " + layouter);
         System.out.println(ClassLayout.parseClass(A.class, layouter).toPrintable());
     }
-    
+
     public static class A {
         Object a;
         Object b;
@@ -240,11 +240,11 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_16_AL_LL {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         PrintWriter pw = new PrintWriter(out);
-        
+
         int objectCount = 4;
         Object[] objects = new Object[objectCount];
         for (int i = 0; i < objectCount; i++) {
@@ -254,16 +254,16 @@ public class JOLSample_16_AL_LL {
                 objects[i] = new B(i);
             }
         }
-        
+
         pw.println(GraphLayout.parseInstance(objects).toFootprint());
         pw.close();
     }
-    
+
     @AllArgsConstructor
     public static class A {
         int a;
     }
-    
+
     @AllArgsConstructor
     public static class B {
         long b;
@@ -289,7 +289,7 @@ me.zhongmingmao.jol.JOLSample_16_AL_LL$A@7de26db8d, me.zhongmingmao.jol.JOLSampl
 ```java
 // JVM Args : -Djol.tryWithSudo=true
 public class JOLSample_26_ArrayAlignment {
-    
+
     public static void main(String[] args) throws Exception {
         out.println(VM.current().details());
         out.println(ClassLayout.parseInstance(new short[0]).toPrintable());
@@ -361,5 +361,3 @@ Space losses: 0 bytes internal + 6 bytes external = 6 bytes total
 
 
 <!-- indicate-the-source -->
-
-

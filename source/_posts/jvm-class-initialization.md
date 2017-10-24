@@ -27,7 +27,7 @@ tags:
 public interface InterfaceClinit {
     class InnerClass {
     }
-    
+
     InnerClass INNER_CLASS = new InnerClass();
     String NAME = "zhongmingmao";
 }
@@ -71,12 +71,12 @@ static {};
 public class ClassClinit {
     static class InnerClass {
     }
-    
+
     static {
         j = 2;
         // System.out.println(i); // 非法前向引用
     }
-    
+
     static int i = 1;
     static int j;
     static InnerClass INNER_CLASS = new InnerClass();
@@ -129,7 +129,7 @@ interface EmptyInterfaceClinit {
 ```
 
 ## 隐含地并发
-1. `JVM`会保证一个`clinit`方法在`多线程`环境中被**`正确地加锁、同步`** ➜ `隐含地阻塞`
+1. `JVM`会保证一个`clinit`方法在`多线程`环境中被**`正确地加锁、同步`** ➜ `隐蔽地阻塞`
 2. 其他线程被阻塞，但如果执行clinit方法的线程退出clinit方法后，其他线程唤醒之后**`不会再次进入`**clinit方法
 
 ### 代码
@@ -146,15 +146,15 @@ public class ClinitConcurrencyTest {
             }
         }
     }
-    
+
     public static void main(String[] args) {
-        
+
         Runnable initClassTask = () -> {
             System.out.println(String.format("%s start", Thread.currentThread().getName()));
-            new A(); // 隐蔽的同步，不会重复进入
+            new A(); // 隐蔽地同步，不会重复进入
             System.out.println(String.format("%s run over", Thread.currentThread().getName()));
         };
-        
+
         new Thread(initClassTask, "t1").start();
         new Thread(initClassTask, "t2").start();
     }
@@ -172,10 +172,9 @@ t1 run over
 ```
 
 ## 类初始化 vs 接口初始化
-1. 当`类初始化`时，要求其`父类`全部都已经`初始化`过了
-2. 当`接口初始化`时，并不要求其父接口全部都完成初始化，只有在`真正使用父接口`的时候（如`引用接口中定义的常量`）才会初始化
-3. `接口的实现类`在了`类初始化`时也一样不会执行`接口clinit`方法
-
+1. 当`类初始化`时，要求其`父类`全部都已经`类初始化`过了
+2. 当`接口初始化`时，并不要求其父接口全部都完成初始化，只有在`真正使用父接口`的时候（如`引用接口中定义的常量`）才会进行`父接口初始化`
+3. `接口的实现类`在进行`类初始化`时，也一样不会进行`父接口初始化`
 
 # 主动引用 - 触发类初始化
 
@@ -189,7 +188,7 @@ public class NewTest {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         new A(); // 触发类A的初始化
     }
@@ -226,20 +225,20 @@ public static void main(java.lang.String[]);
 public class StaticTest {
     static class A {
         static String name;
-        
+
         static {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     static class B {
         static String name;
-        
+
         static {
             System.out.println("Class B Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         A.name = "zhongmingmao"; // 触发类A的初始化
         String name = B.name; // 触发类B的初始化
@@ -283,11 +282,11 @@ public class InvokestaticTest {
         static {
             System.out.println("Class A Initialization");
         }
-        
+
         static void staticMethod() {
         }
     }
-    
+
     public static void main(String[] args) {
         A.staticMethod(); // 触发类A的初始化
     }
@@ -323,24 +322,24 @@ public static void main(java.lang.String[]);
 ```java
 public class ClassForNameTest {
     static class A {
-        
+
         static {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     static class B {
-        
+
         static {
             System.out.println("Class B Initialization");
         }
     }
-    
+
     public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException,
             InstantiationException {
         ClassLoader classLoader = ClassForNameTest.class.getClassLoader();
         Class.forName(A.class.getName()); // 触发类A的初始化
-        
+
         Class<?> clazz = Class.forName(B.class.getName(), false, classLoader); // 不会触发类B的初始化
         System.out.println("Load Class B");
         clazz.newInstance(); // 触发类B的初始化
@@ -371,12 +370,12 @@ private static native Class<?> forName0(String name, boolean initialize,
 ```java
 public class LoadClassTest {
     static class A {
-        
+
         static {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException,
             InstantiationException {
         ClassLoader classLoader = LoadClassTest.class.getClassLoader();
@@ -400,19 +399,19 @@ Class A Initialization
 ```java
 public class InheritTest {
     static class Father {
-        
+
         static {
             System.out.println("Class Father Initialization");
         }
     }
-    
+
     static class Son extends Father {
-        
+
         static {
             System.out.println("Class Son Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         new Son(); // 首先触发类Father的初始化，再触发类Son的初始化
     }
@@ -452,7 +451,7 @@ public class MainClassTest {
     static {
         System.out.println("Class MainClassTest Initialization");
     }
-    
+
     public static void main(String[] args) {
     }
 }
@@ -474,20 +473,20 @@ Class MainClassTest Initialization
 public class StaticFieldTest {
     static class Father {
         static String FATHER_CLASS_NAME = Father.class.getName();
-        
+
         static {
             System.out.println("Class Father Initialization");
         }
     }
-    
+
     static class Son extends Father {
         static String SON_CLASS_NAME = Son.class.getName();
-        
+
         static {
             System.out.println("Class Son Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         String className = Son.FATHER_CLASS_NAME; // 只会触发类Father的初始化，不会触发类Son的初始化
     }
@@ -528,7 +527,7 @@ public class ArrayRefTest {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         A[] as = new A[10]; // 不会触发类A的初始化
     }
@@ -555,19 +554,19 @@ public static void main(java.lang.String[]);
 ```
 
 ## 编译时常量
-`常量`在`编译阶段`会存入`Class文件常量池`（`Constant pool`）中，编译时便会**`直接替换`**，本质上并没有直接引用绑定到定义常量的类，不会触发定义常量类的初始化
+`常量`在`编译阶段`会存入`Class文件常量池`（`Constant pool`）中，编译时便会**`直接替换`**，本质上并没有直接引用绑定到定义常量的类，不会触发定义常量的类的初始化
 
 ### 代码
 ```java
 public class ConstantValueTest {
     static class A {
         static final String NAME = "zhongmingmao";
-        
+
         static {
             System.out.println("Class A Initialization");
         }
     }
-    
+
     public static void main(String[] args) {
         String className = A.NAME;// 不会触发类A的初始化
     }
@@ -612,5 +611,3 @@ public static void main(java.lang.String[]);
 
 
 <!-- indicate-the-source -->
-
-

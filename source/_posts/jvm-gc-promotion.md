@@ -17,20 +17,34 @@ tags:
 <!-- more -->
 
 # -XX:+UseSerialGC
-1. `新生代`采用`Serial`垃圾收集器（`Copying`算法，`单线程`，`Stop The World`） 
+1. `新生代`采用`Serial`垃圾收集器（`Copying`算法，`单线程`，`Stop The World`）
 2. `老年代`采用`Serial Old`垃圾收集器（`Mark-Compact`算法，`单线程`，`Stop The World`）
 
-# Minor GC + Major GC
+# Minor GC / Major GC / Full GC
+
+## 常规理解
+1. `Eden`空间不够 ➔ `Minor GC` ➔ 回收`Young Generation`
+2. `Old Generation`空间不够 ➔ `Major GC` ➔ 回收`Old Generation`
+3. `Method Area`（`Java 8`开始由`MetaSpace`实现，之前由`Permanent Generation`实现）空间不够 ➔ `Full GC` ➔ 回收`Young Generation`+`Old Generation`
+
+最难区分的是`Major GC`和`Full GC`，其实并没有明确规定两者的区别，因此不要以`Minor GC`、`Major GC`、`Full GC`的方式来思考问题，而应该关注
+1. `GC`是否需要`Stop-The-World`
+2. `GC`能否`并发`（不是并行，是并发！）
+3. 应用的`延迟`和`吞吐量`
+
+本文认为`Major GC` ≈ `Full GC`，不作区分
 
 ## Minor GC
 1. 发生在`新生代`，当`Eden`区域没有足够空间进行分配
 2. Java对象大多具有`短命`的特性
 3. `Minor GC`非常`频繁`，速度也比较`快`
+4. `Minor GC`会造成`Stop-The-World`，但由于`新生代`的对象为大多为`短命`对象，因此由`Stop-The-World`而造成的延迟可以忽略
 
-## Major GC
-1. 也叫`Full GC`，发生在`老年代`
+## Major GC / Full GC
+1. 发生在`老年代`
 2. 出现`Major GC`，经常伴随`至少一次Minor GC`
 3. 速度比较`慢`，`SpeedOf(Minor GC) ≈ 10 * SpeedOf(Major GC)`
+4. `Major GC`也会造成`Stop-The-World`，但由于`老年代`的对象为大多为`长命`对象，因此由`Stop-The-World`而造成的延迟可能会比较大，因此才会出现`并发收集器`：`CMS`和`G1`（Java 9默认）
 
 # 大对象直接晋升
 
@@ -44,7 +58,7 @@ tags:
 // 老年代大小：10M
 public class MinorGCAndFullGC {
     private static final int _1MB = 1024 * 1024;
- 
+
     public static void main(String[] args) {
         System.gc();
         byte[] b1 = new byte[5 * _1MB];
@@ -56,10 +70,10 @@ public class MinorGCAndFullGC {
 
 ## 运行结果
 ```
-[Full GC (System.gc()) [Tenured: 0K->467K(10240K), 0.0037172 secs] 2217K->467K(19456K), [Metaspace: 3177K->3177K(1056768K)], 0.0037645 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-[GC (Allocation Failure) [DefNew: 5447K->4K(9216K), 0.0036997 secs] 5915K->5592K(19456K), 0.0037186 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-[GC (Allocation Failure) [DefNew: 5209K->5209K(9216K), 0.0000165 secs][Tenured: 5587K->5587K(10240K), 0.0029173 secs] 10796K->10713K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0029714 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
-[Full GC (Allocation Failure) [Tenured: 5587K->5527K(10240K), 0.0036178 secs] 10713K->10653K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0036448 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+[Full GC (System.gc()) [Tenured: 0K->467K(10240K), 0.0037172 secs] 2217K->467K(19456K), [Metaspace: 3177K->3177K(1056768K)], 0.0037645 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+[GC (Allocation Failure) [DefNew: 5447K->4K(9216K), 0.0036997 secs] 5915K->5592K(19456K), 0.0037186 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+[GC (Allocation Failure) [DefNew: 5209K->5209K(9216K), 0.0000165 secs][Tenured: 5587K->5587K(10240K), 0.0029173 secs] 10796K->10713K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0029714 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+[Full GC (Allocation Failure) [Tenured: 5587K->5527K(10240K), 0.0036178 secs] 10713K->10653K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0036448 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
 Heap
  def new generation   total 9216K, used 5508K [0x00000007bec00000, 0x00000007bf600000, 0x00000007bf600000)
   eden space 8192K,  67% used [0x00000007bec00000, 0x00000007bf161370, 0x00000007bf400000)
@@ -77,7 +91,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ### System.gc()
 对应的GC日志
 ```
-[Full GC (System.gc()) [Tenured: 0K->467K(10240K), 0.0037172 secs] 2217K->467K(19456K), [Metaspace: 3177K->3177K(1056768K)], 0.0037645 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[Full GC (System.gc()) [Tenured: 0K->467K(10240K), 0.0037172 secs] 2217K->467K(19456K), [Metaspace: 3177K->3177K(1056768K)], 0.0037645 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 ```
 1. 进行`Full GC`的原因是代码调用`System.gc()`
 2. `堆`总大小为`19456K` ≈ `20M`
@@ -93,7 +107,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ### byte[] b2 = new byte[5 * _1MB]
 对应的GC日志
 ```
-[GC (Allocation Failure) [DefNew: 5447K->4K(9216K), 0.0036997 secs] 5915K->5592K(19456K), 0.0037186 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 5447K->4K(9216K), 0.0036997 secs] 5915K->5592K(19456K), 0.0037186 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 ```
 ![gc_1_b2.png](http://ot85c3jox.bkt.clouddn.com/gc_1_b2.png)
 1. `Eden`区只有`8M`，此时已经分配了`b1`，最多只剩下`3M`的可用空间，`Serial`采集器采用`Copying`算法，不足以容纳`b2`，触发`Minor GC`
@@ -105,7 +119,7 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ### byte[] b3 = new byte[5 * _1MB]
 对应的GC日志
 ```
-[GC (Allocation Failure) [DefNew: 5209K->5209K(9216K), 0.0000165 secs][Tenured: 5587K->5587K(10240K), 0.0029173 secs] 10796K->10713K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0029714 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 5209K->5209K(9216K), 0.0000165 secs][Tenured: 5587K->5587K(10240K), 0.0029173 secs] 10796K->10713K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0029714 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 [Full GC (Allocation Failure) [Tenured: 5587K->5527K(10240K), 0.0036178 secs] 10713K->10653K(19456K), [Metaspace: 3270K->3270K(1056768K)], 0.0036448 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]
 ```
 1. 由于`Eden`区此时最多有`3M`的可用空间，要分配`b3`，首先触发一次`Minor GC`
@@ -129,15 +143,15 @@ public class TenuringThreshold {
 
     private static final int _10MB = 10 * 1024 * 1024;
     private static Pattern BIN_PATTERN = Pattern.compile("\\(((\\d{8}\\s?){4})\\)");
-    
+
     // JVM Args : -Xms200m -Xmx200m -Xmn100m -XX:SurvivorRatio=8 -XX:MaxTenuringThreshold=3
     // -XX:+UseSerialGC -XX:+PrintGCDetails  -Djol.tryWithSudo=true
     public static void main(String[] args) {
-        
+
         System.gc();
         byte[] b = new byte[_10MB / 4];
         System.out.println(String.format("Init Address : %s\n", VM.current().addressOf(b)));
-        
+
         for (int i = 0; i < 6; ++i) {
             // 从i=1开始，每分配一次bytes，就会触发一次Minor GC
             // 当对象b的GCAge < MaxTenuringThreshold -> 在两个Survivor区之间来回移动
@@ -149,7 +163,7 @@ public class TenuringThreshold {
             System.out.println();
         }
     }
-    
+
     /**
      * 获取对象的GC年龄<br/>
      * Java对象头结构 See http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp
@@ -183,24 +197,24 @@ public class TenuringThreshold {
 
 ## 运行结果
 ```
-[Full GC (System.gc()) [Tenured: 0K->452K(102400K), 0.0032760 secs] 6555K->452K(194560K), [Metaspace: 3198K->3198K(1056768K)], 0.0033038 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[Full GC (System.gc()) [Tenured: 0K->452K(102400K), 0.0032760 secs] 6555K->452K(194560K), [Metaspace: 3198K->3198K(1056768K)], 0.0033038 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 Init Address : 33076281344
 
 Address[0] : 33076281344 , GC Age : 0
 
-[GC (Allocation Failure) [DefNew: 70169K->3565K(92160K), 0.0051274 secs] 70622K->4017K(194560K), 0.0051485 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 70169K->3565K(92160K), 0.0051274 secs] 70622K->4017K(194560K), 0.0051485 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
 Address[1] : 33170780832 , GC Age : 1
 
-[GC (Allocation Failure) [DefNew: 57128K->3417K(92160K), 0.0075981 secs] 57580K->3869K(194560K), 0.0076253 secs] [Times: user=0.01 sys=0.01, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 57128K->3417K(92160K), 0.0075981 secs] 57580K->3869K(194560K), 0.0076253 secs] [Times: user=0.01 sys=0.01, real=0.00 secs]
 Address[2] : 33160295048 , GC Age : 2
 
-[GC (Allocation Failure) [DefNew: 56715K->3417K(92160K), 0.0020149 secs] 57168K->3869K(194560K), 0.0020339 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 56715K->3417K(92160K), 0.0020149 secs] 57168K->3869K(194560K), 0.0020339 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 Address[3] : 33170780808 , GC Age : 3
 
-[GC (Allocation Failure) [DefNew: 56533K->0K(92160K), 0.0052362 secs] 56985K->3870K(194560K), 0.0052590 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 56533K->0K(92160K), 0.0052362 secs] 56985K->3870K(194560K), 0.0052590 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
 Address[4] : 33181729784 , GC Age : 3
 
-[GC (Allocation Failure) [DefNew: 52773K->0K(92160K), 0.0004461 secs] 56643K->3870K(194560K), 0.0004610 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 52773K->0K(92160K), 0.0004461 secs] 56643K->3870K(194560K), 0.0004610 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
 Address[5] : 33181729784 , GC Age : 3
 
 Heap
@@ -228,35 +242,35 @@ Address[0] : 33076281344 , GC Age : 0
 
 ### 循环`i=1`
 ```
-[GC (Allocation Failure) [DefNew: 70169K->3565K(92160K), 0.0051274 secs] 70622K->4017K(194560K), 0.0051485 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 70169K->3565K(92160K), 0.0051274 secs] 70622K->4017K(194560K), 0.0051485 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
 Address[1] : 33170780832 , GC Age : 1
 ```
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=0`分配的`5*_10MB`的内存空间被回收，`对象b`被移动到了**`Survivor 0`**区，内存地址变成了`33170780832`，`GC年龄`为`1`
 
 ### 循环`i=2`
 ```
-[GC (Allocation Failure) [DefNew: 57128K->3417K(92160K), 0.0075981 secs] 57580K->3869K(194560K), 0.0076253 secs] [Times: user=0.01 sys=0.01, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 57128K->3417K(92160K), 0.0075981 secs] 57580K->3869K(194560K), 0.0076253 secs] [Times: user=0.01 sys=0.01, real=0.00 secs]
 Address[2] : 33160295048 , GC Age : 2
 ```
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=1`分配的`5*_10MB`的内存空间被回收，`对象b`被移动到了**`Survivor 1`**区，内存地址变成了`33160295048`，`GC年龄`为`2`
 
 ### 循环`i=3`
 ```
-[GC (Allocation Failure) [DefNew: 56715K->3417K(92160K), 0.0020149 secs] 57168K->3869K(194560K), 0.0020339 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 56715K->3417K(92160K), 0.0020149 secs] 57168K->3869K(194560K), 0.0020339 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 Address[3] : 33170780808 , GC Age : 3
 ```
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=2`分配的`5*_10MB`的内存空间被回收，`对象b`**`再次`**被移动到了**`Survivor 0`**区，内存地址变成了`33170780808`，`GC年龄`为`3`
 
 ### 循环`i=4`
 ```
-[GC (Allocation Failure) [DefNew: 56533K->0K(92160K), 0.0052362 secs] 56985K->3870K(194560K), 0.0052590 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 56533K->0K(92160K), 0.0052362 secs] 56985K->3870K(194560K), 0.0052590 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
 Address[4] : 33181729784 , GC Age : 3
 ```
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=3`分配的`5*_10MB`的内存空间被回收，`对象b`的`GC年龄`已经达到了`MaxTenuringThreshold`，可以直接晋升到`Tenured`区，内存地址变成了`33181729784`，`GC年龄`依旧为`3`,不会再增加
 
 ### 循环`i=5`
 ```
-[GC (Allocation Failure) [DefNew: 52773K->0K(92160K), 0.0004461 secs] 56643K->3870K(194560K), 0.0004610 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 52773K->0K(92160K), 0.0004461 secs] 56643K->3870K(194560K), 0.0004610 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
 Address[5] : 33181729784 , GC Age : 3
 ```
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=4`分配的`5*_10MB`的内存空间被回收，`对象b`已经在`Tenured`区，此时并不是`Full GC`，内存地址不会改变，依旧是`33181729784`，`GC年龄`也依旧是`3`
@@ -273,10 +287,10 @@ Address[5] : 33181729784 , GC Age : 3
  * @author zhongmingmao zhongmingmao@0625@gmail.com
  */
 public class DynamicGCAge {
-    
+
     private static final int _10MB = 10 * 1024 * 1024;
     private static Pattern BIN_PATTERN = Pattern.compile("\\(((\\d{8}\\s?){4})\\)");
-    
+
     // JVM Args : -Xms200m -Xmx200m -Xmn100m -XX:SurvivorRatio=8 -XX:+UseSerialGC
     // -XX:+PrintGCDetails -Djol.tryWithSudo=true
     public static void main(String[] args) {
@@ -297,7 +311,7 @@ public class DynamicGCAge {
                 b4 = new byte[_10MB / 8];
             }
             byte[] bytes = new byte[5 * _10MB];
-            
+
             System.out.println(getObjectInfo("b0", b0));
             System.out.println(getObjectInfo("b1", b1));
             System.out.println(getObjectInfo("b2", b2));
@@ -306,7 +320,7 @@ public class DynamicGCAge {
             System.out.println();
         }
     }
-    
+
     private static int getObjectGCAge(Object object) {
         if (null == object) {
             return -1;
@@ -318,11 +332,11 @@ public class DynamicGCAge {
         }
         return 0;
     }
-    
+
     private static long getObjectAddress(Object object) {
         return null == object ? -1 : VM.current().addressOf(object);
     }
-    
+
     private static String getObjectInfo(String name, Object object) {
         return String.format("Obj[%s] , Address:[%s] , GCAge:[%s]",
                 name,
@@ -334,7 +348,7 @@ public class DynamicGCAge {
 
 ## 运行结果
 ```
-[Full GC (System.gc()) [Tenured: 0K->484K(102400K), 0.0046554 secs] 6555K->484K(194560K), [Metaspace: 3346K->3346K(1056768K)], 0.0047017 secs] [Times: user=0.01 sys=0.00, real=0.00 secs] 
+[Full GC (System.gc()) [Tenured: 0K->484K(102400K), 0.0046554 secs] 6555K->484K(194560K), [Metaspace: 3346K->3346K(1056768K)], 0.0047017 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]
 Obj[b0] , Address:[33076281344] , GCAge:[0]
 
 Obj[b0] , Address:[33076281344] , GCAge:[0]
@@ -343,28 +357,28 @@ Obj[b2] , Address:[-1] , GCAge:[-1]
 Obj[b3] , Address:[-1] , GCAge:[-1]
 Obj[b4] , Address:[-1] , GCAge:[-1]
 
-[GC (Allocation Failure) [DefNew: 67248K->2254K(92160K), 0.0069139 secs] 67732K->2738K(194560K), 0.0069444 secs] [Times: user=0.00 sys=0.01, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 67248K->2254K(92160K), 0.0069139 secs] 67732K->2738K(194560K), 0.0069444 secs] [Times: user=0.00 sys=0.01, real=0.01 secs]
 Obj[b0] , Address:[33170752344] , GCAge:[1]
 Obj[b1] , Address:[-1] , GCAge:[-1]
 Obj[b2] , Address:[-1] , GCAge:[-1]
 Obj[b3] , Address:[-1] , GCAge:[-1]
 Obj[b4] , Address:[-1] , GCAge:[-1]
 
-[GC (Allocation Failure) [DefNew: 59673K->7226K(92160K), 0.0059408 secs] 60157K->7710K(194560K), 0.0059641 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 59673K->7226K(92160K), 0.0059408 secs] 60157K->7710K(194560K), 0.0059641 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
 Obj[b0] , Address:[33160266584] , GCAge:[2]
 Obj[b1] , Address:[33161577320] , GCAge:[1]
 Obj[b2] , Address:[33162888056] , GCAge:[1]
 Obj[b3] , Address:[33164198792] , GCAge:[1]
 Obj[b4] , Address:[33165509528] , GCAge:[1]
 
-[GC (Allocation Failure) [DefNew: 60004K->0K(92160K), 0.0086877 secs] 60488K->7710K(194560K), 0.0087102 secs] [Times: user=0.00 sys=0.01, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 60004K->0K(92160K), 0.0086877 secs] 60488K->7710K(194560K), 0.0087102 secs] [Times: user=0.00 sys=0.01, real=0.00 secs]
 Obj[b0] , Address:[33181733760] , GCAge:[2]
 Obj[b1] , Address:[33183044496] , GCAge:[1]
 Obj[b2] , Address:[33184355232] , GCAge:[1]
 Obj[b3] , Address:[33185665968] , GCAge:[1]
 Obj[b4] , Address:[33186976704] , GCAge:[1]
 
-[GC (Allocation Failure) [DefNew: 53328K->0K(92160K), 0.0009302 secs] 61039K->7710K(194560K), 0.0009761 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 53328K->0K(92160K), 0.0009302 secs] 61039K->7710K(194560K), 0.0009761 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 Obj[b0] , Address:[33181733760] , GCAge:[2]
 Obj[b1] , Address:[33183044496] , GCAge:[1]
 Obj[b2] , Address:[33184355232] , GCAge:[1]
@@ -401,7 +415,7 @@ Obj[b4] , Address:[-1] , GCAge:[-1]
 
 ### 循环`i=1`
 ```
-[GC (Allocation Failure) [DefNew: 67248K->2254K(92160K), 0.0069139 secs] 67732K->2738K(194560K), 0.0069444 secs] [Times: user=0.00 sys=0.01, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 67248K->2254K(92160K), 0.0069139 secs] 67732K->2738K(194560K), 0.0069444 secs] [Times: user=0.00 sys=0.01, real=0.01 secs]
 Obj[b0] , Address:[33170752344] , GCAge:[1]
 Obj[b1] , Address:[-1] , GCAge:[-1]
 Obj[b2] , Address:[-1] , GCAge:[-1]
@@ -413,7 +427,7 @@ Obj[b4] , Address:[-1] , GCAge:[-1]
 
 ### 循环`i=2`
 ```
-[GC (Allocation Failure) [DefNew: 59673K->7226K(92160K), 0.0059408 secs] 60157K->7710K(194560K), 0.0059641 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+[GC (Allocation Failure) [DefNew: 59673K->7226K(92160K), 0.0059408 secs] 60157K->7710K(194560K), 0.0059641 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
 Obj[b0] , Address:[33160266584] , GCAge:[2]
 Obj[b1] , Address:[33161577320] , GCAge:[1]
 Obj[b2] , Address:[33162888056] , GCAge:[1]
@@ -426,7 +440,7 @@ Obj[b4] , Address:[33165509528] , GCAge:[1]
 
 ### 循环`i=3`
 ```
-[GC (Allocation Failure) [DefNew: 60004K->0K(92160K), 0.0086877 secs] 60488K->7710K(194560K), 0.0087102 secs] [Times: user=0.00 sys=0.01, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 60004K->0K(92160K), 0.0086877 secs] 60488K->7710K(194560K), 0.0087102 secs] [Times: user=0.00 sys=0.01, real=0.00 secs]
 Obj[b0] , Address:[33181733760] , GCAge:[2]
 Obj[b1] , Address:[33183044496] , GCAge:[1]
 Obj[b2] , Address:[33184355232] , GCAge:[1]
@@ -437,7 +451,7 @@ Obj[b4] , Address:[33186976704] , GCAge:[1]
 
 ### 循环`i=4`
 ```
-[GC (Allocation Failure) [DefNew: 53328K->0K(92160K), 0.0009302 secs] 61039K->7710K(194560K), 0.0009761 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+[GC (Allocation Failure) [DefNew: 53328K->0K(92160K), 0.0009302 secs] 61039K->7710K(194560K), 0.0009761 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 Obj[b0] , Address:[33181733760] , GCAge:[2]
 Obj[b1] , Address:[33183044496] , GCAge:[1]
 Obj[b2] , Address:[33184355232] , GCAge:[1]
@@ -447,5 +461,3 @@ Obj[b4] , Address:[33186976704] , GCAge:[1]
 尝试在`Eden`区再分配`5*_10MB`的内存空间，内存空间不足，触发`Minor GC`，循环`i=3`分配的`5*_10MB`的内存空间被回收，此时`b0~b4`都已经在老年代中了，此时只是`Minor GC`，内存地址和GC年龄都不会改变
 
 <!-- indicate-the-source -->
-
-
