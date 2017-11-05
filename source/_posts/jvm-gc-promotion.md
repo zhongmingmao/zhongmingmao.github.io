@@ -25,7 +25,7 @@ tags:
 ## 常规理解
 1. `Eden`空间不够 ➔ `Minor GC` ➔ 回收`Young Generation`
 2. `Old Generation`空间不够 ➔ `Major GC` ➔ 回收`Old Generation`
-3. `Method Area`（`Java 8`开始由`MetaSpace`实现，之前由`Permanent Generation`实现）空间不够 ➔ `Full GC` ➔ 回收`Young Generation`+`Old Generation`
+3. `Method Area`（`Java 8`开始由`MetaSpace`实现，之前由`Permanent Generation`实现）空间不够 ➔ `Full GC` ➔ 回收`Young Generation`+`Old Generation`+`Method Area`
 
 最难区分的是`Major GC`和`Full GC`，其实并没有明确规定两者的区别，因此不要以`Minor GC`、`Major GC`、`Full GC`的方式来思考问题，而应该关注
 1. `GC`是否需要`Stop-The-World`
