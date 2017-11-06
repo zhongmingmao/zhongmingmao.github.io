@@ -11,7 +11,6 @@ tags:
 
 {% note info %}
 本文将简要介绍`Paxos`协议
-参考资料：http://video.tudou.com/v/XMTc4NjM4Nzc1Mg==.html
 {% endnote %}
 
 <!-- more -->
@@ -188,9 +187,7 @@ tags:
     - `半数以下Acceptor`出现故障时，存活的`Acceptor`依然可以形成var的确定性取值
     - 一旦var取值确定，即便出现`半数以下Acceptor`故障，此取值依然可以被获取，并且将不再被更改
 
-### 个人疑惑
-对`Paxos`的理解有待加深，在网络环境不稳定的情况下可能会出现下面这种情况，暂时无法理解，还望大神指点
-
-![zk_paxos_error_1.png](http://ovk7evjd7.bkt.clouddn.com/zk_paxos_error_1.png)
+# 参考资料
+[paxos和分布式系统](http://video.tudou.com/v/XMTc4NjM4Nzc1Mg==.html)
 
 <!-- indicate-the-source -->
