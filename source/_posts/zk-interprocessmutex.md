@@ -1,5 +1,5 @@
 ---
-title: 分布式互斥锁InterProcessMutex代码剖析
+title: 基于Zookeeper实现的分布式互斥锁 - InterProcessMutex
 date: 2017-07-14 00:06:25
 categories:
     - Zookeeper
@@ -10,29 +10,31 @@ tags:
 ---
 
 {% note info %}
-`Curator`是一个`ZooKeeper`客户端框架，其中封装了`分布式锁`的实现，最为常用的是`InterProcessMutex`，本文将对其进行代码剖析
+`Curator`是`ZooKeeper`的一个客户端框架，其中封装了`分布式互斥锁`的实现，最为常用的是`InterProcessMutex`，本文将对其进行代码剖析
 {% endnote %}
 
 <!-- more -->
 
 # 简介
-`InterProcessMutex`基于`Zookeeper`实现了**`分布式的公平可重入互斥锁`**，类似于单个JVM进程内d`ReentrantLock(fair=true)`
+`InterProcessMutex`基于`Zookeeper`实现了_**`分布式的公平可重入互斥锁`**_，类似于单个JVM进程内的`ReentrantLock(fair=true)`
 
-# 构造过程
+# 构造函数
 ```java
 // 最常用
 public InterProcessMutex(CuratorFramework client, String path){
+    // Zookeeper利用path创建临时顺序节点，实现公平锁的核心
     this(client, path, new StandardLockInternalsDriver());
 }
 
 public InterProcessMutex(CuratorFramework client, String path, LockInternalsDriver driver){
-    // maxLeases=1，表示可以获得锁的线程数量（跨JVM）
+    // maxLeases=1，表示可以获得分布式锁的线程数量（跨JVM）为1，即为互斥锁
     this(client, path, LOCK_NAME, 1, driver);
 }
 
+// protected构造函数
 InterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver){
     basePath = PathUtils.validatePath(path);
-    // LockInternals是申请锁与释放锁的核心实现
+    // internals的类型为LockInternals，InterProcessMutex将分布式锁的申请和释放操作委托给internals执行
     internals = new LockInternals(client, driver, path, lockName, maxLeases);
 }
 ```
@@ -61,15 +63,15 @@ private boolean internalLock(long time, TimeUnit unit) throws Exception{
     LockData lockData = threadData.get(currentThread);
     if ( lockData != null ){
         // 实现可重入
-        // 同一线程再次acquire，首先判断当前的映射表内（threadData）是否有锁信息，有则原子+1，然后返回
+        // 同一线程再次acquire，首先判断当前的映射表内（threadData）是否有该线程的锁信息，如果有则原子+1，然后返回
         lockData.lockCount.incrementAndGet();
         return true;
     }
-    
+
     // 映射表内没有对应的锁信息，尝试通过LockInternals获取锁
     String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
     if ( lockPath != null ){
-        // 成功获取锁，记录信息到映射表，以实现锁的可重入
+        // 成功获取锁，记录信息到映射表
         LockData newLockData = new LockData(currentThread, lockPath);
         threadData.put(currentThread, newLockData);
         return true;
@@ -84,12 +86,12 @@ private final ConcurrentMap<Thread, LockData> threadData = Maps.newConcurrentMap
 ```
 ```java
 // 锁信息
-// Zookeeper中一个临时顺序节点对应一个“锁”，但让锁生效激活需要排队，下面会继续分析
+// Zookeeper中一个临时顺序节点对应一个“锁”，但让锁生效激活需要排队（公平锁），下面会继续分析
 private static class LockData{
     final Thread owningThread;
     final String lockPath;
-    final AtomicInteger lockCount = new AtomicInteger(1);
-    
+    final AtomicInteger lockCount = new AtomicInteger(1); // 分布式锁重入次数
+
     private LockData(Thread owningThread, String lockPath){
         this.owningThread = owningThread;
         this.lockPath = lockPath;
@@ -99,27 +101,31 @@ private static class LockData{
 
 ## LockInternals.attemptLock
 ```java
+// 尝试获取锁，并返回锁对应的Zookeeper临时顺序节点的路径
 String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception{
-    final long      startMillis = System.currentTimeMillis();
+    final long startMillis = System.currentTimeMillis();
     // 无限等待时，millisToWait为null
-    final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
+    final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
     // 创建ZNode节点时的数据内容，无关紧要，这里为null，采用默认值（IP地址）
-    final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
+    final byte[] localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
     // 当前已经重试次数，与CuratorFramework的重试策略有关
-    int             retryCount = 0;
-    // 在Zookeeper中创建的临时顺序节点的路径，相当于一把待激活的锁（激活条件：同级目录子节点，名称排序最小，后续继续分析）
-    String          ourPath = null;
-    // 是否已经持有锁
-    boolean         hasTheLock = false;
-    // 是否已经完成尝试获取锁的操作
-    boolean         isDone = false;
+    int retryCount = 0;
+
+    // 在Zookeeper中创建的临时顺序节点的路径，相当于一把待激活的分布式锁
+    // 激活条件：同级目录子节点，名称排序最小（排队，公平锁），后续继续分析
+    String ourPath = null;
+    // 是否已经持有分布式锁
+    boolean hasTheLock = false;
+    // 是否已经完成尝试获取分布式锁的操作
+    boolean isDone = false;
+
     while ( !isDone ){
         isDone = true;
         try{
             // 从InterProcessMutex的构造函数可知实际driver为StandardLockInternalsDriver的实例
             // 在Zookeeper中创建临时顺序节点
             ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
-            // 循环等待来激活锁，实现锁的公平性，后续继续分析
+            // 循环等待来激活分布式锁，实现锁的公平性，后续继续分析
             hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
         } catch ( KeeperException.NoNodeException e ) {
             // 容错处理，不影响主逻辑的理解，可跳过
@@ -135,26 +141,27 @@ String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Except
         }
     }
     if ( hasTheLock ){
-        // 成功获得锁，返回临时顺序节点，上层将其封装成锁信息记录在映射表，方便锁重入
+        // 成功获得分布式锁，返回临时顺序节点的路径，上层将其封装成锁信息记录在映射表，方便锁重入
         return ourPath;
     }
-    // 获取锁失败，返回null
+    // 获取分布式锁失败，返回null
     return null;
 }
 ```
 ```java
-// Class:StandardLockInternalsDriver
+// From StandardLockInternalsDriver
+// 在Zookeeper中创建临时顺序节点
 public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception{
     String ourPath;
     // lockNodeBytes不为null则作为数据节点内容，否则采用默认内容（IP地址）
     if ( lockNodeBytes != null ){
-        // 下面对CuratorFramework的一些细节做解释，不影响锁主逻辑的解释，可跳过
+        // 下面对CuratorFramework的一些细节做解释，不影响对分布式锁主逻辑的解释，可跳过
         // creatingParentContainersIfNeeded：用于创建父节点，如果不支持CreateMode.CONTAINER
         // 那么将采用CreateMode.PERSISTENT
         // withProtection：临时子节点会添加GUID前缀
         ourPath = client.create().creatingParentContainersIfNeeded()
             // CreateMode.EPHEMERAL_SEQUENTIAL：临时顺序节点，Zookeeper能保证在节点产生的顺序性
-            // 依据顺序来激活锁，从而也实现了锁的公平性，后续继续分析
+            // 依据顺序来激活分布式锁，从而也实现了分布式锁的公平性，后续继续分析
             .withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, lockNodeBytes);
     } else {
         ourPath = client.create().creatingParentContainersIfNeeded()
@@ -166,8 +173,9 @@ public String createsTheLock(CuratorFramework client, String path, byte[] lockNo
 
 ## LockInternals.internalLockLoop
 ```java
+// 循环等待来激活分布式锁，实现锁的公平性
 private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception {
-    // 是否已经持有锁
+    // 是否已经持有分布式锁
     boolean haveTheLock = false;
     // 是否需要删除子节点
     boolean doDelete = false;
@@ -175,15 +183,15 @@ private boolean internalLockLoop(long startMillis, Long millisToWait, String our
         if (revocable.get() != null) {
             client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
         }
-        
+
         while ((client.getState() == CuratorFrameworkState.STARTED) && !haveTheLock) {
             // 获取排序后的子节点列表
             List<String> children = getSortedChildren();
-            // 获取前面自己创建的临时子节点名称
-            String sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
+            // 获取前面自己创建的临时顺序子节点的名称
+            String sequenceNodeName = ourPath.substring(basePath.length() + 1);
             // 实现锁的公平性的核心逻辑，看下面的分析
             PredicateResults predicateResults = driver.getsTheLock(client,
-                                                        children,sequenceNodeName,maxLeases);
+                                                        children , sequenceNodeName , maxLeases);
             if (predicateResults.getsTheLock()) {
                 // 获得了锁，中断循环，继续返回上层
                 haveTheLock = true;
@@ -192,9 +200,8 @@ private boolean internalLockLoop(long startMillis, Long millisToWait, String our
                 String previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
                 synchronized (this) {
                     try {
-                        // 源代码注释，可跳过
-                        // 使用getData()代替exists()来避免因留下不需要的监听器（Watcher）
-                        // 一种导致资源泄漏（resource leak）
+                        // exists()会导致导致资源泄漏，因此exists()可以监听不存在的ZNode，因此采用getData()
+                        // 上一临时顺序节点如果被删除，会唤醒当前线程继续竞争锁，正常情况下能直接获得锁，因为锁是公平的
                         client.getData().usingWatcher(watcher).forPath(previousSequencePath);
                         if (millisToWait != null) {
                             millisToWait -= (System.currentTimeMillis() - startMillis);
@@ -231,21 +238,21 @@ private boolean internalLockLoop(long startMillis, Long millisToWait, String our
 }
 ```
 ```java
-// Class:StandardLockInternalsDriver
+// From StandardLockInternalsDriver
 public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception{
-// 之前创建的临时顺序节点在排序后的子节点列表中的索引
-int             ourIndex = children.indexOf(sequenceNodeName);
-// 校验之前创建的临时顺序节点是否有效
-validateOurIndex(sequenceNodeName, ourIndex);
-// 锁公平性的核心逻辑
-// 由InterProcessMutex的构造函数可知，maxLeases为1，即ourIndex为0，才能持有锁，或者说该线程创建的临时顺序节点激活了锁
-// Zookeeper的临时顺序节点特性能保证跨多个JVM的线程并发创建节点时的顺序性，越早创建临时顺序节点成功的线程会更早地激活锁或获得锁
-boolean         getsTheLock = ourIndex < maxLeases;
-// 如果已经获得了锁，则无需监听任何节点，否则需要监听上一顺序节点（ourIndex-1）
-// 因为锁是公平的，因此无需监听除了（ourIndex-1）以外的所有节点，非常巧妙的设计
-String          pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
-// 返回获取锁的结果，交由上层继续处理（添加监听等操作）
-return new PredicateResults(pathToWatch, getsTheLock);
+    // 之前创建的临时顺序节点在排序后的子节点列表中的索引
+    int ourIndex = children.indexOf(sequenceNodeName);
+    // 校验之前创建的临时顺序节点是否有效
+    validateOurIndex(sequenceNodeName, ourIndex);
+    // 锁公平性的核心逻辑
+    // 由InterProcessMutex的构造函数可知，maxLeases为1，即只有ourIndex为0时，线程才能持有锁，或者说该线程创建的临时顺序节点激活了锁
+    // Zookeeper的临时顺序节点特性能保证跨多个JVM的线程并发创建节点时的顺序性，越早创建临时顺序节点成功的线程会更早地激活锁或获得锁
+    boolean getsTheLock = ourIndex < maxLeases;
+    // 如果已经获得了锁，则无需监听任何节点，否则需要监听上一顺序节点（ourIndex-1）
+    // 因为锁是公平的，因此无需监听除了（ourIndex-1）以外的所有节点，这是为了减少羊群效应，非常巧妙的设计！！
+    String pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
+    // 返回获取锁的结果，交由上层继续处理（添加监听等操作）
+    return new PredicateResults(pathToWatch, getsTheLock);
 }
 
 static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException{
@@ -259,7 +266,7 @@ static void validateOurIndex(String sequenceNodeName, int ourIndex) throws Keepe
 }
 ```
 ```java
-// Class:LockInternals
+// From LockInternals
 private final Watcher watcher = new Watcher(){
     @Override
     public void process(WatchedEvent event){
@@ -271,7 +278,7 @@ private synchronized void notifyFromWatcher(){
 }
 ```
 ```java
-// Class:LockInternals
+// From LockInternals
 private void deleteOurPath(String ourPath) throws Exception{
     try{
         // 后台不断尝试删除
@@ -295,7 +302,7 @@ public void release() throws Exception{
         // 无法从映射表中获取锁信息，不持有锁
         throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
     }
-    
+
     int newLockCount = lockData.lockCount.decrementAndGet();
     if ( newLockCount > 0 ){
         // 锁是可重入的，初始值为1，原子-1到0，锁才释放
@@ -342,9 +349,7 @@ private void deleteOurPath(String ourPath) throws Exception{
 
 1. 分布式锁（基于`Zookeeper`）
 2. 互斥锁
-3. 公平锁（监听上一临时顺序节点 + `wait() / notifyAll()`）
-4. 可重入 
+3. 公平锁（`监听上一临时顺序节点` + `wait() / notifyAll()`）
+4. 可重入
 
 <!-- indicate-the-source -->
-
-
