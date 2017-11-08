@@ -116,7 +116,7 @@ notifications:
 
 * [x] [Zookeeper - Paxos协议小记](http://zhongmingmao.me/2017/07/05/zk-paxos/)
 * [x] [Zookeeper - ZAB协议小记](http://zhongmingmao.me/2017/07/09/zk-zab/)
-* [x] [分布式互斥锁InterProcessMutex代码剖析](http://zhongmingmao.me/2017/07/14/interprocessmutex/)
+* [x] [基于Zookeeper实现的分布式互斥锁 - InterProcessMutex](http://zhongmingmao.me/2017/07/14/zk-interprocessmutex/)
 
 ### 4.7 [Vim小记](http://zhongmingmao.me/categories/Vim/)
 
