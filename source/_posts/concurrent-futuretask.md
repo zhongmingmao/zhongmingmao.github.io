@@ -44,7 +44,7 @@ public interface Future<V> {
     //        需要依据参数mayInterruptIfRunning是否中断执行任务的线程，返回true
     // 如果cancel返回后，后续调用isDone会始终返回true
     // 如果cancel返回true，后续调用isCancelled会始终返回true
-    boolean cancel(boolean mayInterruptIfRunning
+    boolean cancel(boolean mayInterruptIfRunning)
 
     // 如果任务正常完成之前被取消，返回true
     boolean isCancelled();
