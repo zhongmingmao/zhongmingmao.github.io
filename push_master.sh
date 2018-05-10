@@ -1,4 +1,5 @@
 #!/bin/bash
+cd ./public
 git init
 git config user.name "zhongmingmao"
 git config user.email "zhongmingmao0625@gmail.com"
