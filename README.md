@@ -16,19 +16,14 @@ node_js: stable
 
 # S: Build Lifecycle
 install:
-  - npm install
+  - npm install && npm install gitbook -g && npm install -g gitbook-cli
 
 script:
-  - hexo g
+  - bash build_gitbook.sh
+  - hexo clean && hexo g
 
 after_script:
-  - cd ./public
-  - git init
-  - git config user.name "zhongmingmao"
-  - git config user.email "zhongmingmao0625@gmail.com"
-  - git add .
-  - git commit -m "Update Hexo Blog"
-  - git push --force --quiet "https://${GH_TOKEN}@${GH_REF}" master:master
+  - bash push_master.sh
 # E: Build LifeCycle
 
 branches:
