@@ -6,6 +6,7 @@ comments: false
 
 ### 机器学习
 1. [机器学习](/gitbook/machine-learning/)
+2. [机器学习基石](/gitbook/machine-learning-foundations/)
 
 ### 数学基础
 1. [线性代数](/gitbook/linear-algebra/)
