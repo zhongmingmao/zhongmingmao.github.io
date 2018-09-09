@@ -3,7 +3,7 @@ gitbook_path='source/gitbook/'
 rm -rf $gitbook_path
 mkdir -p $gitbook_path
 
-repository_names=('linear-algebra' 'machine-learning' 'deep-learning-book' 'kafka')
+repository_names=('machine-learning' 'deep-learning-book' 'kafka')
 for repository_name in ${repository_names[*]}; do
 	rm -rf $repository_name
     repository='https://github.com/zhongmingmao/'$repository_name
