@@ -5,6 +5,7 @@ mkdir -p $gitbook_path
 
 repository_names=('machine-learning' 'deep-learning-book' 'kafka')
 for repository_name in ${repository_names[*]}; do
+	break
 	rm -rf $repository_name
     repository='https://github.com/zhongmingmao/'$repository_name
 	git clone $repository
