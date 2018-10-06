@@ -137,5 +137,3 @@ q/ ➔ 打开查找命令历史的命令行窗口
 ![command_mode_shell_filter.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_shell_filter.gif)
 
 <!-- indicate-the-source -->
-
-
