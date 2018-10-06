@@ -49,7 +49,7 @@ tags:
 6. 很多时候，会把一个**主题的数据**看成一个**流**，不管它有多少个分区
   - **流是一组从生产者移动到消费者的数据**
 
-![topic.png](http://pg67n0yz6.bkt.clouddn.com/topic.png)
+![topic.png](http://pg67n0yz6.bkt.clouddn.com/topic.png?imageView2/2/w/500)
 
 ### 生产者和消费者
 1. 生产者**创建消息**
@@ -69,6 +69,26 @@ tags:
     - 消费者与分区之间的映射通常被称为**『消费者对分区的所有权关系』**
     - 如果一个消费者失效，群组里的其它消费者可以接管失效消费者的工作
 
-![consumer.png](http://pg67n0yz6.bkt.clouddn.com/consumer.png)
+![consumer.png](http://pg67n0yz6.bkt.clouddn.com/consumer.png?imageView2/2/w/500)
+
+### Broker和集群
+1. 一个**独立的Kafka服务器**被称为**Broker**
+2. Broker接收来自生产者的消息，**为消息设置偏移量，并提交消息到磁盘保存**
+3. Broker为消费者提供服务，对**读取分区的请求**作出响应，返回已经提交到磁盘上的消息
+4. Broker是集群的组成部分，每个集群都有一个Broker同时充当**集群控制器**的角色（自动从集群的活跃成员中选举出来）
+  - 控制器负责管理工作：**将分区分配给Broker**+**监控Broker**
+5. 在集群中，**一个分区从属于一个Broker**，该Broker被称为**分区的首领**
+  - **一个分区可以分配给多个Broker，这个时候就会发生分区复制**
+  - 这种复制机制为分区提供了**消息冗余**
+6. 如果有一个Broker失效，其它Broker可以接管领导权，相关的消费者和生产者都需要**重新连接**到新的首领
+
+![partition_replication.png](http://pg67n0yz6.bkt.clouddn.com/partition_replication.png?imageView2/2/w/600)
+
+#### 保留消息
+1. 保留消息是Kafka的一个重要特性
+2. 默认的消息保留策略
+  - 要么保留**一段时间**，要么保留到消息达到**一定大小的字节数**
+  - 当消息数量达到这些上限时，旧消息就会过期并被删除
+3. **主题**可以配置自己的保留策略，可以将消息保留到不再使用它们为止
 
 <!-- indicate-the-source -->
