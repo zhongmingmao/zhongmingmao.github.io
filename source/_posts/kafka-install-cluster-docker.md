@@ -1,5 +1,5 @@
 ---
-title: Kafka读书笔记 -- 集群安装与配置（Docker）
+title: Kafka学习笔记 -- 集群安装与配置（Docker）
 date: 2018-10-09 01:48:40
 categories:
   - Kafka

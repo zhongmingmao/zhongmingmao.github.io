@@ -1,5 +1,5 @@
 ---
-title: Kafka读书笔记 -- 初识Kafka
+title: Kafka学习笔记 -- 简介
 date: 2018-10-05 23:29:21
 categories:
   - Kafka
