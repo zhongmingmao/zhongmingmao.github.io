@@ -49,7 +49,7 @@ tags:
 2. 如果**Key**和**Value**都是**字符串**，可以使用与key.serializer一样的序列化器
 3. 如果**Key**是整数类型，而**Value**是字符串，那么需要使用不同的序列化器
 
-### 样例代码
+
 ```java
 Properties kafkaProps = new Properties();
 kafkaProps.put("bootstrap.servers", "localhost:9092");
@@ -58,20 +58,52 @@ kafkaProps.put("value.serializer", StringSerializer.class.getName());
 KafkaProducer<String, String> producer = new KafkaProducer<>(kafkaProps);
 ```
 
-## 发生消息
+## 发送消息
 
 ### 发送方式
 
 #### 发送并忘记
 1. 生产者把消息发送给服务器，但**并不关心是否正常到达**
-2. Kafka是高可用的，而且生产者会**自动尝试重发**
-3. 会丢失一些消息
+2. Kafka是**高可用**的，而且生产者会**自动尝试重发**
+3. 会**丢失**一些消息
 
 #### 同步发送
-1. 使用**send()** 方法发送消息，会返回一个**Future对象**，调用**get()** 方法进行**等待**
+```java
+// Key对象和Value对象的类型必须与序列化器和生产者对象相匹配
+ProducerRecord<String, String> record = new ProducerRecord<>("CustomerCountry", "Precision Products", "France");
+try {
+    // 消息被放入缓冲区，使用单独的线程发送到服务端端
+    Future<RecordMetadata> future = producer.send(record);
+    // 调用Future对象的get()方法等待Kafka响应，如果服务器返回错误，get()方法会抛出异常
+    // 如果没有发生错误，会得到一个RecordMetadata对象，通过RecordMetadata对象可以获取消息的偏移量
+    future.get();
+} catch (Exception e) {
+    e.printStackTrace();
+}
+```
+
+KafkaProducer一般会发生两类错误
+1. 可重试错误，可以通过重发消息来解决
+  - **连接错误**，可以通过再次建立连接来解决
+  - **No Leader 错误**，可以通过重新为分区选举领导来解决
+  - KafkaProducer可以被配置成**自动重连**，如果在多次重试后扔无法解决问题，应用程序会收到一个重试异常
+2. 无法通过重试解决的错误，例如消息太大，KafkaProducer不会进行任何重试，直接抛出异常
 
 #### 异步发送
-1. 调用**send()** 方法，并指定一个**Callback函数**，服务器在返回响应时调用该函数
+```java
+ProducerRecord<String, String> record = new ProducerRecord<>("CustomerCountry", "Precision Products", "France");
+try {
+    Future<RecordMetadata> future = producer.send(record, (metadata, exception) -> {
+        // 如果Kafka返回一个错误，onCompletion方法会抛出一个非空异常
+        if (null != exception) {
+            exception.printStackTrace();
+        }
+    });
+    future.get();
+} catch (Exception e) {
+    e.printStackTrace();
+}
+```
 
 ## 生产者配置
 
