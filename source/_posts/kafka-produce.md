@@ -5,6 +5,7 @@ categories:
   - Kafka
 tags:
   - Kafka
+  - Avro
 ---
 
 ## 生产者概述
@@ -23,6 +24,8 @@ tags:
   - 如果消息成功写入Kafka，就会返回一个RecordMetaData对象，它包含了**Topic和Partition信息**，以及**记录在分区里的偏移量**
   - 如果写入失败，就会返回一个错误
   - 生产者在收到错误之后会尝试重新发送消息，几次之后如果还是失败，就会返回错误信息
+
+<!-- more -->
 
 ## 创建生产者
 
@@ -185,12 +188,76 @@ try {
 2. 如果生产者或消费者与Broker处于不同的数据中心，那么可以适当增大这些值
 
 ## 序列化器
+
 ### 自定义序列化
+如果发送到Kafka的对象不是简单的字符串或整型，那么可以使用序列化框架来创建消息记录，如**Avro**，**Thrift**、**ProtoBuf**，或者使用自定义序列化器，强烈建议使用**通用的序列化框架**
+
+```java
+@Data
+@AllArgsConstructor
+class Customer {
+    private int id;
+    private String name;
+}
+```
+
+```java
+class CustomerSerializer implements Serializer<Customer> {
+
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+        // 不做任何配置
+    }
+
+    @Override
+    public byte[] serialize(String topic, Customer customer) {
+        if (null == customer) {
+            return null;
+        }
+        byte[] serializedName = new byte[0];
+        int stringSize = 0;
+        if (null != customer.getName()) {
+            serializedName = customer.getName().getBytes(StandardCharsets.UTF_8);
+            stringSize = serializedName.length;
+        }
+
+        // Customer对象被序列化成
+        // 1. id占用4个字节
+        // 2. name的长度占用4个字节
+        // 3. name占用N个字节
+        ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + stringSize);
+        buffer.putInt(customer.getId());
+        buffer.putInt(stringSize);
+        buffer.put(serializedName);
+
+        return buffer.array();
+    }
+
+    @Override
+    public void close() {
+        // 不需要关闭任何东西
+    }
+}
+```
+
+```java
+@Test
+public void customSerializerTest() {
+    ProducerRecord<String, Customer> record = new ProducerRecord<>("Customer", "Customer",
+            new Customer(1, "zhongmingmao"));
+}
+```
+
 ### 使用Avro序列化
+1. Apache Avro是一种**与编程语言无关**的序列化格式
+2. Avro数据通过与语言无关的schema来定义
+  - schema**通过JSON来描述**，数据被序列化成**二进制文件**或**JSON文件**，一般会使用二进制文件
+  - Avro在**读写文件**时需要用到schema，schema一般是**内嵌在数据文件**里
+3. 重要特性：**当负责写消息的应用程序使用新的schema，负责读消息的应用程序可以继续处理消息而无需做任何改动**
+  - 特别适用于Kafka这样的消息系统
+
 ### 在Kafka使用Avro
 
 ## 分区
 
-
-<!-- more -->
 <!-- indicate-the-source -->
