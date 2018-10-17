@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- 使用Avro序列化
+title: Kafka学习笔记 -- Avro入门
 date: 2018-10-16 23:42:11
 categories:
   - Kafka
@@ -8,9 +8,7 @@ tags:
   - Avro
 ---
 
-## Avro入门
-
-### 引入依赖
+## 引入依赖
 ```xml
 <dependency>
     <groupId>org.apache.avro</groupId>
@@ -48,7 +46,7 @@ tags:
 </plugin>
 ```
 
-### Schema
+## Schema
 路径：src/main/avro/user.avsc
 ```json
 {
@@ -63,15 +61,15 @@ tags:
 }
 ```
 
-### 使用Avro -- 生成代码
+## 使用Avro -- 生成代码
 
-#### 编译Schema
+### 编译Schema
 ```
 mvn clean compile
 ```
 生成类：src/main/java/me/zhongmingmao/avro/User.java
 
-#### 序列化
+### 序列化
 ```java
 User user1 = new User();
 user1.setName("A");
@@ -88,7 +86,7 @@ dataFileWriter.append(user3);
 dataFileWriter.close();
 ```
 
-#### 反序列化
+### 反序列化
 ```java
 DatumReader<User> userDatumReader = new SpecificDatumReader<>(User.class);
 DataFileReader<User> dataFileReader = new DataFileReader<>(new File("/tmp/users.avro"), userDatumReader);
@@ -103,9 +101,9 @@ dataFileReader.close();
 // {"name": "C", "favorite_number": 3, "favorite_color": "c3"}
 ```
 
-### 使用Avro -- 不生成代码
+## 使用Avro -- 不生成代码
 
-#### 序列化
+### 序列化
 ```java
 String avscFilePath = getClass().getClassLoader().getResource("user.avsc").getPath();
 Schema schema = new Schema.Parser().parse(new File(avscFilePath));
@@ -126,7 +124,7 @@ dataFileWriter.append(user2);
 dataFileWriter.close();
 ```
 
-#### 反序列化
+### 反序列化
 ```java
 DatumReader<GenericRecord> userDatumReader = new SpecificDatumReader<>(schema);
 DataFileReader<GenericRecord> dataFileReader = new DataFileReader<>(new File("/tmp/users2.avro"), userDatumReader);
