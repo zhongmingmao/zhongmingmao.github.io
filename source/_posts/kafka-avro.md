@@ -105,4 +105,39 @@ dataFileReader.close();
 
 ### 使用Avro -- 不生成代码
 
+#### 序列化
+```java
+String avscFilePath = getClass().getClassLoader().getResource("user.avsc").getPath();
+Schema schema = new Schema.Parser().parse(new File(avscFilePath));
+
+GenericData.Record user1 = new GenericData.Record(schema);
+user1.put("name", "A");
+user1.put("favorite_number", 1);
+GenericData.Record user2 = new GenericData.Record(schema);
+user2.put("name", "B");
+user2.put("favorite_number", 2);
+user2.put("favorite_color", "c2");
+
+DatumWriter<GenericRecord> userDatumWriter = new SpecificDatumWriter<>(schema);
+DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(userDatumWriter);
+dataFileWriter.create(schema, new File("/tmp/users2.avro"));
+dataFileWriter.append(user1);
+dataFileWriter.append(user2);
+dataFileWriter.close();
+```
+
+#### 反序列化
+```java
+DatumReader<GenericRecord> userDatumReader = new SpecificDatumReader<>(schema);
+DataFileReader<GenericRecord> dataFileReader = new DataFileReader<>(new File("/tmp/users2.avro"), userDatumReader);
+GenericRecord user = null;
+while (dataFileReader.hasNext()) {
+    user = dataFileReader.next(user);
+    log.info("{}", user);
+}
+dataFileReader.close();
+// {"name": "A", "favorite_number": 1, "favorite_color": null}
+// {"name": "B", "favorite_number": 2, "favorite_color": "c2"}
+```
+
 <!-- indicate-the-source -->
