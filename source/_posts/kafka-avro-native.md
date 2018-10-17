@@ -1,6 +1,6 @@
 ---
 title: Kafka学习笔记 -- Avro + Kafka Native API
-date: 2018-10-17 18:58:44
+date: 2018-10-16 18:58:44
 categories:
   - Kafka
 tags:
