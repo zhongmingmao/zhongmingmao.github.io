@@ -8,9 +8,9 @@ tags:
   - Avro
 ---
 
-## 简单使用
+## Avro入门
 
-### 引入Maven依赖
+### 引入依赖
 ```xml
 <dependency>
     <groupId>org.apache.avro</groupId>
@@ -20,7 +20,6 @@ tags:
 ```
 
 <!-- more -->
-
 ```xml
 <plugin>
     <groupId>org.apache.avro</groupId>
@@ -39,147 +38,71 @@ tags:
         </execution>
     </executions>
 </plugin>
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <source>${java.version}</source>
+        <target>${java.version}</target>
+    </configuration>
+</plugin>
 ```
 
-### user.avsc
+### Schema
 路径：src/main/avro/user.avsc
 ```json
 {
-   "namespace": "me.zhongmingmao",
-   "type": "record",
-   "name": "User",
-   "fields": [
-      {
-         "name": "name",
-         "type": "string"
-      },
-      {
-         "name": "favorite_number",
-         "type": [
-            "int",
-            "null"
-         ]
-      },
-      {
-         "name": "favorite_color",
-         "type": [
-            "string",
-            "null"
-         ]
-      }
-   ]
+    "namespace": "me.zhongmingmao.avro",
+    "type": "record",
+    "name": "User",
+    "fields": [
+        {"name": "name", "type": "string"},
+        {"name": "favorite_number",  "type": ["int", "null"]},
+        {"name": "favorite_color", "type": ["string", "null"]}
+    ]
 }
 ```
 
-### 编译模式
-```
- mvn clean avro:schema
-```
-生成类：target/generated-sources/avro/me/zhongmingmao/User.java
+### 使用Avro -- 生成代码
 
-### 序列化
+#### 编译Schema
+```
+mvn clean compile
+```
+生成类：src/main/java/me/zhongmingmao/avro/User.java
+
+#### 序列化
 ```java
-User u1 = new User();
-u1.setName("zhongmingmao");
-u1.setFavoriteNumber(256);
-User u2 = new User("zhongmingwu", 7, "red");
-User u3 = User.newBuilder().setName("zhongming").setFavoriteNumber(10).setFavoriteColor("blue").build();
+User user1 = new User();
+user1.setName("A");
+user1.setFavoriteNumber(1);
+User user2 = new User("B", 2, "c2");
+User user3 = User.newBuilder().setName("C").setFavoriteNumber(3).setFavoriteColor("c3").build();
 
-File file = new File("/tmp/users.avro");
 DatumWriter<User> userDatumWriter = new SpecificDatumWriter<>(User.class);
 DataFileWriter<User> dataFileWriter = new DataFileWriter<>(userDatumWriter);
-dataFileWriter.create(u1.getSchema(), file);
-
-dataFileWriter.append(u1);
-dataFileWriter.append(u2);
-dataFileWriter.append(u3);
+dataFileWriter.create(user1.getSchema(), new File("/tmp/users.avro"));
+dataFileWriter.append(user1);
+dataFileWriter.append(user2);
+dataFileWriter.append(user3);
 dataFileWriter.close();
 ```
 
-### 反序列化
+#### 反序列化
 ```java
 DatumReader<User> userDatumReader = new SpecificDatumReader<>(User.class);
-DataFileReader<User> dataFileReader = new DataFileReader<>(file, userDatumReader);
+DataFileReader<User> dataFileReader = new DataFileReader<>(new File("/tmp/users.avro"), userDatumReader);
 User user = null;
 while (dataFileReader.hasNext()) {
     user = dataFileReader.next(user);
     log.info("{}", user);
 }
-// {"name": "zhongmingmao", "favorite_number": 256, "favorite_color": null}
-// {"name": "zhongmingwu", "favorite_number": 7, "favorite_color": "red"}
-// {"name": "zhongming", "favorite_number": 10, "favorite_color": "blue"}
+dataFileReader.close();
+// {"name": "A", "favorite_number": 1, "favorite_color": null}
+// {"name": "B", "favorite_number": 2, "favorite_color": "c2"}
+// {"name": "C", "favorite_number": 3, "favorite_color": "c3"}
 ```
 
-## Kafka Producer
-
-### 引入依赖
-```xml
-<dependency>
-    <groupId>com.twitter</groupId>
-    <artifactId>bijection-avro_2.12</artifactId>
-    <version>0.9.6</version>
-</dependency>
-```
-
-### Schema
-```java
-private static final String USER_SCHEMA = "{\n" +
-        "   \"namespace\": \"me.zhongmingmao\",\n" +
-        "   \"type\": \"record\",\n" +
-        "   \"name\": \"User\",\n" +
-        "   \"fields\": [\n" +
-        "      {\n" +
-        "         \"name\": \"name\",\n" +
-        "         \"type\": \"string\"\n" +
-        "      },\n" +
-        "      {\n" +
-        "         \"name\": \"favorite_number\",\n" +
-        "         \"type\": [\n" +
-        "            \"int\",\n" +
-        "            \"null\"\n" +
-        "         ]\n" +
-        "      },\n" +
-        "      {\n" +
-        "         \"name\": \"favorite_color\",\n" +
-        "         \"type\": [\n" +
-        "            \"string\",\n" +
-        "            \"null\"\n" +
-        "         ]\n" +
-        "      }\n" +
-        "   ]\n" +
-        "}";
-```
-
-### Producer
-```java
-Schema.Parser parser = new Schema.Parser();
-Schema schema = parser.parse(USER_SCHEMA);
-// Injection对象：将对象转换成字节数组
-Injection<GenericRecord, byte[]> recordInjection = GenericAvroCodecs.toBinary(schema);
-
-Properties props = new Properties();
-props.put("bootstrap.servers", "localhost:9092");
-props.put("key.serializer", StringSerializer.class.getName());
-props.put("value.serializer", ByteArraySerializer.class.getName());
-KafkaProducer<String, byte[]> producer = new KafkaProducer<>(props);
-
-for (int i = 0; i < 10; i++) {
-    // 依据定义好的Schema来创建相关的Record
-    GenericData.Record avroRecord = new GenericData.Record(schema);
-    avroRecord.put("name", "zhongmingmao" + i);
-    avroRecord.put("favorite_number", i);
-    avroRecord.put("favorite_color", "color" + i);
-    // 序列化
-    byte[] bytes = recordInjection.apply(avroRecord);
-
-    ProducerRecord<String, byte[]> record = new ProducerRecord<>("zhongmingmao", "" + i, bytes);
-    producer.send(record);
-    TimeUnit.SECONDS.sleep(1);
-}
-
-producer.close();
-```
-
-## Kafka Consumer
+### 使用Avro -- 不生成代码
 
 <!-- indicate-the-source -->
