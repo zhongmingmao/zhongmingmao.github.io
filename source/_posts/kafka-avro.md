@@ -121,9 +121,9 @@ while (dataFileReader.hasNext()) {
 </dependency>
 ```
 
-### Producer
+### Schema
 ```java
-String userSchema = "{\n" +
+private static final String USER_SCHEMA = "{\n" +
         "   \"namespace\": \"me.zhongmingmao\",\n" +
         "   \"type\": \"record\",\n" +
         "   \"name\": \"User\",\n" +
@@ -148,8 +148,12 @@ String userSchema = "{\n" +
         "      }\n" +
         "   ]\n" +
         "}";
+```
+
+### Producer
+```java
 Schema.Parser parser = new Schema.Parser();
-Schema schema = parser.parse(userSchema);
+Schema schema = parser.parse(USER_SCHEMA);
 // Injection对象：将对象转换成字节数组
 Injection<GenericRecord, byte[]> recordInjection = GenericAvroCodecs.toBinary(schema);
 

@@ -257,6 +257,7 @@ public void customSerializerTest() {
   - 特别适用于Kafka这样的消息系统
 
 ### 在Kafka使用Avro
+1. Avro的数据文件里包含了**整个schema**，如果每条Kafka记录都嵌入schema，会让记录都大小成倍地增加
 
 ## 分区
 
