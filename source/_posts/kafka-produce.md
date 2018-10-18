@@ -5,7 +5,6 @@ categories:
   - Kafka
 tags:
   - Kafka
-  - Avro
 ---
 
 ## 生产者概述
