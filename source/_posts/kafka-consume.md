@@ -80,10 +80,57 @@ tags:
 4. 这个过程会在每次再均衡时重复发生
 
 ## 创建消费者
+```java
+Properties properties = new Properties();
+properties.put("bootstrap.servers", "localhost:9092");
+properties.put("group.id", "zhongmingmao");
+properties.put("key.deserializer", StringDeserializer.class.getName());
+properties.put("value.deserializer", StringDeserializer.class.getName());
+Consumer<String, String> consumer = new KafkaConsumer<>(properties);
+```
 
 ## 订阅主题
+```java
+// 订阅主题
+// 支持正则表达式：如果创建新主题，并且主题的名字与正则表达式匹配，
+//              就会触发一次再均衡，消费者就能读取新添加的主题
+// consumer.subscribe("test.*");
+consumer.subscribe(Collections.singletonList("CustomerCountry"));
+```
 
 ## 轮询
+1. 消息轮询是消费者API的核心，通过一个简单的轮询向服务器请求数据
+2. 一旦消费者订阅了主题，轮询就会处理**所有的细节**
+    - **群组协调**
+    - **分区再均衡**
+    - **发送心跳**
+    - **获取数据**
+3. 线程安全
+    - 在同一个群组里，无法让一个线程运行多个消费者，也无法让多个线程安全地共享一个消费者
+    - 按照规则，**一个消费者使用一个线程**
+
+```java
+try {
+    while (true) {
+        // 消费者必须持续对Kafka进行轮询，否则会被认为已经死亡，它的分区就会被移交给群组里的其它消费者
+        // 在消费者的缓冲区里没有可用数据时会发生阻塞
+        // 返回一个记录列表，每条记录包含
+        //  1. 记录所属主题的信息
+        //  2. 记录所在分区的信息
+        //  3. 记录在分区里的偏移量
+        //  4. 记录的键值对
+        // timeout参数指定多久之后可以返回，不管有没有可用的数据，0会立即返回
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        records.forEach(record -> log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value()));
+    }
+} finally {
+    // 网络连接和Socket也会随之关闭
+    // 并且立即触发一次再均衡，而不是等待群组协调器发现它不再发送心跳并认定它已死亡
+    //  因为那样需要更长的时间，导致整个群组在一段时间内无法读取消息
+    consumer.close();
+}
+```
 
 ## 消费者的配置
 
