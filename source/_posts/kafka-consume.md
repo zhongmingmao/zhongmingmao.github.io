@@ -208,18 +208,72 @@ try {
 ![consumer_commit_2.png](http://pg67n0yz6.bkt.clouddn.com/consumer_commit_2.png?imageView2/2/w/400)
 
 ### 自动提交
-1. 如果enable.auto.commit为true，那么每过auto.commit.interval.ms（默认5s），消费者会自动把从poll()方法接收到的**最大偏移量**提交上去
-2. 自动提交也在**轮询**里进行，消费者每次在进行轮询时会**检查是否该提交偏移量**，如果是，那就会提交**上一次**轮询返回的偏移量
-3. **消息重复处理**
+1. 自动提交是基于**时间间隔**
+2. 如果enable.auto.commit为true，那么每过auto.commit.interval.ms（默认5s），消费者会自动把从poll()方法接收到的**最大偏移量**提交上去
+3. 自动提交也在**轮询**里进行，消费者每次在进行轮询时会**检查是否该提交偏移量**，如果是，那就会提交**上一次**轮询返回的偏移量
+4. **消息重复处理**
     - 假设使用5s的默认提交时间间隔，在最近一次提交之后的3s发生了再均衡
     - 再均衡之后，消费者从最后一次提交的偏移量位置开始读取消息
     - 这个时候偏移量已经落后了3s，所以在这3s内到达的消息会被重复处理
-4. 使用自动提交，每次调用轮询方法都会把上一次调用返回的偏移量提交上去，**它并不知道具体哪些消息已经被处理过了**
+5. 使用自动提交，每次调用轮询方法都会把上一次调用返回的偏移量提交上去，**它并不知道具体哪些消息已经被处理过了**
     - 所以在再次调用轮询之前最好确保**所有当前调用返回的消息**都已经处理完毕
 
 ### 提交当前偏移量
+1. enable.auto.commit=**false**，让应用程序决定何时提交偏移量
+2. 使用commitAsync()提交偏移量**最简单也最可靠**
+    - 提交由poll()方法返回的最新偏移量，提交成功后立马返回，如果提交失败就会抛出异常
+3. 如果发生**再均衡**，从最近一批消息到发生再均衡之间的所有消息都将被**重复处理**
+
+```java
+consumer.subscribe(Collections.singletonList("CustomerCountry"));
+try {
+    while (true) {
+        // 获取最新偏移量
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        records.forEach(record -> log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value()));
+        try {
+            // 提交当前偏移量
+            consumer.commitAsync();
+        } catch (CommitFailedException e) {
+            log.error("commit failed", e);
+        }
+    }
+} finally {
+    consumer.close();
+}
+```
 
 ### 异步提交
+1. 手动提交，在Broker对提交请求作出响应之前，应用程序会一直**阻塞**，**限制应用程序的吞吐量**
+    - 可以**降低提交频率**来**提升吞吐量**，但如果发生再均衡，会增加重复消息的数量
+2. 在**成功提交**或碰到**无法恢复的错误**之前，commitSync()会一直重试，但是commitAsync()不会
+    - 不进行重试的原因：在它收到服务器响应的时候，可能有一个**更大的偏移量**已经提交成功
+3. commitAsync()支持回调，在Broker作出响应时会执行回调（通常用于记录提交错误或生成度量指标）
+    - 如果用**回调**来进行**重试**，一定要注意**提交的顺序**
+    - 使用一个**单调递增的序列号**来维护**异步提交的顺序**
+    - 在每次提交偏移量之后或者在回调里提交偏移量时递增序列号
+    - 在进行重试前，先检查**回调的序列号**和**即将提交到偏移量**是否相等，如果相等，说明没有新的提交，那么可以安全地进行重试
+    - 如果序列号比较大，说明有一个新的提交已经发送出去了，应该停止重试
+
+```java
+consumer.subscribe(Collections.singletonList("CustomerCountry"));
+while (true) {
+    ConsumerRecords<String, String> records = consumer.poll(100);
+    for (ConsumerRecord<String, String> record : records) {
+        log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(),
+                record.key(), record.value());
+    }
+    // 提交最后一个偏移量
+    consumer.commitAsync((offsets, exception) -> {
+        if (null != exception) {
+            log.error("Commit failed for offsets " + offsets, exception);
+        }
+    });
+}
+```
+
 
 ### 组合提交（同步+异步）
 
