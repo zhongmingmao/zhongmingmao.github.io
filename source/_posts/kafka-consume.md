@@ -274,10 +274,68 @@ while (true) {
 }
 ```
 
-
 ### 组合提交（同步+异步）
+1. 一般情况下，偶尔出现的提交失败，不进行重试不会有太大问题
+2. 如果这是发生在**关闭消费者**或者**再均衡前**的**最后一次提交**，那么就要**确保能够提交成功**
+
+```java
+consumer.subscribe(Collections.singletonList("CustomerCountry"));
+try {
+    while (true) {
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        for (ConsumerRecord<String, String> record : records) {
+            log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(),
+                    record.key(), record.value());
+        }
+        // 速度更快，如果这次提交失败，下一次提交很有可能会成功
+        consumer.commitAsync((offsets, exception) -> {
+            if (null != exception) {
+                log.error("Commit failed for offsets " + offsets, exception);
+            }
+        });
+    }
+} catch (Exception e) {
+    log.error("Unexpected error", e);
+} finally {
+    try {
+        // 一直重试，直到提交成功或者发生无法恢复的错误
+        consumer.commitSync();
+    } finally {
+        // 如果直接关闭消费者，就没有所谓的『下一次提交』了
+        consumer.close();
+    }
+}
+```
 
 ### 提交特定的偏移量
+1. **提交偏移量的频率** 和**处理消息批次的频率**是一样的
+2. commitSync()和commitAsync()，只会提交**最后一个偏移**，而此时该批次里的消息可能还没处理完
+3. 如果需要提交特定的偏移量，需要**跟踪所有分区的偏移量**
+
+```java
+consumer.subscribe(Collections.singletonList("CustomerCountry"));
+// 用于追踪偏移量的Map
+Map<TopicPartition, OffsetAndMetadata> currentOffsets = Maps.newHashMap();
+int count = 0;
+while (true) {
+    ConsumerRecords<String, String> records = consumer.poll(100);
+    for (ConsumerRecord<String, String> record : records) {
+        log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(),
+                record.key(), record.value());
+        // 在读取每条记录后，使用期望处理的下一条记录的偏移量更新map里的偏移量
+        // 下一次就从这里开始读取消息
+        currentOffsets.put(new TopicPartition(record.topic(), record.partition()),
+                new OffsetAndMetadata(record.offset() + 1, "no metadata"));
+        if (count++ % 1000 == 0) {
+            // 每处理1000条记录就提交一次偏移量
+            // 提交特定偏移量时，仍然要处理可能发生的错误
+            consumer.commitAsync(currentOffsets, null);
+        }
+    }
+}
+```
 
 ## 再均衡监听器
 
