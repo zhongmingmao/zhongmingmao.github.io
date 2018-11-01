@@ -338,6 +338,65 @@ while (true) {
 ```
 
 ## 再均衡监听器
+1. 消费者在**退出**和进行**分区再均衡**之前，会做一些清理工作
+    - 在消费者失去对一个分区的**所有权**之前提交**最后一个已处理**记录的偏移量
+    - 如果消费者准备了一个缓冲区用于处理偶发的事件，那么在失去分区所有权之前，需要处理在缓冲区累积下来的记录
+    - 关闭文件句柄，数据库连接
+2. 在为消费者**分配新分区**或者**移除旧分区**时，可以通过消费者API执行一些动作，在调用subscribe()方法传进去一个ConsumerRebalanceListener实例
+    - onPartitionsRevoked
+        - 在**再均衡开始之前**和**消费者停止读取消息之后**被调用
+        - 如果在这里提交偏移量，下一个接管分区的消费者就知道该从哪里开始读取
+    - onPartitionsAssigned
+        - 在**重新分配分区之后**和**消费者开始读取之前**被调用
+
+```java
+Map<TopicPartition, OffsetAndMetadata> currentOffsets = Maps.newHashMap();
+
+@Slf4j
+class HandleRebalance implements ConsumerRebalanceListener {
+
+    @Override
+    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+        // 如果发生再均衡，需要在即将失去分区所有权的提交偏移量
+        // 提交的是最近处理过的偏移量，而不是批次中还在处理的最后一个偏移量
+        log.info("Lost partitions in rebalance. Committing current offsets={}", currentOffsets);
+        consumer.commitSync(currentOffsets);
+    }
+
+    @Override
+    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+
+    }
+}
+
+try {
+    consumer.subscribe(Collections.singletonList("CustomerCountry"), new HandleRebalance());
+    while (true) {
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        for (ConsumerRecord<String, String> record : records) {
+            log.info("topic={}, partition={}, offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(),
+                    record.key(), record.value());
+            // 在读取每条记录后，使用期望处理的下一条记录的偏移量更新map里的偏移量
+            // 下一次就从这里开始读取消息
+            currentOffsets.put(new TopicPartition(record.topic(), record.partition()),
+                    new OffsetAndMetadata(record.offset() + 1, "no metadata"));
+        }
+        consumer.commitAsync(currentOffsets, null);
+    }
+} catch (WakeupException e) {
+    // 忽略异常，正在关闭消费者
+} catch (Exception e) {
+    log.error("Unexpected error", e);
+} finally {
+    try {
+        consumer.commitSync(currentOffsets);
+    } finally {
+        consumer.close();
+        log.info("Close consumer successfully!");
+    }
+}
+```
 
 ## 从特定偏移量开始处理记录
 <!-- indicate-the-source -->
