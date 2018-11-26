@@ -18,7 +18,7 @@ tags:
 1. 主题T1有4个分区，然后创建消费者C1，C1是消费者群组G1里唯一的消费者，C1订阅T1
 2. **消费者C1将接收主题T1的全部4个分区的消息**
 
-![consumer_topic_1.png](http://pg67n0yz6.bkt.clouddn.com/consumer_topic_1.png?imageView2/2/w/300)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_1.png" width="300">
 
 <!-- more -->
 
@@ -26,17 +26,17 @@ tags:
 1. 如果群组G1新增一个消费者C2，那么每个消费者将**分别从两个分区接收消息**
 2. 假设C1接收分区0和分区2的消息，C2接收分区1和分区3的消息
 
-![consumer_topic_2.png](http://pg67n0yz6.bkt.clouddn.com/consumer_topic_2.png?imageView2/2/w/300)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_2.png" width="300">
 
 ##### 4个消费者
 1. 如果群组G1有4个消费者，那么每个消费者可以分配到一个分区
 
-![consumer_topic_3.png](http://pg67n0yz6.bkt.clouddn.com/consumer_topic_3.png?imageView2/2/w/300)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_3.png" width="300">
 
 ##### 5个消费者
 1. 如果群组G1有5个消费者，**超过主题的分区数量**，那么有1个消费者就会被**闲置**，不会接收到任何消息
 
-![consumer_topic_4.png](http://pg67n0yz6.bkt.clouddn.com/consumer_topic_4.png?imageView2/2/w/300)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_4.png" width="300">
 
 ##### 总结
 1. 往群组里增加消费者是**横向伸缩消费能力**的主要方式
@@ -50,7 +50,7 @@ tags:
 3. 只要保证每个应用程序有自己的消费者群组，就可以让它们获取到主题所有的消息
 4. 不同于传统的消息系统，**横向伸缩Kafka消费者和消费者群组并不会对性能造成负面影响**
 
-![consumer_topic_5.png](http://pg67n0yz6.bkt.clouddn.com/consumer_topic_5.png?imageView2/2/w/300)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_5.png" width="300">
 
 ### 消费者群组+分区再均衡
 
@@ -201,11 +201,11 @@ try {
 
 如果提交的偏移量**小于**客户端处理的最后一个消息的偏移量，那么处于**两个偏移量之间的消息**就会被**重复处理**
 
-![consumer_commit_1.png](http://pg67n0yz6.bkt.clouddn.com/consumer_commit_1.png?imageView2/2/w/400)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_commit_1.png" width="400">
 
 如果提交的偏移量**大于**客户端处理的最后一个消息的偏移量，那么处于**两个偏移量之间的消息**就会**丢失**
 
-![consumer_commit_2.png](http://pg67n0yz6.bkt.clouddn.com/consumer_commit_2.png?imageView2/2/w/400)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_commit_2.png" width="400">
 
 ### 自动提交
 1. 自动提交是基于**时间间隔**
@@ -399,4 +399,5 @@ try {
 ```
 
 ## 从特定偏移量开始处理记录
+
 <!-- indicate-the-source -->
