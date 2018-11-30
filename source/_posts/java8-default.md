@@ -19,7 +19,7 @@ tags:
 2. `default方法`的目标用户是类库设计者
     - 以`兼容`的方式解决`类库的演进`问题
 
-![java8-default](http://oqsopcxo1.bkt.clouddn.com/java8-default.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-default.png" width="500">
 
 # 冲突解决
 一个类可以实现`多个拥有默认方法的接口`，从而实现行为的`多继承`，按照下列步骤解决冲突
@@ -79,7 +79,7 @@ class H implements B, G {
 }
 ```
 
-![java8-default-classes](http://oqsopcxo1.bkt.clouddn.com/java8-default-classes.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-default-classes.png" width="500">
 
 ## 类或父类中的方法
 ```java
@@ -88,7 +88,7 @@ public void fatherTest() {
    Supplier<D> dSupplier = D::new;
    assertEquals("Hello From C", dSupplier.get().hello());
 }
-    
+
 @Test
 public void selfTest() {
    Supplier<E> eSupplier = E::new;
@@ -118,5 +118,3 @@ public void explicitTest() {
 ```
 接口 `B` 和 `G` 没有继承关系，对 类 `H` 来说两者属于平等关系 ，必须重写，重写版本中显示选择了 `B` 的`default` 实现
 <!-- indicate-the-source -->
-
-

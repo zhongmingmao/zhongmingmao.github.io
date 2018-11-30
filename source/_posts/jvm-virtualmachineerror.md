@@ -129,7 +129,7 @@ No shared spaces configured.
 ```
 
 ### MAT分析
-![mat_oom_serialgc.png](http://ot85c3jox.bkt.clouddn.com/mat_oom_serialgc.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/mat_oom_serialgc.png" width="500">
 1. 当线程运行main方法时，list是在的`VM Stack`的`Current Stack Frame`定义的`强引用(Strong Reference)`，且为`GC ROOT`，哪怕JVM堆内存不足的时候，触发`Full GC`，也不会将其回收，最后导致`OutOfMemoryError`
 2. 由GC日志可以看出，`新生代的Eden区`存有`2`个OOMObject对象，`老年代`存有`6`个OOMObject对象，已经无法再容纳新的OOMObject对象，抛出`OutOfMemoryError`
 
@@ -168,7 +168,7 @@ public static void main(String[] args) throws Throwable {
 [Full GC [Tenured: 3783K->1152K(40960K), 0.0483188 secs] 4020K->1152K(59392K), [Perm : 51199K->13270K(51200K)], 0.0497827 secs] [Times: user=0.05 sys=0.00, real=0.05 secs]
 Exception in thread "main" java.lang.OutOfMemoryError: PermGen space
 ```
-![StringInternJDK6.png](http://ot85c3jox.bkt.clouddn.com/StringInternJDK6.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/StringInternJDK6.png" width="500">
 
 #### 分析
 1. `String.valueOf(i++).intern()`会在`Heap`（`valueOf`）和`PermGen`（`intern`）中分配存储空间，并返回引用到`strings`进行保存（强引用，不会被GC回收）
@@ -206,7 +206,7 @@ public static void main(String[] args) throws Throwable {
 [Full GC (Allocation Failure) [Tenured: 409599K->409599K(409600K), 2.1368935 secs] 542781K->542354K(593920K), [Metaspace: 9065K->9065K(1058816K)], 2.1370422 secs] [Times: user=2.08 sys=0.02, real=2.14 secs]
 Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ```
-![StringInternJDK8.png](http://ot85c3jox.bkt.clouddn.com/StringInternJDK8.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/StringInternJDK8.png" width="500">
 
 #### 分析
 1. `String.valueOf(i++).intern()`会在`Heap`（`valueOf`）中分配存储空间，并返回引用到`strings`进行保存（强引用，不会被GC回收）

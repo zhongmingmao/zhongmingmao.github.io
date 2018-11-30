@@ -39,7 +39,7 @@ tags:
 //                                               not valid at any other time
 ```
 在`32-bit JVM`的`Mark Word`与`锁状态`对应如下
-![mark_word.png](http://otr5jjzeu.bkt.clouddn.com/mark_word.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/mark_word.png" width="500">
 
 ## monitor
 `重量级锁`也就是我们常说的`对象锁`，锁标志位为`10`，`Mark Word`的指针字段指向`monitor对象`（也称为`管程`或`对象监视器`）的起始地址，每个`Java对象`都存在一个与之关联的`monitor对象`

@@ -12,7 +12,7 @@ tags:
 ### Kafka与Zookeeper
 Kafka使用Zookeeper保存集群的**元数据信息**和**消费者信息**
 
-![kafka_zookeeper.png](http://pg67n0yz6.bkt.clouddn.com/kafka_zookeeper.png?imageView2/2/w/500)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka_zookeeper.png" width="500">
 
 <!-- more -->
 

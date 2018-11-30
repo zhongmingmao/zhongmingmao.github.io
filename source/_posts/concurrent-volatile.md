@@ -19,7 +19,7 @@ tags:
 `JMM`即`Java Memory Model`，`Java内存模型`
 
 ## 主内存 + 工作内存
-![jmm.png](http://otr5jjzeu.bkt.clouddn.com/jmm.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/jmm.png" width="500">
 1. `JMM`定义程序中`可被共享变量`的访问规则，即在虚拟机中将变量存储在内存和从内存中取出变量这样的底层细节
 2. 共享变量包括：`实例字段`、`静态字段`和`构成数组对象的元素`
 3. 线程私有数据包括：`局部变量`、`方法参数`等

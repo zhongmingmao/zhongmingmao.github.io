@@ -94,7 +94,7 @@ public static void main(String[] args) {
                         Arrays.asList("zhong", "ming", "mao"));
 }
 ```
-![arrayblockingqueue_constructer.png](http://otr5jjzeu.bkt.clouddn.com/arrayblockingqueue_constructer.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/arrayblockingqueue_constructer.png" width="500">
 
 ## add(E e)
 ```java

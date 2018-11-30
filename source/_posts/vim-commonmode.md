@@ -23,12 +23,12 @@ tags:
 
 ```
 :h operator
-The motion commands can be used after an operator command, 
+The motion commands can be used after an operator command,
 to have the command operate on the text that was moved over.
 That is the text between the cursor position before and after the motion.
 Operators are generally used to delete or change text.
 ```
-	
+
 ## 语法规则
 `{operator}{motion}`
 `{operator}{operator}`（`motion`默认为`当前行`）
@@ -48,20 +48,19 @@ G：动作命令，表示到尾行
 ## 撤销命令 u
 该命令会`撤销最新的修改`
 在插入模式中使用光标键（`<Up>`，`<Down>`，`<Left>`，`<Right>`），会产生新的`撤销块`
-![common_mode_u.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_u.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/common_mode_u.gif" width="500">
 
 ## 删除一个单词（包括空格） daw
-![common_mode_daw.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_daw.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/common_mode_daw.gif" width="500">
 
 ## 数字加减 <C-a> <C-x>
 `{number}<C-a>`：正向查找第一个数字，并`加`number
 `{number}<C-x>`：正向查找第一个数字，并`减`number
 `0`开头的数字为`8`进制；`0x`开头的数字为`16`进制
 
-![common_mode_CaCx.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_CaCx.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/common_mode_CaCx.gif" width="500">
 
 ## 作用于当前行{operator}{operator} ： >>，gUU(gUgU)，dd
-![common_mode_opertor_opertor.gif](http://ouxz9b8l3.bkt.clouddn.com/common_mode_opertor_opertor.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/common_mode_opertor_opertor.gif" width="500">
+
 <!-- indicate-the-source -->
-
-

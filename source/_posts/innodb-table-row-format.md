@@ -16,7 +16,7 @@ tags:
 <!-- more -->
 
 # 分类
-![row-format](http://opjezmuy7.bkt.clouddn.com/row_format.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/row_format.png" width="500">
 
 ## Named File Format
 1. InnoDB`早期`的文件格式（`页格式`）为`Antelope`，可以定义两种行记录格式，分别是`Compact`和`Redundant`
@@ -63,14 +63,14 @@ mysql>  SHOW VARIABLES LIKE '%row%format%';
 
     - `Dynamic` + `Compressed`：仅存储`20Byte`数据，存储`指向溢出页的指针`，这时比`Compact`和`Redundant`更高效，因为一个`B+Tree叶子节点`能`存放更多的行记录`
 
-![overflowt](http://opjezmuy7.bkt.clouddn.com/overflow.png?imageMogr2/auto-orient/thumbnail/301x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/overflow.png" width="500">
 
 # Redundant
 `MySQL 5.0`之前的ROW_FORMAT
 
 ## 格式
 
-![redundant-format](http://opjezmuy7.bkt.clouddn.com/redundant_format.png?imageMogr2/auto-orient/thumbnail/600x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/redundant_format.png" width="500">
 
 ### 字段偏移列表
 1. 按照列的顺序`逆序`放置
@@ -318,7 +318,7 @@ Uncompressed BLOB Page: 1
 
 ## 格式
 
-![compact-format](http://opjezmuy7.bkt.clouddn.com/compact_format.png?imageMogr2/auto-orient/thumbnail/600x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/compact_format.png" width="500">
 
 ### 变长字段长度列表
 1. 条件

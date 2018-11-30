@@ -423,6 +423,6 @@ public class CountDownLatchProcedure {
 ```
 
 ## 逻辑示意图
-![count_down_latch_procedure.png](http://otr5jjzeu.bkt.clouddn.com/count_down_latch_procedure.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/count_down_latch_procedure.png" width="500">
 
 <!-- indicate-the-source -->

@@ -27,7 +27,7 @@ tags:
 8. 命令行模式：行编辑器ex是vi的先祖，vim支持Ex命令
 
 ## 模式切换
-![vim_mode_switch.png](http://ouxz9b8l3.bkt.clouddn.com/vim_mode_switch.png)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/vim_mode_switch.png" width="500">
 
 ## 常用Ex命令
 操作缓冲区文本的常用Ex命令（完整列表:h ex-cmd-index）
@@ -74,31 +74,31 @@ EX命令，可以在任意位置执行，拥有在多行上同时执行的能力
 # 使用样例
 
 ##  复制（:co[py]==:t）和移动(:m[ove])行
-![command_mode_copy&move.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_copy&move.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_copy&move.gif" width="500">
 
 ## :normal - 代码行尾添加分号 和 注释代码
 在普通模式时介绍过，可以使用`命令.`重复修改，但不适用于有很多行的代码
 `:nomal`：将`强大表现力的Vim普通模式命令`和`具有大范围影响力的Ex命令`结合在一起
 `Ex命令`结合`命令.`能节省很多按键操作
 注释代码（`:%normal i//`）：在执行指定的普通模式命令之前，Vim 会先把光标移动到该行的行首
-![command_mode_;comment.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_;comment.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_;comment.gif" width="500">
 
 ## 遍历缓冲区列表
 同时打开多个文件，会形成缓冲区列表，`bn[ext]`打开下一个缓冲文件，`bp[revious]`打开上一个缓冲文件。
 `@:`：重复执行上次Ex命令；
 `@@`：重复执行`@:`
 `<C-o>`：回退到上一个缓冲文件
-![command_mode_@@_bn_bp.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_@@_bn_bp.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_@@_bn_bp.gif" width="500">
 
 ## Ex命令自动补全
 针对zsh的vim配置：`set wildmenu` `set wildmode=full`
 正向查找：`<Tab>`，`<Right>`，`<C-n>`
 反向查找：`<S-Tab>`，`<Left>`，`<C-p>`
-![command_mode_auto_complete.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_auto_complete.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_auto_complete.gif" width="500">
 
 ## 替换单词
 `<C-r><C-w>`：复制光标下的单词并把它插入到命令行中
-![command_mode_CrCw.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_CrCw.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_CrCw.gif" width="500">
 
 ## 命令行窗口
 
@@ -113,7 +113,7 @@ q/ ➔ 打开查找命令历史的命令行窗口
 ```
 
 演示例子中，将:w，:%p，:!python3 %在命令行窗口中合成一个命令并执行
-![command_mode_cmdwin.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_cmdwin.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_cmdwin.gif" width="500">
 
 ## 运行Shell命令
 
@@ -129,11 +129,11 @@ q/ ➔ 打开查找命令历史的命令行窗口
 ```
 
 把缓冲区内容作为标准输入和标准输出
-![command_mode_shell_in_out.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_shell_in_out.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_shell_in_out.gif" width="500">
 
 过滤缓冲区内容（依据第`2`个字段进行排序）
 `:2,$!sort -t ',' -k2`
 `!{motion}` ➔ 切换到`命令行`模式，命令行上预设为`.,{motion}!`，即当前行移动`{motion}`的区域
-![command_mode_shell_filter.gif](http://ouxz9b8l3.bkt.clouddn.com/command_mode_shell_filter.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_mode_shell_filter.gif" width="500">
 
 <!-- indicate-the-source -->

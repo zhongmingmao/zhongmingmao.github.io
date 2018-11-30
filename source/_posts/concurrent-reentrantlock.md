@@ -49,7 +49,7 @@ public interface Lock {
 ### 概述
 
 `AbstractQueuedSynchronizer`简称`AQS`，是`JUC`中一个`基础组件`，用来构建`同步工具`，例如本文的主题`ReentrantLock`，下图是一些使用了`AQS`的`同步工具`
-![reentrantlock_aqs.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_aqs.png" width="500">
 
 ### 核心结构
 ```java
@@ -135,7 +135,7 @@ static final class Node {
 
 ## 同步队列
 在介绍了`AQS的核心结构`和节点`Node`以后，可以很容易得出`同步队列的结构图`如下
-![reentrantlock_aqs_sync_queue_1.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs_sync_queue_1.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_aqs_sync_queue_1.png" width="500">
 
 ## 公平锁与非公平锁
 `ReentrantLock`支持`公平锁`和`非公平锁`，锁的管理分别由`FairSync`和`NonfairSync`来具体控制，
@@ -156,7 +156,7 @@ public ReentrantLock(boolean fair) {
 ```
 
 ### UML
-![reentrantlock_fair_nonfair_uml.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_fair_nonfair_uml.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_fair_nonfair_uml.png" width="500">
 `FairSync`和`NonfairSync`是`AQS`的实现类，`ReentrantLock`通过`FairSync`实现公平策略和通过`NonfairSync`实现非公平策略
 
 # 源码分析 - 非公平锁
@@ -320,7 +320,7 @@ private Node enq(final Node node) {
 }
 ```
 `addWaiter`逻辑示意图：
-![reentrantlock_aqs_addWaiter.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs_addWaiter.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_aqs_addWaiter.png" width="500">
 
 #### AQS.acquireQueued
 `acquireQueued(final Node node, int arg)`是非公平锁的`lock`执行路径上**`最为重要的的方法`**！！
@@ -509,7 +509,7 @@ private void unparkSuccessor(Node node) {
 }
 ```
 到这里并没有会产生`取消`节点（等待状态为`CANCELLED`）的代码，暂时不考虑`CANCELLED`的节点状态，结合前面的`lock`代码，`unlock`的逻辑示意图如下
-![reentrantlock_aqs_unlock.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs_unlock.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_aqs_unlock.png" width="500">
 
 
 # 源码分析 - 公平锁
@@ -816,6 +816,6 @@ public class LockInterruptiblyDemo {
 ```
 
 ### 逻辑示意图
-![reentrantlock_aqs_lockInterruptibly.png](http://otr5jjzeu.bkt.clouddn.com/reentrantlock_aqs_lockInterruptibly.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/reentrantlock_aqs_lockInterruptibly.png" width="500">
 
 <!-- indicate-the-source -->

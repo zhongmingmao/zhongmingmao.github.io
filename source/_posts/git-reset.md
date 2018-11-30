@@ -15,7 +15,7 @@ tags:
 <!-- more -->
 
 # 常见工作流程
-![normal_workflow](http://oojmieb1c.bkt.clouddn.com/normal_workflow.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/normal_workflow.png" width="500">
 
 ## 三个区域
 `HEAD`：存储在`.git`目录，`上一次提交对象`，下一次提交对象的`父提交对象`
@@ -34,7 +34,7 @@ $ gst -sb
 ## Initial commit on master
 ?? file.txt
 ```
-![touch_file](http://oojmieb1c.bkt.clouddn.com/touch_file.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/touch_file.png" width="500">
 
 ### v1 : git add
 ```
@@ -44,7 +44,7 @@ $ gst -sb
 ## Initial commit on master
 A  file.txt
 ```
-![git_add_v1](http://oojmieb1c.bkt.clouddn.com/git_add_v1.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_add_v1.png" width="500">
 
 ### v1 : git commit
 ```
@@ -60,7 +60,7 @@ nothing to commit, working directory clean
 $ git branch -vv
 * master a5c8857 file.txt v1
 ```
-![git_commit_v1](http://oojmieb1c.bkt.clouddn.com/git_commit_v1.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_commit_v1.png" width="500">
 
 ### v2 : edit file.txt
 ```
@@ -69,7 +69,7 @@ $ echo 'v2' > file.txt
 $ gst -sb
 ## master
  M file.txt
- 
+
 $ git diff # changes between Index and working directory
 diff --git a/file.txt b/file.txt
 Index e69de29..8c1384d 100644
@@ -80,7 +80,7 @@ Index e69de29..8c1384d 100644
 
 $ git diff --cacheed # changes between the Index and your last commit , same for now
 ```
-![edit_file_v2](http://oojmieb1c.bkt.clouddn.com/edit_file_v2.png?imageMogr2/auto-orient/thumbnail/401x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/edit_file_v2.png" width="500">
 
 ### v2 : git add
 ```
@@ -90,7 +90,7 @@ $ gst -sb
 ## master
 M  file.txt
 ```
-![git_add_v2](http://oojmieb1c.bkt.clouddn.com/git_add_v2.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_add_v2.png" width="500">
 
 ### v2 : git commit
 ```
@@ -105,7 +105,7 @@ nothing to commit, working directory clean
 $ git branch -vv
 * master 7806e5f file.txt v2
 ```
-![git_commit_v2](http://oojmieb1c.bkt.clouddn.com/git_commit_v2.png?imageMogr2/auto-orient/thumbnail/401x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_commit_v2.png" width="500">
 
 ## HEAD->Index->Working Directory
 
@@ -130,7 +130,7 @@ $ git log --oneline --decorate --graph --all
 * 7806e5f file.txt v2
 * a5c8857 file.txt v1
 ```
-![git_commit_v3](http://oojmieb1c.bkt.clouddn.com/git_commit_v3.png?imageMogr2/auto-orient/thumbnail/401x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_commit_v3.png" width="500">
 
 ## git reset `--soft`
 `--soft`：仅移动HEAD的指向，不会改变`Index`和`Working Directory`的内容
@@ -152,7 +152,7 @@ index 8c1384d..29ef827 100644
 -v2
 +v3
 ```
-![git_reset_soft](http://oojmieb1c.bkt.clouddn.com/git_reset_soft.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_reset_soft.png" width="500">
 
 ## git reset `--mixed`
 `--mixed`：是reset的`默认行为`，移动HEAD的指向，改变`Index`的内容，但不会改变`Working Directory`的内容
@@ -185,7 +185,7 @@ index 8c1384d..29ef827 100644
 
 $ git diff --cached # HEAD on 7806e5f , Index on 7806e5f , nothing printed
 ```
-![git_reset_mixed](http://oojmieb1c.bkt.clouddn.com/git_reset_mixed.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_reset_mixed.png" width="500">
 
 ## git reset `--hard`
 {% note danger %}
@@ -217,7 +217,7 @@ $ git diff # Index on 7806e5f , Working Directory on 7806e5f , nothing printed
 
 $ git diff --cached # HEAD on 7806e5f , Index on 7806e5f , nothing printed
 ```
-![git_reset_hard](http://oojmieb1c.bkt.clouddn.com/git_reset_hard.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_reset_hard.png" width="500">
 
 ## git reset file
 `git reset $ref $file`：不移动HEAD，只更新`Index`
@@ -255,7 +255,7 @@ index 29ef827..8c1384d 100644
 -v3
 +v2
 ```
-![git_reset_file](http://oojmieb1c.bkt.clouddn.com/git_reset_file.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_reset_file.png" width="500">
 
 ## 压缩提交
 `交互式rebase`也能压缩提交，相关内容请参照「Git++ - 重写提交历史」，如果压缩的提交数量较大，选择`reset --soft`更便捷
@@ -283,12 +283,12 @@ index e69de29..29ef827 100644
 $ git commit -m 'file.txt v2+v3'
 [master 0896cad] file.txt v2+v3
  1 file changed, 1 insertion(+)
- 
+
 $ git log --oneline --decorate --graph --all
 * 0896cad (HEAD -> master) file.txt v2+v3
 * a5c8857 file.txt v1
 ```
-![compress_commit](http://oojmieb1c.bkt.clouddn.com/compress_commit.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/compress_commit.png" width="500">
 
 # checkout vs reset
 
@@ -298,7 +298,7 @@ $ git log --oneline --decorate --graph --all
 $ git branch -vv
 * branchA 3c38e92 b.txt
   branchB 3c38e92 b.txt
-  
+
 $ gst -sb
 ## branchA
 A  a1.txt
@@ -387,7 +387,7 @@ $ cat .git/HEAD
 ref: refs/heads/master
 
 $ git branch -vv
-  dev    7f73c2a echo dev > file 
+  dev    7f73c2a echo dev > file
 * master 7f73c2a echo dev > file # change to 7f73c2a(dev)
 ```
 
@@ -401,7 +401,7 @@ $ git branch -vv
 
 $ git checkout dev b.txt # HEAD not changed , update Index and Working Directory
 
-$ gst -sb 
+$ gst -sb
 ## master
 A  b.txt
 
@@ -439,5 +439,3 @@ index 0000000..e69de29
 
 
 <!-- indicate-the-source -->
-
-

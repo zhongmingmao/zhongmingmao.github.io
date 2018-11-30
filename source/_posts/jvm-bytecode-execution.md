@@ -14,7 +14,7 @@ tags:
 
 <!-- more -->
 # Stack Frame
-![stack_frame.png](http://ot85c3jox.bkt.clouddn.com/stack_frame.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/stack_frame.png" width="500">
 
 1. 一个方法`从调用到执行完成`，对应着一个栈帧（`Stack Frame`）在虚拟机栈（`VM Stack`）里面`从入栈到出栈`的过程
 2. 在`编译`成`字节码`期间，栈帧需要多大的局部变量表（`Local Variable Table`），多深的操作数栈（`Operand Stack`）都已经完全确定，并且写入到`方法表的Code`属性中
@@ -78,27 +78,27 @@ public int calc();
 # 执行过程
 
 ## bipush 100
-![bytecode_execution_1.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_1.png" width="500">
 
 ## istore_1
-![bytecode_execution_2.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_2.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_2.png" width="500">
 
 ## iload_1
-![bytecode_execution_3_1.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_3_1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_3_1.png" width="500">
 
 ## iload_2
-![bytecode_execution_4.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_4.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_4.png" width="500">
 
 ## iadd
-![bytecode_execution_5.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_5.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_5.png" width="500">
 
 ## iload_3
-![bytecode_execution_6.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_6.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_6.png" width="500">
 
 ## imul
-![bytecode_execution_7.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_7.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_7.png" width="500">
 
 ## ireturn
-![bytecode_execution_8.png](http://ot85c3jox.bkt.clouddn.com/bytecode_execution_8.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/bytecode_execution_8.png" width="500">
 
 <!-- indicate-the-source -->

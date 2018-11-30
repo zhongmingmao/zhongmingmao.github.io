@@ -139,7 +139,7 @@ public ConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyL
 ```
 
 执行`默认构造器`后，`ConcurrentHashMap的内存布局`如下图所示
-![chm7_constructer.png](http://otr5jjzeu.bkt.clouddn.com/chm7_constructer.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/chm7_constructer.png" width="500">
 
 ## put(K key,V value)
 ```java
@@ -413,7 +413,7 @@ public static void main(String[] args) {
     map.put("zhongmingmao", 1);
 }
 ```
-![chm7_put.png](http://otr5jjzeu.bkt.clouddn.com/chm7_put.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/chm7_put.png" width="500">
 
 ## remove(Object key)
 ```java

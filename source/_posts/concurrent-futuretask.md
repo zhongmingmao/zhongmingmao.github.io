@@ -141,7 +141,7 @@ static final class WaitNode {
 }
 ```
 运行状态转换图
-![futuretask_state.png](http://otr5jjzeu.bkt.clouddn.com/futuretask_state.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/futuretask_state.png" width="500">
 
 
 ## 构造函数

@@ -354,7 +354,7 @@ Space losses: 0 bytes internal + 6 bytes external = 6 bytes total
 ```
 
 ## 对象布局
-![jol_arrayAlignment.png](http://ot85c3jox.bkt.clouddn.com/jol_arrayAlignment.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_arrayAlignment.png" width="500">
 
 ## 分析
 `数组对齐`与前面`字节对齐`的例子类似，在`64-bit Hotspot JVM`按`8 Bytes`对齐

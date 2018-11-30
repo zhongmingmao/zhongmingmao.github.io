@@ -9,7 +9,7 @@ tags:
 
 ## 生产者概述
 
-![producer_component.png](http://pg67n0yz6.bkt.clouddn.com/producer_component.png?imageView2/2/w/500)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/producer_component.png" width="500">
 
 1. 创建一个ProducerRecord对象，ProducerRecord对象包含**Topic**和**Value**，还可以指定**Key**或**Partition**
 2. 在发送ProducerRecord对象时，生产者先将**Key**和**Partition**序列化成**字节数组**，以便于在网络上传输

@@ -49,22 +49,22 @@ tags:
 `<C-h>`：删除前一个字符
 `<C-w>`：删除前一个单词
 `<C-u>`：删除至行首
-![insert_mode-ChCwCu.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-ChCwCu.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-ChCwCu.gif" width="500">
 
 ## 返回普通模式
 切换到普通模式：`<Esc>`：不推荐，按键距离比较长；`<C-[>`：推荐，双手协作
 切换到插入-普通模式：`<C-o>`
-![insert_mode-EscC.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-EscC.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-EscC.gif" width="500">
 
 ## 粘贴寄存器中的文本
 `<C-r>{register}`：将寄存器的内容插入到光标所在的位置，适合粘贴少量的几个单词
 `<C-r><C-p>{register}`：按原义插入寄存器内的文本，减少因textwidth或者autoindent选项触发的不必要的换行或缩进，适合大量文本，但不推荐使用，推荐直接使用普通模式的粘贴命令
-![insert_mode-Cr0.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-Cr0.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-Cr0.gif" width="500">
 
 ## 表达式寄存器
 大部分Vim寄存器保存的都是文本：删除及复制命令允许我们把文本保存到寄存器；粘贴命令允许我们把寄存器中的内容插入到文档里
 表达式寄存器`<C-r>=`：执行一段Vim脚本，并返回结果
-![insert_mode-Cr=.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-Cr=.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-Cr=.gif" width="500">
 
 
 ## 插入特殊字符
@@ -75,15 +75,13 @@ tags:
 `<C-k>{char}{char}`：插入以二合字母`{char1}{char2}`表示的字符，例如`<C-k>!=`表示为`≠`
 
 `:h digraph-table`：查看具体的二合字母
-![digraph-table.png](http://ouxz9b8l3.bkt.clouddn.com/digraph-table.png)
-![insert_mode-CvCk.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-CvCk.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/digraph-table.png" width="500">
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-CvCk.gif" width="500">
 
 ## 替换模式
 `r`，`R`：替换模式
 `gr`，`gR`虚拟替换模式
 为了显示`Tab键`，增加Vim配置:`set list`，`set listchars=tab:>-,trail:-`
-![insert_mode-replace_mode.gif](http://ouxz9b8l3.bkt.clouddn.com/insert_mode-replace_mode.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/insert_mode-replace_mode.gif" width="500">
 
 <!-- indicate-the-source -->
-
-

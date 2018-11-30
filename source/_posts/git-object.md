@@ -170,7 +170,7 @@ $ gst -sb
 AM zhongmingmao.txt
 
 # replace zhongmingmao.txt(v2) of zhongmingmao(v1) in index from working directory
-$ git update-index zhongmingmao.txt 
+$ git update-index zhongmingmao.txt
 
 $ gst -sb
 ## Initial commit on master
@@ -254,7 +254,7 @@ $ git cat-file -p bd32670^{tree}
 040000 tree 904970fc7917a1f77fff8280298cb54da4bd89c2 v1
 100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt
 ```
-![tree_object](http://oojmieb1c.bkt.clouddn.com/tree_object.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tree_object.png" width="500">
 
 
 # commit对象
@@ -377,7 +377,7 @@ author zhongmingmao <zhongmingmao@yeah.net> 1492597186 +0800
 committer zhongmingmao <zhongmingmao@yeah.net> 1492597186 +0800
 3rd commit
 ```
-![commit_object](http://oojmieb1c.bkt.clouddn.com/commit_object.png?imageMogr2/auto-orient/thumbnail/501x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/commit_object.png" width="500">
 
 # tag对象
 {% note info %}
@@ -405,7 +405,7 @@ $ cat .git/refs/tags/v1.0
 1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523
 
 $ git cat-file -t 1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523
-commit 
+commit
 ```
 
 ## annotated tag
@@ -443,8 +443,6 @@ tag
 $ git cat-file -t 5fbdcc4c76301f9a1c80bdd44ba1c18c1410dc21
 commit
 ```
-![tag_object](http://oojmieb1c.bkt.clouddn.com/tag_object.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tag_object.png" width="500">
 
 <!-- indicate-the-source -->
-
-

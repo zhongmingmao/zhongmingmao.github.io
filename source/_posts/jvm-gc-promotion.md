@@ -98,18 +98,18 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 3. `老年代`（`Tenured Generation`）总大小为`10240K` = `10M`，目前占用`467K`，可忽略
 4. `新生代`（`Def New Generation`）目前占用`467K-467K=0K`，总大小 = 堆大小 - 老年代大小 ≈ `10M`，`SurvivorRatio=8`，因此`Eden`区大小为`8M`，`Survivor`区大小为`1M`
 
-![gc_1_system_gc.png](http://ot85c3jox.bkt.clouddn.com/gc_1_system_gc.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/gc_1_system_gc.png" width="500">
 
 ### byte[] b1 = new byte[5 * _1MB]
 `Eden区`有`8M`空闲空间，能完全容纳`b1`，不会进行`GC`
-![gc_1_b1.png](http://ot85c3jox.bkt.clouddn.com/gc_1_b1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/gc_1_b1.png" width="500">
 
 ### byte[] b2 = new byte[5 * _1MB]
 对应的GC日志
 ```
 [GC (Allocation Failure) [DefNew: 5447K->4K(9216K), 0.0036997 secs] 5915K->5592K(19456K), 0.0037186 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
 ```
-![gc_1_b2.png](http://ot85c3jox.bkt.clouddn.com/gc_1_b2.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/gc_1_b2.png" width="500">
 1. `Eden`区只有`8M`，此时已经分配了`b1`，最多只剩下`3M`的可用空间，`Serial`采集器采用`Copying`算法，不足以容纳`b2`，触发`Minor GC`
 2. 进行`Minor GC`的原因是`Allocation Failure`，即内存分配失败，与上面分析一致
 3. 进行`Minor GC`，首先尝试将`Eden`区和`Survivor 0`区中的`存活对象`一起移到`Survivor 1`区，`b1`是强引用，依旧存活，但由于`Survivor 1`区只有`1M`，无法容纳`b1`，尝试将`b1`直接晋升到`Tenured`区

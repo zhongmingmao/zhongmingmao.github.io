@@ -15,7 +15,7 @@ tags:
 <!-- more -->
 
 # Git Flow
-![git-flow](http://oojmieb1c.bkt.clouddn.com/git-flow.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git-flow.png" width="500">
 
 # 初始化仓库
 `git flow init`：初始化仓库，支持`GitFlow分支模型`
@@ -425,5 +425,3 @@ $ git log --oneline --decorate --graph --all
 
 
 <!-- indicate-the-source -->
-
-

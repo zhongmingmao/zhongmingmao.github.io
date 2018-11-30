@@ -64,12 +64,12 @@ _**`半数以上`**_的服务器能够正常相互通信，保证了不会因网
 
 ## 两种模式
 ZAB协议运行过程中，存在两种模式：**`崩溃恢复模式`**+**`消息广播模式`**，模式切换图如下
-![zk_zab_mode.png](http://ovk7evjd7.bkt.clouddn.com/zk_zab_mode.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode.png" width="500">
 
 ### 消息广播模式
 
 #### 示意图
-![zk_zab_mode_crash_recovery.png](http://ovk7evjd7.bkt.clouddn.com/zk_zab_mode_crash_recovery.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode_crash_recovery.png" width="500">
 
 #### 具体过程（类2PC）
 - 针对客户端的`事务请求`，`Leader`会为其生成对应的`事务Proposal`，`Leader`会为每个`事务Proposal`分配一个`全局单调递增的唯一ID`，即_**`ZXID`**_
@@ -184,7 +184,7 @@ ZAB协议运行过程中，存在两种模式：**`崩溃恢复模式`**+**`消�
 如果一台机器收到_**`半数以上`**_的相同的投票（包括自身投票），那么这个投票对应的`SID`即为**`准Leader`**
 
 ###### 示例
-![zk_zab_election.png](http://ovk7evjd7.bkt.clouddn.com/zk_zab_election.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_election.png" width="500">
 
 #### 生成新主进程周期
 `e'`：表示新的主进程周期，`Ie'`：`e'`对应的初始化历史记录，`准Leader L`与`Follower F`的工作流程
@@ -232,12 +232,12 @@ ZAB协议运行过程中，存在两种模式：**`崩溃恢复模式`**+**`消�
 `新的准Leader`会根据自己服务器上`最后被提交的事务Proposal`和`Follower的事务Proposal`进行对比，然后`新的准Leader`要求`Follower`执行一个**`回退操作`**，回退到一个`已经被集群半数以上机器提交的最新的事务Proposal`
 
 ### 三阶段示意图
-![zk_zab_3_phase.png](http://ovk7evjd7.bkt.clouddn.com/zk_zab_3_phase_1.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_3_phase_1.png" width="500">
 在正常运行时，ZAB协议一直运行在**`广播阶段`**，如果出现Leader宕机或其他原因导致的Leader缺失，此时ZAB协议会进入**`发现阶段`**
 
 ## 运行分析
 运行状态切换
-![zk_zab_state_switch.png](http://ovk7evjd7.bkt.clouddn.com/zk_zab_state_switch.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_state_switch.png" width="500">
 - 组成`ZAB协议`的所有进程`启动`的时候，初始状态为`LOOKING`
 - 如果进程发现`已经存在新的（准）Leader`，马上切换到`FOLLOWING`状态，并开始和（准）Leader保持同步
 - 处于`LOOKING`状态的进程称为`Follower`，处于`LEADING`状态的进程称为`Leader`

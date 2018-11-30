@@ -44,7 +44,7 @@ b[uffer] {N}：直接跳转到第{N}个缓冲区，例如:b 3
 b[uffer] {bufferName}：{bufferName}是足以唯一标识某一缓冲区的字符序列，可以结合<Tab>自动补全，例如:b c，:b c.txt
 
 # 删除缓冲区（缓冲区编号自动分配，删除缓冲区操作用得很少）
-# 删除特定缓冲区 
+# 删除特定缓冲区
 bd[elete] {N1} {N2} {N3}：删除第{N1}，{N2}，{N3}个缓冲区
 bd[elete] {bufferName1} {bufferName2} {bufferName3}，删除标识符为{bufferName1}，{bufferName2}，{bufferName3}的缓冲区
 # 删除连续缓冲区
@@ -67,9 +67,9 @@ vim：可以在任意时刻改变参数列表的内容，即按你的需求把�
     {glob1}和{glob2}是Glob模式
     *：匹配0个或多个字符，不递归子目录
     **：匹配0个或多个字符，递归子目录
-:args {shellCmd1} {shellCmd2} 
+:args {shellCmd1} {shellCmd2}
     {shellCmd1} 和 {shellCmd2} 是Shell命令的标准输出
-    例如:args cat fileName 
+    例如:args cat fileName
 ```
 
 ## 窗口
@@ -135,7 +135,7 @@ vim：可以在任意时刻改变参数列表的内容，即按你的需求把�
 
 | 命令 | 用途 |
 | --- | --- |
-| :tabm[ove] [N]              | [N]为0，当前标签页会被移到开头，[N]为空，当前标签页被移到结尾 | 
+| :tabm[ove] [N]              | [N]为0，当前标签页会被移到开头，[N]为空，当前标签页被移到结尾 |
 
 `argsdo {ExCmd}`和`bufdo {ExCmd}`：在当前编辑会话中的所有缓冲区上执行`Ex`命令
 使用`argsdo`或`bufdo`，请设置`set hidden`
@@ -171,37 +171,35 @@ lib/
 args **/**js
 args find . -name '*js'
 ```
-![file_args.gif](http://ouxz9b8l3.bkt.clouddn.com/file_args.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_args.gif" width="500">
 
 ## 窗口的使用
-![file_win.gif](http://ouxz9b8l3.bkt.clouddn.com/file_win.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_win.gif" width="500">
 
 ## 标签的使用
-![file_tag.gif](http://ouxz9b8l3.bkt.clouddn.com/file_tag.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_tag.gif" width="500">
 
 ## :edit命令打开文件
 vim的工作目录：执行vim命令的当前目录
 相对路径：接受相对工作目录的文件路径
 `:edit %<Tab>`：`%`代表活动缓冲区的完整文件路径
 `:edit %h<Tab>`：与`:edit %<Tab>`类似，但去除文件名，保留路径中的其他部分
-![file_edit.gif](http://ouxz9b8l3.bkt.clouddn.com/file_edit.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_edit.gif" width="500">
 
 ## :find命令查找并打开文件
 path变量值是:find命令查找的范围，默认值为`.,/usr/include`,
 `set path+=./**`：可以将工作目录的所有递归子目录加入到查找的范围
-![file_find.gif](http://ouxz9b8l3.bkt.clouddn.com/file_find.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_find.gif" width="500">
 
 ## 保存在不存在的目录
 `:!mkdir -p %:h`：创建活动缓冲区的完整路径对应的目录（去除文件名）
-![file_mkdir.gif](http://ouxz9b8l3.bkt.clouddn.com/file_mkdir.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_mkdir.gif" width="500">
 
 ## 使用超级管理员权限保存只读权限的文件
 `:w !sudo tee % > /dev/null`:使用超级管理员权限保存只读文件
 `w !{cmd}`：把当前活动缓冲区的内容作为命令{cmd}的标准输入
 `sudo tee % > /dev/null`：使用超级管理员的权限，执行`tee`命令，`%`代表当前活动缓冲区的完整路径，即将`tee`的标准输入（缓冲区内容）覆盖缓存区对应的文件,并且`tee`命令的标准输出不显示（`/dev/null`）
 因为要输入密码，所以该例子不显示按键
-![file_tee.gif](http://ouxz9b8l3.bkt.clouddn.com/file_tee.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/file_tee.gif" width="500">
 
 <!-- indicate-the-source -->
-
-

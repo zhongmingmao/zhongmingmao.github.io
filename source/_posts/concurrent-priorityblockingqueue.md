@@ -31,11 +31,11 @@ tags:
 结构类似于二叉树，父节点的键值`总是`小于等于（或大于等于）子节点的键值，父节点的`左子树`和`右子树`都是一个`二叉堆`
 最`大`堆：父节点的键值总是`大于等于`子节点的键值
 最`小`堆：父节点的键值总是`小于等于`子节点的键值
-![priorityblockingqueue_min_max_heap_1.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_min_max_heap_1.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/priorityblockingqueue_min_max_heap_1.png" width="500">
 
 ### 存储
 二叉堆一般采用`数组`存储，`a[n]`的`左子节点`为`a[2*n+1]`，`a[n]`的`右子节点`为`a[2*n+2]`，`a[n]`的`父节点`为`a[(n-1)/2]`
-![priorityblockingqueue_heap_array_1.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_heap_array_1.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/priorityblockingqueue_heap_array_1.png" width="500">
 
 # 源码分析
 
@@ -222,7 +222,7 @@ public static void main(String[] args) {
     queue.add(2);
 }
 ```
-![priorityblockingqueue_heap_add_1.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_heap_add_1.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/priorityblockingqueue_heap_add_1.png" width="500">
 
 
 ## poll
@@ -336,7 +336,7 @@ public static void main(String[] args) {
     queue.poll();
 }
 ```
-![priorityblockingqueue_heap_poll.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_heap_poll.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/priorityblockingqueue_heap_poll.png" width="500">
 
 
 ## remove
@@ -423,5 +423,5 @@ public static void main(String[] args) {
     queue.remove(22);
 }
 ```
-![priorityblockingqueue_heap_remove.png](http://otr5jjzeu.bkt.clouddn.com/priorityblockingqueue_heap_remove.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/priorityblockingqueue_heap_remove.png" width="500">
 <!-- indicate-the-source -->

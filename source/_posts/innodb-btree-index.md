@@ -17,8 +17,7 @@ tags:
 <!-- more -->
 
 # B+Tree数据结构
-
-![btree_index_btree](http://opjezmuy7.bkt.clouddn.com/btree_index_btree.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree.png" width="500">
 
 1. 所有`叶子节点`出现在`同一层`
 2. `叶子节点`包含`关键字信息`
@@ -36,7 +35,7 @@ tags:
 3. `叶子节点data域`记录的是**`数据存放的地址`**
 4. `主索引（唯一）`与`辅助索引（可重复）`在结构上`没有任何区别`
 
-![btree_index_btree_myisam](http://opjezmuy7.bkt.clouddn.com/btree_index_btree_myisam.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_myisam.png" width="500">
 
 ## InnoDB
 1. `数据文件`本身是按照`B+Tree`组织的索引结构（`主索引:Primary Index`或`聚集索引:Clustered Index`），而`叶子节点data域`记录的是**`完整的数据信息`**
@@ -44,7 +43,7 @@ tags:
 3. `辅助索引`（`Secondary Index`）也是按`B+Tree`组织，`叶子节点data域`记录的是**`主键值`**，因此`主键不宜定义太大`
 3. 搜索`辅助索引`需要`遍历两遍索引`，首先通过`辅助索引`获得主键值，再用主键值在`主索引`中获取实际数据
 
-![btree_index_btree_innodb](http://opjezmuy7.bkt.clouddn.com/btree_index_btree_innodb.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_innodb.png" width="500">
 
 # 单列主键下的DML操作
 本节将通过实例介绍在`单列主键下的DML操作`时，`B+Tree索引`是如何变化的，关于页内查找的实例请参照「InnoDB备忘录 - 数据页结构」
@@ -101,7 +100,7 @@ File Segment inode: 1
 3. 默认页大小为`16KB`，因此数据页最多容纳`(16*1024-128)/3525=4`个行记录（这里`Page Directory`可忽略不计）
 4. 插入`4`条记录后，只有一个`Leaf Page`，再插入第`5`条记录时，`B+Tree`索引会`分裂`
 
-![btree_index_insert_00](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_00.png?imageMogr2/auto-orient/thumbnail/320x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_00.png" width="500">
 
 #### Insert 50
 ```SQL
@@ -142,7 +141,7 @@ File Segment inode: 1
 | 0xc07e~0xc085 | 8000 000a 0000 0004 | 主键`a=10`的行记录在`page offset=4`的`Leaf Page` |
 | 0xc08c~0xc093 | 8000 001e 0000 0005 | 主键`a=30`的行记录在`page offset=5`的`Leaf Page` |
 
-![btree_index_insert_01](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_01.png?imageMogr2/auto-orient/thumbnail/501x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_01.png" width="500">
 
 ### Leaf Page未满
 
@@ -202,7 +201,7 @@ File Segment inode: 1
 1. 在`page offset=4`内可见，物理存储顺序为`10，20，15`，**`非物理有序`**，通过`Page Directory`和`next_record`保持**`逻辑有序`**（`单向有序链表`）
 2. `行记录格式`和`数据页结构`的内容请参照「InnoDB备忘录 - 行记录格式」和「InnoDB备忘录 - 数据页结构」
 
-![btree_index_insert_02](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_02.png?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_02.png" width="500">
 
 Leaf Page中显示的是`逻辑顺序`10，15，20
 
@@ -278,7 +277,7 @@ File Segment inode: 1
 0000fef0: 3339 3339 3339 0000 0018 0000 0000 0000  393939..........
 ```
 
-![btree_index_insert_10](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_10.png?imageMogr2/auto-orient/thumbnail/801x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_10.png" width="500">
 
 1. `CHARSET=LATIN1 ROW_FORMAT=COMPACT`下，`Leaf Page`每个行记录占用`7273 Bytes`，页大小为`16KB`时，最多存放`(16384-128)/7273=2`个行记录
 2. `CHARSET=LATIN1 ROW_FORMAT=COMPACT`下，`Index Page`每个行记录（`索引信息`）占用`762 Bytes`，页大小为`16KB`时，最多存放`(16384-128)/762=21`个行记录
@@ -350,7 +349,7 @@ File Segment inode: 1
 0006e420: 3431 3431 3431 3431 3431 3431 0000 0019  414141414141....
 ```
 
-![btree_index_insert_11](http://opjezmuy7.bkt.clouddn.com/btree_index_insert_11.png?imageMogr2/auto-orient/thumbnail/802x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_11.png" width="500">
 
 1. `CALL load_t(41)`后，`page offset=3`的`Index Page`已经塞满，`page offset=18`的`Leaf Page`也已经塞满，因此在插入第42条行记录是，会新建`Leaf Page`，并且尝试将`索引信息`放入`page offset=3`的`Index Page`中
 2. `page offset=3`的`Index Page`这时需要`分裂`，将其中的中间节点`19`（包括最小节点`00`）提取到上一层的`Index Page`
@@ -429,7 +428,7 @@ File Segment inode: 1
 | 80 00 00 30 | 00 00 00 05 | 包含行记录：0x30、0x40、0x50、0x60 |
 | 80 00 00 70 | 00 00 00 06 | 包含行记录：0x70、0x80 |
 
-![btree_index_delete_00](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_00.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
 
 ### Delete 0x10
 ```SQL
@@ -477,7 +476,7 @@ File Segment inode: 1
 1. `DELETE`操作仅仅是将记录**`标记为删除`**（`deleted_flag=1`），实际的删除操作是在`Purge线程`中完成的
 2. `Index Page`最小的行记录依旧是`0x10`（查找所有主键小于`0x30`的行记录都将`page offset=4`的`Leaf Page`载入内存）
 
-![btree_index_delete_01](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_01.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_01.png" width="500">
 
 ### Insert 0x10
 ```SQL
@@ -508,7 +507,7 @@ Records: 1  Duplicates: 0  Warnings: 0
 1. 在`Purge线程`未回收标记已删除的空间时，再次插入`0x10`，将`重用`该空间
 2. `Index Page`最小的行记录依旧是`0x10`（查找所有主键小于`0x30`的行记录都将`page offset=4`的`Leaf Page`载入内存）
 
-![btree_index_delete_00](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_00.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
 
 ### Delete 0x10 + Insert 0x08
 ```SQL
@@ -556,7 +555,7 @@ File Segment inode: 1
 | 80 00 00 30 | 00 00 00 05 | 包含行记录：0x30、0x40、0x50、0x60 |
 | 80 00 00 70 | 00 00 00 06 | 包含行记录：0x70、0x80 |
 
-![btree_index_delete_02](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_02.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_02.png" width="500">
 
 1. `0x08`重用标记为已删除的`0x10`的空间
 2. `Index Page`最小的行记录依旧是`0x10`（查找所有主键小于`0x30`的行记录都将`page offset=4`的`Leaf Page`载入内存）
@@ -610,7 +609,7 @@ File Segment inode: 1
 | 80 00 00 30 | 00 00 00 05 | 包含行记录：0x30、0x40、0x50、0x60 |
 | `80 00 00 68` | 00 00 00 06 | 包含行记录：`0x68`、0x70、0x80 |
 
-![btree_index_delete_03](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_03.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_03.png" width="500">
 
 1. `Leaf Page`的行记录是`物理无序`，`逻辑有序`（通过`next_reocord`保证）
 2. `Index Page`最大的行记录从`0x70`修改了`0x68`，因为如果不修改，当查找`0x68`这条行记录时，将`page offset=5`的`Leaf Page`载入内存，而`0x68`实际上是在`page offset=6`的`Leaf Page`中
@@ -668,7 +667,7 @@ File Segment inode: 1
 | `80 00 00 10` | 00 00 00 04 | 包含行记录：`0x08`、0x20 |
 | `80 00 00 68` | 00 00 00 06 | 包含行记录：`0x68`、0x70、0x80 |
 
-![btree_index_delete_04](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_04.png?imageMogr2/auto-orient/thumbnail/802x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_04.png" width="500">
 
 1. `page offset=5`的`Leaf Page`中的行记录0x30、0x40、0x50、0x60`标记为已删除`
 2. `page offset=4`的`Leaf Page`中的`FIL_PAGE_NEXT`从`5`变成了`6`（`0x1000c~1000f`）
@@ -715,7 +714,7 @@ File Segment inode: 1
 | `80 00 00 10` | 00 00 00 04 | 包含行记录：`0x08`、0x20、`0x48` |
 | `80 00 00 68` | 00 00 00 06 | 包含行记录：`0x68`、0x70、0x80 |
 
-![btree_index_delete_05](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_05.png?imageMogr2/auto-orient/thumbnail/802x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_05.png" width="500">
 
 ## Update
 
@@ -759,7 +758,7 @@ Query OK, 1 row affected (0.01 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 ```
 
-![btree_index_delete_00](http://opjezmuy7.bkt.clouddn.com/btree_index_delete_00.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
 
 ### 更新主键列
 ```SQL
@@ -812,7 +811,7 @@ File Segment inode: 1
 | 80 00 00 30 | 00 00 00 05 | 包含行记录：0x30、0x40、0x50、0x60 |
 | `80 00 00 68` | 00 00 00 06 | 包含行记录：0x68、0x70(`deleted_flag=1`)、0x80 |
 
-![btree_index_update_00](http://opjezmuy7.bkt.clouddn.com/btree_index_update_00.png?imageMogr2/auto-orient/thumbnail/800x/blur/1x0/quality/75)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_update_00.png" width="500">
 
 1. 更新主键`a:0x70->0x68`，首先是**`逻辑删除`**`0x70`（`MVCC`特性），然后再插入`0x68`
 2. 如果插入的过程中会影响查询过程，会同步更新`Index Page`
@@ -972,7 +971,7 @@ File Segment inode: 1
 | 0x100a4~0x100ab | 8000 0100 8000 0010  | `b=0x400`对应`a=0x40` |
 | 0x100b1~0x100b8 | 8000 0100 8000 0010  | `b=0x500`对应`a=0x50` |
 
-![btree_index_clustered_secondary](http://opjezmuy7.bkt.clouddn.com/btree_index_clustered_secondary.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_clustered_secondary.png" width="500">
 
 # 联合索引
 当表中有`联合索引(a,b)`，能有效利用联合索引的查询（因为索引已经按a，b的顺序进行排序）
@@ -1040,7 +1039,7 @@ File Segment inode: 1
 | 0xc07e~0xc089 | 8000 0001 8000 0001 0000 0004 |  `a=1,b=1`的行记录在`page offset=4`的`Leaf Page`上 |
 | 0xc090~0xc09b | 8000 0002 8000 0002 0000 0005 |  `a=2,b=2`的行记录在`page offset=5`的`Leaf Page`上 |
 
-![btree_index_multi_clo_index](http://opjezmuy7.bkt.clouddn.com/btree_index_multi_clo_index.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_multi_clo_index.png" width="500">
 
 # 参考资料
 

@@ -62,7 +62,7 @@ Space losses: 0 bytes internal + 3 bytes external = 3 bytes total
 ```
 
 ## 对象布局
-![jol_basic_1.png](http://ot85c3jox.bkt.clouddn.com/jol_basic_1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_basic_1.png" width="500">
 
 ## 分析
 1. `64-bit HotSpot JVM`默认开启`指针压缩`，`Mark Word`占用`8 Bytes`，`Klass Ref`占用`4 Bytes`，`对象头`总共占据了`12 Bytes`（如果是`数组对象`，对象头还会包括`4 Bytes`的`Array Length`，总共占据`16 Bytes`）
@@ -105,7 +105,7 @@ Space losses: 4 bytes internal + 0 bytes external = 4 bytes total
 ```
 
 ## 对象布局
-![jol_alignment.png](http://ot85c3jox.bkt.clouddn.com/jol_alignment.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_alignment.png" width="500">
 
 ## 分析
 1. `a.f`是`long类型`，占用`8 Bytes`，由于`8 Bytes字节对齐`的限制，无法放入`12~15`的位置，因此`12~15`只能是`Padding`
@@ -169,7 +169,7 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 ```
 
 ## 对象布局
-![jol_packing.png](http://ot85c3jox.bkt.clouddn.com/jol_packing.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_packing.png" width="500">
 
 ## 分析
 1. 「对象内存布局 - Instrumentation + sa-jdi 实例分析」也存在类似的实例
@@ -225,7 +225,7 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 ```
 
 ## 对象布局
-![jol_inheritance.png](http://ot85c3jox.bkt.clouddn.com/jol_inheritance.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance.png" width="500">
 
 ## 分析
 1. 在继承关系`C->B->A`中，`父类的实例域`必然排在`子类的实例域`之前
@@ -281,7 +281,7 @@ Space losses: 4 bytes internal + 4 bytes external = 8 bytes total
 ```
 
 ## 对象布局
-![jol_inheritance_barrier.png](http://ot85c3jox.bkt.clouddn.com/jol_inheritance_barrier.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_barrier.png" width="500">
 
 ## 分析
 1. 继承栅栏（`inheritance barrier`）通俗点就是在继承关系中，分配当前类的实例域时，`Hotspot JVM`不会考虑在之前可能存在的`内存间隙`，`实例域的重排序仅限于当前类`，因此`父类的实例域`必然排在`子类的实例域`之前
@@ -337,7 +337,7 @@ Space losses: 6 bytes internal + 3 bytes external = 9 bytes total
 ```
 
 ## 对象布局
-![jol_inheritance_gap.png](http://ot85c3jox.bkt.clouddn.com/jol_inheritance_gap.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_gap.png" width="500">
 
 ## 分析
 1. `64-bit Hotspot JVM`默认是开启`指针压缩`，因为引用大小为`4 Bytes`

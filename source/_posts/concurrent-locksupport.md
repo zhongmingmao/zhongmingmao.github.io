@@ -21,7 +21,7 @@ tags:
 # 源码分析
 
 ## UML
-![locksupport_uml.png](http://otr5jjzeu.bkt.clouddn.com/locksupport_uml.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/locksupport_uml.png" width="500">
 
 ## 实例域
 ```java

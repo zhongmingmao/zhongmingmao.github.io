@@ -46,7 +46,7 @@ stream.forEach(System.out::println); // 方法引用，相关内容请参照「J
 
 ## 流操作
 流操作类似于`流水线`操作
-![java8-stream-pipeline](http://oqsopcxo1.bkt.clouddn.com/java8-stream-pipeline.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-pipeline.png" width="500">
 
 ### 中间操作
 1. 返回一个流（`Stream`）的操作
@@ -189,7 +189,7 @@ flatMap 从定义上理解有点晦涩，做简单解释
 2. Lambda表达式`Arrays::stream`的签名为`T[] -> Stream<T>`
 3. `stream`为`Stream<String[]>`，元素类型为`String[]`，通过`Arrays::stream`会变成`String[] -> Stream<String>`，依据`flatMap`方法的定义，将返回`Stream<String>`，流`被扁平化`
 
-![java8-stream-flatmap](http://oqsopcxo1.bkt.clouddn.com/java8-stream-flatmap.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-flatmap.png" width="500">
 
 下面是 `flatmap` 的 另一个实例
 ```java
@@ -271,7 +271,7 @@ public void sumTest() {
 }
 ```
 
-![java8-stream-ruduce-sum](http://oqsopcxo1.bkt.clouddn.com/java8-stream-reduce-sum.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-reduce-sum.png" width="500">
 
 ## 最大值和最小值
 ```java
@@ -294,7 +294,7 @@ public void maxMinTest() {
 }
 ```
 
-![java8-stream-ruduce-maxmin](http://oqsopcxo1.bkt.clouddn.com/java8-stream-reduce-maxmin.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-reduce-maxmin.png" width="500">
 
 
 ## 总数
@@ -473,7 +473,7 @@ public void sumTest() {
 `<R, A> R collect(Collector<? super T, A, R> collector)`
 `<T> Collector<T, ?, Integer> summingInt(ToIntFunction<? super T> mapper)`
 
-![java8-stream-collect-sum](http://oqsopcxo1.bkt.clouddn.com/java8-stream-collect-sum.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/11/dy/10|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-collect-sum.png" width="500">
 
 
 ### 总数
@@ -574,7 +574,7 @@ assertEquals(Integer.valueOf(50),
                                                                         Integer::sum))); // op
 ```
 
-![java8-stream-collect-reduce](http://oqsopcxo1.bkt.clouddn.com/java8-stream-collect-reduce.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/11/dy/11|imageslim)
+<img src="https://java8-1253868755.cos.ap-guangzhou.myqcloud.com/java8-stream-collect-reduce.png" width="500">
 
 
 ## 分组

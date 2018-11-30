@@ -43,18 +43,18 @@ When the 'showmode' option is set, "-- SELECT --" is shown in the last line.
 `gv`：重选上次的高亮选区；前提是上次的高亮选区没有被删除
 
 子模式间的切换图
-![visual_mode_switch.png](http://ouxz9b8l3.bkt.clouddn.com/visual_mode_switch.png)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode_switch.png" width="500">
 
 # 使用样例
 
 ## 切换选区活动端 o
 高亮选区的范围由其两个对角的端点界定
-![visual_mode-select_area.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-select_area.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-select_area.gif" width="500">
 
 ## 重复执行面向行的可视命令
 使用`命令.`重复低高亮选区所做的修改，此修改会重复作用于相同范围的文本
 下列例子采用Vim配置：`set shiftwidth=4 softtabstop=4 expandtab`
-![visual_mode-line_point.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-line_point.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-line_point.gif" width="500">
 
 ## 操作符命令 vs 可视命令
 1. 尽量使用操作符命令
@@ -72,27 +72,25 @@ When the 'showmode' option is set, "-- SELECT --" is shown in the last line.
 :h visual-repeat
 
 6. Repeating                                            *visual-repeat*
-When repeating a Visual mode operator, the operator will be applied to the same amount 
+When repeating a Visual mode operator, the operator will be applied to the same amount
 of text as the last time:
 - Linewise Visual mode: The same number of lines.
 - Blockwise Visual mode: The same number of lines and columns.
 - Normal Visual mode within one line: The same number of characters.
-- Normal Visual mode with several lines: The same number of lines, in the last line the 
+- Normal Visual mode with several lines: The same number of lines, in the last line the
   same number of characters as in the last line the last time.
 ```
-![visual_mode-commonORvisual.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-commonORvisual.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-commonORvisual.gif" width="500">
 
 ## 使用面向块的可视模式处理表格（列）
-![visual_mode-create_table.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-create_table.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-create_table.gif" width="500">
 
 ## 修改列文本
-![visual_mode-batch_modify_col.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-batch_modify_col.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-batch_modify_col.gif" width="500">
 
 ## 在长短不一的高亮块后添加文本
 `a`，`i`：在普通模式：切换至插入模式；在可视模式和操作符待决模式：当做一个文本对象的组成部分，如`viw`，`vit`，`daw`
 `A`，`I`：在普通模式、可视模式和操作符待决模式：切换至插入模式
-![visual_mode-uneq_len.gif](http://ouxz9b8l3.bkt.clouddn.com/visual_mode-uneq_len.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/visual_mode-uneq_len.gif" width="500">
 
 <!-- indicate-the-source -->
-
-

@@ -18,7 +18,7 @@ tags:
 
 # 逻辑存储结构
 
-![table-space](http://opjezmuy7.bkt.clouddn.com/innodb-tablespace.jpg?imageMogr2/auto-orient/thumbnail/500x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/innodb-tablespace.jpg" width="500">
 
 # Tablespace
 
@@ -109,7 +109,7 @@ total 112K
 [15.7.9 InnoDB General Tablespaces](https://dev.mysql.com/doc/refman/5.7/en/general-tablespaces.html)
 
 # Segment
-![segment](http://opjezmuy7.bkt.clouddn.com/segment.png?imageMogr2/auto-orient/thumbnail/501x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/segment.png" width="500">
 
 1. Segment分为三种
     1. `Leaf node segment`：`数据段`，B+Tree的叶子节点

@@ -198,7 +198,7 @@ MySQL thread id 138, OS thread handle 140648641488640, query id 2150 localhost r
 
 ### 示意图
 
-![lock_rc_primary](http://opjezmuy7.bkt.clouddn.com/lock_rc_primary.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rc_primary.png" width="500">
 
 ## RC+Clustered Index+Equal Not Match
 1. 事务隔离级别`READ COMMITTED(RC)`
@@ -320,7 +320,7 @@ mysql> INSERT INTO t SELECT 35; # Blocked
 1. 将`Session B`的事务隔离级别设置为`REPEATABLE-READ`
 2. `Session B`的事务尝试插入`a=35`，但由于事务`1323280`已经持有了`(30,40)`上的`Gap Lock`，因此被阻塞（详细信息见下节）
 
-![lock_rr_primary_01](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_01.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_primary_01.png" width="500">
 
 ### Session A
 ```SQL
@@ -375,7 +375,7 @@ Records: 1  Duplicates: 0  Warnings: 0
 2. 在事务`1323280`插入`a=35`成功，因为其他事务（`1323281`）暂不持有`包含a=35`的`Gap Lock`，因此无法阻塞事务`1323280`的插入操作
 3. 插入成功后，事务`1323280`持有`a=35`的`X Lock`
 
-![lock_rr_primary_02](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_02.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_primary_02.png" width="500">
 
 ### Session B
 ```SQL
@@ -387,7 +387,7 @@ Empty set (0.00 sec)
 ```
 事务`1323280`持有`(30,40)`的`Gap Lock`，但无法阻止事务`1323281`获得`(35,40)`上的`Gap Lock`（事务`1323280`已获得`a=35`的`X Lock`）
 
-![lock_rr_primary_03](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_03.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_primary_03.png" width="500">
 
 ### Session A
 ```SQL
@@ -401,7 +401,7 @@ mysql> INSERT INTO t SELECT 36; # Blocked
 2. 插入`a=33`不被阻塞，插入成功后事务`1323280`持有`a=33`的`X Lock`
 3. 插入`a=36`被事务`1323281`持有`(35,40)`上的`Gap Lock`阻塞（详细信息见下节）
 
-![lock_rr_primary_04](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_04.png?watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_primary_04.png" width="500">
 
 ### Session B
 ```SQL
@@ -538,7 +538,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rc_primary_range](http://opjezmuy7.bkt.clouddn.com/lock_rc_primary_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rc_primary_range.png" width="500">
 
 ## RR+Clustered Index+Range
 1. 事务隔离级别`REPEATABLE READ(RR)`
@@ -729,7 +729,7 @@ mysql> SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM IN
 
 ### 示意图
 
-![lock_rr_primary_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_primary_range_1.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_primary_range_1.png" width="500">
 
 ## RC+Secondary Unique Index+Range
 1. 事务隔离级别`READ COMMITTED(RC)`
@@ -843,8 +843,7 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rc_unique_range](http://opjezmuy7.bkt.clouddn.com/lock_rc_unique_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
-
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rc_unique_range.png" width="500">
 
 ## RR+Secondary Unique Index+Range
 1. 事务隔离级别`REPEATABLE READ(RR)`
@@ -1012,7 +1011,7 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rr_unique_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_unique_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_unique_range.png" width="500">
 
 ## RC+Secondary Index+Range
 1. 事务隔离级别`READ COMMITTED(RC)`
@@ -1162,7 +1161,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 
 ### 示意图
 
-![lock_rc_key_range](http://opjezmuy7.bkt.clouddn.com/lock_rc_key_range.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/NorthWest/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rc_key_range.png" width="500">
 
 ## RR+Secondary Index+Range
 1. 事务隔离级别`REPEATABLE READ(RR)`
@@ -1361,7 +1360,7 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rr_key_range](http://opjezmuy7.bkt.clouddn.com/lock_rr_key_range_1.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_key_range_1.png" width="500">
 
 在`RR`隔离级别下，类似`SELECT ... FOR UPDATE`这种`Current Read`，使用`Gap Lock`能保证过滤出来的范围不被其他事务插入新的记录，防止`幻读`的产生
 
@@ -1497,7 +1496,7 @@ mysql> select * from information_schema.INNODB_LOCK_WAITS;
 
 ### 示意图
 
-![lock_rc_no_key](http://opjezmuy7.bkt.clouddn.com/lock_rc_no_key.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/12/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rc_no_key.png" width="500">
 
 
 ## RR+No Index
@@ -1665,7 +1664,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
 
 ### 示意图
 
-![lock_rr_no_key](http://opjezmuy7.bkt.clouddn.com/lock_rr_no_key.png?imageView2/0/q/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/240/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/11/dy/11|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/lock_rr_no_key.png" width="500">
 
 # 参考资料
 

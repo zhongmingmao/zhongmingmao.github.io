@@ -135,7 +135,7 @@ tags:
 - `var取值不为<null,null>`，则其他`Proposer`设置成功，变量var`已经形成确定性取值`，认同此值不再更改，直接返回**`<ok,accepted_epoch,accepted_value>`**
 
 ### 样例
-![zk_paxos_2.png](http://ovk7evjd7.bkt.clouddn.com/zk_paxos_2.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_paxos_2.png" width="500">
 
 ### 结论
 - 让`Proposer`按照`epoch递增的顺序`抢占式地依次运行，采用`后者认同前者`的原则
@@ -177,7 +177,7 @@ tags:
     - 否则，向`epoch对应的所有Acceptor`提交取值`<epoch,f>`
 
 ### 样例
-![zk_paxos_3_1.png](http://ovk7evjd7.bkt.clouddn.com/zk_paxos_3_1.png)
+<img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_paxos_3_1.png" width="500">
 
 ### 结论
 - 在抢占式访问权的基础上引入`多Acceptor`，避免了`Acceptor`的单点问题

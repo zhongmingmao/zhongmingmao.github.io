@@ -49,7 +49,7 @@ tags:
 6. 很多时候，会把一个**主题的数据**看成一个**流**，不管它有多少个分区
   - **流是一组从生产者移动到消费者的数据**
 
-![topic.png](http://pg67n0yz6.bkt.clouddn.com/topic.png?imageView2/2/w/500)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/topic.png" width="500">
 
 ### 生产者和消费者
 1. 生产者**创建消息**
@@ -69,7 +69,7 @@ tags:
     - 消费者与分区之间的映射通常被称为**『消费者对分区的所有权关系』**
     - 如果一个消费者失效，群组里的其它消费者可以接管失效消费者的工作
 
-![consumer.png](http://pg67n0yz6.bkt.clouddn.com/consumer.png?imageView2/2/w/500)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer.png" width="500">
 
 ### Broker和集群
 1. 一个**独立的Kafka服务器**被称为**Broker**
@@ -82,7 +82,7 @@ tags:
   - 这种复制机制为分区提供了**消息冗余**
 6. 如果有一个Broker失效，其它Broker可以接管领导权，相关的消费者和生产者都需要**重新连接**到新的首领
 
-![partition_replication.png](http://pg67n0yz6.bkt.clouddn.com/partition_replication.png?imageView2/2/w/600)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/partition_replication.png" width="600">
 
 #### 保留消息
 1. 保留消息是Kafka的一个重要特性
@@ -101,7 +101,7 @@ tags:
   - MirrorMaker的核心组件包含一个**生产者**和一个**消费者**，两者之间**通过一个队列相连**
   - **消费者从一个集群读取消息，生产者把消息发送到另一个集群上**
 
-![multi_data_center.png](http://pg67n0yz6.bkt.clouddn.com/multi_data_center.png?imageView2/2/w/600)
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/multi_data_center.png" width="600">
 
 ## 选择Kafka的原因
 1. **多个生产者**

@@ -42,7 +42,7 @@ $ zip -r sun.zip sun
 $ sudo cp sun.zip /Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Home/sun.zip
 ```
 ## IDEA配置
-![unsafe_idea.png](http://otr5jjzeu.bkt.clouddn.com/unsafe_idea.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/unsafe_idea.png" width="500">
 
 # 获取Unsafe实例
 

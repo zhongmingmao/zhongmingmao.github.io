@@ -23,7 +23,7 @@ tags:
 
 ## 使用场景
 `Condition`常用于**`生产者-消费者`**的场景，例如`ArrayBlockingQueue`，`JUC`框架也有很多地方使用了`Condition`，如下图所示
-![condition_usages.png](http://otr5jjzeu.bkt.clouddn.com/condition_usages.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/condition_usages.png" width="500">
 
 ## 生产者-消费者
 ```java
@@ -245,7 +245,7 @@ static final class Node {
 
 ### 同步队列与条件队列
 `条件队列`与`同步队列`的关系大致如下：
-![aqs_condition_queue.png](http://otr5jjzeu.bkt.clouddn.com/aqs_condition_queue.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/aqs_condition_queue.png" width="500">
 简单说明（后面源码分析将详细介绍）：
 1. `ReentrantLock.newCondition()`：创建一个新的`ConditionObject`实例，每个`ConditionObject`拥有`firstWaiter`属性和`lastWaiter`属性，对应一个`条件队列`
 2. `ConditionObject.await()`：将`当前线程`包装成`节点`后加入到`对应的条件队列`并进行`阻塞`，然后`等待被转移`到`同步队列`中
@@ -390,7 +390,7 @@ private void unlinkCancelledWaiters() {
 }
 ```
 逻辑示意图如下：
-![aqs_condition_queue_unlink_cancelled_waiters.png](http://otr5jjzeu.bkt.clouddn.com/aqs_condition_queue_unlink_cancelled_waiters.png)
+<img src="https://concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/aqs_condition_queue_unlink_cancelled_waiters.png" width="500">
 
 ### fullyRelease
 ```java

@@ -26,8 +26,8 @@ $ vim -u NONE -N
 ```Zsh
 $ man vim
 -u {vimrc}      Use the commands in the file {vimrc} for initializations.  
-                All the other initializations are skipped.  Use this to edit a special  kind  of  files. 
-                It can also be used to skip all initializations by giving the name "NONE". 
+                All the other initializations are skipped.  Use this to edit a special  kind  of  files.
+                It can also be used to skip all initializations by giving the name "NONE".
                 See ":help initialization" within vim for more details.
 -N              No-compatible mode.  Reset the 'compatible' option.  This will make Vim behave a bit better,
                 but less Vi compatible, even though a .vimrc file does not exist.
@@ -41,38 +41,36 @@ $ man vim
 ## 普通模式
 
 ### 删除一个字符 x
-![command_point_x.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_x.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_x.gif" width="500">
 
 ### 删除一行 dd
-![command_point_dd.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_dd.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_dd.gif" width="500">
 
 ### 缩进当前行到文档末尾 SHIFT + > + G
-![command_point_x.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_>G.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_>G.gif" width="500">
 
 ## 插入模式
 
 ### 添加分号 A + ';'
-![command_point_A;.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_A;.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_A;.gif" width="500">
 
 ### 行首添加字符串 I + 'start : ''
-![command_point_Istart.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_Istart.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_Istart.gif" width="500">
 
 ### 增加一行 o + 'add line'
-![command_point_add_line.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_add_line.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_add_line.gif" width="500">
 
 ### 截断到行尾 C
-![command_point_trunc_line.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_trunc_line.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_trunc_line.gif" width="500">
 
 ### 代码添加空格 f+s空格+空格;
 `f{char}`：查找字符
 重复查找（推荐使用`n`和`N`，我们经常将`SHIFT`当成`取反`的意思，`N = SHIFT + n`）
 `;`或者`n`：`前向`重复上次查找
 `,`或者`N`：`反向`向重复上次查找
-![command_point_add_codespace.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_add_codespace.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_add_codespace.gif" width="500">
 
 ### 选择性替换 *
-![command_point_selectivity_replace.gif](http://ouxz9b8l3.bkt.clouddn.com/command_point_selectivity_replace.gif)
+<img src="https://vim-1253868755.cos.ap-guangzhou.myqcloud.com/practical/command_point_selectivity_replace.gif" width="500">
 
 <!-- indicate-the-source -->
-
-

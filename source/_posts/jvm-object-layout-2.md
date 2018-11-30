@@ -70,7 +70,7 @@ ObjArray @ 0x00000007bffe4e90 (object size = 32)
 ```
 
 ### 对象布局
-![compressed.png](http://ot85c3jox.bkt.clouddn.com/compressed.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/compressed.png" width="500">
 
 ## 关闭压缩
 
@@ -97,7 +97,7 @@ ObjArray @ 0x000000011602da20 (object size = 48)
 ```
 
 ### 对象布局
-![uncompressed.png](http://ot85c3jox.bkt.clouddn.com/uncompressed.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/uncompressed.png" width="500">
 
 # 实例域重排序
 
@@ -141,7 +141,7 @@ Oop for me/zhongmingmao/create/classes/ReorderingTestClass @ 0x00000007bfe2c750 
 ```
 
 ## 对象布局
-![reordering_1.png](http://ot85c3jox.bkt.clouddn.com/reordering_1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/reordering_1.png" width="500">
 1. 实例域重排序的主要目的是为了`让内存更为紧凑`，因为`Hotspot JVM`在内存中是`8Byte对齐`，必然会出现上面左图那样的内存浪费
 2. 大致原则上是按照`double/long`，`int/float`，`short/char`，`boolean/byte`，`reference`的优先级进行重排序，但还有进一步优化，如果有比自身优先级低的但能填充自己无法填充的区域，则让优先级低的进行填充（表述有点拗口）
     - 如右图中，`12`的位置原本尝试填充`longValue_1`，但由于`long需要8 Bytes`和`字节对齐`，无法填充，而`intValue_1`恰好能填充这原本会被浪费的空间，让内存更为紧凑
@@ -184,7 +184,7 @@ Oop for me/zhongmingmao/create/classes/OuterClass$InnerClass @ 0x00000007bfe30b5
 ```
 
 ## 对象布局
-![innerclass.png](http://ot85c3jox.bkt.clouddn.com/innerclass.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/innerclass.png" width="500">
 `非静态内部类`隐藏有一个的对`外部类的引用`（`this$0`）
 
 # 继承
@@ -306,7 +306,7 @@ Oop for java/lang/Integer @ 0x00000007bfe36630 (object size = 16)
 ```
 
 ## 对象布局
-![inherit_1.png](http://ot85c3jox.bkt.clouddn.com/inherit_1.png)
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/inherit_1.png" width="500">
 1. `父类实例字段在子类实例字段前面`，只有`类自身定义的实例域`才会进行`重排序`，不会跨域到父类或子类
     - 例如在GranSon的`23`的位置其实可以存放`booleanValue`，但由于来自Son的实例域还有`integerArrayRef`没有填充完，因此只能是`padding`
     - 因此，`子类实例域不会插入到父类实例域的空隙中`

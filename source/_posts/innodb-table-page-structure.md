@@ -17,7 +17,7 @@ tags:
 <!-- more -->
 
 # 数据页结构
-![page-structure](http://opjezmuy7.bkt.clouddn.com/page_structure.png?imageMogr2/auto-orient/thumbnail/301x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png" width="500">
 
 ## File Header
 参考链接：[Fil Header](https://dev.mysql.com/doc/internals/en/innodb-fil-header.html)
@@ -64,7 +64,7 @@ tags:
 2. `Infimum`和`Supremum`在`页被创建`是自动创建，`不会被删除`
 3. 在`Compact`和`Redundant`行记录格式下，`Infimum`和`Supremum`占用的`字节数是不一样`的
 
-![infimum-supremum](http://opjezmuy7.bkt.clouddn.com/infimum_supremum.png?imageMogr2/auto-orient/thumbnail/400x/blur/1x0/quality/75|watermark/2/text/QHpob25nbWluZ21hbw==/font/Y291cmllciBuZXc=/fontsize/320/fill/IzAwMDAwMA==/dissolve/100/gravity/SouthEast/dx/10/dy/10|imageslim)
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png" width="500">
 
 ## User Records
 参考链接：[User Records](https://dev.mysql.com/doc/internals/en/innodb-user-records.html)
