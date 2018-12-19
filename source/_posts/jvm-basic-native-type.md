@@ -1,5 +1,5 @@
 ---
-title: 基本类型
+title: JVM基础 -- 基本类型
 date: 2018-12-15 10:53:06
 categories:
     - JVM
