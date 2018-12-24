@@ -1,0 +1,193 @@
+---
+title: 方法句柄
+date: 2018-12-23 23:53:47
+categories:
+    - JVM
+tags:
+    - JVM
+---
+
+## 方法句柄的概念
+1. 方法句柄（MethodHandle）是一个**强类型，能够被直接执行的引用**
+2. 方法句柄可以指向
+    - **静态方法**
+    - **实例方法**
+    - **构造器**
+    - **字段**（包含字段访问字节码的虚构方法，语义上等价于getter/setter，但不是类中所定义的getter/setter）
+3. 方法句柄的类型（MethodType）
+    - 由所指向方法的**参数类型**以及**返回类型**组成的，用来确认方法句柄**是否适配**的唯一关键
+    - 当使用方法句柄的时候，并**不关心**方法句柄所指向方法的**类名**或**方法名**
+4. 方法句柄的创建是通过**MethodHandles.Lookup**类来完成的
+    - 使用反射API中的Method来查找
+    - 根据类、方法名以及方法句柄类型来查找
+        - 用**invokestatic**调用的静态方法：**Lookup.findStatic**
+        - 用**invokevirtual**调用的实例方法以及用**invokeinterface**调用的接口方法：**Lookup.findVirtual**
+        - 用**invokespecial**调用的实例方法：**Lookup.findSpecial**
+5. 调用方法句柄，**和原本对应的调用指令是一致的**
+    - 原本用invokevirtual调用的方法句柄，也会采用动态绑定
+    - 原本用invokespecial调用的方法句柄，也会采用静态绑定
+6. 方法句柄也有权限问题
+    - 与反射不同，**方法句柄的权限检查只会在句柄的创建阶段完成**，在**实际调用过程**中，JVM**不会检查**方法句柄的权限
+    - 如果方法句柄被多次调用的话，那么与反射调用相比，将**省下重复权限检查的开销**
+    - 方法句柄的访问权限不取决于方法句柄的创建位置，而是取决于**Lookup对象的创建位置**
+        - 对于一个私有字段，如果Lookup对象是在私有字段所在类中获取到，那么这个Lookup对象便拥有了对该私有字段的访问权限
+        - 即使是在所在类的外边，也能够通过该Lookup对象创建该私有字段的getter和setter
+    - 由于**方法句柄没有运行时权限检查**，因此应用程序需要负责方法句柄的管理
+        - 一旦发布了某些私有方法的方法句柄，那么这些私有方法便已经暴露了
+
+<!-- more -->
+
+```java
+public class Foo {
+    private static void bar(Object o) {
+    }
+
+    private static MethodHandles.Lookup lookup() {
+        // Lookup的创建位置，具备Foo类的访问权限
+        return MethodHandles.lookup();
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 获取方法句柄的不同方式
+        MethodHandles.Lookup lookup = Foo.lookup();
+        Method method = Foo.class.getDeclaredMethod("bar", Object.class);
+        MethodHandle mh0 = lookup.unreflect(method);
+
+        MethodType t = MethodType.methodType(void.class, Object.class);
+        MethodHandle mh1 = lookup.findStatic(Foo.class, "bar", t);
+    }
+}
+```
+
+## 方法句柄的操作
+```java
+// 严格匹配参数类型
+public final native @PolymorphicSignature Object invokeExact(Object... args) throws Throwable;
+// 自动适配参数类型
+public final native @PolymorphicSignature Object invoke(Object... args) throws Throwable;
+```
+
+### invokeExact
+1. 假设一个方法句柄接收一个Object类型的参数，如果你传入String作为实际参数，那么方法句柄的调用会在运行时抛出**方法类型不匹配**的异常
+2. 需要将该String**显式转化**为Object类型
+3. 在普通的Java方法调用中，只有在选择**重载方法**时，才会用到这种显式转化
+    - 这是因为经过显式转化后，参数的**声明类型**发生了改变，因此有可能匹配到不同的**方法描述符**，从而选取不同的目标方法
+4. @PolymorphicSignature
+    - 在碰到被@PolymorphicSignature注解的方法调用时，Java编译器会**根据传入参数的声明类型来生成方法描述符，而不是采用目标方法所声明的描述符**
+5. invokeExact会确认**invokevirtual指令对应的方法描述符**，和该**方法句柄的类型**是否**严格匹配**，如果不匹配，会在运行时抛出异常
+
+```java
+public void test(MethodHandle handle, String s) throws Throwable {
+    handle.invokeExact(s);
+    handle.invokeExact((Object) s);
+}
+```
+
+```
+public void test(java.lang.invoke.MethodHandle, java.lang.String) throws java.lang.Throwable;
+  descriptor: (Ljava/lang/invoke/MethodHandle;Ljava/lang/String;)V
+  flags: ACC_PUBLIC
+  Code:
+    stack=2, locals=3, args_size=3
+       0: aload_1
+       1: aload_2
+       // 传入的参数为String，对应的方法描述符为String
+       2: invokevirtual     // Method java/lang/invoke/MethodHandle.invokeExact:(Ljava/lang/String;)V
+       5: aload_1
+       6: aload_2
+       // 转化为Object，对应的方法描述符为Object
+       7: invokevirtual     // Method java/lang/invoke/MethodHandle.invokeExact:(Ljava/lang/Object;)V
+      10: return
+```
+
+### invoke
+invoke会调用`MethodHandle asType(MethodType)`方法
+- 生成一个**适配器方法句柄**，对传入的参数进行适配，再调用原方法句柄
+- 调用原方法句柄的**返回值**同样也会先进行**适配**，然后再返回给调用者
+
+### 增删改参数
+1. 方法句柄还支持**增删改参数**的操作，这些操作都是通过**生成另一个方法句柄来实现**的
+2. 改：`MethodHandle asType(MethodType)`
+3. 删（将传入的部分参数就地抛弃，再调用另一个方法句柄）：`MethodHandles.dropArguments`
+4. 增（往传入的参数中插入额外的参数，再调用另一个方法句柄）：`MethodHandle bindTo(Object)`
+
+## DirectMethodHandle
+
+### Java代码
+```java
+// -XX:+UnlockDiagnosticVMOptions -XX:+ShowHiddenFrames -> 打印隐藏的栈信息
+// -Djava.lang.invoke.MethodHandle.DUMP_CLASS_FILES=true -> 导出class文件
+public class A {
+    private static void bar(Object o) {
+        new Exception().printStackTrace();
+    }
+
+    public static void main(String[] args) throws Throwable {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType methodType = MethodType.methodType(void.class, Object.class);
+        MethodHandle methodHandle = lookup.findStatic(A.class, "bar", methodType);
+        methodHandle.invokeExact(new Object());
+    }
+}
+```
+
+### 输出
+```
+java.lang.Exception
+	at me.zhongmingmao.basic.method_handle.A.bar(A.java:11)
+	at java.lang.invoke.LambdaForm$DMH001/746292446.invokeStatic_001_L_V(LambdaForm$DMH001:1000010)
+	at java.lang.invoke.LambdaForm$MH012/468121027.invokeExact_000_MT(LambdaForm$MH012:1000016)
+	at me.zhongmingmao.basic.method_handle.A.main(A.java:18)
+```
+
+### LambdaForm$MH012
+JVM对invokeExact调用做了特殊处理，会调用到一个**共享的，与方法句柄类型相关的特殊适配器**中，该适配器是一个**LambdaForm**
+```
+$ javap -v -p -c LambdaForm\$MH012
+static void invokeExact_000_MT(java.lang.Object, java.lang.Object, java.lang.Object);
+   descriptor: (Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+   flags: ACC_STATIC
+   Code:
+     stack=2, locals=3, args_size=3
+        0: aload_0
+        1: aload_2
+        // 检验参数类型
+        2: invokestatic     // Method java/lang/invoke/Invokers.checkExactType:(Ljava/lang/Object;Ljava/lang/Object;)V
+        5: aload_0
+        // -Djava.lang.invoke.MethodHandle.CUSTOMIZE_THRESHOLD=127
+        // checkCustomized：是否为为该方法句柄生成一个特有的适配器
+        6: invokestatic     // Method java/lang/invoke/Invokers.checkCustomized:(Ljava/lang/Object;)V
+        9: aload_0
+       10: checkcast        // class java/lang/invoke/MethodHandle
+       13: dup
+       14: astore_0
+       15: aload_1
+       // JVM同样会对invokeBasic做特殊处理，将会调用至方法句柄本身所持有的适配器中，该适配器同样是LambdaForm
+       16: invokevirtual    // Method java/lang/invoke/MethodHandle.invokeBasic:(Ljava/lang/Object;)V
+       19: return
+```
+
+```
+$ javap -v -p -c LambdaForm\$DMH001
+static void invokeStatic_001_L_V(java.lang.Object, java.lang.Object);
+  descriptor: (Ljava/lang/Object;Ljava/lang/Object;)V
+  flags: ACC_STATIC
+  Code:
+    stack=2, locals=3, args_size=2
+       0: aload_0
+       1: invokestatic  #16                 // Method java/lang/invoke/DirectMethodHandle.internalMemberName:(Ljava/lang/Object;)Ljava/lang/Object;
+       4: astore_2
+       5: aload_1
+       6: aload_2
+       7: checkcast     #18                 // class java/lang/invoke/MemberName
+       // JVM会对linkToStatic调用做特殊处理，
+       // 将根据传入的MemberName参数所存储的方法地址或者方法表索引，直接跳转到目标方法
+      10: invokestatic  #24                 // Method java/lang/invoke/MethodHandle.linkToStatic:(Ljava/lang/Object;Ljava/lang/invoke/MemberName;)V
+      13: return
+```
+1. 方法句柄**一开始**持有的适配器是**共享**的，当它被**多次调用**后，Invokers.checkCustomized方法会为该方法句柄生成一个**特有的适配器**
+2. 这个特有的适配器**将方法句柄作为常量**，**直接获取其MemberName类型的字段，并继续后面的linkToStatic调用**
+3. 方法句柄的调用与反射调用一样，都是**间接调用**，因此也会**面临无法内联的问题**
+    - **方法句柄的内联瓶颈在于即时编译器能否将该方法句柄识别为常量**
+
+<!-- indicate-the-source -->
