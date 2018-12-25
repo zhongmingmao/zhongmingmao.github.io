@@ -1,6 +1,6 @@
 ---
 title: JVM基础 -- Java对象的内存布局
-date: 2018-12-25 08:54:39
+date: 2018-12-24 08:54:39
 categories:
     - JVM
 tags:
