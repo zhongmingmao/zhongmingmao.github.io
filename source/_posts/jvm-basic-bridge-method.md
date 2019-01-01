@@ -58,7 +58,8 @@ public java.lang.Double work();
 // 桥接办法
 public java.lang.Number work();
   descriptor: ()Ljava/lang/Number;
-  // ACC_BRIDGE：桥接方法；ACC_SYNTHETIC：编译器自动生成
+  // ACC_BRIDGE：桥接方法
+  // ACC_SYNTHETIC：编译器自动生成，对Java源码来说是不可见的，但可以通过反射调用
   flags: ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC
   Code:
     stack=1, locals=1, args_size=1
