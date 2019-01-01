@@ -1,5 +1,5 @@
 ---
-title: JVM基础 -- 反射原理
+title: JVM基础 -- 浅谈反射
 date: 2018-12-20 22:37:41
 categories:
     - JVM
