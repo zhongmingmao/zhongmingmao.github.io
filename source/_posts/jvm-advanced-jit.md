@@ -38,7 +38,7 @@ tags:
     - 如果只想用C1，在打开分层编译的同时，使用参数：-XX:TieredStopAtLevel=1
 
 ### 编译路径
-<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-advanced-jit-path.png" width=600/>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-path.png" width=600/>
 
 1. 1层和4层是**终止状态**
     - 当一个**方法**被**终止状态**编译后，如果**编译后的代码没有失效**，那么JVM**不会再次发出该方法的编译请求**
