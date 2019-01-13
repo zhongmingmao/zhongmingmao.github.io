@@ -4,7 +4,6 @@ date: 2017-07-09 00:06:25
 categories:
     - Zookeeper
 tags:
-    - Netease
     - Zookeeper
     - ZAB
 ---

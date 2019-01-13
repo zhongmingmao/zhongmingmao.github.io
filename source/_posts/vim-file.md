@@ -4,7 +4,6 @@ date: 2015-11-12 00:06:25
 categories:
     - Vim
 tags:
-    - Netease
     - Vim
 ---
 

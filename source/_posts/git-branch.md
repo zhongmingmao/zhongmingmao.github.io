@@ -4,7 +4,6 @@ date: 2017-04-15 13:35:44
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -108,7 +107,7 @@ $ cn=C1 && touch $cn && git add . && git commit -m $cn # master move forward
 [master 0b2eae6] C1
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C1
- 
+
 $ gst
 On branch master
 Your branch is ahead of 'origin/master' by 1 commit. # master track origin/master
@@ -266,7 +265,7 @@ Fast-forward
  C7 | 0
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C7
- 
+
 $ git log --oneline --graph --decorate --all
 * ae121e2 (HEAD -> master, origin/master, origin/HEAD) C7
 * 7e00be3 (test) C6
@@ -382,5 +381,3 @@ $ git log --oneline --graph --decorate --all
 ```
 
 <!-- indicate-the-source -->
-
-

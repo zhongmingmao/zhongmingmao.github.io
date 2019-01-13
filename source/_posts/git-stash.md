@@ -4,7 +4,6 @@ date: 2017-04-16 13:16:27
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -46,7 +45,7 @@ $ gst -sb # only apply working directory
 ## dev
  M a.txt
  M b.txt
- 
+
 $ git stash drop stash@{0}
 Dropped stash@{0} (8ec72e0160fd187bcc90ddcc7066b9b6c22f350c)
 
@@ -61,7 +60,7 @@ $ gst -sb
 ## dev
 M  a.txt
  M b.txt
- 
+
 $ git stash
 Saved working directory and index state WIP on dev: 2e5960b add a.txt b.txt
 HEAD is now at 2e5960b add a.txt b.txt
@@ -136,5 +135,3 @@ On branch dev
 nothing to commit, working directory clean
 ```
 <!-- indicate-the-source -->
-
-

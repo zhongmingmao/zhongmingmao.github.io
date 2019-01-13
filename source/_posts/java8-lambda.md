@@ -4,7 +4,6 @@ date: 2017-05-30 00:06:25
 categories:
     - Java 8
 tags:
-    - Netease
     - Java 8
     - Lambda
 ---
@@ -93,7 +92,7 @@ public interface Change { // 只有一个抽象方法
 private int localChange(int param, Change change) {
    return change.action(param);
 }
-    
+
 @Test
 public void multipyTest() {
    // Lambda 能够赋值给一个函数式接口的变量（前提是函数式接口的抽象方法的签名 = Lambda 表达式的签名）
@@ -141,7 +140,7 @@ private <T> List<T> predicate(List<T> list, Predicate<T> predicate) {
    }
    return result;
 }
-    
+
 @Test
 public void predicateTest() {
    assertEquals(2, predicate(Arrays.asList("zhongmingmao", "", null),
@@ -167,7 +166,7 @@ private <T> void consume(List<T> list, Consumer<T> consumer) {
        consumer.accept(t);
    }
 }
-    
+
 @Test
 public void consumerTest() {
    consume(Arrays.asList(1, 2, 3), integer -> System.out.println(integer));
@@ -190,7 +189,7 @@ public interface Supplier<T> {
 private <T> T supply(Supplier<T> supplier) {
    return supplier.get();
 }
-    
+
 @Test
 public void supplierTest() {
    assertEquals(LocalDate.now(), supply(() -> LocalDate.now()));
@@ -212,7 +211,7 @@ public interface Function<T, R> {
 private <T, R> R function(T t, Function<T, R> func) {
    return func.apply(t);
 }
-    
+
 @Test
 public void functionTest() {
    assertEquals(Integer.valueOf(12), function(Integer.valueOf(4), integer -> integer * 3));
@@ -235,7 +234,7 @@ public interface BiFunction<T, U, R> {
 private <T, U, R> R biFunction(T t, U u, BiFunction<T, U, R> biFunc) {
    return biFunc.apply(t, u);
 }
-    
+
 @Test
 public void biFunctionTest() {
    assertEquals("40", biFunction(4, "0", (integer, s) -> integer + s));
@@ -258,7 +257,7 @@ public interface BiPredicate<T, U> {
 private <T, U> boolean biPredicate(T t, U u, BiPredicate<T, U> biPred) {
    return biPred.test(t, u);
 }
-    
+
 @Test
 public void biPredicateTest() {
    assertTrue(biPredicate(4, "zhognmingmao", (integer, s) -> null != s && s.length() > integer));
@@ -280,7 +279,7 @@ public interface BinaryOperator<T> extends BiFunction<T,T,T> {
 private <T> T binaryOperator(T t, BinaryOperator<T> bOp) {
    return bOp.apply(t, t);
 }
-    
+
 @Test
 public void binaryOperatorTest() {
    assertEquals(Integer.valueOf(16), binaryOperator(4, (integer, integer2) -> integer * integer2));
@@ -303,7 +302,7 @@ public interface BiConsumer<T, U> {
 private <T, U> void biConsumer(T t, U u, BiConsumer<T, U> bCon) {
    bCon.accept(t, u);
 }
-    
+
 @Test
 public void biConsumerTest() {
    biConsumer(4, "zhongmingmao", (integer, s) -> System.out.println(integer + s.length()));
@@ -325,7 +324,7 @@ public interface UnaryOperator<T> extends Function<T, T> {
 private <T> T unaryOperator(T t, UnaryOperator<T> uOp) {
    return uOp.apply(t);
 }
-    
+
 @Test
 public void unaryOperatorTest() {
    assertEquals("zhongmingmao" , unaryOperator("zhongming" , s -> s + "mao"));
@@ -350,7 +349,7 @@ public interface IntPredicate {
 public void intPredicateTest() {
    IntPredicate intPredicate = value -> value % 2 == 0;
    Predicate<Integer> integerPredicate = integer -> integer % 2 == 0;
-   
+
    int max = 1 << 30;
    long p1 = System.currentTimeMillis();
    for (int i = 0; i < max; i++) {
@@ -416,7 +415,7 @@ contain = list::contains;
 Supplier<Apple> c1 = () -> new Apple();
 c1 = Apple::new;// 默认构造函数
 Apple apple = c1.get();
-   
+
 BiFunction<Apple.COLOR, Integer, Apple> c2 = (color, integer) -> new Apple(color, integer);
 c2 = Apple::new;// 2个参数构造函数
 apple = c2.apply(Apple.COLOR.GREEN, Integer.valueOf(200));
@@ -464,5 +463,3 @@ Function<Integer, Integer> i = g.andThen(f); // f(g(x)) = (x*2)+1
 
 
 <!-- indicate-the-source -->
-
-

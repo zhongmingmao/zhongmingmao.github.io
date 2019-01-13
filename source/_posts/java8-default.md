@@ -4,7 +4,6 @@ date: 2017-06-02 00:06:25
 categories:
     - Java 8
 tags:
-    - Netease
     - Java 8
 ---
 

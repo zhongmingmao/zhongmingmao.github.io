@@ -4,7 +4,6 @@ date: 2016-07-10 00:06:25
 categories:
     - JVM
 tags:
-    - Netease
     - JVM
     - GC
 ---

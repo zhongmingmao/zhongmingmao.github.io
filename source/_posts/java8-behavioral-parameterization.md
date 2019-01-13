@@ -4,7 +4,6 @@ date: 2017-05-29 00:06:25
 categories:
     - Java 8
 tags:
-    - Netease
     - Java 8
 ---
 
@@ -60,7 +59,7 @@ public class Apple {
 }
 ```
 
-### PredicateJava7 
+### PredicateJava7
 ```java
 public interface PredicateJava7 { // 函数式接口
     boolean test(Apple apple);
@@ -105,14 +104,14 @@ public class FilterJava7 {
 ### PredicateJavaTest
 ```java
 public class PredicateJavaTest {
-    
+
     private List<Apple> apples = null;
-    
+
     @Before
     public void setUp() {
         apples = Arrays.asList(new Apple(Apple.COLOR.GREEN, 100), new Apple(Apple.COLOR.RED, 300));
     }
-    
+
     @Test
     public void predicateJava7Test() {
         assertEquals(1, FilterJava7.filterJava7(apples, new ColorPredicate()).size());
@@ -135,7 +134,7 @@ public interface PredicateJava8<T> { // 函数式接口 + 泛型
 ### FilterJava8
 ```java
 public class FilterJava8 {
-    
+
     public static <T> List<T> filterJava8(List<T> list, PredicateJava8<T> predicateJava8) {
         List<T> result = new ArrayList<T>();
         for (T t : list) {
@@ -163,5 +162,3 @@ public void predicateJava8Test() {
 采用 `Lambda` 表达式实现`行为参数化`无需先定义相应的策略，减少`模板代码`的产生
 
 <!-- indicate-the-source -->
-
-

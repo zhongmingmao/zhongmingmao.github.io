@@ -4,7 +4,6 @@ date: 2017-04-14 13:35:57
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -201,7 +200,7 @@ $ gst
 On branch master
 nothing to commit, working tree clean
 
-$ ls 
+$ ls
 README.md  src
 
 $ find README.md src
@@ -323,13 +322,13 @@ $ gst -sb
 ## master
 A  C3
 
-$ git commit --amend -m 'C3' # Create new commit object , merge last commit(C2) 
+$ git commit --amend -m 'C3' # Create new commit object , merge last commit(C2)
 [master de41093] C3
  Date: Fri Apr 14 19:48:58 2017 +0800
  2 files changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C2
  create mode 100644 C3
- 
+
 $ git log --oneline --decorate --graph
 * de41093 (HEAD -> master) C3
 * e1fbcea C1
@@ -376,7 +375,7 @@ M	C3
 $ gst -sb
 ## master
  M C3
- 
+
 $ git diff
 diff --git a/C3 b/C3
 index e69de29..35d242b 100644
@@ -446,5 +445,3 @@ nothing to commit, working tree clean
 ```
 
 <!-- indicate-the-source -->
-
-

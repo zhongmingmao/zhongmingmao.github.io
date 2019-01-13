@@ -4,7 +4,6 @@ date: 2017-04-19 16:22:50
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -46,7 +45,7 @@ $ du -sh .git/objects
 
 $ git add bigfile
 
-$ du -sh .git 
+$ du -sh .git
 11M .git
 
 $ du -sh .git/objects
@@ -306,5 +305,3 @@ $ git log --oneline --decorate --graph --all
 ```
 
 <!-- indicate-the-source -->
-
-

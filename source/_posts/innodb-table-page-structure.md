@@ -5,7 +5,6 @@ categories:
     - MySQL
     - InnoDB
 tags:
-    - Netease
     - MySQL
     - InnoDB
 ---

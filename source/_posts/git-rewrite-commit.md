@@ -4,7 +4,6 @@ date: 2017-04-17 13:17:03
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -211,5 +210,3 @@ ff7fea3 zhongmingmao zhongmingmao@yeah.net
 ```
 
 <!-- indicate-the-source -->
-
-

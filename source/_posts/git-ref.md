@@ -4,7 +4,6 @@ date: 2017-04-15 18:25:33
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -280,7 +279,7 @@ tag v2.0
 $ git cat-file -t 5a0823659a16f3e6aa7caa0a6fc1ee3bebf4112c # point to a commit object
 commit
 ```
- 
+
 ## remote引用
 `remote引用`在本地仓库是只读的，`git commit`不会更新`remote引用`，更新发生在`git fetch`和`git pull`执行时
 ```
@@ -339,7 +338,7 @@ $ git log --oneline --decorate --graph hzmajia_master
     - `+`在不能`Fast-Forward Merge`的情况下也强制更新引用
     - `<src>`：`本地版本库中`的引用
     - `<dst>`：`远程版本库中`的引用
-  
+
 ```
 $ git init
 Initialized empty Git repository in /home/zhongmingmao/demo/.git/
@@ -379,7 +378,7 @@ $ git log --oneline --graph --decorate --all
 
 $ git log --oneline --decorate master..dev
 187060b (dev) C3
-451ee07 C2 
+451ee07 C2
 
 $ git log --oneline --decorate ^master dev
 187060b (dev) C3
@@ -420,5 +419,3 @@ $ git log --oneline --decorate --left-right dev...master
 ```
 
 <!-- indicate-the-source -->
-
-

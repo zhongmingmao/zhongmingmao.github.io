@@ -4,7 +4,6 @@ date: 2017-04-18 00:28:16
 categories:
     - Git++
 tags:
-    - Netease
     - Git++
 ---
 
@@ -74,7 +73,7 @@ $ gst -sb
 ## master
 UU file
 
-$ git ls-files -u 
+$ git ls-files -u
 100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 1 file
 100644 1f7391f92b6a3792204e07e99f71f643cc35e7e1 2 file
 100644 38f8e886e1a6d733aa9bfa7282568f83c133ecd6 3 file
@@ -235,7 +234,7 @@ $ git log --oneline --decorate --graph --all
 * 4d8ef47 C1
 * 0c1d26b C0
 
-$ ls 
+$ ls
 C0  C1  C4  C5
 
 $ git revert -m 1 HEAD # keep C5 , give up C3
@@ -271,7 +270,7 @@ $ cn=C6 && touch $cn && git add . && git commit -m $cn
 [dev 105cf17] C6
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C6
- 
+
 $ git checkout master
 Switched to branch 'master'
 
@@ -280,7 +279,7 @@ Merge made by the 'recursive' strategy.
  C6 | 0
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C6
- 
+
 $ git log --oneline --decorate --graph --all
 *   f58ffc1 (HEAD -> master) M2
 |\
@@ -310,7 +309,7 @@ Merge made by the 'recursive' strategy.
  C6 | 0
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 C6
- 
+
 $ git log --oneline --decorate --graph --all
 *   ea0507c (HEAD -> master) M2
 |\
@@ -334,5 +333,3 @@ C0  C1  C2  C3  C4  C5  C6
 
 <!-- more -->
 <!-- indicate-the-source -->
-
-

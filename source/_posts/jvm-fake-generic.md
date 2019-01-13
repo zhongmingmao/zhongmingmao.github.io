@@ -4,7 +4,6 @@ date: 2016-07-08 00:06:25
 categories:
     - JVM
 tags:
-    - Netease
     - JVM
 ---
 
@@ -27,7 +26,7 @@ public class FakeGeneric {
 
     static class Son extends Father {
     }
-    
+
     private static void checkFather(Father father) {
     }
 
