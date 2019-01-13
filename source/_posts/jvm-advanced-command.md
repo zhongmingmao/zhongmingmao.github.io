@@ -299,7 +299,7 @@ $ jstat -gccause 19
 4. 如果某个线程长时间无法跑到安全点，jmap将一直等待下去
     - 垃圾回收器会主动将jstat所需要的摘要数据保存至**固定位置**
     - 因此jstat只需要直接读取即可
-5. **jmap/jinfo/jstack/jcmd**，均依赖于JVM的**Attach API**，因此**只能监控本地Java进程**
+5. **jps/jmap/jinfo/jstack/jcmd**，均依赖于JVM的**Attach API**，因此**只能监控本地Java进程**
 6. 如果开启`-XX:+DisableAttachMechanism`，那么基于**Attach API**的命令也将无法执行
 
 ### clstats
