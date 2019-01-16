@@ -1,5 +1,5 @@
 ---
-title: MySQL -- SELECT 执行过程
+title: MySQL -- 基础架构
 date: 2019-01-14 20:10:55
 categories:
     - MySQL
@@ -174,7 +174,6 @@ mysql> SHOW VARIABLES LIKE '%slow_query%';
 | slow_query_log_file | /data_db3/mysql/3323/slowlog/slowlog_2019011423.log |
 +---------------------+-----------------------------------------------------+
 ```
-
 
 ## 参考资料
 《MySQL实战45讲》
