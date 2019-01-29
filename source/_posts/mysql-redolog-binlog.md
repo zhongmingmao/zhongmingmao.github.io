@@ -92,7 +92,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_flush_log_at_trx_commit%';
     - 崩溃恢复的过程**不写binlog**（需要**读binlog**）
         - 用binlog恢复实例（从库），需要**写redolog**
 5. _**redolog支持事务的持久性，undo log支持事务的隔离性**_
-6. redo log对应用开发来说是**透明**的
+6. redolog对应用开发来说是**透明**的
 7. binlog有两种模式
     - **statement格式**：SQL语句
     - **row格式**：行内容（记两条，更新前和更新后），**推荐**
