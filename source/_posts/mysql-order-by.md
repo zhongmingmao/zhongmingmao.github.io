@@ -90,7 +90,7 @@ mysql> SHOW VARIABLES LIKE '%sort_buffer%';
 3. 然后拿着ID_X**回表**取出整行，将`city`、`name`、`age`这三个字段的值都存入`sort buffer`
 4. 回到**city索引树**取下一条记录，重复上述动作，直至city的值不满足条件为止，即ID_Y
 5. 对`sort buffer`中的数据按照`name`字段进行排序
-    - 排序过程可能使用**内部排序**（**内存**，**首选**，**快速排序**），也可能使用**外部排序**（**磁盘**，**次选**，**归并排序**）
+    - 排序过程可能使用**内部排序**（**内存**，**首选**，**快速排序/堆排序**），也可能使用**外部排序**（**磁盘**，**次选**，**归并排序**）
     - 这取决于**排序所需要的内存**是否小于`sort_buffer_size`（默认**1 MB**）
 6. 按照排序结果取前1000行返回给客户端
 
@@ -217,7 +217,7 @@ SELECT city,name,age FROM t FORCE INDEX(city) WHERE city='杭州' ORDER BY name 
     "sort_mode": "<fixed_sort_key, additional_fields>"
 }
 ```
-1. `num_initial_chunks_spilled_to_disk=0`，说明采用了内部排序，排序直接在`sort buffer`中完成
+1. `num_initial_chunks_spilled_to_disk=0`，说明采用了内部排序（**堆排序**），排序直接在`sort buffer`中完成
 2. `peak_memory_used < memory_available`：**sort buffer空间充足**
 3. `num_examined_rows=4000`：**参与排序的行数**
 4. `filesort_priority_queue_optimization`：采用**优先级队列优化**（**堆排序**）
@@ -495,4 +495,5 @@ possible_keys: city_user
 
 ## 参考资料
 《MySQL实战45讲》
+
 <!-- indicate-the-source -->
