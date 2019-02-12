@@ -173,6 +173,8 @@ mysql> SHOW VARIABLES LIKE '%slow_query%';
 | slow_query_log      | ON                                                  |
 | slow_query_log_file | /data_db3/mysql/3323/slowlog/slowlog_2019011423.log |
 +---------------------+-----------------------------------------------------+
+
+SET GLOBAL log_timestamps = SYSTEM;
 ```
 
 ## 参考资料
