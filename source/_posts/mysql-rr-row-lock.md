@@ -63,7 +63,7 @@ INSERT INTO t VALUES (0,0,0),(5,5,5),(10,10,10),(15,15,15),(20,20,20),(25,25,25)
 | | | UPDATE t SET d=d+1 WHERE id=10;<br/>(Query OK) |
 
 ```sql
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -85,7 +85,7 @@ session A持有的锁：`PRIMARY:Gap Lock:(5,10)`
 | | | UPDATE t SET d=d+1 WHERE id=15;<br/>(Blocked) |
 
 ```sql
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -93,7 +93,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 | PRIMARY      | RECORD      | X,GAP             | X                  |
 +--------------+-------------+-------------------+--------------------+
 
--- sesson C Blocked 1
+-- sission C Blocked 1
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -101,7 +101,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 | PRIMARY      | RECORD      | X                 | X                  |
 +--------------+-------------+-------------------+--------------------+
 
--- sesson C Blocked 2
+-- sission C Blocked 2
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -121,7 +121,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 | | | UPDATE t SET d=d+1 WHERE id=20;<br/>(Blocked) |
 
 ```sql
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -129,7 +129,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 | PRIMARY      | RECORD      | X,GAP             | X                  |
 +--------------+-------------+-------------------+--------------------+
 
--- sesson C Blocked
+-- sission C Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -158,7 +158,7 @@ mysql> EXPLAIN SELECT id FROM t WHERE c=5 LOCK IN SHARE MODE;
 |  1 | SIMPLE      | t     | NULL       | ref  | c             | c    | 5       | const |    1 |   100.00 | Using index |
 +----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------------+
 
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -177,7 +177,7 @@ session A持有的锁：`c:Next-Key Lock:(0,5]`+`c:Gap Lock:(5,10)`
 | | UPDATE t SET d=d+1 WHERE id=5;<br/>(Blocked) |
 
 ```sql
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
@@ -204,7 +204,7 @@ mysql> EXPLAIN SELECT d FROM t WHERE c=5 LOCK IN SHARE MODE;
 |  1 | SIMPLE      | t     | NULL       | ref  | c             | c    | 5       | const |    1 |   100.00 | NULL  |
 +----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------+
 
--- sesson B Blocked
+-- sission B Blocked
 mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM sys.innodb_lock_waits WHERE locked_table='`test`.`t`';
 +--------------+-------------+-------------------+--------------------+
 | locked_index | locked_type | waiting_lock_mode | blocking_lock_mode |
