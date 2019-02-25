@@ -16,10 +16,11 @@ node_js: stable
 
 # S: Build Lifecycle
 install:
-  - npm install && npm install gitbook -g && npm install -g gitbook-cli
+  # - npm install && npm install gitbook -g && npm install -g gitbook-cli
+  - npm install
 
 script:
-  - bash build_gitbook.sh
+  # - bash build_gitbook.sh
   - hexo clean && hexo g
 
 after_script:
