@@ -29,6 +29,8 @@ socket      = /var/run/mysqld/mysqld.sock
 datadir     = /var/lib/mysql
 server-id=1
 log-bin=master-bin
+gtid_mode=on
+enforce_gtid_consistency=on
 ```
 
 ### slave.cnf
@@ -42,20 +44,22 @@ log-bin=slave-bin
 read-only=1
 relay_log=relay-bin
 log-slave-updates=1
+gtid_mode=on
+enforce_gtid_consistency=on
 ```
 
 ## 启动容器
 ```
 $ docker run --name mysql_master -d -e MYSQL_ROOT_PASSWORD=123456 -v ~/mysql/master/data:/var/lib/mysql -v ~/mysql/master/master.cnf:/etc/mysql/mysql.conf.d/master.cnf mysql:5.7
-4e59f35dc210782351abf0e488b5060e9aa6eeccfdf170b91e38f6b2bfda53d5
+61d94374ff7613d8ead1eeaa1cc34fa34997f1c11398ca068a8b3fe478d621d4
 
 $ docker run --name mysql_slave -d -e MYSQL_ROOT_PASSWORD=123456 -v ~/mysql/slave/data:/var/lib/mysql -v ~/mysql/slave/slave.cnf:/etc/mysql/mysql.conf.d/slave.cnf mysql:5.7
-f2eeeacfce4a8e276c6047754a18c5c906c7f48434f0115a794875e4ca38b0c2
+734165d2090bb733eefcc5e49620ce51254d9f1e15c2591cd30467e02fd8b277
 
 $ docker ps -a
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                 NAMES
-f2eeeacfce4a        mysql:5.7           "docker-entrypoint.s…"   11 seconds ago      Up 9 seconds        3306/tcp, 33060/tcp   mysql_slave
-4e59f35dc210        mysql:5.7           "docker-entrypoint.s…"   24 seconds ago      Up 22 seconds       3306/tcp, 33060/tcp   mysql_master
+734165d2090b        mysql:5.7           "docker-entrypoint.s…"   11 seconds ago      Up 9 seconds        3306/tcp, 33060/tcp   mysql_slave
+61d94374ff76        mysql:5.7           "docker-entrypoint.s…"   36 seconds ago      Up 34 seconds       3306/tcp, 33060/tcp   mysql_master
 
 $ docker inspect --format='{{.NetworkSettings.IPAddress}}' mysql_master mysql_slave
 172.17.0.2
@@ -67,7 +71,7 @@ $ docker inspect --format='{{.NetworkSettings.IPAddress}}' mysql_master mysql_sl
 ### 添加复制账号
 ```sql
 $ docker exec -it mysql_master bash
-root@4e59f35dc210:/# mysql -uroot -p123456
+root@61d94374ff76:/# mysql -uroot -p123456
 
 mysql> GRANT REPLICATION SLAVE ON *.* to 'replication'@'%' IDENTIFIED BY '123456';
 Query OK, 0 rows affected, 1 warning (0.03 sec)
@@ -83,11 +87,11 @@ mysql> SHOW WARNINGS;
 ### 查看binlog位置
 ```sql
 mysql> SHOW MASTER STATUS;
-+-------------------+----------+--------------+------------------+-------------------+
-| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
-+-------------------+----------+--------------+------------------+-------------------+
-| master-bin.000003 |      444 |              |                  |                   |
-+-------------------+----------+--------------+------------------+-------------------+
++-------------------+----------+--------------+------------------+------------------------------------------+
+| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set                        |
++-------------------+----------+--------------+------------------+------------------------------------------+
+| master-bin.000003 |      484 |              |                  | b8502fe3-3b4a-11e9-9562-0242ac110002:1-6 |
++-------------------+----------+--------------+------------------+------------------------------------------+
 ```
 
 ## 从库
@@ -95,9 +99,9 @@ mysql> SHOW MASTER STATUS;
 ### 配置同步信息
 ```sql
 $ docker exec -it mysql_slave bash
-root@f2eeeacfce4a:/# mysql -uroot -p123456
+root@734165d2090b:/# mysql -uroot -p123456
 
-mysql> CHANGE MASTER TO master_host='172.17.0.2',master_user='replication',master_password='123456',master_log_file='master-bin.000003',master_log_pos=444,master_port=3306;
+mysql> CHANGE MASTER TO master_host='172.17.0.2',master_user='replication',master_password='123456',master_log_file='master-bin.000003',master_log_pos=484,master_port=3306;
 Query OK, 0 rows affected, 2 warnings (0.08 sec)
 
 -- Slave_IO_Running=No, Slave_SQL_Running=No
@@ -109,7 +113,7 @@ mysql> SHOW SLAVE STATUS\G;
                   Master_Port: 3306
                 Connect_Retry: 60
               Master_Log_File: master-bin.000003
-          Read_Master_Log_Pos: 444
+          Read_Master_Log_Pos: 484
                Relay_Log_File: relay-bin.000001
                 Relay_Log_Pos: 4
         Relay_Master_Log_File: master-bin.000003
@@ -124,7 +128,7 @@ mysql> SHOW SLAVE STATUS\G;
                    Last_Errno: 0
                    Last_Error:
                  Skip_Counter: 0
-          Exec_Master_Log_Pos: 444
+          Exec_Master_Log_Pos: 484
               Relay_Log_Space: 154
               Until_Condition: None
                Until_Log_File:
@@ -155,7 +159,7 @@ Master_SSL_Verify_Server_Cert: No
                Master_SSL_Crl:
            Master_SSL_Crlpath:
            Retrieved_Gtid_Set:
-            Executed_Gtid_Set:
+            Executed_Gtid_Set: c75b2a4f-3b4a-11e9-9273-0242ac110003:1-5
                 Auto_Position: 0
          Replicate_Rewrite_DB:
                  Channel_Name:
@@ -176,7 +180,7 @@ mysql> SHOW SLAVE STATUS\G;
                   Master_Port: 3306
                 Connect_Retry: 60
               Master_Log_File: master-bin.000003
-          Read_Master_Log_Pos: 444
+          Read_Master_Log_Pos: 484
                Relay_Log_File: relay-bin.000002
                 Relay_Log_Pos: 321
         Relay_Master_Log_File: master-bin.000003
@@ -191,7 +195,7 @@ mysql> SHOW SLAVE STATUS\G;
                    Last_Errno: 0
                    Last_Error:
                  Skip_Counter: 0
-          Exec_Master_Log_Pos: 444
+          Exec_Master_Log_Pos: 484
               Relay_Log_Space: 522
               Until_Condition: None
                Until_Log_File:
@@ -210,7 +214,7 @@ Master_SSL_Verify_Server_Cert: No
                Last_SQL_Error:
   Replicate_Ignore_Server_Ids:
              Master_Server_Id: 1
-                  Master_UUID: 97c1b378-3766-11e9-b715-0242ac110002
+                  Master_UUID: b8502fe3-3b4a-11e9-9562-0242ac110002
              Master_Info_File: /var/lib/mysql/master.info
                     SQL_Delay: 0
           SQL_Remaining_Delay: NULL
@@ -222,7 +226,7 @@ Master_SSL_Verify_Server_Cert: No
                Master_SSL_Crl:
            Master_SSL_Crlpath:
            Retrieved_Gtid_Set:
-            Executed_Gtid_Set:
+            Executed_Gtid_Set: c75b2a4f-3b4a-11e9-9273-0242ac110003:1-5
                 Auto_Position: 0
          Replicate_Rewrite_DB:
                  Channel_Name:
@@ -231,6 +235,13 @@ Master_SSL_Verify_Server_Cert: No
 
 ## 验证
 ```
+$ docker exec mysql_slave mysql -uroot -p123456 -e "SHOW DATABASES"
+Database
+information_schema
+mysql
+performance_schema
+sys
+
 $ docker exec mysql_master mysql -uroot -p123456 -e "CREATE DATABASE test"
 
 $ docker exec mysql_slave mysql -uroot -p123456 -e "SHOW DATABASES"
