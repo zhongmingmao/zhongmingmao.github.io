@@ -305,4 +305,7 @@ mysql> EXPLAIN SELECT t1.b,t2.* FROM t2 JOIN t1 on (t1.b=t2.b) WHERE t2.id<=100;
         - `join_buffer`不足时（更常见），选择**小表**作为驱动表
     - 结论：**选择小表做驱动表**
 
+## 参考资料
+《MySQL实战45讲》
+
 <!-- indicate-the-source -->
