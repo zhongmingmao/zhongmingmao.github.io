@@ -509,7 +509,7 @@ mysql> INSERT INTO t SELECT 35;
 Query OK, 1 row affected (0.00 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-mysql> SELECT * FROM t WHERE a=30 FOR UPDATE; # BLocked
+mysql> SELECT * FROM t WHERE a=30 FOR UPDATE; # Blocked
 ```
 1. 将`Session B`的事务隔离级别设置为`READ COMMITTED`
 2. 事务`1323887`成功插入`a=25`和`a=35`，表明`(20,30)`和`(30,40)`上不存在`Gap Lock`
