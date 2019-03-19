@@ -305,6 +305,132 @@ mysql> EXPLAIN SELECT t1.b,t2.* FROM t2 JOIN t1 on (t1.b=t2.b) WHERE t2.id<=100;
         - `join_buffer`不足时（更常见），选择**小表**作为驱动表
     - 结论：**选择小表做驱动表**
 
+## LEFT JOIN
+
+### 表初始化
+```sql
+CREATE TABLE a(f1 INT, f2 INT, INDEX(f1)) ENGINE=InnoDB;
+CREATE TABLE b(f1 INT, f2 INT) ENGINE=InnoDB;
+INSERT INTO a VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6);
+INSERT INTO b VALUES (3,3),(4,4),(5,5),(6,6),(7,7),(8,8);
+
+-- Q1
+mysql> SELECT * FROM a LEFT JOIN b ON (a.f1=b.f1) AND (a.f2=b.f2);
++------+------+------+------+
+| f1   | f2   | f1   | f2   |
++------+------+------+------+
+|    3 |    3 |    3 |    3 |
+|    4 |    4 |    4 |    4 |
+|    5 |    5 |    5 |    5 |
+|    6 |    6 |    6 |    6 |
+|    1 |    1 | NULL | NULL |
+|    2 |    2 | NULL | NULL |
++------+------+------+------+
+
+-- Q2
+mysql> SELECT * FROM a LEFT JOIN b ON (a.f1=b.f1) WHERE (a.f2=b.f2);
++------+------+------+------+
+| f1   | f2   | f1   | f2   |
++------+------+------+------+
+|    3 |    3 |    3 |    3 |
+|    4 |    4 |    4 |    4 |
+|    5 |    5 |    5 |    5 |
+|    6 |    6 |    6 |    6 |
++------+------+------+------+
+```
+
+### Q1
+```sql
+mysql> EXPLAIN SELECT * FROM a LEFT JOIN b ON (a.f1=b.f1) AND (a.f2=b.f2);
++----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------------------------------------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                              |
++----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------------------------------------------+
+|  1 | SIMPLE      | a     | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    6 |   100.00 | NULL                                               |
+|  1 | SIMPLE      | b     | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    6 |   100.00 | Using where; Using join buffer (Block Nested Loop) |
++----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------------------------------------------+
+```
+<img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-left-join-bnl.jpg" width=600/>
+1. 驱动表是表a，被驱动表是表b，与使用`STRAIGHT_JOIN`的效果一致
+2. 由于表b的字段f1上没有索引，所以使用的是`BNL`算法
+    - 把表a的内容读入`join_buffer`中
+        - 因为是`SELECT *`，所以字段f1和字段f2都被放入到`join_buffer`中
+    - 顺序扫描表b，对于每一行数据，判断`JOIN`条件（a.f1=b.f1 and a.f2=b.f2）是否满足
+        - 如果满足条件，作为结果集的一行返回
+        - 如果语句中有`WHERE`字句，先判断WHERE部分满足条件后，再返回
+    - 表b扫描完成后，对于没有被匹配的表a的行，把剩余字段补上`NULL`，再放入到结果集
+
+### Q2
+```sql
+mysql> EXPLAIN SELECT * FROM a LEFT JOIN b ON (a.f1=b.f1) WHERE (a.f2=b.f2);
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref       | rows | filtered | Extra       |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+|  1 | SIMPLE      | b     | NULL       | ALL  | NULL          | NULL | NULL    | NULL      |    6 |   100.00 | Using where |
+|  1 | SIMPLE      | a     | NULL       | ref  | f1            | f1   | 5       | test.b.f1 |    1 |    16.67 | Using where |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+2 rows in set, 1 warning (0.00 sec)
+
+mysql> SHOW WARNINGS\G;
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ select `test`.`a`.`f1` AS `f1`,`test`.`a`.`f2` AS `f2`,`test`.`b`.`f1` AS `f1`,`test`.`b`.`f2` AS `f2` from `test`.`a` join `test`.`b` where ((`test`.`a`.`f1` = `test`.`b`.`f1`) and (`test`.`a`.`f2` = `test`.`b`.`f2`))
+
+```
+1. 驱动表是表b
+2. 如果一条`JOIN`语句的`Extra`字段什么都没写，表示使用的是`NLJ`算法
+    - 顺序扫描表b，每一行用`b.f1`去表a查，匹配到记录后判断`a.f2=b.f2`是否满足
+    - 如果满足条件的话，作为结果集的一部分返回
+    - 在MySQL里，**NULL跟任何值执行等值判断和不等值判断的结果都是NULL**
+        - `SELECT NULL = NULL`，返回的也是NULL
+        - `WHERE (a.f2=b.f2)`表示查询结果里不会包含**`b.f2`为NULL**的行
+4. 虽然使用的是`LEFT JOIN`，但语义跟`JOIN`是一致的
+    - 优化器把这条语句的`LEFT JOIN`改写成了`JOIN`，参照`SHOW WARNINGS`的输出
+    - 因为表a的字段f1上有索引，就把表b作为驱动表，可以用上`NLJ`算法
+
+#### 小结
+1. 使用`LEFT JOIN`，_**左边的表不一定是驱动表**_
+2. 因此，如果要使用`LEFT JOIN`语义
+    - 就不能把**被驱动表的字段**放在WHERE条件里面的**等值判断**或**不等值判断**
+    - _**必须都写在ON里面**_
+
+### Q3 + Q4
+```sql
+-- Q3
+mysql> EXPLAIN SELECT * FROM a JOIN b ON (a.f1=b.f1) AND (a.f2=b.f2);
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref       | rows | filtered | Extra       |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+|  1 | SIMPLE      | b     | NULL       | ALL  | NULL          | NULL | NULL    | NULL      |    6 |   100.00 | Using where |
+|  1 | SIMPLE      | a     | NULL       | ref  | f1            | f1   | 5       | test.b.f1 |    1 |    16.67 | Using where |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+
+mysql> SHOW WARNINGS\G;
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ select `test`.`a`.`f1` AS `f1`,`test`.`a`.`f2` AS `f2`,`test`.`b`.`f1` AS `f1`,`test`.`b`.`f2` AS `f2` from `test`.`a` join `test`.`b` where ((`test`.`a`.`f2` = `test`.`b`.`f2`) and (`test`.`a`.`f1` = `test`.`b`.`f1`))
+
+-- Q4
+mysql> EXPLAIN SELECT * FROM a JOIN b ON (a.f1=b.f1) WHERE (a.f2=b.f2);
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref       | rows | filtered | Extra       |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+|  1 | SIMPLE      | b     | NULL       | ALL  | NULL          | NULL | NULL    | NULL      |    6 |   100.00 | Using where |
+|  1 | SIMPLE      | a     | NULL       | ref  | f1            | f1   | 5       | test.b.f1 |    1 |    16.67 | Using where |
++----+-------------+-------+------------+------+---------------+------+---------+-----------+------+----------+-------------+
+2 rows in set, 1 warning (0.00 sec)
+
+mysql> SHOW WARNINGS\G;
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ select `test`.`a`.`f1` AS `f1`,`test`.`a`.`f2` AS `f2`,`test`.`b`.`f1` AS `f1`,`test`.`b`.`f2` AS `f2` from `test`.`a` join `test`.`b` where ((`test`.`a`.`f1` = `test`.`b`.`f1`) and (`test`.`a`.`f2` = `test`.`b`.`f2`))
+```
+1. Q3和Q4都被改写成
+    - `SELECT * FROM a JOIN b WHERE (a.f1=b.f1) AND (a.f2=b.f2)`
+2. `JOIN`语句：_**将判断条件是否全部放在ON部分是没有区别的**_
+
 ## 参考资料
 《MySQL实战45讲》
 
