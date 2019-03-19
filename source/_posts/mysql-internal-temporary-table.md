@@ -224,6 +224,25 @@ mysql> EXPLAIN SELECT SQL_BIG_RESULT id%100 AS m, COUNT(*) AS c FROM t1 GROUP BY
 3. 扫描完成后，对`sort_buffer`的字段m做排序（sort_buffer内存不够时，会利用**磁盘临时文件**辅助排序）
 4. 排序完成后，得到一个有序数组，遍历有序数组，得到每个值出现的次数（类似上面优化索引的方式）
 
+### 对比DISTINCT
+```sql
+-- 标准SQL，SELECT部分添加一个聚合函数COUNT(*)
+SELECT a,COUNT(*) FROM t GROUP BY a ORDER BY NULL;
+-- 非标准SQL
+SELECT a FROM t GROUP BY a ORDER BY NULL;
+
+SELECT DISTINCT a FROM t;
+```
+1. 标准SQL：按照字段a分组，计算每组a出现的次数
+2. 非标准SQL：没有了`COUNT(*)`，不再需要执行计算总数的逻辑
+    - 按照字段a分组，相同的a的值只返回一行，与`DISTINCT`语义一致
+3. 如果不需要执行**聚合函数**，`DISTINCT`和`GROUP BY`的语义、执行流程和执行性能是相同的
+    - 创建一个**临时表**，临时表有一个字段a，并且在这个字段a上创建一个**唯一索引**
+    - 遍历表t，依次取出数据插入临时表中
+        - 如果发现唯一键冲突，就跳过
+        - 否则插入成功
+    - 遍历完成后，将临时表作为结果集返回给客户端
+
 ## 小结
 1. 用到内部临时表的场景
     - 如果语句执行过程中可以一边读数据，一边得到结果，是不需要额外内存的
