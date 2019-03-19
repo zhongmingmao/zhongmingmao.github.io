@@ -144,7 +144,7 @@ SELECT * FROM t1 STRAIGHT_JOIN t2 ON (t1.a=t2.b);
     - 因此，在内存中的总判断次数为100,000次
 3. `Simple Nested-Loop Join`的扫描行数也是100,000次，**时间复杂度是一样的**
     - 但`Block Nested-Loop Join`的100,000次判断是**内存操作**，**速度会快很多**
-    - `Simple Nested-Loop Join`可能会涉及**磁盘操作**
+    - `Simple Nested-Loop Join`可能会涉及**磁盘操作**（全表扫描）
 
 #### 选择驱动表
 1. 假设小表的行数为N，大表的行数为M
@@ -185,6 +185,17 @@ SELECT * FROM t1 STRAIGHT_JOIN t2 ON (t1.a=t2.b);
     - 因此选择**小表当驱动表**
 3. 内存判断次数为 $N\*M$（**无需考虑**）
 4. 如果要减少$\lambda$的值，可以加大`join_buffer_size`的值，一次性放入的行越多，分段就越少
+
+### 对比Simple Nested-Loop Join
+1. `Simple Nested-Loop Join`需要对**被驱动表**做**全表扫描**
+2. 对被驱动表做全表扫描的时候，如果数据没有在Buffer Pool中，就需要等待这部分数据从磁盘读入
+    - 从磁盘读入数据到内存，会影响**正常业务的Buffer Pool命中率**
+        - `Simple Nested-Loop Join`算法天然会对被驱动表的数据做多次访问
+        - 因此，更容易将这些数据页放到Buffer Pool的头部
+3. 即使被驱动表的数据**都在内存中**，`BNL`算法的**遍历成本更低**
+    - `Simple Nested-Loop Join`遍历的是Buffer Pool，采用**链表**的形式
+    - `BNL`遍历的是`join_buffer`，采用**数组**的形式
+3. 因此`BNL`算法的性能会更好
 
 ## 小表
 ```sql
