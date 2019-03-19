@@ -244,6 +244,35 @@ mysql> SELECT * FROM t2;
 +----+------+------+
 ```
 
+## binlog
+自增ID的生成顺序，和binlog的写入顺序可能是不相同的
+```sql
+SET binlog_format=STATEMENT;
+CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY);
+INSERT INTO t VALUES (null);
+```
+
+```
+BEGIN
+$ mysqlbinlog -vv ./binlog.000027
+/*!*/;
+# at 15720
+# at 15752
+#190319 22:35:13 server id 1  end_log_pos 15752 CRC32 0xf118154f 	Intvar
+SET INSERT_ID=1/*!*/;
+#190319 22:35:13 server id 1  end_log_pos 15856 CRC32 0x40050594 	Query	thread_id=28	exec_time=0	error_code=0
+SET TIMESTAMP=1553006113/*!*/;
+INSERT INTO t VALUES (null)
+```
+1. `SET INSERT_ID=1`表示在同一个线程里下一次需要用到自增值的时候，固定用1
+2. `SET INSERT_ID`语句是固定跟在`INSERT`语句之前的
+3. 主库上语句A的id是1，语句B的id是2，写入binlog的顺序是先B后A，binlog如下
+    - SET INSERT_ID=2
+    - 语句B
+    - SET INSERT_ID=1
+    - 语句A
+4. 在备库上语句B用到的`INSERT_ID`依然为2，_**与主库一致**_
+
 ## 参考资料
 《MySQL实战45讲》
 
