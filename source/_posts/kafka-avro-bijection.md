@@ -2,10 +2,12 @@
 title: Kafka学习笔记 -- Avro + Twitter Bijection
 date: 2018-10-17 00:00:01
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
-  - Avro
+    - MQ
+    - Kafka
+    - Avro
 ---
 
 ## Avro + Kafka Native API 比较繁琐

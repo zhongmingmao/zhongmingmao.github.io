@@ -2,9 +2,11 @@
 title: Kafka学习笔记 -- 读取数据
 date: 2018-10-18 15:30:51
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
+    - MQ
+    - Kafka
 ---
 
 ## 基本概念

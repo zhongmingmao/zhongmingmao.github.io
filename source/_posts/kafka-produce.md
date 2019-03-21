@@ -2,9 +2,11 @@
 title: Kafka学习笔记 -- 写入数据
 date: 2018-10-11 22:13:31
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
+    - MQ
+    - Kafka
 ---
 
 ## 生产者概述

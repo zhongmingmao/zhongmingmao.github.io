@@ -2,10 +2,12 @@
 title: Kafka学习笔记 -- 集群安装与配置（Docker）
 date: 2018-10-09 01:48:40
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
-  - Docker
+    - MQ
+    - Kafka
+    - Docker
 ---
 
 ## 配置文件

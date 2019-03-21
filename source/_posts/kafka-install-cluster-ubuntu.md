@@ -2,9 +2,11 @@
 title: Kafka学习笔记 -- 集群安装与配置（Ubuntu）
 date: 2018-10-08 00:53:07
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
+    - MQ
+    - Kafka
 ---
 
 ## 单节点

@@ -2,9 +2,11 @@
 title: Kafka -- 简介
 date: 2018-10-05 23:29:21
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
+    - MQ
+    - Kafka
 ---
 
 ## 相关概念

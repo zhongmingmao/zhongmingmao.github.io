@@ -2,10 +2,12 @@
 title: Kafka学习笔记 -- Avro入门
 date: 2018-10-15 23:42:11
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
-  - Avro
+    - MQ
+    - Kafka
+    - Avro
 ---
 
 ## 引入依赖

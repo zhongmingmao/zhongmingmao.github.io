@@ -2,9 +2,11 @@
 title: Kafka学习笔记 -- 单节点安装与配置（Mac）
 date: 2018-10-07 01:07:32
 categories:
-  - Kafka
+    - MQ
+    - Kafka
 tags:
-  - Kafka
+    - MQ
+    - Kafka
 ---
 
 ## 安装步骤
