@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- 集群安装与配置（Ubuntu）
+title: Kafka -- 集群安装与配置（Ubuntu）
 date: 2018-10-08 00:53:07
 categories:
     - MQ
@@ -15,34 +15,34 @@ tags:
 
 #### 添加ppa
 ```
-➜ sudo add-apt-repository ppa:webupd8team/java
-➜ sudo apt-get update
+$ sudo add-apt-repository ppa:webupd8team/java
+$ sudo apt-get update
 ```
 
 #### 安装oracle-java8-installer
 ```
-➜ sudo apt-get install oracle-java8-installer
+$ sudo apt-get install oracle-java8-installer
 ```
 
 <!-- more -->
 
 #### 设置系统默认JDK
 ```
-➜ sudo update-java-alternatives -s java-8-oracle
+$ sudo update-java-alternatives -s java-8-oracle
 ```
 
 ### 下载解压Kafka
 ```
-➜ mkdir ~/Downloads & cd ~/Downloads
-➜ wget http://mirrors.hust.edu.cn/apache/kafka/2.0.0/kafka_2.11-2.0.0.tgz
+$ mkdir ~/Downloads & cd ~/Downloads
+$ wget http://mirrors.hust.edu.cn/apache/kafka/2.0.0/kafka_2.11-2.0.0.tgz
 
-➜ mkdir ~/kafka && cd ~/kafka
-➜ kafka tar -xvzf ~/Downloads/kafka_2.11-2.0.0.tgz  --strip 1
+$ mkdir ~/kafka && cd ~/kafka
+$ kafka tar -xvzf ~/Downloads/kafka_2.11-2.0.0.tgz  --strip 1
 ```
 
 ### 允许Kafka删除主题
 ```
-➜ vim ~/kafka/config/server.properties
+$ vim ~/kafka/config/server.properties
 
 # 添加
 delete.topic.enable=true
@@ -52,7 +52,7 @@ delete.topic.enable=true
 
 #### Zookeeper
 ```
-➜ sudo vim /etc/systemd/system/zookeeper.service
+$ sudo vim /etc/systemd/system/zookeeper.service
 ```
 
 ```
@@ -73,7 +73,7 @@ WantedBy=multi-user.target
 
 #### Kafka
 ```
-➜ sudo vim /etc/systemd/system/kafka.service
+$ sudo vim /etc/systemd/system/kafka.service
 ```
 
 ```
@@ -94,14 +94,14 @@ WantedBy=multi-user.target
 
 ### 启动
 ```
-➜ sudo systemctl start kafka
+$ sudo systemctl start kafka
 
-➜ sudo systemctl status kafka
+$ sudo systemctl status kafka
 ● kafka.service
    Loaded: loaded (/etc/systemd/system/kafka.service; disabled; vendor preset: enabled)
    Active: active (running) since Mon 2018-10-08 01:52:40 UTC; 6s ago
 
-➜ sudo systemctl status zookeeper
+$ sudo systemctl status zookeeper
 ● zookeeper.service
   Loaded: loaded (/etc/systemd/system/zookeeper.service; disabled; vendor preset: enabled)
   Active: active (running) since Mon 2018-10-08 01:52:40 UTC; 1min 33s ago
@@ -109,46 +109,46 @@ WantedBy=multi-user.target
 
 ### 查看日志
 ```
-➜ journalctl -u kafka
-➜ journalctl -u zookeeper
+$ journalctl -u kafka
+$ journalctl -u zookeeper
 ```
 
 ### 开机自启动
 ```
-➜ sudo systemctl enable kafka
+$ sudo systemctl enable kafka
 Created symlink /etc/systemd/system/multi-user.target.wants/kafka.service → /etc/systemd/system/kafka.service.
 ```
 
 ### 添加环境变量
 ```
-➜ vim ~/.zshrc
+$ vim ~/.zshrc
 
 # 添加
 KAFKA_HOME="/home/zhongmingmao/kafka/"
 export PATH=$KAFKA_HOME/bin:$PATH
 
-➜ source ~/.zshrc
+$ source ~/.zshrc
 ```
 
 ### 测试功能
 
 #### 创建主题
 ```
-➜ kafka-topics.sh --zookeeper localhost:2181 --create --replication-factor 1 --partitions 1 --topic zhongmingmao
+$ kafka-topics.sh --zookeeper localhost:2181 --create --replication-factor 1 --partitions 1 --topic zhongmingmao
 Created topic "zhongmingmao".
 
-➜ kafka-topics.sh --zookeeper localhost:2181 --list
+$ kafka-topics.sh --zookeeper localhost:2181 --list
 zhongmingmao
 ```
 
 #### 发送消息
 ```
-➜ echo "hello, zhongmingmao" | kafka-console-producer.sh --broker-list localhost:9092 --topic zhongmingmao > /dev/null
+$ echo "hello, zhongmingmao" | kafka-console-producer.sh --broker-list localhost:9092 --topic zhongmingmao > /dev/null
 ```
 
 #### 读取消息
 ```
-➜ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic zhongmingmao --from-beginning
+$ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic zhongmingmao --from-beginning
 hello, zhongmingmao
 ```
 
@@ -156,13 +156,13 @@ hello, zhongmingmao
 
 #### 安装
 ```
-➜ sudo apt install ruby ruby-dev build-essential
-➜ sudo gem install kafkat
+$ sudo apt install ruby ruby-dev build-essential
+$ sudo gem install kafkat
 ```
 
 #### 配置
 ```
-➜ vim ~/.kafkatcfg
+$ vim ~/.kafkatcfg
 ```
 
 ```
@@ -174,7 +174,7 @@ hello, zhongmingmao
 ```
 
 ```
-➜ kafkat partitions
+$ kafkat partitions
 Topic		Partition	Leader		Replicas						ISRs
 zhongmingmao	0		0		[0]							[0]
 __consumer_offsets	0		0		[0]							[0]
@@ -189,14 +189,14 @@ __consumer_offsets	0		0		[0]							[0]
 
 ### 创建数据目录
 ```
-➜ mkdir -p ~/data/zookeeper && mkdir -p ~/data/kafka
+$ mkdir -p ~/data/zookeeper && mkdir -p ~/data/kafka
 ```
 
 ### 配置Zookeeper
 
 #### zookeeper.properties
 ```
-➜ vim ~/kafka/config/zookeeper.properties
+$ vim ~/kafka/config/zookeeper.properties
 
 ```
 
@@ -216,12 +216,12 @@ server.3=172.16.143.135:2888:3888
 
 #### 新增myid
 ```
-➜ echo 1 > ~/data/zookeeper/myid # 不同机器，数值为1、2、3
+$ echo 1 > ~/data/zookeeper/myid # 不同机器，数值为1、2、3
 ```
 
 ### 配置Kafka
 ```
-➜ vim ~/kafka/config/server.properties
+$ vim ~/kafka/config/server.properties
 
 # 修改下面配置
 broker.id=0 # 不同机器，数值为0、1、2
@@ -232,9 +232,9 @@ log.dirs=/home/zhongmingmao/data/kafka
 
 ### 启动Kafka
 ```
-➜ sudo systemctl start kafka
+$ sudo systemctl start kafka
 
-➜ jps
+$ jps
 4997 Jps
 4331 Kafka
 4317 QuorumPeerMain
@@ -245,10 +245,10 @@ log.dirs=/home/zhongmingmao/data/kafka
 #### 创建主题
 ```
 # Mac OS
-➜ kafka-topics --zookeeper 172.16.143.133:2181,172.16.143.134:2181,172.16.143.135:2181 --create --replication-factor 1 --partitions 1 --topic zhongmingmao
+$ kafka-topics --zookeeper 172.16.143.133:2181,172.16.143.134:2181,172.16.143.135:2181 --create --replication-factor 1 --partitions 1 --topic zhongmingmao
 Created topic "zhongmingmao".
 
-➜ kafka-topics --zookeeper 172.16.143.133:2181,172.16.143.134:2181,172.16.143.135:2181 --list
+$ kafka-topics --zookeeper 172.16.143.133:2181,172.16.143.134:2181,172.16.143.135:2181 --list
 zhongmingmao
 
 # --zookeeper 可以只列一个
@@ -257,19 +257,19 @@ zhongmingmao
 #### 发送消息
 ```
 # Mac OS
-➜ echo "hello, zhongmingmao" | kafka-console-producer --broker-list 172.16.143.133:9092,172.16.143.134:9092,172.16.143.135:9092, --topic zhongmingmao > /dev/null
+$ echo "hello, zhongmingmao" | kafka-console-producer --broker-list 172.16.143.133:9092,172.16.143.134:9092,172.16.143.135:9092, --topic zhongmingmao > /dev/null
 ```
 
 #### 读取消息
 ```
 # Mac OS
-➜ kafka-console-consumer --bootstrap-server 172.16.143.133:9092,172.16.143.134:9092,172.16.143.135:9092 --topic zhongmingmao --from-beginning
+$ kafka-console-consumer --bootstrap-server 172.16.143.133:9092,172.16.143.134:9092,172.16.143.135:9092 --topic zhongmingmao --from-beginning
 hello, zhongmingmao
 ```
 
 #### 修改KafkaT
 ```
-➜ vim ~/.kafkatcfg
+$ vim ~/.kafkatcfg
 ```
 
 ```
@@ -281,7 +281,7 @@ hello, zhongmingmao
 ```
 
 ```
-➜ kafkat partitions
+$ kafkat partitions
 Topic		Partition	Leader		Replicas						ISRs
 zhongmingmao	0		2		[2]							[2]
 __consumer_offsets	0		1		[1]							[1]
