@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- 集群安装与配置（Docker）
+title: Kafka -- 集群安装与配置（Docker）
 date: 2018-10-09 01:48:40
 categories:
     - MQ
@@ -14,12 +14,10 @@ tags:
 
 ### 文件列表
 ```
-➜ tree
+$ tree
 .
 ├── docker-compose.yml
 └── zoo.cfg
-
-0 directories, 2 files
 ```
 
 ### zoo.cfg
@@ -112,7 +110,7 @@ services:
 
 ### 启动
 ```
-➜ docker-compose up -d
+$ docker-compose up -d
 Creating network "downloads_default" with the default driver
 Creating zoo3   ... done
 Creating kafka2 ... done
@@ -121,7 +119,7 @@ Creating zoo2   ... done
 Creating zoo1   ... done
 Creating kafka1 ... done
 
-➜ docker-compose ps
+$ docker-compose ps
  Name               Command               State                      Ports
 ---------------------------------------------------------------------------------------------
 kafka1   start-kafka.sh                   Up      0.0.0.0:19092->9092/tcp
@@ -134,31 +132,31 @@ zoo3     /docker-entrypoint.sh zkSe ...   Up      0.0.0.0:32181->2181/tcp, 2888/
 
 ### 创建主题
 ```
-➜ kafka-topics --create --topic test --zookeeper localhost:12181,localhost:22181,localhost:32181 --replication-factor 1 --partitions 1
-Created topic "test".
+$ kafka-topics --zookeeper localhost:12181,localhost:22181,localhost:32181 --replication-factor 1 --partitions 1 --create --topic zhongmingmao
+Created topic "zhongmingmao".
 
-➜ kafka-topics --zookeeper localhost:12181,localhost:22181,localhost:32181 --describe --topic test
-Topic:test	PartitionCount:1	ReplicationFactor:1	Configs:
-	Topic: test	Partition: 0	Leader: 3	Replicas: 3	Isr: 3
+$ kafka-topics --zookeeper localhost:12181,localhost:22181,localhost:32181 --describe --topic zhongmingmao
+Topic:zhongmingmao	PartitionCount:1	ReplicationFactor:1	Configs:
+	Topic: zhongmingmao	Partition: 0	Leader: 2	Replicas: 2	Isr: 2
 ```
 
 ### 发送消息
 ```
-➜ kafka-console-producer --topic=test --broker-list localhost:19092,localhost:29092,localhost:39092
+$ kafka-console-producer --broker-list localhost:19092,localhost:29092,localhost:39092 --topic=zhongmingmao
 >hello
 >zhongmingmao
 ```
 
 ### 读取消息
 ```
-➜  Downloads kafka-console-consumer --bootstrap-server localhost:19092,localhost:29092,localhost:39092 --from-beginning --topic
+$ kafka-console-consumer --bootstrap-server localhost:19092,localhost:29092,localhost:39092 --topic zhongmingmao --from-beginning
 hello
 zhongmingmao
 ```
 
 ### 关闭
 ```
-➜ docker-compose down
+$ docker-compose down
 Stopping kafka1 ... done
 Stopping kafka3 ... done
 Stopping zoo3   ... done
@@ -173,9 +171,5 @@ Removing zoo2   ... done
 Removing zoo1   ... done
 Removing network downloads_default
 ```
-
-
-
-
 
 <!-- indicate-the-source -->
