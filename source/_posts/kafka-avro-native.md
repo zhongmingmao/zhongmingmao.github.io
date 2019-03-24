@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- Avro + Kafka Native API
+title: Kafka -- Avro + Kafka Native API
 date: 2018-10-16 18:58:44
 categories:
     - MQ
@@ -44,21 +44,21 @@ public class StockSerializer implements Serializer<Stock> {
     }
 
     @Override
-    public byte[] serialize(String topic, Stock data) {
-        if (null == data) {
+    public byte[] serialize(String topic, Stock stock) {
+        if (stock == null) {
             return null;
         }
 
-        DatumWriter<Stock> datumWriter = new SpecificDatumWriter<>(data.getSchema());
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        BinaryEncoder encoder = EncoderFactory.get().directBinaryEncoder(outputStream, null);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // Avro
+        DatumWriter<Stock> datumWriter = new SpecificDatumWriter<>(stock.getSchema());
+        BinaryEncoder encoder = EncoderFactory.get().directBinaryEncoder(out, null);
         try {
-            datumWriter.write(data, encoder);
+            datumWriter.write(stock, encoder);
         } catch (IOException e) {
-            throw new SerializationException(e);
+            e.printStackTrace();
         }
-
-        return outputStream.toByteArray();
+        return out.toByteArray();
     }
 
     @Override
@@ -76,13 +76,14 @@ public class StockDeserializer implements Deserializer<Stock> {
 
     @Override
     public Stock deserialize(String topic, byte[] data) {
-        if (null == data) {
+        if (data == null) {
             return null;
         }
 
         Stock stock = new Stock();
-        DatumReader<Stock> datumReader = new SpecificDatumReader<>(stock.getSchema());
         ByteArrayInputStream in = new ByteArrayInputStream(data);
+        // Avro
+        DatumReader<Stock> datumReader = new SpecificDatumReader<>(stock.getSchema());
         BinaryDecoder decoder = DecoderFactory.get().directBinaryDecoder(in, null);
         try {
             stock = datumReader.read(null, decoder);
@@ -114,15 +115,16 @@ for (int i = 0; i < 10; i++) {
 Properties props = new Properties();
 props.put("bootstrap.servers", "localhost:9092");
 props.put("key.serializer", StringSerializer.class.getName());
+// 自定义序列化器
 props.put("value.serializer", StockSerializer.class.getName());
 
 Producer<String, Stock> producer = new KafkaProducer<>(props);
 
 for (Stock stock : stocks) {
-    ProducerRecord<String, Stock> record = new ProducerRecord<>("zhongmingmao", stock);
+    ProducerRecord<String, Stock> record = new ProducerRecord<>(TOPIC, stock);
     RecordMetadata metadata = producer.send(record).get();
-    log.info("stock={}, partition={}, offset={}", stock, metadata.partition(), metadata.offset());
-    TimeUnit.SECONDS.sleep(1);
+    log.info("stock={}, timestamp={}, partition={}, offset={}",
+            stock.getStockName(), metadata.timestamp(), metadata.partition(), metadata.offset());
 }
 ```
 
@@ -130,12 +132,13 @@ for (Stock stock : stocks) {
 ```java
 Properties props = new Properties();
 props.put("bootstrap.servers", "localhost:9092");
-props.put("group.id", "zhongmingmao");
+props.put("group.id", TOPIC);
 props.put("key.deserializer", StringDeserializer.class.getName());
+// 自定义反序列化器
 props.put("value.deserializer", StockDeserializer.class.getName());
 
-KafkaConsumer<String, Stock> consumer = new KafkaConsumer<>(props);
-consumer.subscribe(Collections.singletonList("zhongmingmao"));
+Consumer<String, Stock> consumer = new KafkaConsumer<>(props);
+consumer.subscribe(Collections.singletonList(TOPIC));
 
 try {
     while (true) {
