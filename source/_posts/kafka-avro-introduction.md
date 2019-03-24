@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- Avro入门
+title: Kafka -- Avro入门
 date: 2018-10-15 23:42:11
 categories:
     - MQ
@@ -38,14 +38,6 @@ tags:
         </execution>
     </executions>
 </plugin>
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <configuration>
-        <source>${java.version}</source>
-        <target>${java.version}</target>
-    </configuration>
-</plugin>
 ```
 
 ## Schema
@@ -66,10 +58,11 @@ tags:
 ## 使用Avro -- 生成代码
 
 ### 编译Schema
+```shell
+# 执行avro-maven-plugin:1.8.2:schema
+# 生成类：src/main/java/me/zhongmingmao/avro/User.java
+$ mvn clean compile
 ```
-mvn clean compile
-```
-生成类：src/main/java/me/zhongmingmao/avro/User.java
 
 ### 序列化
 ```java
@@ -79,6 +72,7 @@ user1.setFavoriteNumber(1);
 User user2 = new User("B", 2, "c2");
 User user3 = User.newBuilder().setName("C").setFavoriteNumber(3).setFavoriteColor("c3").build();
 
+// org.apache.avro.io.DatumWriter
 DatumWriter<User> userDatumWriter = new SpecificDatumWriter<>(User.class);
 DataFileWriter<User> dataFileWriter = new DataFileWriter<>(userDatumWriter);
 dataFileWriter.create(user1.getSchema(), new File("/tmp/users.avro"));
@@ -90,6 +84,7 @@ dataFileWriter.close();
 
 ### 反序列化
 ```java
+// org.apache.avro.io.DatumReader
 DatumReader<User> userDatumReader = new SpecificDatumReader<>(User.class);
 DataFileReader<User> dataFileReader = new DataFileReader<>(new File("/tmp/users.avro"), userDatumReader);
 User user = null;
@@ -107,6 +102,7 @@ dataFileReader.close();
 
 ### 序列化
 ```java
+// src/main/resources/user.avsc
 String avscFilePath = getClass().getClassLoader().getResource("user.avsc").getPath();
 Schema schema = new Schema.Parser().parse(new File(avscFilePath));
 
@@ -118,18 +114,17 @@ user2.put("name", "B");
 user2.put("favorite_number", 2);
 user2.put("favorite_color", "c2");
 
+// 序列化
 DatumWriter<GenericRecord> userDatumWriter = new SpecificDatumWriter<>(schema);
 DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(userDatumWriter);
-dataFileWriter.create(schema, new File("/tmp/users2.avro"));
+dataFileWriter.create(schema, new File("/tmp/users.avro"));
 dataFileWriter.append(user1);
 dataFileWriter.append(user2);
 dataFileWriter.close();
-```
 
-### 反序列化
-```java
+// 反序列化
 DatumReader<GenericRecord> userDatumReader = new SpecificDatumReader<>(schema);
-DataFileReader<GenericRecord> dataFileReader = new DataFileReader<>(new File("/tmp/users2.avro"), userDatumReader);
+DataFileReader<GenericRecord> dataFileReader = new DataFileReader<>(new File("/tmp/users.avro"), userDatumReader);
 GenericRecord user = null;
 while (dataFileReader.hasNext()) {
     user = dataFileReader.next(user);
