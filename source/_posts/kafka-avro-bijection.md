@@ -1,5 +1,5 @@
 ---
-title: Kafka学习笔记 -- Avro + Twitter Bijection
+title: Kafka -- Avro + Twitter Bijection
 date: 2018-10-17 00:00:01
 categories:
     - MQ
@@ -10,9 +10,10 @@ tags:
     - Avro
 ---
 
-## Avro + Kafka Native API 比较繁琐
-1. 编译Schema
-2. 依赖于Avro实现**自定义的序列化器和反序列化器**
+## Avro + Kafka Native API
+1. 比较繁琐
+    - 编译`Schema`
+    - 依赖于`Avro`实现**自定义的序列化器和反序列化器**
 
 ## 引入依赖
 ```xml
@@ -54,12 +55,13 @@ Producer<String, byte[]> producer = new KafkaProducer<>(props);
 for (int i = 0; i < 10; i++) {
     GenericData.Record record = new GenericData.Record(schema);
     record.put("id", i);
-    record.put("name", "zhongmingmao" + i);
+    record.put("name", TOPIC + i);
     record.put("age", i);
     byte[] bytes = recordInjection.apply(record);
-    ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>("zhongmingmao", bytes);
-    producer.send(producerRecord);
-    TimeUnit.SECONDS.sleep(1);
+    ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(TOPIC, bytes);
+    RecordMetadata metadata = producer.send(producerRecord).get();
+    log.info("id={}, timestamp={}, partition={}, offset={}",
+            record.get("id"), metadata.timestamp(), metadata.partition(), metadata.offset());
 }
 producer.close();
 ```
@@ -72,27 +74,22 @@ Injection<GenericRecord, byte[]> recordInjection = GenericAvroCodecs.toBinary(sc
 
 Properties props = new Properties();
 props.put("bootstrap.servers", "localhost:9092");
-props.put("group.id", "zhongmingmao");
-props.put("key.deserializer", StringDeserializer.class.getName());
-props.put("value.deserializer", ByteArrayDeserializer.class.getName());
+props.put("key.serializer", StringSerializer.class.getName());
+props.put("value.serializer", ByteArraySerializer.class.getName());
+Producer<String, byte[]> producer = new KafkaProducer<>(props);
 
-KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(props);
-consumer.subscribe(Collections.singletonList("zhongmingmao"));
-
-try {
-    while (true) {
-        ConsumerRecords<String, byte[]> records = consumer.poll(100);
-        for (ConsumerRecord<String, byte[]> record : records) {
-            GenericRecord genericRecord = recordInjection.invert(record.value()).get();
-            log.info("id={}, name={}, age={}, partition={}, offset={}",
-                    genericRecord.get("id"), genericRecord.get("name"), genericRecord.get("age"),
-                    record.partition(), record.offset());
-        }
-        TimeUnit.SECONDS.sleep(1);
-    }
-} finally {
-    consumer.close();
+for (int i = 0; i < 10; i++) {
+    GenericData.Record record = new GenericData.Record(schema);
+    record.put("id", i);
+    record.put("name", TOPIC + i);
+    record.put("age", i);
+    byte[] bytes = recordInjection.apply(record);
+    ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(TOPIC, bytes);
+    RecordMetadata metadata = producer.send(producerRecord).get();
+    log.info("id={}, timestamp={}, partition={}, offset={}",
+            record.get("id"), metadata.timestamp(), metadata.partition(), metadata.offset());
 }
+producer.close();
 ```
 
 <!-- indicate-the-source -->
