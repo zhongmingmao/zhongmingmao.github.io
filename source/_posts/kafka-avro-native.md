@@ -132,7 +132,7 @@ for (Stock stock : stocks) {
 ```java
 Properties props = new Properties();
 props.put("bootstrap.servers", "localhost:9092");
-props.put("group.id", TOPIC);
+props.put("group.id", GROUP_ID);
 props.put("key.deserializer", StringDeserializer.class.getName());
 // 自定义反序列化器
 props.put("value.deserializer", StockDeserializer.class.getName());

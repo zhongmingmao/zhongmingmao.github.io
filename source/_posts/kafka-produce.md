@@ -1,5 +1,5 @@
 ---
-title: Kafka -- 写入数据
+title: Kafka -- 生产者
 date: 2018-10-11 22:13:31
 categories:
     - MQ
