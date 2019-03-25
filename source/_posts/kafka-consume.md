@@ -412,5 +412,194 @@ try {
 ```
 
 ## 从特定偏移量开始处理记录
+```java
+// org.apache.kafka.clients.consumer.Consumer
+// 从分区的起始位置开始读取消息
+void seekToBeginning(Collection<TopicPartition> partitions);
+// 直接跳到分区的末尾开始读取消息
+void seekToEnd(Collection<TopicPartition> partitions);
+// 直接跳到特定偏移量
+void seek(TopicPartition partition, long offset);
+```
+
+```java
+private void commitDbTransaction() {
+}
+private int getOffsetFromDB(TopicPartition partition) {
+    return 0;
+}
+private void storeOffsetInDb(String topic, int partition, long offset) {
+}
+private void storeRecordInDb(ConsumerRecord<String, String> record) {
+}
+private void processRecord(ConsumerRecord<String, String> record) {
+}
+
+@Test
+public void seekTest() {
+    class SaveOffsetOnRebalance implements ConsumerRebalanceListener {
+        @Override
+        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            commitDbTransaction();
+        }
+
+        @Override
+        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            partitions.forEach(partition -> consumer.seek(partition, getOffsetFromDB(partition)));
+        }
+    }
+    consumer.subscribe(Collections.singletonList(TOPIC), new SaveOffsetOnRebalance());
+    consumer.assignment().forEach(partition -> consumer.seek(partition, getOffsetFromDB(partition)));
+    while (true) {
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        records.forEach(record -> {
+            processRecord(record);
+            // 同一个事务
+            storeRecordInDb(record);
+            storeOffsetInDb(record.topic(), record.partition(), record.offset());
+        });
+        commitDbTransaction();
+    }
+}
+```
+
+## 退出
+```java
+// ShutdownHook运行在单独的线程里，所以退出循环最安全的方式是调用wakeup()
+Runtime.getRuntime().addShutdownHook(new Thread() {
+    @Override
+    public void run() {
+        // wakeup()是消费者唯一一个可以从其他线程里安全调用的方法
+        // 调用wakeup()可以退出poll()，并抛出WakeupException
+        //  WakeupException不需要处理，这只是跳出循环的一种方式
+        // 在退出线程之前调用close()是很有必要的
+        //  close()方法会提交任何还没有提交的东西，并向群组协调器发送消息，告知自己要离开群组
+        //  接下来就会触发再均衡，不需要等待会话超时
+        consumer.wakeup();
+        try {
+            // 主线程
+            join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+});
+try {
+    // 循环，直到按下CTRL+C，关闭的钩子会在退出时进行清理
+    while (true) {
+        ConsumerRecords<String, String> records = consumer.poll(100);
+        records.forEach(record -> {
+            // process
+        });
+        consumer.assignment().forEach(partition -> {
+        });
+        consumer.commitSync();
+    }
+} catch (WakeupException e) {
+    // ignore
+} finally {
+    // 退出之前，确保彻底关闭了消费者
+    consumer.close();
+}
+```
+
+## 反序列化器
+1. 对于开发者而言
+    - 必须明确写入主题的消息使用的是哪一种序列化器
+    - 并确保每个主题里只包含能够被反序列化器解析的数据
+
+### 自定义序列化器
+1. 不推荐使用**自定义序列化器**和**自定义反序列化器**，它们把生产者和消费者**耦合**在一起，很**脆弱**，容易出错
+2. 推荐使用标准的消息格式，如`JSON`、`Thrift`、`Protobuf`和`Avro`
+
+```java
+Properties props = new Properties();
+props.put("bootstrap.servers", "localhost:9092");
+props.put("group.id", GROUP_ID);
+props.put("key.deserializer", StringDeserializer.class.getName());
+// 自定义的反序列化器
+props.put("value.deserializer", CustomerDeserializer.class);
+Consumer<Object, Object> consumer = new KafkaConsumer<>(props);
+consumer.subscribe(Collections.singletonList(TOPIC));
+while (true) {
+    ConsumerRecords<Object, Object> records = consumer.poll(100);
+    records.forEach(record -> {
+        // process
+    });
+}
+```
+```java
+@Data
+@AllArgsConstructor
+class Customer {
+    private int id;
+    private String name;
+}
+
+class CustomerDeserializer implements Deserializer<Customer> {
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+        // 不做任何配置
+    }
+
+    @Override
+    public Customer deserialize(String topic, byte[] data) {
+        try {
+            if (data == null) {
+                return null;
+            }
+            if (data.length < 8) {
+                throw new SerializationException("Size of received is shorter than expected");
+            }
+            ByteBuffer buffer = ByteBuffer.wrap(data);
+            int id = buffer.getInt();
+            int nameSize = buffer.getInt();
+            byte[] nameBytes = new byte[nameSize];
+            buffer.get(nameBytes);
+            String deserializedName = new String(nameBytes, StandardCharsets.UTF_8);
+            return new Customer(id, deserializedName);
+        } catch (Exception e) {
+            // log
+            return null;
+        }
+    }
+
+    @Override
+    public void close() {
+    }
+}
+```
+
+## 独立消费者
+1. 场景
+    - 只需要一个消费者从一个主题的**所有分区**或者某个**特定分区**读取数据
+    - 此时不再需要**消费者群组**和**再均衡**
+    - 只需要把主题或者分区分配给消费者，然后开始读取消息并提交偏移量
+2. 这时不再需要订阅主题，取而代之的是**消费者为自己分配分区**
+3. 一个消费者可以**订阅主题**（并加入消费者群组），或者为自己**分配分区**，但这两个动作是**互斥**的
+
+```java
+// 向集群请求主题可用的分区，如果只读取特定分区，跳过这一步
+List<PartitionInfo> partitionInfoList = consumer.partitionsFor(TOPIC);
+if (partitionInfoList != null) {
+    List<TopicPartition> partitions = Lists.newArrayList();
+    partitionInfoList.forEach(partitionInfo -> {
+        partitions.add(new TopicPartition(partitionInfo.topic(), partitionInfo.partition()));
+    });
+    // 知道哪些分区后，调用assign()方法
+    // 不会发生再均衡，也不需要手动查找分区
+    // 但是如果主题增加了新的分区，消费者并不会收到通知
+    //  因此需要周期性地调用consumer.partitionsFor()来检查是否有新分区加入
+    //  要么在添加新分区后重启应用程序
+    consumer.assign(partitions);
+}
+while (true) {
+    ConsumerRecords<String, String> records = consumer.poll(100);
+    records.forEach(record -> {
+        // process
+    });
+    consumer.commitSync();
+}
+```
 
 <!-- indicate-the-source -->
