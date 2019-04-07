@@ -310,7 +310,7 @@ mysql> SELECT * FROM t WHERE a < 25; # 可重复读
 mysql> INSERT INTO t SELECT 0,0;
 ERROR 1062 (23000): Duplicate entry '0' for key 'PRIMARY'
 ```
-`SELECT`筛选出来并没有`a=0`的记录，但在`DELETE`时却发生主键冲突，属于`幻读`
+`SELECT`筛选出来并没有`a=0`的记录，但在`INSERT`时却发生主键冲突，属于`幻读`
 
 #### Session A
 ```sql
