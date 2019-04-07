@@ -818,7 +818,7 @@ ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
 
 mysql> SELECT * FROM t WHERE a=50 FOR UPDATE; # Blocked
 ```
- 事务`1324402`已经持有`聚集索引b`上`50`的`X Lock`，因此会被阻塞（详细信息见下节）
+ 事务`1324402`已经持有`聚集索引a`上`50`的`X Lock`，因此会被阻塞（详细信息见下节）
 
 ### Session A
 ```SQL
