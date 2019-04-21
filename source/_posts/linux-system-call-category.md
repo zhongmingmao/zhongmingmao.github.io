@@ -1,5 +1,5 @@
 ---
-title: Linux -- 系统调用
+title: Linux -- 系统调用分类
 date: 2019-04-07 23:22:46
 categories:
     - Linux
