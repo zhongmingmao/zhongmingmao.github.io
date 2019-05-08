@@ -124,6 +124,8 @@ while (true) {
         Thread.sleep(100);
     } catch (InterruptedException e) {
         // 抛出InterruptedException会重置线程中断状态，导致死循环
+        // 正确的做法是重新设置中断标志位
+        th.interrupt();
     }
 }
 ```
