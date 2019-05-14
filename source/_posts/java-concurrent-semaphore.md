@@ -1,5 +1,5 @@
 ---
-title: Java并发 -- 信号量
+title: Java并发 -- Semaphore
 date: 2019-05-08 10:15:20
 categories:
     - Java Concurrent
