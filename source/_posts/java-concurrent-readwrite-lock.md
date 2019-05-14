@@ -78,7 +78,7 @@ public class Cache<K, V> {
 ```
 
 ### 锁升级
-ReadWriteLock不支持锁升级，readLock还没有释放，无法获取writeLock，导致_**线程阻塞**_
+ReadWriteLock不支持锁升级（**读锁升级为写锁**），readLock还没有释放，因此无法获取writeLock，这会导致_**线程阻塞**_
 ```java
 readLock.lock();
 try {
@@ -100,14 +100,14 @@ try {
 ```java
 readLock.lock();
 if (!cacheValid) {
-    // 因为不允许读锁升级，先释放读锁
+    // 因为不允许读锁升级为写锁，先释放读锁
     readLock.unlock();
     writeLock.lock();
     try {
         if (!cacheValid) {
             cacheValid = true;
         }
-        // 释放写锁前，降级为读锁，这是允许的
+        // 释放写锁前，允许降级为读锁！！
         readLock.lock(); // 1
     } finally {
         writeLock.unlock();
@@ -121,5 +121,10 @@ try {
     readLock.unlock();
 }
 ```
+
+## 小结
+1. 读写锁类似于ReentrantLock（**可重入**），支持**公平**模式和**非公平**模式
+2. 读锁和写锁都实现了java.util.concurrent.locks.Lock接口
+2. 但只有写锁支持条件变量，**读锁是不支持条件变量的**，读锁调用newCondition，会抛出UnsupportedOperationException
 
 <!-- indicate-the-source -->
