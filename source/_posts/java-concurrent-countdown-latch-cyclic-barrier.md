@@ -195,6 +195,28 @@ private void getOrders() {
 }
 ```
 
+### 回调线程池
+```java
+int index = --count;
+if (index == 0) {  // tripped
+    boolean ranAction = false;
+    try {
+        final Runnable command = barrierCommand;
+        if (command != null)
+            command.run(); // 调用回调函数
+        ranAction = true;
+        nextGeneration(); // 唤醒等待的线程
+        return 0;
+    } finally {
+        if (!ranAction)
+            breakBarrier(); // 唤醒等待的线程
+    }
+}
+```
+1. CyclicBarrier是**同步调用回调函数**后才**唤醒**等待的线程的，如果不采用回调线程池，**无法提升性能**
+2. 遇到回调函数时，需要考虑执行回调的线程是哪一个
+    - 执行CyclicBarrier的回调函数线程是将CyclicBarrier**内部计数器减到0**的那个线程
+
 ## 小结
 1. CountDownLatch：主要用来解决**一个线程等待多个线程**的场景
 2. CyclicBarrier：主要用来解决**一组线程之间互相等待**的场景
