@@ -2,8 +2,10 @@
 title: Java核心 -- Vector + ArrayList + LinkedList
 date: 2019-05-06 17:25:39
 categories:
-    - Java Core
+    - Java
+    - Core
 tags:
+    - Java
     - Java Core
 ---
 

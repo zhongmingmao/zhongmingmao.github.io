@@ -2,8 +2,11 @@
 title: JVM基础 -- Java内存模型
 date: 2018-12-30 10:06:39
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

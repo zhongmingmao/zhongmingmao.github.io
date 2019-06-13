@@ -2,8 +2,10 @@
 title: Java并发 -- 线程数量
 date: 2019-04-29 10:16:30
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

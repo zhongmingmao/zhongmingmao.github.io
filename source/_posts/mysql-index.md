@@ -2,8 +2,10 @@
 title: MySQL -- 索引
 date: 2019-01-21 23:52:16
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

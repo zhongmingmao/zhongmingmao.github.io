@@ -2,8 +2,10 @@
 title: Java并发 -- Fork + Join
 date: 2019-05-17 10:00:40
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

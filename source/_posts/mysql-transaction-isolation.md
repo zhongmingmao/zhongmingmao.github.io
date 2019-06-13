@@ -2,8 +2,10 @@
 title: MySQL -- 事务隔离
 date: 2019-01-16 22:36:07
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

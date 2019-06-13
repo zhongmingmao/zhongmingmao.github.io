@@ -2,8 +2,10 @@
 title: MySQL -- 无过滤条件的count
 date: 2019-02-07 17:21:50
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

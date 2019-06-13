@@ -2,8 +2,10 @@
 title: Java并发 -- 线程生命周期
 date: 2019-04-28 13:03:45
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

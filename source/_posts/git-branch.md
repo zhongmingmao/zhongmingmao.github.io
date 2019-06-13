@@ -1,10 +1,12 @@
 ---
-title: Git++ - 分支
+title: Git -- 分支
 date: 2017-04-15 13:35:44
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %} 本文主要介绍一些我在日常开发中与`Git分支`相关的一些操作，通过实例阐述一些基本分支概念

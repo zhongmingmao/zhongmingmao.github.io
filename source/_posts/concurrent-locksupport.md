@@ -1,11 +1,12 @@
 ---
-title: 并发 - JUC - LockSupport - 源码剖析
+title: Java并发 -- LockSupport
 date: 2016-08-07 00:06:25
 categories:
+    - Java
     - Concurrent
-    - JUC
 tags:
-    - Concurrent
+    - Java
+    - Java Concurrent
     - JUC
 ---
 

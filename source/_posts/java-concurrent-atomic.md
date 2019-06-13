@@ -2,8 +2,10 @@
 title: Java并发 -- 原子类
 date: 2019-05-13 17:10:09
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

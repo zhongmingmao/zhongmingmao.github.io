@@ -2,8 +2,11 @@
 title: JVM基础 -- 方法调用
 date: 2018-12-17 21:06:47
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

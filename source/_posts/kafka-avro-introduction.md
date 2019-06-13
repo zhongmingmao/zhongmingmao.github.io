@@ -2,9 +2,11 @@
 title: Kafka -- Avro入门
 date: 2018-10-15 23:42:11
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
     - Avro

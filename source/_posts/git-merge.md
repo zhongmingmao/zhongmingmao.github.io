@@ -1,10 +1,12 @@
 ---
-title: Git++ - 合并
+title: Git -- 合并
 date: 2017-04-18 00:28:16
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

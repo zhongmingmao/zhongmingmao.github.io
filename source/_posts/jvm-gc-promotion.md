@@ -1,9 +1,12 @@
 ---
-title: 垃圾回收 - 晋升规则
+title: JVM基础 -- 晋升规则
 date: 2016-07-10 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
     - GC
 ---

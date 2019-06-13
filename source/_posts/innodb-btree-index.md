@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - B+Tree索引
+title: InnoDB -- B+Tree索引
 date: 2017-05-13 00:06:25
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

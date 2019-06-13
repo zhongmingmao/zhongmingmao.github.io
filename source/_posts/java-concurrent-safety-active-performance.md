@@ -2,8 +2,10 @@
 title: Java并发 -- 安全性、活跃性、性能
 date: 2019-04-23 11:00:47
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 mathjax: true
 ---

@@ -2,8 +2,11 @@
 title: JVM基础 -- 桥接方法
 date: 2018-12-18 20:07:14
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

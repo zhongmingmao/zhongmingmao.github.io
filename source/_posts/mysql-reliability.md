@@ -2,8 +2,10 @@
 title: MySQL -- 数据可靠性
 date: 2019-02-21 13:14:06
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

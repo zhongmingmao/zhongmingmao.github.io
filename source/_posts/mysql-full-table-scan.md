@@ -2,8 +2,10 @@
 title: MySQL -- 全表扫描
 date: 2019-03-08 23:51:17
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

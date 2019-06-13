@@ -2,8 +2,10 @@
 title: Java并发 -- 局部变量
 date: 2019-04-30 11:07:31
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

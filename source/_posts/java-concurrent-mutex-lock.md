@@ -2,8 +2,10 @@
 title: Java并发 -- 互斥锁
 date: 2019-04-17 12:46:35
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

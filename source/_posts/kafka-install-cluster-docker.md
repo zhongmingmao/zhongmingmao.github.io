@@ -2,9 +2,11 @@
 title: Kafka -- 集群安装与配置（Docker）
 date: 2018-10-09 01:48:40
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
     - Docker

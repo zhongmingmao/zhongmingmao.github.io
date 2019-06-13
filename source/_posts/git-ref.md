@@ -1,10 +1,12 @@
 ---
-title: Git++ - 引用和提交区间
+title: Git -- 引用和提交区间
 date: 2017-04-15 18:25:33
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

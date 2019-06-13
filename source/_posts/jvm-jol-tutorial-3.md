@@ -1,12 +1,15 @@
 ---
-title: 对象内存布局 - JOL使用教程 3
+title: JVM基础 -- JOL使用教程 3
 date: 2016-07-04 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
     - JOL
-    - Concurrent
+    - Java Concurrent
 ---
 
 {% note info %}

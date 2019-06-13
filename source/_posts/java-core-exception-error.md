@@ -2,8 +2,10 @@
 title: Java核心 -- Exception + Error
 date: 2019-02-21 00:18:15
 categories:
-    - Java Core
+    - Java
+    - Core
 tags:
+    - Java
     - Java Core
 ---
 

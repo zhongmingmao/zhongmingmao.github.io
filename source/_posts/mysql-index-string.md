@@ -2,8 +2,10 @@
 title: MySQL -- 字符串索引
 date: 2019-01-31 21:43:19
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

@@ -2,8 +2,10 @@
 title: Java核心 -- final + finally + finalize
 date: 2019-02-25 10:10:11
 categories:
-    - Java Core
+    - Java
+    - Core
 tags:
+    - Java
     - Java Core
 ---
 

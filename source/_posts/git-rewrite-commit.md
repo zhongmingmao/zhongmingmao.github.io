@@ -1,10 +1,12 @@
 ---
-title: Git++ - 重写提交历史
+title: Git -- 重写提交历史
 date: 2017-04-17 13:17:03
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note danger %}

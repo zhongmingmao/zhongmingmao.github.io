@@ -2,8 +2,11 @@
 title: JVM进阶 -- 浅谈字段访问优化
 date: 2019-01-06 12:02:53
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

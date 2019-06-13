@@ -2,8 +2,10 @@
 title: MySQL -- 用户临时表
 date: 2019-03-12 09:18:55
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

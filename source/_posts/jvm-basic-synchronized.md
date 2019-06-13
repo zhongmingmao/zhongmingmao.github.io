@@ -2,8 +2,11 @@
 title: JVM基础 -- 浅谈synchronized
 date: 2018-12-31 00:17:24
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

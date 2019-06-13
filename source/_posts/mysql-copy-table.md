@@ -2,8 +2,10 @@
 title: MySQL -- 拷贝表
 date: 2019-03-16 09:28:06
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

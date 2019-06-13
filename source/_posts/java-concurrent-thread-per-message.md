@@ -2,8 +2,10 @@
 title: Java并发 -- Thread-Per-Message模式
 date: 2019-05-23 10:22:30
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

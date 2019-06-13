@@ -1,10 +1,12 @@
 ---
-title: 并发 - Unsafe类的简单使用
+title: Java并发 -- Unsafe
 date: 2016-08-05 00:06:25
 categories:
+    - Java
     - Concurrent
 tags:
-    - Concurrent
+    - Java
+    - Java Concurrent
 ---
 
 {% note info %}

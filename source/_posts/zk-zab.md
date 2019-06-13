@@ -1,5 +1,5 @@
 ---
-title: Zookeeper - ZAB协议小记
+title: Zookeeper -- ZAB协议
 date: 2017-07-09 00:06:25
 categories:
     - Zookeeper

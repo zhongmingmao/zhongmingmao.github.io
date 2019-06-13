@@ -2,8 +2,10 @@
 title: Java核心 -- 动态代理
 date: 2019-05-03 21:08:18
 categories:
-    - Java Core
+    - Java
+    - Core
 tags:
+    - Java
     - Java Core
 ---
 

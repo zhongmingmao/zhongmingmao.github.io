@@ -2,8 +2,10 @@
 title: MySQL -- 问题排查
 date: 2019-02-13 14:02:09
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

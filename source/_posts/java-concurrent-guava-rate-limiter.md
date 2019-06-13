@@ -2,8 +2,10 @@
 title: Java并发 -- Guava RateLimiter
 date: 2019-05-27 10:05:05
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

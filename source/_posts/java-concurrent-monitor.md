@@ -2,8 +2,10 @@
 title: Java并发 -- 管程
 date: 2019-04-27 08:46:02
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

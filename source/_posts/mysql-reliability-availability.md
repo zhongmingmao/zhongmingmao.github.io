@@ -2,8 +2,10 @@
 title: MySQL -- 主从复制的可靠性与可用性
 date: 2019-02-24 14:44:52
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

@@ -2,8 +2,10 @@
 title: Java并发 -- Copy-on-Write模式
 date: 2019-05-19 12:26:03
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

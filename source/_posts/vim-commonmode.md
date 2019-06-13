@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 普通模式
+title: Vim -- 普通模式
 date: 2015-11-04 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

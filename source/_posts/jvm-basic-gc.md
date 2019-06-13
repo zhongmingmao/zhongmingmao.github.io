@@ -2,8 +2,11 @@
 title: JVM基础 -- 垃圾回收基础
 date: 2018-12-26 08:59:28
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

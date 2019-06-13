@@ -2,8 +2,10 @@
 title: Java并发 -- 并发容器
 date: 2019-05-12 12:47:21
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

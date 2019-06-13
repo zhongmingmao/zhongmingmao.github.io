@@ -2,8 +2,10 @@
 title: MySQL -- 普通索引与唯一索引
 date: 2019-01-29 10:15:49
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

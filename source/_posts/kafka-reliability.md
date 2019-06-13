@@ -2,9 +2,11 @@
 title: Kafka -- 可靠性
 date: 2019-03-31 15:17:47
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

@@ -2,9 +2,11 @@
 title: Kafka -- Avro + Twitter Bijection
 date: 2018-10-17 00:00:01
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
     - Avro

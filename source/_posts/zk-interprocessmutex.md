@@ -1,5 +1,5 @@
 ---
-title: 基于Zookeeper实现的分布式互斥锁 - InterProcessMutex
+title: Zookeeper -- 分布式锁InterProcessMutex
 date: 2017-07-14 00:06:25
 categories:
     - Zookeeper

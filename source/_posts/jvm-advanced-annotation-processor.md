@@ -2,8 +2,11 @@
 title: JVM进阶 -- 浅谈注解处理器
 date: 2019-01-07 21:43:41
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

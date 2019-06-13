@@ -2,8 +2,10 @@
 title: MySQL -- INSERT语句的锁
 date: 2019-03-16 09:04:10
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

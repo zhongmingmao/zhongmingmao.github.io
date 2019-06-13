@@ -2,8 +2,10 @@
 title: MySQL -- 内部临时表
 date: 2019-03-13 09:12:45
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

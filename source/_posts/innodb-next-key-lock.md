@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - Next-Key Lock
+title: InnoDB -- Next-Key Lock
 date: 2017-05-19 00:06:25
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

@@ -1,11 +1,12 @@
 ---
-title: 并发 - JUC - ConcurrentHashMap(JDK1.7) - 源码剖析
+title: Java并发 -- ConcurrentHashMap
 date: 2016-08-23 00:06:25
 categories:
+    - Java
     - Concurrent
-    - JUC
 tags:
-    - Concurrent
+    - Java
+    - Java Concurrent
     - JUC
 ---
 

@@ -2,8 +2,10 @@
 title: MySQL -- 故障诊断
 date: 2019-03-03 15:30:19
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

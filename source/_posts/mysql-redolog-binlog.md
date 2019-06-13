@@ -2,8 +2,10 @@
 title: MySQL -- redolog + binlog
 date: 2019-01-15 19:11:56
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

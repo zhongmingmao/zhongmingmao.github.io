@@ -2,8 +2,10 @@
 title: Java并发 -- Immutability模式
 date: 2019-05-18 08:07:33
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

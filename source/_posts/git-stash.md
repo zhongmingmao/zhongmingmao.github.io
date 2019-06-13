@@ -1,10 +1,12 @@
 ---
-title: Git++ - Stash
+title: Git -- Stash
 date: 2017-04-16 13:16:27
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

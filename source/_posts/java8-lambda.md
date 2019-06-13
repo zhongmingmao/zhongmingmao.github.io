@@ -1,10 +1,11 @@
 ---
-title: Java 8小记 - Lambda
+title: Java 8 -- Lambda
 date: 2017-05-30 00:06:25
 categories:
-    - Java 8
+    - Java
+    - SE8
 tags:
-    - Java 8
+    - Java
     - Lambda
 ---
 

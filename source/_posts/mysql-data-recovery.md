@@ -2,8 +2,10 @@
 title: MySQL -- 数据恢复
 date: 2019-03-04 19:08:34
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

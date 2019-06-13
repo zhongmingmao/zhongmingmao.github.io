@@ -1,9 +1,12 @@
 ---
-title: 类加载 - 类初始化
+title: JVM基础 -- 类初始化
 date: 2016-07-15 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

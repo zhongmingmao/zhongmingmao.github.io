@@ -2,8 +2,10 @@
 title: MySQL -- 空间回收
 date: 2019-02-01 15:03:51
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

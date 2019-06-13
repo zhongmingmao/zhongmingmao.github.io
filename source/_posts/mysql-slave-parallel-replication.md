@@ -2,8 +2,10 @@
 title: MySQL -- 从库并行复制
 date: 2019-02-25 23:02:50
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

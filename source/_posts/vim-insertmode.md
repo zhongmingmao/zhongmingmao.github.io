@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 插入模式
+title: Vim -- 插入模式
 date: 2015-11-05 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

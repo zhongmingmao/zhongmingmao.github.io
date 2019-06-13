@@ -1,10 +1,12 @@
 ---
-title: Git++ - 对象
+title: Git -- 对象
 date: 2017-04-19 15:12:31
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

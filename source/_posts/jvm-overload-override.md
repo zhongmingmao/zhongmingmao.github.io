@@ -1,9 +1,12 @@
 ---
-title: 字节码 - 方法重载 + 方法重写
+title: JVM基础 -- 方法重载 + 方法重写
 date: 2016-07-07 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

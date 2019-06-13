@@ -2,8 +2,10 @@
 title: Java并发 -- 两阶段终止模式
 date: 2019-05-25 20:44:40
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

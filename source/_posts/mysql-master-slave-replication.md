@@ -2,8 +2,10 @@
 title: MySQL -- 主从复制的基本原理
 date: 2019-02-22 11:14:31
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

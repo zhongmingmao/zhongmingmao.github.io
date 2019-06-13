@@ -2,8 +2,11 @@
 title: JVM进阶 -- JDK命令
 date: 2019-01-08 20:54:58
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

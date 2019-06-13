@@ -2,8 +2,10 @@
 title: MySQL -- 权限
 date: 2019-03-17 14:30:42
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

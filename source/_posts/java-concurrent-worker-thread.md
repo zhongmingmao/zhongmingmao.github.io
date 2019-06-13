@@ -2,8 +2,10 @@
 title: Java并发 -- Worker Thread模式
 date: 2019-05-24 12:32:53
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

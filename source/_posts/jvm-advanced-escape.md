@@ -2,8 +2,11 @@
 title: JVM进阶 -- 浅谈逃逸分析
 date: 2019-01-05 21:21:51
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

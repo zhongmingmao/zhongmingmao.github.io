@@ -3,7 +3,7 @@ title: 网络协议 -- DHCP
 date: 2019-05-29 09:42:22
 categories:
     - Network
-    - Network Protocol
+    - Protocol
 tags:
     - Network
     - Network Protocol

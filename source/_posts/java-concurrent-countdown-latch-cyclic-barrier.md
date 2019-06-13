@@ -2,8 +2,10 @@
 title: Java并发 -- CountDownLatch + CyclicBarrier
 date: 2019-05-11 09:07:18
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

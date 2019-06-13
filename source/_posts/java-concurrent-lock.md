@@ -2,8 +2,10 @@
 title: Java并发 -- Lock
 date: 2019-05-05 09:07:32
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

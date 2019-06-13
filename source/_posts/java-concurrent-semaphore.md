@@ -2,8 +2,10 @@
 title: Java并发 -- Semaphore
 date: 2019-05-08 10:15:20
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

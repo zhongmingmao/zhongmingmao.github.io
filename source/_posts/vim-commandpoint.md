@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 命令.
+title: Vim -- 命令.
 date: 2015-11-02 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

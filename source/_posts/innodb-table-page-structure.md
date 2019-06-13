@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - 数据页结构
+title: InnoDB -- 数据页结构
 date: 2017-05-09 00:28:37
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

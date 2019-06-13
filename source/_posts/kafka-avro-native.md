@@ -2,9 +2,11 @@
 title: Kafka -- Avro + Kafka Native API
 date: 2018-10-16 18:58:44
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
     - Avro

@@ -2,8 +2,10 @@
 title: Java并发 -- Balking模式
 date: 2019-05-22 11:56:39
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

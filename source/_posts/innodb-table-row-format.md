@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - 行记录格式
+title: InnoDB -- 行记录格式
 date: 2017-05-07 14:23:41
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

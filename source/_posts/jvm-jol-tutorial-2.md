@@ -1,9 +1,12 @@
 ---
-title: 对象内存布局 - JOL使用教程 2
+title: JVM基础 -- JOL使用教程 2
 date: 2016-07-03 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
     - JOL
 ---

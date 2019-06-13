@@ -2,8 +2,10 @@
 title: MySQL -- 基础架构
 date: 2019-01-14 20:10:55
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

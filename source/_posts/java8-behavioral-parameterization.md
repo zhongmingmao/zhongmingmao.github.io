@@ -1,10 +1,11 @@
 ---
-title: Java 8小记 - 行为参数化
+title: Java 8 -- 行为参数化
 date: 2017-05-29 00:06:25
 categories:
-    - Java 8
+    - Java
+    - SE8
 tags:
-    - Java 8
+    - Java
 ---
 
 {% note info %}

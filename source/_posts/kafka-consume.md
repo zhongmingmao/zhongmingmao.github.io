@@ -2,9 +2,11 @@
 title: Kafka -- 消费者
 date: 2018-10-18 15:30:51
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

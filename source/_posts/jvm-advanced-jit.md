@@ -2,8 +2,11 @@
 title: JVM进阶 -- 浅谈即时编译
 date: 2019-01-02 20:01:06
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

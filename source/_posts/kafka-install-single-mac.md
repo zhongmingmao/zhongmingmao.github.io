@@ -2,9 +2,11 @@
 title: Kafka -- 单节点安装与配置（Mac）
 date: 2018-10-07 01:07:32
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

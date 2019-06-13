@@ -2,8 +2,10 @@
 title: Java并发 -- Guarded Suspension模式
 date: 2019-05-21 08:38:05
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

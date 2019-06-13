@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 命令行模式
+title: Vim -- 命令行模式
 date: 2015-11-10 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

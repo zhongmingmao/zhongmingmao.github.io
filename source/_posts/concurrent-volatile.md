@@ -1,10 +1,12 @@
 ---
-title: 并发 - volatile的可见性
+title: Java并发 -- volatile
 date: 2016-08-04 00:06:25
 categories:
+    - Java
     - Concurrent
 tags:
-    - Concurrent
+    - Java
+    - Java Concurrent
 ---
 
 {% note info %}

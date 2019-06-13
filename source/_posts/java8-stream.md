@@ -1,11 +1,11 @@
 ---
-title: Java 8小记 - Stream
+title: Java 8 -- Stream
 date: 2017-06-01 00:06:25
 categories:
-    - Java 8
+    - Java
+    - SE8
 tags:
-    - Java 8
-    - Stream
+    - Java
 ---
 
 {% note info %}

@@ -2,8 +2,10 @@
 title: MySQL -- RR的行锁
 date: 2019-02-15 00:22:33
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

@@ -2,8 +2,10 @@
 title: MySQL -- 分区表
 date: 2019-03-17 20:56:27
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

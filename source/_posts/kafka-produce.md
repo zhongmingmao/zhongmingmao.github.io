@@ -2,9 +2,11 @@
 title: Kafka -- 生产者
 date: 2018-10-11 22:13:31
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

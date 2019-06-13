@@ -2,8 +2,10 @@
 title: Java并发 -- 线程池
 date: 2019-05-14 11:30:04
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

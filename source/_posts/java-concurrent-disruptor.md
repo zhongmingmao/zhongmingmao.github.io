@@ -2,8 +2,10 @@
 title: Java并发 -- Disruptor
 date: 2019-05-31 15:49:44
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
     - Disruptor
 ---

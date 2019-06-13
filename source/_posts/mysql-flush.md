@@ -2,8 +2,10 @@
 title: MySQL -- flush
 date: 2019-01-31 09:47:39
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

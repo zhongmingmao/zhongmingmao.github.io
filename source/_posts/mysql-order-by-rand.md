@@ -2,8 +2,10 @@
 title: MySQL -- order by rand
 date: 2019-02-10 17:49:12
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

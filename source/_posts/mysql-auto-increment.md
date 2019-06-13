@@ -2,8 +2,10 @@
 title: MySQL -- 自增主键
 date: 2019-03-15 12:57:29
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

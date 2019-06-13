@@ -2,8 +2,10 @@
 title: Java并发 -- 面向对象
 date: 2019-05-01 11:17:55
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

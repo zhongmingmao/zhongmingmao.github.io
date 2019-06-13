@@ -1,10 +1,12 @@
 ---
-title: Git++ - 仓库瘦身
+title: Git -- 仓库瘦身
 date: 2017-04-19 16:22:50
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

@@ -2,8 +2,10 @@
 title: MySQL -- Memory引擎
 date: 2019-03-14 20:32:44
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

@@ -2,8 +2,10 @@
 title: Java并发 -- 生产者-消费者模式
 date: 2019-05-26 19:07:12
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

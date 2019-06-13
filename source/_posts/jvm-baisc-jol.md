@@ -2,8 +2,11 @@
 title: JVM基础 -- Java对象的内存布局
 date: 2018-12-22 08:54:39
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

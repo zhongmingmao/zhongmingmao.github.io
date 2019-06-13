@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - 逻辑存储
+title: InnoDB -- 逻辑存储
 date: 2017-05-06 16:48:03
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

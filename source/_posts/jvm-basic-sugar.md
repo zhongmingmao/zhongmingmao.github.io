@@ -2,8 +2,11 @@
 title: JVM基础 -- Java语法糖
 date: 2019-01-01 18:01:07
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

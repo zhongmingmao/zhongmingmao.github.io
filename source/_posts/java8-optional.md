@@ -1,10 +1,11 @@
 ---
-title: Java 8小记 - Optional
+title: Java 8 -- Optional
 date: 2017-06-03 00:06:25
 categories:
-    - Java 8
+    - Java
+    - SE8
 tags:
-    - Java 8
+    - Java
 ---
 
 {% note info %}

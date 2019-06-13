@@ -1,9 +1,12 @@
 ---
-title: VirtualMachineError实例
+title: JVM基础 -- VirtualMachineError实例
 date: 2016-06-25 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

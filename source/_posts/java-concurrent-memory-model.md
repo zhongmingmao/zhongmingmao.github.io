@@ -2,8 +2,10 @@
 title: Java并发 -- Java内存模型
 date: 2019-04-15 20:48:08
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

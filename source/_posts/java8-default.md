@@ -1,10 +1,12 @@
 ---
-title: Java 8小记 - Default Method
+title: Java 8 -- Default Method
 date: 2017-06-02 00:06:25
 categories:
-    - Java 8
+    - Java
+    - SE8
 tags:
-    - Java 8
+    - Java
+    - Java
 ---
 
 {% note info %}

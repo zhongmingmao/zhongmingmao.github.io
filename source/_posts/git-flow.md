@@ -1,10 +1,12 @@
 ---
-title: Git++ - Git Flow
+title: Git -- Git Flow
 date: 2017-04-20 00:00:01
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %}

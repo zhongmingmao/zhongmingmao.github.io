@@ -2,8 +2,10 @@
 title: MySQL -- RR隔离与RC隔离
 date: 2019-01-28 09:35:04
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

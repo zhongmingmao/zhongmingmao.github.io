@@ -2,8 +2,10 @@
 title: MySQL -- 自增ID耗尽
 date: 2019-03-19 23:23:29
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

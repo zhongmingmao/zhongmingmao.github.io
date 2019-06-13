@@ -2,8 +2,10 @@
 title: MySQL -- 索引上的函数
 date: 2019-02-12 13:25:33
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

@@ -1,10 +1,12 @@
 ---
-title: Git++ - 有趣的命令
+title: Git -- 有趣的命令
 date: 2017-04-14 13:35:57
 categories:
-    - Git++
+    - Tool
+    - Git
 tags:
-    - Git++
+    - Tool
+    - Git
 ---
 
 {% note info %} 本文主要介绍一些我在日常开发中觉得比较有趣的Git`基础命令`

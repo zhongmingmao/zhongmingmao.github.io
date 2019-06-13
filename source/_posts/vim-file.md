@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 文件
+title: Vim -- 文件
 date: 2015-11-12 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

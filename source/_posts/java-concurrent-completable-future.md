@@ -2,8 +2,10 @@
 title: Java并发 -- CompletableFuture
 date: 2019-05-15 08:27:11
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

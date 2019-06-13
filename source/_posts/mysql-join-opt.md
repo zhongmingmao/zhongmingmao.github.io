@@ -2,8 +2,10 @@
 title: MySQL -- JOIN优化
 date: 2019-03-11 09:43:14
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 mathjax: true
 ---

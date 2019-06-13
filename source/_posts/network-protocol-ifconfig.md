@@ -3,7 +3,7 @@ title: 网络协议 -- ifconfig
 date: 2019-05-28 10:09:40
 categories:
     - Network
-    - Network Protocol
+    - Protocol
 tags:
     - Network
     - Network Protocol

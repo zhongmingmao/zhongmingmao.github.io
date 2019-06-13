@@ -2,9 +2,11 @@
 title: Kafka -- Docker + Schema Registry
 date: 2019-03-26 10:39:06
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
     - Avro

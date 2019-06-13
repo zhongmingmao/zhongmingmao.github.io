@@ -2,8 +2,10 @@
 title: MySQL -- 锁
 date: 2019-01-25 18:43:15
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

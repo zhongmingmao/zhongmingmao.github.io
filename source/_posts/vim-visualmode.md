@@ -1,7 +1,8 @@
 ---
-title: Vim小记 - 可视模式
+title: Vim -- 可视模式
 date: 2015-11-07 00:06:25
 categories:
+    - Tool
     - Vim
 tags:
     - Vim

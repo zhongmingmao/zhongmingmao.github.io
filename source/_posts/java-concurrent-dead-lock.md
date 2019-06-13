@@ -2,8 +2,10 @@
 title: Java并发 -- 死锁
 date: 2019-04-21 10:09:39
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

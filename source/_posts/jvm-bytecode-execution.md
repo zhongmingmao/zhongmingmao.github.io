@@ -1,9 +1,12 @@
 ---
-title: 字节码 - JVM字节码执行过程
+title: JVM基础 -- JVM字节码执行过程
 date: 2016-07-06 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

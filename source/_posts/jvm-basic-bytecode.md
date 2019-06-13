@@ -2,8 +2,11 @@
 title: JVM基础 -- 字节码
 date: 2019-01-03 23:15:14
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

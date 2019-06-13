@@ -1,5 +1,5 @@
 ---
-title: Zookeeper - Base-Paxos协议小记
+title: Zookeeper -- Base-Paxos协议
 date: 2017-07-05 00:06:25
 categories:
     - Zookeeper

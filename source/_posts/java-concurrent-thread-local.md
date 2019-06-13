@@ -2,8 +2,10 @@
 title: Java并发 -- ThreadLocal模式
 date: 2019-05-20 09:44:23
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

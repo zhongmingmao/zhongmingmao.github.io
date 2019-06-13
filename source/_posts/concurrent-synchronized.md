@@ -1,10 +1,12 @@
 ---
-title: 并发 - synchronized与锁优化
+title: Java并发 -- synchronized
 date: 2016-08-01 00:06:25
 categories:
+    - Java
     - Concurrent
 tags:
-    - Concurrent
+    - Java
+    - Java Concurrent
     - JVM
 ---
 

@@ -2,9 +2,11 @@
 title: Kafka -- 集群安装与配置（Ubuntu）
 date: 2018-10-08 00:53:07
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

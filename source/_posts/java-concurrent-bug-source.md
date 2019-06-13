@@ -2,8 +2,10 @@
 title: Java并发 -- 问题源头
 date: 2019-04-15 18:50:40
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

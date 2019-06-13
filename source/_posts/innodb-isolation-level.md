@@ -1,10 +1,12 @@
 ---
-title: InnoDB备忘录 - 事务隔离级别
+title: InnoDB -- 事务隔离级别
 date: 2017-05-22 00:06:25
 categories:
+    - Storage
     - MySQL
     - InnoDB
 tags:
+    - Storage
     - MySQL
     - InnoDB
 ---

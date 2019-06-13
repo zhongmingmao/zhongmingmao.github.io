@@ -2,8 +2,10 @@
 title: Java并发 -- Netty线程模型
 date: 2019-05-30 11:28:39
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
     - Netty
 ---

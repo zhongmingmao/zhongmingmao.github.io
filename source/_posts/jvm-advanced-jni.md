@@ -2,8 +2,11 @@
 title: JVM进阶 -- 浅谈JNI
 date: 2019-01-12 11:05:52
 categories:
+    - Java
     - JVM
+    - Advanced
 tags:
+    - Java
     - JVM
 ---
 

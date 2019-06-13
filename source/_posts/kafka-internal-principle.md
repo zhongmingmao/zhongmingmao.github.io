@@ -2,9 +2,11 @@
 title: Kafka -- 内部原理
 date: 2019-03-26 22:10:06
 categories:
+    - Middleware
     - MQ
     - Kafka
 tags:
+    - Middleware
     - MQ
     - Kafka
 ---

@@ -2,8 +2,10 @@
 title: Java并发 -- 等待-通知机制
 date: 2019-04-22 18:20:59
 categories:
-    - Java Concurrent
+    - Java
+    - Concurrent
 tags:
+    - Java
     - Java Concurrent
 ---
 

@@ -2,8 +2,10 @@
 title: MySQL -- KILL + 客户端
 date: 2019-03-06 22:40:20
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

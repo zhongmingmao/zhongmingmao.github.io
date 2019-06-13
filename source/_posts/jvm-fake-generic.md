@@ -1,9 +1,12 @@
 ---
-title: 字节码 - 伪泛型
+title: JVM基础 -- 伪泛型
 date: 2016-07-08 00:06:25
 categories:
+    - Java
     - JVM
+    - Baisc
 tags:
+    - Java
     - JVM
 ---
 

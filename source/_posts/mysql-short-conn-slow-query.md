@@ -2,8 +2,10 @@
 title: MySQL -- 短连接 + 慢查询
 date: 2019-02-20 16:11:17
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

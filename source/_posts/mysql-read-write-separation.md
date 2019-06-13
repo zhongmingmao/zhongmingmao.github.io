@@ -2,8 +2,10 @@
 title: MySQL -- 读写分离
 date: 2019-03-02 20:36:03
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

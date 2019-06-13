@@ -2,8 +2,10 @@
 title: MySQL -- 基于Docker搭建主从集群
 date: 2019-02-23 16:43:10
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 

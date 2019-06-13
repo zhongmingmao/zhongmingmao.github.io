@@ -2,8 +2,10 @@
 title: MySQL -- 主从切换
 date: 2019-02-27 01:10:39
 categories:
+    - Storage
     - MySQL
 tags:
+    - Storage
     - MySQL
 ---
 
