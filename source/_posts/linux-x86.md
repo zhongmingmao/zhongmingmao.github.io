@@ -10,6 +10,7 @@ tags:
 ## 计算机的工作模式
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-computer-working-mode.jpg" width=800/>
 
+
 <!-- more -->
 
 1. 对于一个计算机来说，最**核心**的是CPU，CPU是计算机的大脑，所有设备都围绕其展开
@@ -27,7 +28,7 @@ tags:
     - 这个指令会指导运算单元取出数据单元中的某几个数据，计算出结果，然后放在数据单元的某个地方
 
 ### 计算过程
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-cal-process.jpg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-cal-process.jpg" width=800/>
 1. 每个进程都有一个程序放在**硬盘**上，是**二进制**的，在里面存储的是一行一行的**指令**，这些指令会操作一些数据
 2. 进程开始运行，会有**独立**的内存空间，_**相互隔离但不连续**_
     - 程序会分别加载到进程A和进程B的内存空间里面，形成各自的_**代码段**_
@@ -53,7 +54,7 @@ tags:
 | 80386 | 32 | 32 | 4G |
 
 ### 8086的原理
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086.jpg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086.jpg" width=800/>
 
 #### 通用寄存器
 1. 为了**暂存数据**，8086处理器内部有8个16位的**通用寄存器**，属于CPU内部的_**数据单元**_
@@ -97,7 +98,7 @@ tags:
 2. x86架构是开放的，因此32位的CPU需要兼容原来的架构
 
 ### 兼容
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086-32bit-compatible.jpg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086-32bit-compatible.jpg" width=800/>
 1. 通用寄存器
     - 将8个16位的通用寄存器扩展到8个32位的通用寄存器，但依然保留16位和8位的使用方式
     - **高16位不能分成两个8位使用**，因为这是**不兼容**的
@@ -119,7 +120,7 @@ tags:
 4. 如果不能无缝兼容，但**通过切换模式兼容**，也是**可以接受**的
 
 ### 系统交互
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086-32bit-interaction.jpg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-8086-32bit-interaction.jpg" width=800/>
 
 ## 常用汇编指令
 ```

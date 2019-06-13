@@ -29,6 +29,7 @@ mysql> SHOW VARIABLES LIKE '%binlog_cache_size%';
 
 ### 写入过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-binlog-write.png" width=800/>
+
 1. 每个线程都有自己的`binlog cache`，但共用一份`binlog file`
 2. `write`：把日志写入到**文件系统的page cache**，但并没有将数据持久化到磁盘，**速度比较快**
 3. `fsync`：将数据持久化到磁盘，`fsync`才会占用磁盘的**IOPS**
@@ -57,6 +58,7 @@ mysql> SHOW VARIABLES LIKE '%sync_binlog%';
 
 ### redolog的状态
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-redolog-status.png" width=500/>
+
 1. 红色部分：存在于`redolog buffer`中，物理上存在于**MySQL进程的内存**
 2. 黄色部分：写到磁盘（`write`），但没有持久化（`fsync`），物理上存在于**文件系统的page cache**
 3. 绿色部分：持久化到磁盘，物理上存在于`hard disk`
@@ -118,6 +120,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_log_buffer_size%';
 
 #### 样例
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-redolog-group-commit.png" width=500/>
+
 1. 三个**并发事务**处于`prepare`阶段：`tx1`、`tx2`、`tx3`
     - 都完成写入`redolog buffer`和**持久化到磁盘**的过程
     - 对应的`LSN`为`50`、`120`、`160`
@@ -132,9 +135,11 @@ mysql> SHOW VARIABLES LIKE '%innodb_log_buffer_size%';
 
 #### binlog组提交
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-2-phase-commit.png" width=500/>
+
 `写binlog`其实分两步：`binlog cache -> (write) -> binlog file` + `binlog file -> (fsync) -> disk`
 MySQL为了让组提交效果更好，延后了`fsync`执行时机，两阶段提交细化如下
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-2-phase-commit-opt.png" width=500/>
+
 `binlog`也可以支持**组提交**了，但第3步执行很快，导致了`binlog`的组提交效果不如`redolog`的组提交效果
 
 **参数**

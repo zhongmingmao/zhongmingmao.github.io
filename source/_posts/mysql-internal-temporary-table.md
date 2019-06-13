@@ -49,6 +49,7 @@ mysql> EXPLAIN (SELECT 1000 AS f) UNION (SELECT id FROM t1 ORDER BY id DESC LIMI
 
 ### UNION RESULT
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-union-procedure.jpg" width=800/>
+
 1. 创建一个**内存临时表**，这个内存临时表只有一个整型字段f，并且f为**主键**
 2. 执行第一个子查询，得到1000，并存入内存临时表中
 3. 执行第二个子查询
@@ -115,6 +116,7 @@ mysql> SELECT id%10 AS m, COUNT(*) AS c FROM t1 GROUP BY m;
 
 #### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-group-by-temporary-table.jpg" width=800/>
+
 1. 创建**内存临时表**，表里有两个字段m和c，m为主键
 2. 扫描t1的索引a，依次取出叶子节点上的id值，计算id%10，记为x
     - 如果内存临时表中没有主键为x的行，插入一行记录`(x,1)`
@@ -123,6 +125,7 @@ mysql> SELECT id%10 AS m, COUNT(*) AS c FROM t1 GROUP BY m;
 
 #### 排序过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-group-by-temporary-table-sort.jpg" width=800/>
+
 
 #### ORDER BY NULL
 ```sql
@@ -182,6 +185,7 @@ mysql> SELECT id%100 AS m, count(*) AS c FROM t1 GROUP BY m ORDER BY NULL LIMIT 
 
 ##### 优化索引
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-group-by-opt-index.jpg" width=800/>
+
 1. 不论使用内存临时表还是磁盘临时表，`GROUP BY`都需要构造一个带**唯一索引**的表，_**执行代价较高**_
 2. 需要临时表的原因：每一行的`id%100`是无序的，因此需要临时表，来记录并统计结果
 3. 如果可以确保输入的数据是有序的，那么计算`GROUP BY`时，只需要**从左到右顺序扫描**，依次累加即可
@@ -210,6 +214,7 @@ mysql> EXPLAIN SELECT z, COUNT(*) AS c FROM t1 GROUP BY z;
 
 ###### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-group-by-opt-direct-sort.jpg" width=800/>
+
 ```sql
 -- 没有再使用临时表，而是直接使用了排序算法
 mysql> EXPLAIN SELECT SQL_BIG_RESULT id%100 AS m, COUNT(*) AS c FROM t1 GROUP BY m;

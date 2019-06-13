@@ -123,6 +123,7 @@ mysql> SHOW VARIABLES LIKE 'sort_buffer_size';
 
 ### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-rand-process.png" width=600/>
+
 1. 创建一个采用**MEMORY**引擎的**内存临时表**（_**数组**_，_**没有索引**_），表内有两个字段：**R**和**W**
     - R：**double类型**，用于存放**随机小数**
     - W：**VARCHAR(64)类型**，用于存放**原表的word字段**
@@ -197,6 +198,7 @@ SELECT word FROM words ORDER BY RAND() LIMIT 3;
 
 #### 构建最大堆
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-rand-build-heap.png" width=500/>
+
 1. 在内存临时表中，有10000个准备参与排序的行，一行为`(R,rowid)`，先取前3行放入`sort buffer`，构造成一个**堆**
 2. 取下一行`(R',rowid')`，与当前堆中最大的`R`比较
     - 如果`R'`小于`R`，则把这个`(R,rowid)`从堆中去掉，替换成`(R',rowid')`

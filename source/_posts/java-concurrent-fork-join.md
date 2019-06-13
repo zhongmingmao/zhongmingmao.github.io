@@ -17,6 +17,7 @@ tags:
 
 ## 分治任务模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-divide.png" width=800/>
+
 1. 分治任务模型分为两个阶段：任务分解 + 结果合并
 2. **任务分解**：将任务迭代地分解为子任务，直至子任务可以**直接计算**出结果
     - 任务和分解后的子任务具有**相似性**（算法相同，只是计算的数据规模不同，往往采用**递归**算法）
@@ -68,6 +69,7 @@ System.out.println(pool.invoke(fibonacci)); // 832040
 
 ### ForkJoinPool的工作原理
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-fork-join-pool.png" width=800/>
+
 1. Fork/Join并行计算的核心组件是ForkJoinPool
 2. ThreadPoolExecutor本质上是**生产者-消费者**模式的实现
     - 内部有一个**任务队列**，该任务队列是生产者和消费者通信的媒介

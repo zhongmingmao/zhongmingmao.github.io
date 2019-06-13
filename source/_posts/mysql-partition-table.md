@@ -59,8 +59,10 @@ Record lock, heap no 1 PHYSICAL RECORD: n_fields 1; compact format; info bits 0
 
 对于普通表，session A持有的锁为`ftime:Next-Key Lock:('2017-4-1','2018-4-1']`
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-partition-table-common-gap-lock.jpg" width=800/>
+
 但对于**引擎**来说，分区表的分区是**不同的表**，即`2017-4-1`的下一个记录是`p_2018`分区的`supremum`
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-partition-table-real-gap-lock.jpg" width=800/>
+
 
 ### MyISAM
 | session A | session B | session C |
@@ -95,6 +97,7 @@ mysql> SHOW PROCESSLIST;
     - 实际只需要访问一个分区，但语句却无法执行（MyISAM才会如此，InnoDB采用本地分区策略）
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-partition-table-over-open-files-limit.png" width=800/>
+
 
 ### MyISAM
 1. MyISAM分区表使用的分区策略是**通用分区策略**（generic partitioning）

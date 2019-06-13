@@ -9,6 +9,7 @@ tags:
 
 ## Worker Thread模式
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-worker-thread.png" width=800/>
+
 1. Worker Thread模式可以类比现实世界里车间的工作模式，Worker Thread对应车间里的工人（人数确定）
 2. 用**阻塞队列**做任务池，然后创建**固定数量的线程**消费阻塞队列中的任务 -- 这就是Java中的**线程池**方案
 
@@ -63,6 +64,7 @@ private ExecutorService pool = new ThreadPoolExecutor(50, 500, 60L, TimeUnit.SEC
 3. 下图中第一阶段的任务会等待第二阶段的子任务完成
 
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-worker-thread-dead-lock.png" width=800/>
+
 ```java
 // L1、L2阶段共用线程池
 ExecutorService pool = Executors.newFixedThreadPool(2);

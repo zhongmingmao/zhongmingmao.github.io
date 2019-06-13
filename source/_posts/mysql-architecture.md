@@ -15,6 +15,7 @@ mysql> select * from T where ID=10;
 ## 基本架构
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-architecture.png" width=400/>
 
+
 <!-- more -->
 
 1. 大体上，MySQL可以分为**Server层**和**存储引擎层**

@@ -10,6 +10,7 @@ tags:
 ## 主从切换
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-slave-switch.png" width=500/>
 
+
 <!-- more -->
 
 1. 在状态1，客户端的读写都是直接访问节点A，节点B是节点A的从库
@@ -24,6 +25,7 @@ tags:
 ## 主从同步
 在节点A执行update语句，然后同步到节点B
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-slave-replication.png" width=600/>
+
 1. 从库B与主库A之间维持一个**长连接**，主库A内部有一个专门用于服务于从库B长连接的线程
 2. 在从库B上执行`CHANGE MASTER`命令，设置主库A的信息
     - `IP`、`PORT`、`USER`、`PASSWORD`
@@ -285,6 +287,7 @@ $ mysqlbinlog binlog.000014 --start-position=14314 --stop-position=14599 | mysql
 ## 循环复制
 线上常用为`Master-Master`结构，节点A与节点B为**互为主从**关系（在切换过程中无需修改主从关系）
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-master-switch.png" width=500/>
+
 1. `log_slave_updates=ON`，从库执行完`relaylog`后也会生成`binlog`
 2. 从节点A更新的事务，`binlog`记录的都是节点A的`server id`
 3. 传到节点B执行以后，节点B生成的`binlog`的`server id`依然是节点A的`server id`

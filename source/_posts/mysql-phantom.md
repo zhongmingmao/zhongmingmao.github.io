@@ -134,6 +134,7 @@ UPDATE t SET c=5 WHERE id=0; -- (0,5,5)
 
 表初始化，插入了6个记录，产生了7个间隙
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-phantom-gap.png" width=500/>
+
 1. `SELECT * FROM t WHERE d=5 FOR UPDATE;`
     - 给已有的6个记录加上`X Lock`，同时还会加上7个`Gap Lock`，这样就确保**无法再插入新纪录**
 2. 上锁实体

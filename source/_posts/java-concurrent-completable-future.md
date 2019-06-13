@@ -10,6 +10,7 @@ tags:
 ## 泡茶烧水
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-completable-future-tea.png" width=800/>
 
+
 <!-- more -->
 
 ```java

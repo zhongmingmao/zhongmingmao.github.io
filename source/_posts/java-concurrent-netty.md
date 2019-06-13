@@ -11,6 +11,7 @@ tags:
 ## BIO
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-netty-bio.png" width=800/>
 
+
 <!-- more -->
 
 1. BIO即**阻塞式IO**，使用BIO模型，一般会**为每个Socket分配一个独立的线程**
@@ -21,6 +22,7 @@ tags:
 
 ## 理想的线程模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-netty-ideal.png" width=800/>
+
 1. 用一个线程来处理多个连接，可以提高线程的利用率，降低所需要的线程
 2. 使用BIO相关的API是无法实现的，BIO相关的Socket读写操作都是**阻塞式**的
     - 一旦调用了阻塞式的API，在IO就绪前，调用线程会**一直阻塞**，也就无法处理其他的Socket连接
@@ -28,6 +30,7 @@ tags:
 
 ## Reactor模式
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-netty-reactor.png" width=800/>
+
 1. Handle指的是**IO句柄**，在Java网络编程里，本质上是一个**网络连接**
 2. Event Handler是事件处理器，handle_event()处理IO事件，**每个Event Handler处理一个IO Handle**
     - get_handle()方法可以返回这个IO Handle
@@ -56,6 +59,7 @@ while (true) {
 
 ## Netty的线程模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-netty.png" width=800/>
+
 1. Netty参考了Reactor模式，Netty中最核心的概念是**事件循环**（EventLoop），即Reactor模式中的Reactor
     - _**负责监听网络事件并调用事件处理器进行处理**_
 2. 在Netty 4.x中，网络连接 : EventLoop : Java线程 = _**N:1:1**_

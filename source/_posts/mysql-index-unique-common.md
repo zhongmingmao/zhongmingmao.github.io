@@ -20,6 +20,7 @@ tags:
 假设字段k上的值都不重复
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-bplustree.png" width=400/>
 
+
 ## 查询过程
 1. 查询语句：`SELECT id FROM T WHERE k=5`
 2. 查询过程
@@ -137,6 +138,7 @@ INSERT INTO t(id,k) VALUES (id1,k1),(id2,k2);
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-change-buffer-update.png" width=500/>
 
+
 ```
 # 内存：buffer pool
 # redolog：ib_logfileX
@@ -158,6 +160,7 @@ INSERT INTO t(id,k) VALUES (id1,k1),(id2,k2);
 SELECT * FROM t WHERE k IN (k1,k2);
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-change-buffer-read.png" width=500/>
+
 1. 读Page 1，**直接从内存返回**（此时Page 1有可能还是**脏页**，并未真正落盘）
 2. 读Page 2，通过**磁盘随机读**将数据页读入内存，然后应用change buffer里面的操作日志（**merge**）
     - 生成一个正确的版本并返回

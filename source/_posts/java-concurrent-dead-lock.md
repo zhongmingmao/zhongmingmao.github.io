@@ -44,6 +44,7 @@ public class Account {
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-deadlock-two-lock.png" width=1000/>
 
+
 ### 死锁
 1. 两把锁是**细粒度锁**的方案，使用细粒度锁可以**提高并发度**，是**性能优化**的一个重要手段，但可能会导致**死锁**
 2. 死锁：_**一组相互竞争资源的线程因互相等待，导致永久阻塞的现象**_

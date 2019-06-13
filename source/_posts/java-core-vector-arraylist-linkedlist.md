@@ -24,6 +24,7 @@ tags:
 
 ## 集合
 <img src="https://java-core-1253868755.cos.ap-guangzhou.myqcloud.com/java-core-collection.png" width=800/>
+
 1. 容器包括**集合**和**Map**，_**Map并不是真正的集合**_
 2. List：**有序结合**
 3. Set：不允许重复元素（equals判断）

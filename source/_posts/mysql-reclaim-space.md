@@ -32,6 +32,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_file_per_table%';
 
 ### 删除
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-reclaim-index.png" width=500/>
+
 1. 如果删掉`R4`，InnoDB只会将`R4`**标记为删除**，如果再插入**300~600**的记录时，可能会**复用**这个位置，但磁盘文件不会缩小
     - **记录的复用**，仅限于**符合范围**条件的数据
 2. 如果删除了**一个数据页上的所有记录**，那么**整个数据页**都可以被**复用**的
@@ -45,6 +46,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_file_per_table%';
 
 ### 插入
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-reclaim-insert.png" width=500/>
+
 1. 如果数据是**随机插入**的，就有可能造成**索引的数据页分裂**
 2. `page A`已满，如果再插入ID=550的数据，就必须申请一个新的页面`page B`来保存数据，导致**页分裂**，留下了空洞
 
@@ -67,6 +69,7 @@ ALTER TABLE A ENGINE=InnoDB;
 
 #### Before MySQL 5.5
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-reclaim-alter-before-5_5.png" width=500/>
+
 1. 与上述的逻辑过程类似，MySQL**自动完成**转存数据，交换表名和删除旧表等操作
 2. 时间消耗最多的是往**临时表**（**Server层**）插入数据的过程，在这个过程中，如果**新数据**要写入表A，就会造成**数据丢失**
 3. 因此整个DDL过程中，表A是不能执行DML的，即不是**Online**的
@@ -74,6 +77,7 @@ ALTER TABLE A ENGINE=InnoDB;
 
 #### Since MySQL 5.6
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-reclaim-alter-online-ddl.png" width=500/>
+
 1. 建立一个**临时文件**（**InnoDB内部**），扫描表A主键的所有数据页
 2. 用数据页中表A的记录生成B+树，存储到临时文件
 3. state 2（**日志**）：生成临时文件的过程中，将所有对A的**操作**记录在一个**日志文件**（**row log**）中

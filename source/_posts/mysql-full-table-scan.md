@@ -16,6 +16,7 @@ mysql -h$host -P$port -u$user -p$pwd -e "select * from db1.t" > $target_file
 ### 查询数据
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-query-send-data.jpg" width=800/>
 
+
 <!-- more -->
 
 1. InnoDB的数据是保存在主键索引上，全表扫描实际上是直接扫描表t的主键索引
@@ -48,6 +49,7 @@ mysql> SHOW VARIABLES LIKE '%net_buffer_length%';
     - 适当地调大`net_buffer_length`可能是个更优的解决方案
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-client-do-not-receive.png" width=800/>
+
 
 ### Sending data
 
@@ -107,6 +109,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_buffer_pool_size%';
 
 ### 基本LRU
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-eliminate-strategy-lru.jpg" width=800/>
+
 1. InnoDB采用的LRU算法，是基于**链表**实现的
 2. State1，链表头部是P1，表示P1是最近**刚刚被访问过**的数据页
 3. State2，有一个读请求访问P3，P3被移动到链表的最前面
@@ -122,6 +125,7 @@ mysql> SHOW VARIABLES LIKE '%innodb_buffer_pool_size%';
 
 ### 改进LRU
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-eliminate-strategy-lru-opt.png" width=800/>
+
 1. 在InnoDB的实现上，按照`5:3`的比例把整个LRU链表分成`young`区和`old`区
 2. `LRU_old`指向old区的第一个位置，即靠近链表头部的`5/8`是`young`区，靠近链表尾部的`3/8`是`old`区
 3. State1，要访问数据页P3，由于P3在young区，与基本的LRU算法一样，将其移动到链表头部，变为State2

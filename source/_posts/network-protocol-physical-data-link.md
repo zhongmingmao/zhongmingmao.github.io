@@ -33,6 +33,7 @@ tags:
 
 ### 数据包格式
 <img src="https://network-protocol-1253868755.cos.ap-guangzhou.myqcloud.com/network-protocol-package-fmt-2nd.png" width=600/>
+
 1. 开头为目标MAC地址和源MAC地址
 2. 接下来是类型，大部分的类型是IP数据包（0x0800），IP数据包里面会包含TCP、UDP、HTTP等内容（层层封装）
 3. 数据包中有目标MAC地址，数据包在链路上**广播**，目标MAC地址的网卡发现这个包是给它的，就会把数据包接收进来
@@ -45,6 +46,7 @@ tags:
 ## ARP协议
 ARP：Address Resolution Protocol，**已知IP地址，求MAC地址**
 <img src="https://network-protocol-1253868755.cos.ap-guangzhou.myqcloud.com/network-protocol-arp-1.png" width=700/>
+
 <img src="https://network-protocol-1253868755.cos.ap-guangzhou.myqcloud.com/network-protocol-arp-2.png" width=700/>
 <img src="https://network-protocol-1253868755.cos.ap-guangzhou.myqcloud.com/network-protocol-arp-fmt.png" width=700/>
 勘误：0x8086 -> 0x0806

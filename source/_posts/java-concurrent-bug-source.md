@@ -20,12 +20,14 @@ tags:
 
 ### 单核
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-single-core.png" width=800/>
+
 1. 在单核时代，所有的线程都在一颗CPU上执行，CPU缓存与内存的**数据一致性**很容易解决
 2. 因为所有线程操作的都是同一个CPU的缓存，一个线程对CPU缓存的写，对另外一个线程来说一定是**可见**的
 3. **可见性**：一个线程对**共享变量**的修改，另一个线程能够**立即看到**
 
 ### 多核
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-multi-core.png" width=800/>
+
 1. 在多核时代，每颗CPU都有自己的缓存，此时CPU缓存与内存的**数据一致性**就没那么容易解决了
 2. 当多个线程在不同的CPU上执行时，操作的是不同的CPU缓存
 3. 线程A操作的是CPU-1上的缓存，线程B操作的是CPU-2上的缓存，此时线程A对变量V的操作对于线程B而言**不具备可见性**
@@ -63,6 +65,7 @@ public class VisibilityTest {
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-multi-core-count.png" width=800/>
+
 1. 假设线程A和线程B同时开始执行，那么第一次都会将count=0读到各自的CPU缓存中
 2. 之后由于各自的CPU缓存里都有了count的值，两个线程都是**基于CPU缓存里的count值来进行计算**的
 3. 所以导致最终count的值小于2*MAX，这就是_**CPU缓存导致的可见性问题**_
@@ -71,6 +74,7 @@ public class VisibilityTest {
 
 ### 分时复用
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-atomic-thread-switch.png" width=800/>
+
 1. 由于**IO太慢**，早期的操作系统发明了**多进程**，并支持**分时复用**（时间片）
 2. 在一个时间片内，如果进程进行一个IO操作，例如读文件，该进程可以把自己标记为**休眠状态**并让出CPU的使用权
     - 待文件读进内存后，操作系统会把这个休眠的进程**唤醒**，唤醒后的进程就有机会重新获得CPU的使用权了
@@ -85,6 +89,7 @@ public class VisibilityTest {
 
 #### count+=1
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-atomic-thread-switch-count.png" width=800/>
+
 1. 线程切换的时机大多在**时间片结束**的时候，而高级语言里的一条语句往往需要**多条CPU指令**完成，如`count+=1`
     - 把变量count从内存加载到CPU的寄存器
     - 在寄存器中执行+1操作
@@ -116,6 +121,7 @@ class Singleton {
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-order-double-check.png" width=800/>
+
 1. 直觉
     - 线程A和B同时调用getInstance()方法，同时发现instance==null，同时对Singleton.class加锁
     - 此时JVM保证只有一个线程能够加锁成功（假设是线程A），另一个线程则会进入等待状态（假设线程B）

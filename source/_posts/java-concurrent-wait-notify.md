@@ -28,6 +28,7 @@ Java语言原生支持的等待-通知机制：**`synchronized + wait + notify/n
 
 ### wait
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-synchronized-wait.png" width=800/>
+
 1. **每个互斥锁有两个独立的等待队列**，如上图所示，等待队列L和等待队列R
 1. 左边有一个**等待队列**（等待队列L），_**在同一时刻，只允许一个线程进入synchronized保护的临界区**_
 2. 当已经有一个线程进入synchronized保护的临界区后，其他线程就只能进入等待队列L进行等待
@@ -38,6 +39,7 @@ Java语言原生支持的等待-通知机制：**`synchronized + wait + notify/n
 
 ### notify/notifyAll
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-synchronized-notify.png" width=800/>
+
 1. 当线程要求的条件满足时，可以通过`notify/notifyAll`来通知等待的线程
 2. 当条件满足时调用notify()，会通知等待队列R（**将等待队列L中第1个节点移到等待队列R**）中的线程，告知它_**条件曾经满足**_
     - _**notify()只能保证在通知的时间点，条件是满足的**_

@@ -64,8 +64,10 @@ mysql> SELECT * FROM t2;
 t2的数据组织方式，主键索引上的值是**有序存储**的，执行`SELECT *`时，按叶子节点从左到右扫描
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-memory-engine-index-organizied.jpg" width=800/>
 
+
 #### 堆组织表
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-memory-engine-heap-organizied.jpg" width=800/>
+
 1. Memory引擎的数据和索引是**分开存储**的
     - 数据部分以**数组**的方式单独存放，主键索引（采用**哈希索引**）存的是**数据位置**
 2. 在t1上执行`SELECT *`时，走的也是**全表扫描**，即**顺序扫描整个数组**，因此0是最后一个被读到的
@@ -77,6 +79,7 @@ t2的数据组织方式，主键索引上的值是**有序存储**的，执行`S
 ALTER TABLE t1 ADD INDEX a_btree_index USING BTREE (id);
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-memory-engine-btree.jpg" width=800/>
+
 ```sql
 -- 优化器选择了a_btree_index索引
 mysql> EXPLAIN SELECT * FROM t1 WHERE id<5;
@@ -177,6 +180,7 @@ mysql> SHOW PROCESSLIST;
 
 #### Master-Slave架构
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-memory-engine-master-slave.jpg" width=600/>
+
 1. 业务正常访问主库
 2. 备库硬件升级，备库重启，内存表t1被清空
 3. 备库重启后，应用日志线程执行一条`UPDATE t1`的语句，备库会报错，导致**主备同步停止**
@@ -184,6 +188,7 @@ mysql> SHOW PROCESSLIST;
 
 #### Master-Master架构
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-memory-engine-master-master.jpg" width=600/>
+
 1. MySQL知道重启后，Memory表的数据会丢失，所以担心主库重启后，会出现主备不一致
     - 在数据库重启之后，自动往binlog里面写一行`DELETE FROM t1`
 2. 在备库重启时，备库binlog的`DELETE`语句会传到主库，然后**主库Memory表的内容被莫名其妙地删除了**

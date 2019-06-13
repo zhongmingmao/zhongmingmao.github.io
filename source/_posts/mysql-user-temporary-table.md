@@ -40,6 +40,7 @@ tags:
 ## 跨库查询
 将一个大表ht，按照字段f，拆分成1024个表，然后分布到32个数据库实例，每个实例32张表
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table.jpg" width=800/>
+
 1. 选择分区Key的依据：**减少跨库查询和跨表查询**，如果大部分语句都会包含f的等值条件，就要用f做分区键
 2. 在Proxy这一层解析完SQL语句后，就能确定将这条语句路由到哪一个分区表做查询
     - 例如`SELECT v FROM ht WHERE f=N;`，通过分表规则来确认需要的数据被放到哪一个分表上
@@ -54,6 +55,7 @@ tags:
 
 ### 汇总表方案
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table-temporary-table.jpg" width=600/>
+
 1. 在汇总库上创建一个临时表temp_ht，表里包含三个字段v、k和t_modified
 2. 在各个分库上执行
 3. `SELECT v,k,t_modified FROM ht_x WHERE k >= M ORDER BY t_modified DESC LIMIT 100;`

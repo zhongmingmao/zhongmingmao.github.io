@@ -115,6 +115,7 @@ LOAD DATA INFILE '/tmp/t.csv' INTO TABLE db2.t;
 #### 主备同步
 `binlog_format=STATEMENT`
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-load-data-replication.jpg" width=800/>
+
 1. 主库执行完成后，将`/tmp/t.csv`文件的内容都**直接写到binlog文件**中
 2. 往binlog文件写入
     - `LOAD DATA LOCAL INFILE '/tmp/SQL_LOAD_MB-1-0' INTO TABLE db2.t;`
@@ -138,6 +139,7 @@ LOAD DATA INFILE '/tmp/t.csv' INTO TABLE db2.t;
 
 ### 执行步骤
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-table-physical-copy.jpg" width=800/>
+
 1. 假设在db1库下，复制一个跟表t相同的表r
 2. 执行`CREATE TABLE r LIKE t;`，创建一个**相同表结构**的空表
 3. 执行`ALTER TABLE r DISCARD TABLESPACE;`，此时`r.ibd`文件会被删除

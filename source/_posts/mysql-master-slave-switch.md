@@ -10,6 +10,7 @@ tags:
 ## 一主多从
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-multi-slave.png" width=500/>
 
+
 <!-- more -->
 
 1. 虚线箭头为**主从关系**，`A`和`A'`互为主从，`B`、`C`、`D`指向主库`A`
@@ -18,6 +19,7 @@ tags:
 ## 主库故障切换
 `A'`成为新的主库，`B`、`C`、`D`指向主库`A'`
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-crash-switch.png" width=500/>
+
 
 ## 基于位点的切换
 `B`原先是`A`的从库，本地记录的也是`A`的位点，但**相同的日志**，`A`的位点与`A'`的位点是**不同**的

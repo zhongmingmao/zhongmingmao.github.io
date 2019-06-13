@@ -12,10 +12,12 @@ tags:
 ### 客户端直连
 <img src="	https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-write-separation-basic.png" width=800/>
 
+
 <!-- more -->
 
 ### Proxy
 <img src="	https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-write-separation-proxy.png" width=800/>
+
 
 ### 对比
 1. 客户端直连
@@ -89,6 +91,7 @@ mysql> SHOW SLAVE STATUS\G;
     - 并没有考虑这部分日志：客户端已经收到提交确认，但从库还未收到
 
 <img src="	https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-write-separation-no-delay.png" width=800/>
+
 1. 主库上执行完成了3个事务：`trx1`、`trx2`和`trx3`
 2. `trx1`和`trx2`已经传到从库，并且已经执行完成了
 3. `trx3`在主库执行完成后，并且已经回复给客户端，但还未传到从库中
@@ -125,6 +128,7 @@ SELECT MASTER_POS_WAIT(file, pos[, timeout]);
 #### 样例
 先在`MySQL A`执行`trx1`，然后在`MySQL B`执行查询请求
 <img src=" https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-write-separation-wait-pos.png" width=800/>
+
 1. 事务`trx1`更新完成后，马上执行`SHOW MASTER STATUS`，得到当前主库执行到的`File`和`Position`
 2. 选择一个从库执行查询语句
 3. 在该从库上先执行`SELECT MASTER_POS_WAIT(File, Position, 1)`
@@ -159,6 +163,7 @@ SELECT WAIT_FOR_EXECUTED_GTID_SET(gtid_set, 1);
 
 #### 样例
 <img src=" https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-write-separation-wait-gtid.png" width=800/>
+
 1. 从MySQL 5.7.6开始，允许在执行完**更新类事务**后，把这个事务的`GTID`返回给客户端
 2. 事务`trx1`更新完成后，从返回结果中直接获取`trx1`的`GTID`，记为`gtid1`
 3. 选择一个从库执行查询语句

@@ -10,6 +10,7 @@ tags:
 ## 主从复制
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-slave-replication-parallel.png" width=500/>
 
+
 <!-- more -->
 
 1. 第一个黑色箭头：客户端写入主库，第二个黑色箭头：从库上`sql_thread`执行`relaylog`，前者的并发度大于后者
@@ -18,6 +19,7 @@ tags:
 
 ## 多线程模型
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-slave-replication-multi-thread.png" width=500/>
+
 1. `coordinator`就是原来的`sql_thread`，但不会再直接应用`relaylog`后更新`DATA`，只负责**读取`relaylog`**和**分发事务**
 2. 真正更新日志的是`worker`线程，数量由参数`slave_parallel_workers`控制
 
@@ -44,6 +46,7 @@ mysql> SHOW VARIABLES LIKE '%slave_parallel_workers%';
 
 ##### 具体逻辑
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-slave-parallel-replication-by-table.png" width=500/>
+
 1. 每个`worker`线程对应一个`hash`表，用于保存当前正在这个`worker`的执行队列里的事务所涉及的表
     - `key`为**库名.表名**，`value`是一个数字，表示队列中有多少事务修改这个表
 2. 在有事务分配给`worker`时，事务里面涉及到的表会被加到对应的`hash`表中
@@ -142,11 +145,13 @@ INSERT INTO t1 VALUES (1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5);
 
 #### 主库并发事务
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-mariadb-master-trx.png" width=500/>
+
 1. 在主库上，在`trx1`、`trx2`和`trx3`提交的时候，`trx4`、`trx5`和`trx6`是在执行
 2. 在第一组事务提交完成后，下一组事务很快就会进入`commit`状态
 
 #### 从库并发复制
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-mariadb-slave-trx.png" width=500/>
+
 1. 在从库上，必须等第一组事务**完全执行**完成后，第二组事务才能开始执行，与主库相比，**吞吐量是下降的**
 2. 并且很容易**被大事务拖后腿**
     - 假设`trx2`是一个**超大事务**，`trx1`和`trx3`执行完成后，只能等`trx2`完全执行完成，下一组才能开始执行
@@ -181,6 +186,7 @@ mysql> SHOW VARIABLES LIKE '%slave_parallel_type%';
 
 只要达到`redolog prepare fsync`阶段，就已经表示事务已经通过了**锁冲突的检验**了
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-2-phase-commit-opt.png" width=400/>
+
 
 ## 参考资料
 《MySQL实战45讲》

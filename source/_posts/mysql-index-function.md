@@ -85,6 +85,7 @@ SELECT COUNT(*) FROM tradelog WHERE MONTH(t_modified)=7;
 
 #### 分析
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-function-month.png" width=600/>
+
 1. `WHERE t_modified='2018-07-01'`，InnoDB会按照绿色箭头的路线找到结果（树搜索）
     - 这源于B+树的特性：**同一层兄弟节点的有序性**
 2. `WHERE MONTH(t_modified)=7`，在树的第一层就不知道如何操作，因此**优化器放弃了树搜索功能**
@@ -294,6 +295,7 @@ mysql> EXPLAIN SELECT d.* FROM tradelog l, trade_detail d WHERE d.tradeid=l.trad
 +----+-------------+-------+------------+-------+-----------------+---------+---------+-------+------+----------+-------------+
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-function-char-encode.png" width=500/>
+
 1. `tradelog`称为**驱动表**，`trade_detail`称为**被驱动表**，`tradeid`为**关联字段**。驱动原则：_**小表驱动大表**_
 2. 优化器会先在`tradelog`表上查找`id=2`的行，使用了`tradelog`的聚簇索引，只扫描了一行，取出`tradeid='aaaaaaab'`
 3. 然后到`trade_detail`表上查找`tradeid='aaaaaaab'`的行，但没有选择**二级索引**`tradeid`，而选择了**全表扫描**

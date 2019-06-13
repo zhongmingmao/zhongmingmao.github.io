@@ -15,6 +15,7 @@ tags:
 
 ## Web版的文件浏览器
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-file-browsing-mq.png" width=800/>
+
 1. 用户可以在浏览器里查看服务器上的目录和文件
 2. 该项目依赖运维部门提供的文件浏览服务，而文件浏览服务仅支持MQ接入
 3. 用户通过浏览器发送请求，会被转换成消息发送给MQ，等MQ返回结果后，再将结果返回至浏览器
@@ -50,6 +51,7 @@ class Response {
 
 ## Guarded Suspension模式
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guarded-suspension.png" width=800/>
+
 1. Guarded Suspension直译为_**保护性暂停**_
 2. 通过onChange方法可以产生一个事件，而这个事件往往能改变前提条件p的计算结果
 

@@ -70,13 +70,14 @@ tags:
     - **内存碎片：JVM堆中的对象必须是连续分布的**
     - **分配效率低下：逐个访问列表中的项，来查找能够放入新建对象的空闲内存**
 
-<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-sweep.png" width="600"/>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-sweep.png" width=600/>
+
 
 ### 压缩（Compact）
 1. 把**存活对象**聚集到内存区域的**起始位置**，从而留下一段**连续的内存空间**
 2. 能**解决内存碎片**的问题，代价为**压缩算法的性能开销**
 
-<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-compact.png" width="600"/>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-compact.png" width=600/>
 
 ### 复制（Copy）
 1. 把内存区域划分为**两等分**，分别用from和to指针来维护，**from指针**指向的内存区域用来**分配内存**
@@ -86,7 +87,7 @@ tags:
     - 压缩：需要**复杂的算法**保证引用能够正确更新
     - 复制：可以在**复制完成后统一更新**引用
 
-<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-copy.png" width="600"/>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-copy.png" width=600/>
 
 ## 分代回收
 1. 分代回收的背景：大部分Java对象只存活一小段时间，而存活下来的小部分Java对象会存活很长时间
@@ -109,7 +110,7 @@ tags:
     - 由于**堆空间**是**内存共享**的，因此需要**同步**
     - JVM采用的技术为**TLAB**（Thread Local Allocation Buffer），-XX:+UseTLAB，**默认开启**
 
-<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-heap.png" width="600"/>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-gc-heap.png" width=600/>
 
 #### TLAB
 1. 每个**线程**可以向JVM申请一段**连续的内存**，作为**线程私有的TLAB**

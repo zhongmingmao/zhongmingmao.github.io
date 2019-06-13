@@ -76,6 +76,7 @@ synchronized (list) {
 并发容器数量众多，但依旧可以分成四大类：List、Map、Set和Queue
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-concurrent-container.png" width=1000/>
 
+
 ### List
 1. List里面只有一个实现类就是**CopyOnWriteArrayList**
 2. CopyOnWrite即在执行**写操作**的时候会将共享变量**重新复制**一份出来，这样的好处是**读操作**是**完全无锁**的
@@ -87,7 +88,9 @@ synchronized (list) {
 7. CopyOnWriteArrayList的迭代器是**只读**的，不支持增删改，因为对**快照**进行增删改是没有意义的
 
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-concurrent-copyonwritearraylist-iteration.png" width=800/>
+
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-concurrent-copyonwritearraylist-add.png" width=800/>
+
 
 ### Map
 1. Map接口的两个实现：ConcurrentHashMap和ConcurrentSkipListMap
@@ -132,9 +135,11 @@ synchronized (list) {
 
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-single-ended-blocking-queue.png" width=800/>
 
+
 #### 双端阻塞队列
 其实现是LinkedBlockingDeque
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-double-ended-blocking-queue.png" width=800/>
+
 
 #### 单端非阻塞队列
 其实现是ConcurrentLinkedQueue

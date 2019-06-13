@@ -89,6 +89,7 @@ CALL idata();
 ### 索引树
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-select.png" width=600/>
 
+
 ## 查询
 
 ### 常规查询

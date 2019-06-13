@@ -20,6 +20,7 @@ mysql> UPDATE T SET c=c+1 WHERE id=2;
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-architecture.png" width=500/>
 
+
 1. 通过连接器，客户端与MySQL建立连接
 2. update语句会把**T表上的所有查询缓存清空**
 3. 分析器会通过词法分析和语法分析识别这是一条更新语句
@@ -47,6 +48,7 @@ mysql> UPDATE T SET c=c+1 WHERE id=2;
     - 如果磁盘能达到几TB，那么可以将redolog设置4个一组，每个日志文件大小为1GB
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-redo-log.jpg" width=400/>
+
 
 ```sql
 # innodb_log_file_size -> 单个redolog文件的大小
@@ -130,6 +132,7 @@ mysql> SHOW VARIABLES LIKE '%sql_log_bin%';
 ## update 内部流程
 浅色框在**InnoDB内部**执行，深色框在**执行器中**执行
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-update-procedure-1.jpg" width=500/>
+
 
 1. 执行器先通过InnoDB获取id=2这一行，id是主键，InnoDB可以通过**聚簇索引**找到这一行
     - 如果**id=2这一行所在的数据页**本来就在内存（**InnoDB Buffer Pool**）中，直接返回给执行器

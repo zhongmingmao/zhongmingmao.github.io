@@ -105,6 +105,7 @@ Q6:ROLLBACK TO SAVEPOINT sp;
 
 #### 加字段的问题
 <img src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-lock-add-column.jpg' width=450/>
+
 1. session A先启动，对表t加上一个**MDL读锁**
 2. session B需要的也是**MDL读锁**，不互斥，可以正常执行
 3. session C需要的是**MDL写锁**，session A的事务**还未提交**，**持有的MDL读锁还未释放**，session C会被阻塞
@@ -140,6 +141,7 @@ ALTER TABLE T [WAIT [n]|NO_WAIT] ADD f INT
 ### 两阶段锁
 id为表t的主键，事务B的update语句会被阻塞，直到事务A执行commit之后，事务B才能继续执行
 <img src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-two-phase-commit.jpg' width=450/>
+
 1. 两阶段锁
     - 在InnoDB事务中，行锁是在**需要的时候**加上
     - 但并不是在不需要了就立刻释放，而是要等待**事务结束**后才释放
@@ -157,6 +159,7 @@ id为表t的主键，事务B的update语句会被阻塞，直到事务A执行com
 ### 死锁
 假设电影院做活动，在活动开始的时候，CPU消耗接近100%，但整个库每秒执行不到100个事务
 <img src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-dead-lock.jpg' width=450/>
+
 1. 事务A在等待事务B释放id=2的行锁，事务B在等待事务A释放id=1的行锁，导致**死锁**
 2. 当出现死锁后，有2种处理策略
     - **等待**，直至超时（不推荐）

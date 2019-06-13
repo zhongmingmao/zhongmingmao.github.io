@@ -51,6 +51,7 @@ tags:
 6. 使用锁除了要注意性能之外，还需要注意**死锁**问题
 
 ## 小结
-<img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-overview.png"/>
+<img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-overview.png" width=800/>
+
 
 <!-- indicate-the-source -->

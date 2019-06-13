@@ -26,6 +26,7 @@ tags:
 
 ## 简易锁模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-simple-lock-model.png" width=1000/>
+
 1. 临界区：一段需要**互斥**执行的代码
 2. 线程在进入临界区之前，首先尝试加锁lock()
     - 如果成功，则进入临界区，此时该线程只有锁
@@ -34,6 +35,7 @@ tags:
 
 ## 锁和资源
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-improved-lock-model.png" width=1000/>
+
 
 ## synchronized
 ```java
@@ -92,6 +94,7 @@ public class SafeCalc {
 
 ### 锁模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-improved-lock-model-count.png" width=1000/>
+
 1. get()和addOne()都需要访问资源value，而资源value是用this这把锁来保护的
 2. 线程要进入临界区get()和addOne()，必须先获得this这把锁，因此get()和addOne()也是**互斥**的
 
@@ -113,6 +116,7 @@ public class SafeCalc {
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-count-two-lock.png" width=1000/>
+
 1. 用两个锁（this和SafeCalc.class）保护同一个资源value（静态变量）
 2. 临界区get()和addOne()是用两个锁来保护的，因此两个临界区没有**互斥**关系
 3. 临界区addOne()对value的修改对临界区get()也没有**可见性**保证，因此会导致并发问题
@@ -204,6 +208,7 @@ public class Account {
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-account-error-synchronized.png" width=1000/>
+
 1. 上述代码中，临界区内有**两个资源**，分别是`this.balance`和`target.balance`
 2. this这把锁可以保护自己的余额`this.balance`，但无法保护他人的余额`target.balance`
 3. 场景
@@ -265,6 +270,7 @@ public class Account {
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-atomic-solution-class.png" width=1000/>
+
 
 
 ## 原子性的本质

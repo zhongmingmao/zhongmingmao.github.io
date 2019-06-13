@@ -11,10 +11,12 @@ tags:
 第一阶段线程T1向线程T2**发送终止指令**，第二阶段是线程T2**响应终止指令**
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-two-phase-stop.png" width=800/>
 
+
 <!-- more -->
 
 ## Java线程生命周期
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-life-cycle-java.png" width=800/>
+
 1. Java线程进入终止状态的前提是线程进入RUNNABLE状态，而实际上线程可能处于休眠状态
 2. 因为如果要终止处于休眠状态的线程，要先通过**interrupt**把线程的状态从休眠状态转换到RUNNABLE状态
 3. RUNNABLE状态转换到终止状态，优雅的方式是让Java线程自己执行完run方法
@@ -24,6 +26,7 @@ tags:
 
 ## 终止监控操作
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-dynamic-sampling.png" width=800/>
+
 1. 监控系统需要动态采集一些数据，监控系统发送采集指令给被监控系统的的监控代理
 2. 监控代理接收到指令后，从监控目标收集数据，然后回传给监控系统
 3. 处于性能的考虑，动态采集一般都会有终止操作

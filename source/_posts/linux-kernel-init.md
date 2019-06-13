@@ -10,6 +10,7 @@ tags:
 ## start_kernel()
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-kernel-init-start-kernel.jpeg" width=800/>
 
+
 <!-- more -->
 
 ```c
@@ -104,6 +105,7 @@ PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND
 
 #### 权限
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-x86-ring-permission.jpeg" width=800/>
+
 1. 原来只有0号进程，所有资源都可以使用，没有竞争关系，也无须担心被恶意破坏
 2. 现在有了1号进程，需要区分核心资源和非核心资源，而x86提供了_**分层的权限机制**_
     - 把区域分成了4个Ring，越往里权限越高
@@ -118,6 +120,7 @@ PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND
 #### 状态切换
 _**用户态 -> 系统调用 -> 保存寄存器 -> 内核态执行系统调用 -> 恢复寄存器 -> 返回用户态**_
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-user-kernel-switch.jpeg" width=800/>
+
 
 ##### 发送网络包
 1. 场景

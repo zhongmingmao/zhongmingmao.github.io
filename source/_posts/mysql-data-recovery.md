@@ -48,6 +48,7 @@ tags:
 ### mysqlbinlog
 假设有人中午12点删除了一个库，恢复数据的流程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-data-recovery-mysqlbinlog.png" width=500/>
+
 1. 取最近一次全量备份，假设一天一备，即当天0点的全量备份
 2. 用全量备份恢复出一个临时库
 3. 从`binlog`备份里，取出凌晨0点以后的日志
@@ -67,6 +68,7 @@ tags:
 
 ### Master-Slave
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-data-recovery-master-slave.png" width=500/>
+
 1. 在`START SLAVE`之前，先通过执行`CHANGE REPLICATION FILTER REPLICATE_DO_TABLE=(tbl_name)`
     - 让临时库**只同步误操作的表**，利用**并行复制**技术，来加速整个数据恢复过程
 2. `binlog`备份到线上备库之间是一条**虚线**

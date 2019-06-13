@@ -123,6 +123,7 @@ tags:
     - `glibc`的`malloc`、`calloc`和`free`等函数用来分配和释放内存，都调用了内核的`sys_brk`的系统调用
 
 ## 小结
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-system-call.jpg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-system-call.jpg" width=800/>
+
 
 <!-- indicate-the-source -->

@@ -50,8 +50,10 @@ mysql> SHOW VARIABLES LIKE '%max_connections%';
 
 #### 事务外空闲
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-short-conn-trx-idle-1.png" width=500/>
+
 `trx_mysql_thread_id`：`id=4`的线程还处在事务中
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-short-conn-trx-idle-2.png" width=500/>
+
 
 #### KILL CONNECTION
 1. 服务端执行`KILL CONNECTION id`，如果连接在此前处于`Sleep`状态，客户端是**不会立马知道**

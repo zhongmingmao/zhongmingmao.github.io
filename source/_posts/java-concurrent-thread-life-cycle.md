@@ -10,6 +10,7 @@ tags:
 ## 通用的线程生命周期
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-life-cycle-common.png" width=800/>
 
+
 <!-- more -->
 1. **初始状态**
     - 线程已经被创建，但还不允许分配CPU执行
@@ -35,6 +36,7 @@ tags:
 
 ## Java线程的生命周期
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-life-cycle-java.png" width=800/>
+
 1. Java线程的状态可以参照代码`java.lang.Thread.State`
 2. 在操作系统层，Java线程状态的**BLOCKED、WAITING、TIMED_WAITING**都是**休眠状态**，永远无法获得CPU的使用权
 3. BLOCKED、WAITING、TIMED_WAITING可以理解为导致线程**进入休眠状态**的三个**原因**

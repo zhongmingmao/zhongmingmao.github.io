@@ -76,6 +76,7 @@ public class VolatileExample {
 
 #### 传递性规则
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-happens-before-transitive.png" width=800/>
+
 1. 如果A Happens-Before B，并且B Happens-Before C，那么A Happens-Before C
 2. 程序的顺序性规则：`x=42`Happens-Before`v=true`
 3. volatile变量规则：写变量`v=true`Happens-Before读变量`v=true`

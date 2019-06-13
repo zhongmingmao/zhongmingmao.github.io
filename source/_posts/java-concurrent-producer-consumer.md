@@ -10,6 +10,7 @@ tags:
 ## 生产者-消费者模式
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-producer-consumer.png" width=800/>
 
+
 <!-- more -->
 
 1. 生产者-消费者模式的核心是一个_**任务队列**_
@@ -19,6 +20,7 @@ tags:
 
 ## 支持批量执行
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-dynamic-sampling-batch-insert.png" width=800/>
+
 1. 往数据库INSERT 1000条数据，有两种方案
     - 第一种方案：用1000个线程并发执行，每个线程INSERT一条数据
     - 第二种方案（更优）：用1个线程，执行一个批量的SQL，一次性把1000条数据INSERT进去

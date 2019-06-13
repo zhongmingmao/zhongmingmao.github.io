@@ -29,6 +29,7 @@ tags:
 
 ### 多版本
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-row-multi-version.png" width=500/>
+
 1. 虚线框是同一行记录的4个版本
 2. 当前最新版本为V4，k=22，是被`transaction id`为25的事务所更新的，因此它的`row trx_id`为25
 3. 虚线箭头就是`undolog`，而V1、V2和V3并**不是物理真实存在**的
@@ -101,6 +102,7 @@ INSERT INTO t (id, k) VALUES (1,1), (2,2);
 
 ##### 查询逻辑
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-trx-session-a.png" width=500/>
+
 1. 第一个有效更新是事务C，采用**当前读**，读取当前最新版本`(1,1)`，改成`(1,2)`
     - 此时最新版本的`row trx_id`为102，90那个版本成为历史版本
     - 由于**autocommit=1**，事务C在执行完更新后会立马**释放**id=1的**行锁**
@@ -128,6 +130,7 @@ INSERT INTO t (id, k) VALUES (1,1), (2,2);
 
 #### 更新逻辑
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-trx-session-b.png" width=500/>
+
 1. 如果在事务B执行更新之前查询一次，采用的是**一致性读**，查询结果也为1
 2. 如果事务B要执行更新操作，是**不能在历史版本上更新**
     - 否则事务C的更新就会**丢失**，或者需要采取分支策略来兼容（增加复杂度）
@@ -168,6 +171,7 @@ SELECT k FROM t WHERE id=1 FOR UPDATE;
 | | COMMIT; | |
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-trx-session-b-lock-wait.png" width=500/>
+
 
 1. 事务C'没有自动提交，依然持有当前最新版本版本`(1,2)`上的**写锁**（X Lock）
 2. 事务B执行更新语句，采用的是**当前读**（X Lock模式），会被阻塞，必须等事务C'释放这把写锁后，才能继续执行
@@ -263,6 +267,7 @@ mysql> SELECT * FROM t;
 6. 对于RC，查询只承认**语句启动前**就已经提交的数据
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-trx-rc.png" width=500/>
+
 
 ## 参考资料
 《MySQL实战45讲》

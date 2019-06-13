@@ -134,6 +134,7 @@ numChildren = 0
 
 ### 概述
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-handle-request-procedure.png" width=500/>
+
 1. Broker的大部分工作就是处理**客户端、分区副本和控制器**发送给**分区首领**的请求
 2. Kafka提供了一个**基于TCP的二进制协议**，指定了**请求消息的格式**以及Broker如何对请求做出响应
     - 客户端发起连接并发送请求，Broker处理请求并做出响应
@@ -175,6 +176,7 @@ numChildren = 0
 
 ### 获取请求
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-consume-min-size.png" width=600/>
+
 1. 客户端发送获取请求，向Broker请求主题分区里具有**特定偏移量**的消息
 2. 获取请求需要先到达指定的**分区首领**上，然后客户端通过**查询元数据**来确保请求的路由是正确的
 3. 分区首领在收到获取请求时，分区首领首先会检查获取请求是否有效（例如指定的偏移量在分区上是否存在）
@@ -194,6 +196,7 @@ numChildren = 0
 
 #### 高水位
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-consume-isr.png" width=600/>
+
 1. 并不是所有保存在**分区首领**上的数据都可以被客户端读取
 2. 分区首领知道每个消息会被复制到哪个副本上，_**在消息还没有被写入所有同步副本之前，是不会发送给消费者的**_
     - 尝试获取这些消息的请求会得到**空响应**而不是错误
@@ -211,6 +214,7 @@ numChildren = 0
 
 ### 元数据请求
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-client-route.png" width=500/>
+
 1. 元数据请求包含了客户端感兴趣的**主题列表**
 2. 服务端的响应消息包含：这些主题所包含的分区，每个分区都有哪些副本，以及哪个分区副本是首领
 3. 元数据请求可以发送给任意一个Broker，因为所有的Broker都缓存了这些信息
@@ -313,6 +317,7 @@ baseOffset: 11 lastOffset: 11 count: 1 baseSequence: -1 lastSequence: -1 produce
 
 #### 消息压缩
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-compressed-message.png" width=800/>
+
 1. 如果生产者发送的是**压缩过**的消息，那么**同一批次**的消息会被压缩在一起，然后被当做**包装消息**进行发送
     - Broker收到这样的消息后，会直接把它发送给消费者
 2. 消费者在解压这个消息后，会看到**整个批次**的消息，它们都有自己的时间戳和偏移量
@@ -355,6 +360,7 @@ baseOffset: 11 lastOffset: 11 count: 1 baseSequence: -1 lastSequence: -1 produce
 6. 如果只有少部分片段完全符合，Kafka将从**最旧**的片段开始清理，等待下一次再清理剩余的部分
 
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-clean-log-before-after.png" width=400/>
+
 
 #### 删除事件
 1. 为了**彻底**把一个键从系统里删除，客户端必须发送一个包含该键且**值为null**的消息

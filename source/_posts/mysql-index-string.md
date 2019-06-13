@@ -33,6 +33,7 @@ ALTER TABLE SUser ADD INDEX index2(email(6));
 
 ### index1
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-string-all.jpg" width=500/>
+
 1. 索引长度：**整个字符串**
 2. 从index1索引树找到第一个满足索引值为zhangssxyz@xxx.com的记录，取得主键为ID2
     - 到**聚簇索引**上查找值为ID2的行，判断email的值是否正确（**Server层行为**），将该行记录加入结果集
@@ -41,6 +42,7 @@ ALTER TABLE SUser ADD INDEX index2(email(6));
 
 ### index2
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-string-prefix.jpg" width=500/>
+
 1. 索引长度：_**前6个字节**_
 2. 索引占用的**空间更小**，增加额外的记录**扫描次数**，（且不支持**覆盖索引**，见后面）
 3. 从index2索引树找到第一个满足索引值为`zhangs`的记录，取得主键为ID1

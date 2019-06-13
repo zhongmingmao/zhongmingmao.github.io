@@ -57,8 +57,10 @@ tags:
 中央处理器+存储，就能够支持**任意复杂**的计算了
 <img src="https://architecture-1253868755.cos.ap-guangzhou.myqcloud.com/architecture-von-cpu-storage.png" width=600/>
 
+
 ### 实现IO
 <img src="https://architecture-1253868755.cos.ap-guangzhou.myqcloud.com/architecture-von-cpu-storage-io.png" width=600/>
+
 1. 交互，抽象来看就是输入输出，对电脑来说，输入输出可能是千变外化的
 2. 除了纯正的**计算能力**之外，中央处理器还需要具备**IO能力**
 3. 此时，电脑可以看成：**中央处理器 + 存储 + 一系列的输入输出设备**

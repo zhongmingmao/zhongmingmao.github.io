@@ -18,10 +18,12 @@ tags:
 ## flush过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-flush-procedure.jpeg" width=400/>
 
+
 ## 触发flush
 
 ### redolog写满
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-flush-redolog.jpeg" width=400/>
+
 1. 当InnoDB的redolog写满，系统会**停止所有的更新操作**，推进`checkpoint`
 2. 把`checkpoint`从CP推进到CP'，需要将两点之间的日志（绿色），所**对应的所有脏页**都flush到磁盘上
 3. 然后`write pos`到CP'之间（红色+绿色）可以再写入redolog
@@ -119,6 +121,7 @@ F1(M){
 ```
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-flush-speed.png" width=400/>
+
 
 ### 脏页比例
 1. 平时要多关注**脏页比例**：`Innodb_buffer_pool_pages_dirty/Innodb_buffer_pool_pages_total`

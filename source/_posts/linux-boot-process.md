@@ -19,6 +19,7 @@ tags:
 
 ### 1M寻址空间
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-bios-bootloader-1m.jpg" width=800/>
+
 1. 在x86系统，将1M的**内存空间**最上面的`0xF0000~0xFFFFF`这**64K**空间映射给ROM
 2. 电脑在刚启动时，会做一些重置的工作，将CPU的CS设置为`0xFFFF`，将CPU的IP设置为`0x0000`
     - 因此，第一条指令将指向`0xFFFF0`（0xFFFF << 4 + 0x0000），在ROM的范围内
@@ -96,7 +97,7 @@ Installation finished. No error reported.
 ```
 
 ### imgs
-<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-centos-grub2-install.jpeg"/>
+<img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-centos-grub2-install.jpeg" width=800/>
 ```
 $ ll /boot/grub2/i386-pc/*.img
 -rw-r--r--. 1 root root   512 4月  11 22:16 /boot/grub2/i386-pc/boot.img

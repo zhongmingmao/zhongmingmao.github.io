@@ -15,6 +15,7 @@ tags:
 
 ## 信号量模型
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-semaphore-model.png" width=800/>
+
 1. 在信号量模型里，计数器和等待队列对外都是**透明**的，只能通过信号量模型提供的三个方法来访问它们，即init/down/up
 2. init()：设置计数器的初始值
 3. down()：计数器的值**减1**，如果此时计数器的值**小于0**，则当前线程将**阻塞**，否则当前线程可以继续执行

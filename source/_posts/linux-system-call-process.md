@@ -145,6 +145,7 @@ iret指令将原来**用户态**保存的现场恢复回来，包括代码段、
 ### 小结
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-system-call-32.jpg" width=800/>
 
+
 ## 64位系统调用
 
 ### sysdep.h
@@ -250,6 +251,7 @@ __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 
 ### 小结
 <img src="https://linux-1253868755.cos.ap-guangzhou.myqcloud.com/linux-system-call-64-perfect.jpg" width=800/>
+
 
 ## 系统调用表
 

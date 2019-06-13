@@ -55,6 +55,7 @@ mysql> EXPLAIN SELECT * FROM t1 STRAIGHT_JOIN t2 ON (t1.a=t2.a);
 
 ### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-nlj.jpg" width=600/>
+
 1. 从t1读取一行数据R
 2. 从R中取出字段a，然后到t2去查找
 3. 取出t2中满足条件的行，与R组成一行，作为结果集的一部分
@@ -108,6 +109,7 @@ SELECT * FROM t1 STRAIGHT_JOIN t2 ON (t1.a=t2.b);
 
 #### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-blj.jpg" width=600/>
+
 1. 把t1的数据读入线程内存`join_buffer`，执行的是`SELECT *`，因此会把整个t1读入`join_buffer`
 2. 扫描t2，把t2中的每一行取出来，与`join_buffer`中的数据做对比
     - 如果满足join条件的行，作为结果集的一部分返回
@@ -166,6 +168,7 @@ SELECT * FROM t1 STRAIGHT_JOIN t2 ON (t1.a=t2.b);
 
 #### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-blj-not-enough.jpg" width=600/>
+
 1. 扫描t1，顺序读取数据行放入`join_buffer`，放完第88行后`join_buffer`满，继续第2步
 2. 扫描t2，把t2中的每一行取出来，跟`join_buffer`中的数据做对比
     - 如果满足join条件的行，作为结果集的一部分返回
@@ -361,6 +364,7 @@ mysql> EXPLAIN SELECT * FROM a LEFT JOIN b ON (a.f1=b.f1) AND (a.f2=b.f2);
 +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+----------------------------------------------------+
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-left-join-bnl.jpg" width=600/>
+
 1. 驱动表是表a，被驱动表是表b，与使用`STRAIGHT_JOIN`的效果一致
 2. 由于表b的字段f1上没有索引，所以使用的是`BNL`算法
     - 把表a的内容读入`join_buffer`中

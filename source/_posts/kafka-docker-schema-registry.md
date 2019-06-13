@@ -22,6 +22,7 @@ tags:
 
 ## Confluent Schema Registry
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-confluent-schema-registry.png" width=500/>
+
 1. 把所有**写入数据**需要用到的`Schema`保存在**注册表**里，然后在_**记录里引用Schema ID**_
 2. 负责读数据的应用程序使用`Schema ID`从注册表拉取`Schema`来**反序列化**记录
 3. 序列化器和反序列化器分别负责处理Schema的**注册**和**拉取**

@@ -44,6 +44,7 @@ public class SafeDateFormat {
 
 ## ThreadLocal的工作原理
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-local.png" width=800/>
+
 ```java
 public class Thread implements Runnable {
     // 线程内部持有ThreadLocalMap

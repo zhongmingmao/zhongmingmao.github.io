@@ -187,7 +187,8 @@ zhongmingmao
 ### 管理后台
 http://localhost:9000/clusters/docker-kafka/topics/zhongmingmao
 
-<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-manager.png"/>
+<img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/kafka-manager.png" width=800/>
+
 
 ### 关闭
 ```

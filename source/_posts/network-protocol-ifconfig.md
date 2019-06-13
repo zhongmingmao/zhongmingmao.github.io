@@ -44,6 +44,7 @@ $ ip a
 ## IP地址分类
 <img src="https://network-protocol-1253868755.cos.ap-guangzhou.myqcloud.com/network-protocol-ifconfig-ip-classification.png" width=800/>
 
+
 | 类别 | IP地址范围 | 最大主机数 | 私有IP地址范围 |
 | ---- | ---- | ---- | ---- |
 | A | 0.0.0.0 ~ 127.255.255.255 | 2^24-2 | 10.0.0.0 ~ 10.255.255.255 |

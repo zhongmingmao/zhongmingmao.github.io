@@ -40,6 +40,7 @@ tags:
 ### 编译路径
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-path.png" width=600/>
 
+
 1. 1层和4层是**终止状态**
     - 当一个**方法**被**终止状态**编译后，如果**编译后的代码没有失效**，那么JVM**不会再次发出该方法的编译请求**
 2. 通常情况下，热点方法会被3层的C1编译，然后再被4层的C2编译
@@ -167,13 +168,16 @@ public static int foo(boolean, int);
 ##### 正常分支
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-0.png" width=500/>
 
+
 ##### profiling
 假设应用程序调用该方法，所传入的都是true，那么偏移量为1和偏移量为18的条件跳转指令所对应的分支profile中，其跳转的次数都是0。实际执行的分支如下：
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-1.png" width=500/>
 
+
 ##### 剪枝
 C2根据这两个分支profile作出假设，在后续的执行过程中，这两个条件跳转指令仍旧不会执行，基于这个假设，C2不会在编译这两个条件跳转语句所对应的false分支（剪枝）。最终的结果是在第一个条件跳转之后，C2代码直接返回0
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-2.png" width=500/>
+
 
 #### 小结
 1. 根据条件跳转指令的分支profile，即时编译器可以将**从未执行过**的分支减掉
@@ -221,6 +225,7 @@ public static int hash(java.lang.Object);
 ##### 正常分支
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-0.png" width=500/>
 
+
 ##### profiling+优化
 1. 假设应用调用该方法时，所传入的Object皆为Integer实例
     - 偏移量为1的**instanceof**指令的**类型profile**仅包含Integer
@@ -254,8 +259,10 @@ public final class Integer ... {
 针对上面三个profile的分支图
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-1.png" width=500/>
 
+
 进一步优化（剪枝）
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-2.png" width=500/>
+
 
 #### 小结
 1. 和基于分支profile的优化一样，基于类型profile的优化同样也是作出假设，从而精简控制流以及数据流，两者的**核心是假设**

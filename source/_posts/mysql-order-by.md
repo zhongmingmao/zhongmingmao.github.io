@@ -50,6 +50,7 @@ CALL idata();
 满足city='杭州'的行，主键为`ID_X ~ ID_(X+N)`
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-index-city.png" width=500/>
 
+
 ### sort buffer
 ```sql
 mysql> EXPLAIN SELECT city,name,age FROM t FORCE INDEX(city) WHERE city='杭州' ORDER BY name LIMIT 1000\G;
@@ -85,6 +86,7 @@ mysql> SHOW VARIABLES LIKE '%sort_buffer%';
 
 ### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-all-field-sort.jpg" width=500/>
+
 1. 初始化`sort buffer`，确定放入三个字段：**`city`、`name`、`age`**
 2. 从**city索引树**找到第一个满足city='杭州'的主键ID，即ID_X
 3. 然后拿着ID_X**回表**取出整行，将`city`、`name`、`age`这三个字段的值都存入`sort buffer`
@@ -254,6 +256,7 @@ mysql> SHOW VARIABLES LIKE '%max_length_for_sort_data%';
 
 ### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-rowid-sort.jpg" width=500/>
+
 1. 初始化`sort buffer`，确定放入两个字段：**`name`（需要排序的字段）、`id`（索引组织表，主键）**
 2. 从**city索引树**找到第一个满足city='杭州'的主键ID，即ID_X
 3. 然后拿着ID_X**回表**取出整行，将`name`和`ID`这两个字段的值存入`sort buffer`
@@ -343,6 +346,7 @@ ALTER TABLE t ADD INDEX city_user(city, name);
 #### city_user索引树
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-combine-index.png" width=500/>
 
+
 #### explain
 ```sql
 mysql> EXPLAIN SELECT city,name,age FROM t FORCE INDEX(city_user) WHERE city='杭州' ORDER BY name LIMIT 1000\G;
@@ -366,6 +370,7 @@ possible_keys: city_user
 
 #### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-combine-index-process.jpg" width=500/>
+
 1. 从**city_user索引树**找到第一个满足city='杭州'的主键ID，即ID_X
 2. 然后拿着ID_X**回表**取出整行，取`city`、`name`和`age`三个字段的值，作为结果集的一部分**直接返回给客户端**
 3. 继续取**city_user索引树**的下一条记录，重复上述步骤，直到查到1000条记录或者不满足city='杭州'时结束循环
@@ -420,6 +425,7 @@ possible_keys: city_user_age
 
 #### 执行过程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-order-by-coverage-index-process.jpg" width=500/>
+
 1. 从**city_user_age索引树**找到第一个满足city='杭州'的记录
     - 直接取出`city`、`name`和`age`这三个字段的值，作为结果集的一部分**直接返回给客户端**
 2. 继续取**city_user_age索引树**的下一条记录，重复上述步骤，直到查到1000条记录或者不满足city='杭州'时结束循环

@@ -31,6 +31,7 @@ tags:
 
 ### 互斥
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-monitor-exclusive.png" width=800/>
+
 1. 管程解决互斥问题的思路：将**共享变量以及对共享变量的操作**统一封装起来
 2. 管程X将共享变量queue和相关的操作enq()和deq()都封装起来
 3. 线程A和线程B如果想要访问共享变量queue，只能通过调用管程X提供的enq()和deq()方法来实现
@@ -39,6 +40,7 @@ tags:
 
 ### 同步
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-monitor-sync.png" width=800/>
+
 1. 在管程模型里，共享变量和对共享变量的操作是被封装起来的，最外层的框是代表封装的意思
     - 框的上面只有一个入口，并且在入口旁边还有一个_**入口等待队列**_
     - 当多个线程同时试图进入管程内部时，只允许一个线程进入，其他线程就在**入口等待队列**中等待
@@ -128,6 +130,7 @@ public class BlockedQueue<T> {
 
 ## Java的管程实现
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-monitor-built-in-synchronized.png" width=800/>
+
 1. Java参考了MESA模型，语言内置的管程（synchronized）对MESA模型进行了**精简**
 2. 在MESA模型中，条件变量可以有多个，_**但Java语言内置的管程只有一个条件变量**_
 3. Java内置的管程方案（synchronized）使用很简单

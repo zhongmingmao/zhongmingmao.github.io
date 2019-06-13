@@ -47,6 +47,7 @@ SELECT * FROM t1 WHERE a>=1 AND a<=100;
 如果随着a递增的顺序进行查询的话，id的值会变成随机的，就会出现**随机访问**，**性能相对较差**
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table.jpg" width=600/>
 
+
 ### MRR
 1. 根据索引a，定位到满足条件的记录，将id的值放入`read_rnd_buffer`中
 2. 将`read_rnd_buffer`中的id进行**递增排序**
@@ -75,6 +76,7 @@ SET optimizer_switch='mrr_cost_based=off';
 
 #### 执行流程
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table-mrr.jpg" width=600/>
+
 
 #### EXPLAIN
 ```sql
@@ -111,9 +113,11 @@ MRR提升性能的核心：能够在索引a上做**范围查询**，得到**足�
 从驱动表t1，一行行地取出a的值，再到被驱动表t2去join，此时**没有利用到MRR的优势**
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-nlj.jpg" width=600/>
 
+
 ### BKA优化
 `Batched Key Access`，是MySQL 5.6引入的对`Index Nested-Loop Join`（`NLJ`）的优化
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-bka.jpg" width=600/>
+
 1. `BKA`优化的思路：**复用`join_buffer`**
 2. 在`BNL`算法中，利用了`join_buffer`来暂存驱动表的数据，但在`NLJ`里面并没有利用到`join_buffer`
 3. 在`join_buffer`中放入的数据为P1~P100，表示只会取**查询所需要的字段**

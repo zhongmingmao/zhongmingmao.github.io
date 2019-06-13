@@ -20,6 +20,7 @@ tags:
 
 ## RPC框架
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-copy-on-write-route-table.png" width=500/>
+
 1. 服务提供方是**多实例分布式**部署的，服务的客户端在调用RPC时，会选定一个服务实例来调用
 2. 这个过程的本质是**负载均衡**，而做负载均衡的前提是客户端要有**全部的路由信息**
 3. 一个核心任务就是**维护服务的路由关系**，当服务提供方上线或者下线的时候，需要更新客户端的路由表信息

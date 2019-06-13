@@ -306,6 +306,7 @@ mysql> SELECT * FROM t WHERE id=1 LOCK IN SHARE MODE;
 
 #### undolog
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-troubleshoot-undolog.png" width=500/>
+
 1. session B执行完100W次更新操作后，会生成100W个undolog
 2. `T4`时刻采用的是**快照读**（一致性读），需要从行的当前版本往回依次应用100W个undolog，返回1
 2. `T5`时刻采用的是**当前读**，直接返回当前版本，速度很快，返回1,000,001

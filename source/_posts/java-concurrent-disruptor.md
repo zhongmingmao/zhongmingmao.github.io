@@ -72,6 +72,7 @@ class LongEvent {
 
 #### ArrayBlockingQueue
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-disruptor-array-blocking-queue.png" width=800/>
+
 1. 生产者向ArrayBlockingQueue增加一个元素之前，都需要先创建对象E
 2. 创建这些元素的时间基本上是**离散**的，所以这些元素的内存地址大概率也**不是连续**的
 
@@ -84,6 +85,7 @@ for (int i = 0; i < bufferSize; i++)
 }
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-disruptor-ring-buffer.png" width=800/>
+
 1. Disruptor内部的RingBuffer也是用数组实现的
 2. 但这个数组中的所有元素在初始化时是**一次性**全部创建，所以这些元素的内存地址大概率是**连续**的
 3. 如果数组中所有元素的内存地址是**连续**的，能够提升性能
@@ -113,6 +115,7 @@ int putIndex;
 int count;
 ```
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-disruptor-array-blocking-queue-false-sharing.png" width=800/>
+
 1. 当CPU从内存中加载takeIndex时，会同时将putIndex和count都加载进高速Cache
 2. 假设线程A运行在CPU-1上，执行入队操作，入队操作会修改putIndex
     - 而修改putIndex会导致CPU-2上putIndex所在的缓存行失效

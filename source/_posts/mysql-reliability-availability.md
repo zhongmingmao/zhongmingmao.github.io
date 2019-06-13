@@ -10,6 +10,7 @@ tags:
 ## Master-Master 主从切换
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-master-switch.png" width=500/>
 
+
 <!-- more -->
 
 ## 同步延时
@@ -21,6 +22,7 @@ tags:
     - `SHOW SLAVE STATUS`中的`Seconds_Behind_Master`
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-ha-sbm.png" width=1000/>
+
 
 ### Seconds_Behind_Master
 1. 计算方法
@@ -59,6 +61,7 @@ tags:
 ### 可靠性优先
 切换过程一般由专门的`HA`系统完成，存在**不可用时间**（主库A和从库B都处于**只读**状态）
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-ha-reliability-first.png" width=500/>
+
 1. 判断**从库B**的`Seconds_Behind_Master`值，当**小于**某个值（例如5）才继续下一步
 2. 把**主库A**改为**只读**状态（`readonly=true`）
 3. 等待**从库B**的`Seconds_Behind_Master`值降为`0`
@@ -88,6 +91,7 @@ INSERT INTO t (c) VALUES (5);
 
 #### MIXED
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-ha-availability-first-mixed.png" width=800/>
+
 1. 主库A执行完`INSERT c=4`，得到`(4,4)`，然后开始执行**主从切换**
 2. 主从之间有5S的同步延迟，从库B会先执行`INSERT c=5`，得到`(4,5)`，并且会把这个`binlog`发给主库A
 3. 从库B执行主库A传过来的`INSERT c=4`，得到`(5,4)`
@@ -96,6 +100,7 @@ INSERT INTO t (c) VALUES (5);
 
 #### ROW
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-ha-availability-first-row.png" width=800/>
+
 1. 采用`ROW`格式的`binlog`时，会记录新插入行的**所有字段的值**，所以最后只会有**一行**数据不一致
 2. 主库A和从库B的同步线程都会**报错并停止**：`duplicate key error`
 

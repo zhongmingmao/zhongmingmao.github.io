@@ -177,6 +177,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-insert-dead-lock.jpg" width=800/>
 
+
 1. 在T1时刻，session A执行`INSERT`语句，在索引`c=5`上加上**行锁**（索引c是**唯一索引**，可以退化为**行锁**）
 2. 在T2时刻，session B和session C执行相同的`INSERT`语句，发现**唯一键冲突**，_等待加上**读锁**_
 3. 在T3时刻，session A执行`ROLLBACK`语句，session B和session C都试图继续插入执行操作，都要加上**写锁**

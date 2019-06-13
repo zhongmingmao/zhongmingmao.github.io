@@ -95,6 +95,7 @@ public synchronized void eoo(java.lang.Object);
 ### 对象状态图
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-synchronized.gif" width=800/>
 
+
 针对**一个对象的整个生命周期**，锁升级是**单向不可逆**：偏向锁 -> 轻量级锁 -> 重量级锁
 
 ### 重量级锁
@@ -138,8 +139,10 @@ public synchronized void eoo(java.lang.Object);
 轻量级锁CAS操作之前
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-synchronized-lightweight-before-cas.png" width=400/>
 
+
 轻量级锁CAS操作之后
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-synchronized-lightweight-after-cas.png" width=300/>
+
 
 #### 解锁
 1. JVM通过**CAS操作**，**把线程中的Displaced Mark Word复制回锁对象的标记字段**

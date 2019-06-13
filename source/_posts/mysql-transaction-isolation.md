@@ -52,6 +52,7 @@ insert into T(c) values(1);
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-isolation-level-example.png" width=350/>
 
+
 | 隔离级别 | V1 | V2 | V3 | 备注 |
 | ---- | ---- | ---- | ---- | ---- |
 | READ-UNCOMMITTED | 2 | 2 | 2 | |
@@ -74,6 +75,7 @@ insert into T(c) values(1);
 ### 多版本
 变更记录：1->2->3->4
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-read-view.png" width=500/>
+
 1. 当前值为4，但在查询这条记录的时候，**不同时刻启动的事务会有不同的视图**
 2. 在视图A、B和C，这一个记录的值分别是1、2和4
 3. 同一条记录在系统中可以存在多个版本，这就是**MVCC**（**多版本并发控制**）

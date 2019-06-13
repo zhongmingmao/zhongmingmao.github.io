@@ -55,20 +55,26 @@ for (int i = 0; i < 20; i++) {
 
 ##### Case 1
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c1s1.png" width=800/>
+
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c1s2.png" width=800/>
+
 1. 当前令牌桶中没有令牌，下一令牌的发放时间在第3秒，而在第2秒的时候线程T1请求令牌
 2. 线程T1需要等待1秒，由于原本在第3秒发放的令牌已经被线程T1**预占**了，下一个令牌发放的时间也需要增加1秒
 
 ##### Case 2
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c2s1.png" width=800/>
+
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c2s2.png" width=800/>
+
 1. 假设T1在预占第3秒的令牌后，马上又有一个线程T2请求令牌
 2. 由于下一个令牌产生的时间是第4秒，所以线程T2需要等待2秒才能获得令牌
 3. 由于T2预占了第4秒的令牌，所以下一令牌产生的时间还要增加1秒
 
 ##### Case 3
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c3s1.png" width=800/>
+
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-guava-token-bucket-c3s2.png" width=800/>
+
 1. 假设在线程T1请求令牌之后的5秒，也就是第7秒，线程T3请求令牌
 2. 由于在第5秒已经产生了一个令牌，此时线程T3可以直接拿到令牌，无需等待
 3. 在第7秒，实际上限流器能产生3个令牌，分别在第5、6、7秒各产生一个令牌

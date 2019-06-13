@@ -74,6 +74,7 @@ System.out.println(futureTask.get()); // 3
 
 ## 烧水泡茶
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-future-tea.png" width=800/>
+
 ```java
 // 创建两个FutureTask，ft1和ft2
 // ft1完成洗水壶、烧开水、泡茶的任务

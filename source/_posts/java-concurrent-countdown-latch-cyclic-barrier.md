@@ -10,6 +10,7 @@ tags:
 ## 对账系统
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system.png" width=800/>
 
+
 <!-- more -->
 
 ```java
@@ -28,10 +29,12 @@ while (existUnreconciledOrders()) {
 
 ## 性能瓶颈
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system-single-thread.png" width=800/>
+
 getPOrder()和getDOrder()最为耗时，并且两个操作没有先后顺序的依赖，可以**并行处理**
 
 ## 简单并行 - join
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system-multi-thread-join.png" width=800/>
+
 ```java
 // 存在未对账订单
 // 存在未对账订单
@@ -121,6 +124,7 @@ while (existUnreconciledOrders()) {
 
 ## 完全并行
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system-multi-fully-parallel.png" width=800/>
+
 1. 两次查询操作能够和对账操作并行，对账操作还依赖于查询操作的结果，类似于_**生产者-消费者**_
     - 两次查询操作是生产者，对账操作是消费者
 2. 既然是生产者-消费者模型，就需要用到**队列**，用来保存生产者生成的数据，而消费者从这个队列消费数据
@@ -137,7 +141,9 @@ while (existUnreconciledOrders()) {
     - JUC提供了类似的工具类_**CyclicBarrier**_
 
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system-multi-double-queue.png" width=800/>
+
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-reconciliation-system-multi-sync.png" width=800/>
+
 
 ## CyclicBarrier
 ```java

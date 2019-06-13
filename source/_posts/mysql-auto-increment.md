@@ -113,6 +113,7 @@ mysql> SELECT * FROM t;
 +----+------+------+
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-auto-increment-duplicate-entry.jpg" width=400/>
+
 1. 执行器调用InnoDB引擎接口写入一行，传入的这一行的值为`(0,1,1)`
 2. InnoDB发现用户没有指定自增id的值，获取表t当前的自增值为2
 3. 将传入的这一行的值改为`(2,1,1)`

@@ -33,6 +33,7 @@ tags:
 
 ## 可达性状态
 <img src="https://java-core-1253868755.cos.ap-guangzhou.myqcloud.com/java-core-reference-flow.png" width=600/>
+
 1. 强可达（Strongly Reachable）
     - 当一个对象可以有一个或多个线程**可以不通过各种引用访问到**的情况
     - 例如，新创建一个对象，那么创建该对象的线程对它就是强可达

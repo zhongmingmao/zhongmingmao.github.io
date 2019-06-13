@@ -13,11 +13,13 @@ tags:
 实现上类似于`java.util.HashMap`，哈希表适合只有**等值查询**的场景
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-hashtable.png" width=400/>
 
+
 <!-- more -->
 
 ### 有序数组
 有序数组只适用于**静态存储引擎**（针对不会再修改的数据）
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-sortedarray.png" width=400/>
+
 
 #### 查找
 1. 等值查询：可以采用**二分法**，时间复杂度为`O(log(N))`
@@ -33,6 +35,7 @@ tags:
 #### 平衡二叉树
 查询的时间复杂度：`O(log(N))`，更新的时间复杂度：`O(log(N))`（维持树的**平衡**）
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-binarytree.png" width=400/>
+
 
 #### N叉树
 1. 大多数的数据库存储并没有采用二叉树，原因：**索引不仅仅存在于内存中，还要写到磁盘上**
@@ -67,6 +70,7 @@ R4 : (500,5)
 R5 : (600,6)
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-bplustree.png" width=400/>
+
 1. 根据**叶子节点的内容**，索引类型分为**聚簇索引**（clustered index）和**二级索引**（secondary index）
     - 聚簇索引的叶子节点存储的是**整行数据**
     - 二级索引的叶子节点存储的是**主键的值**
@@ -132,6 +136,7 @@ INSERT INTO T VALUES (100,1,'aa'),(200,2,'bb'),(300,3,'cc'),(500,5,'ee'),(600,6,
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-scan-row.png" width=400/>
 
+
 ##### 需要回表的查询
 ```sql
 SELECT * FROM T WHERE k BETWEEN 3 AND 5
@@ -174,6 +179,7 @@ CREATE TABLE `tuser` (
 #### 最左前缀原则
 B+树的索引结构，可以利用索引的**最左前缀**来定位记录
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-leftmost-prefix.jpg" width=400/>
+
 1. 索引项是按照**索引定义**里**字段出现的顺序**来排序的
     - 如果查找所有名字为**张三**的人时，可以快速定位到ID4，然后**向后遍历**，直到不满足条件为止
     - 如果查找所有名字的第一个字是**张**的人，找到第一个符合条件的记录ID3，然后**向后遍历**，直到不满足条件为止
@@ -198,8 +204,10 @@ SELECT * FROM tuser WHERE name LIKE '张%' AND age=10 AND ismale=1;
 无索引下推，回表4次
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-pushdown.jpg" width=400/>
 
+
 采用索引下推，回表2次
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-index-no-pushdown.jpg" width=400/>
+
 
 #### 删除冗余索引
 ```sql

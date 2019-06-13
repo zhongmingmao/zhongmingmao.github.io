@@ -220,6 +220,7 @@ session A持有的锁：`c:Next-Key Lock:(0,5]`+`c:Gap Lock:(5,10)`+`PRIMARY:S L
 INSERT INTO t VALUES (30,10,30);
 ```
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-index-c.png" width=500/>
+
 `DELETE`语句的加锁逻辑与`SELECT...FOR UPDTAE`是类似的
 
 | session A | session B | session C |
@@ -260,6 +261,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 ```
 session A在二级索引c上的加锁效果如下所示
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-secondary-index-eq.png" width=500/>
+
 session A持有的锁
 - `c:Next-Key Lock:((c=5,id=5),(c=10,id=10)]`+`c:Gap Lock:((c=10,id=10),(c=15,id=15))`
 - `PRIMARY:X Lock:10`+`PRIMARY:X Lock:30`
@@ -297,6 +299,7 @@ mysql> SELECT locked_index,locked_type,waiting_lock_mode,blocking_lock_mode FROM
 
 在遍历到`(c=10,id=30)`这一行记录后，已经有两行记录满足条件，**循环结束**，session A在二级索引c上的加锁效果如下所示
 <img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-limit.png" width=500/>
+
 session A持有的锁
 - `c:Next-Key Lock:((c=5,id=5),(c=10,id=10)]`+`c:Next-Key Lock:((c=10,id=10),(c=10,id=30)]`
 - `PRIMARY:X Lock:10`+`PRIMARY:X Lock:30`

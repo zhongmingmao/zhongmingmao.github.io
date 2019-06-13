@@ -20,7 +20,9 @@ tags:
 2. 执行iadd指令会将弹出这两个int，并将求得的和int值3压入栈中
 3. iadd只消耗栈顶的两个元素，iadd并不关心更远的元素，也不会对它们进行修改
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-bytecode-iadd-0.png" width=400/>
+
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-bytecode-iadd-1.png" width=400/>
+
 
 ### dup + pop
 1. dup和pop只能处理非long和非double类型的值
@@ -138,6 +140,7 @@ public void locals(long, float);
 ```
 
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-bytecode-locals.png" width=400/>
+
 1. locals是一个实例方法，局部变量表的第0个单元存放this指针
 2. 第一个参数为long类型，占用局部变量表的第1、2个单元
 3. 第二个参数为int类型，占用局部变量表的第3个单元
@@ -227,6 +230,7 @@ public void putFiled();
 
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-bytecode-putfield.png" width=400/>
 
+
 #### invokevirtual
 ```
 public int neg(int i) {
@@ -253,6 +257,7 @@ public int foo(int);
 
 foo(2)的执行过程
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-bytecode-invoke.png" width=300/>
+
 
 ### 数组相关
 1. newarray：新建**基本类型**的数组

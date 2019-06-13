@@ -28,16 +28,19 @@ tags:
 
 #### 单线程
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-count-utilization-rate-single-thread.png" width=800/>
+
 1. 单线程时，执行CPU计算的时候，IO设备空闲，执行IO操作时，CPU空闲，所以CPU利用率和IO设备的利用率都是**50%**
 
 #### 两线程
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-count-utilization-rate-two-thread.png" width=800/>
+
 1. 两个线程时，当线程A执行CPU计算时，线程B执行IO操作，当线程A执行IO操作时，线程B执行CPU计算
 2. 这样CPU利用率和IO设备的利用率都达到了100%，相对于单线程**吞吐量**提高了1倍
 3. 逆向思维：如果CPU和IO设备的利用率都**很低**，可以通过**增加线程**来**提高吞吐量**
 
 #### 多核
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-count-utilization-rate-multi-core.png" width=800/>
+
 1. 在**单核**时代，多线程主要用来_**平衡CPU和IO设备**_
     - 如果程序**只有CPU计算**，那么多线程反而会让**性能变差**，因为增加了**线程切换**的成本
 2. 在**多核**时代，纯CPU计算的程序可以利用多线程来**提升性能**，因为利用多核可以_**降低响应时间**_
@@ -59,6 +62,7 @@ tags:
 
 ##### 三线程
 <img src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-thread-count-utilization-rate-three-thread.png" width=800/>
+
 1. 如果CPU计算和IO操作的耗时比是1:2
 2. 对于线程A，当CPU从线程B、C切换回来时，线程A正好执行完IO操作，这样CPU和IO设备的利用率都达到了100%
 
