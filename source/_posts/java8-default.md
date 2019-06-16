@@ -6,7 +6,6 @@ categories:
     - SE8
 tags:
     - Java
-    - Java
 ---
 
 {% note info %}
