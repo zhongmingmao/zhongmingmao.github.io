@@ -7,4 +7,3 @@ mathjax: true
 ---
 
 <!-- more -->
-<!-- indicate-the-source -->
