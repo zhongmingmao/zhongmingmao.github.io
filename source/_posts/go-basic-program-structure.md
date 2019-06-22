@@ -1,7 +1,7 @@
 ---
 title: Go -- 基本程序结构
 mathjax: false
-date: 2019-06-12 09:21:23
+date: 2019-06-07 09:21:23
 categories:
     - Go
 tags:
