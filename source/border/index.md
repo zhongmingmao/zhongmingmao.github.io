@@ -8,5 +8,8 @@ date: 2019-05-29 10:21:54
 ## 管理学
 1. [卓有成效的管理者](https://book.douban.com/subject/1322025/)
 
+## 学习
+1. [Learning how to learn](https://www.coursera.org/learn/learning-how-to-learn)
+
 ## 自然
 1. [王朝 Dynasties (2018)](https://movie.douban.com/subject/27182707/)
