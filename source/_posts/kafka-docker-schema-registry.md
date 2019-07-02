@@ -11,6 +11,7 @@ tags:
     - Kafka
     - Avro
     - Docker
+    - Stream
 ---
 
 ## Avro

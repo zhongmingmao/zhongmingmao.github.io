@@ -9,6 +9,7 @@ tags:
     - Middleware
     - MQ
     - Kafka
+    - Stream
 ---
 
 ## 基本概念

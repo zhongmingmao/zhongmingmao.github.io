@@ -9,6 +9,7 @@ tags:
     - Middleware
     - MQ
     - Kafka
+    - Stream
 ---
 
 ## 安装步骤

@@ -10,6 +10,7 @@ tags:
     - MQ
     - Kafka
     - Avro
+    - Stream
 ---
 
 ## Avro + Kafka Native API

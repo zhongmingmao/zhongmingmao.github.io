@@ -9,6 +9,7 @@ tags:
     - Middleware
     - MQ
     - Kafka
+    - Stream
 ---
 
 ## 可靠性保证

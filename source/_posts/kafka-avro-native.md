@@ -10,6 +10,7 @@ tags:
     - MQ
     - Kafka
     - Avro
+    - Stream
 ---
 
 ## Schema

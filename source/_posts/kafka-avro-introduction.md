@@ -10,6 +10,7 @@ tags:
     - MQ
     - Kafka
     - Avro
+    - Stream
 ---
 
 ## 引入依赖
