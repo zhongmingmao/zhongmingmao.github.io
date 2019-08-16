@@ -153,3 +153,8 @@ spring.datasource.hikari.connection-test-query=SELECT 1
 2019-08-16 08:10:50.678  INFO 21357 --- [       Thread-8] com.zaxxer.hikari.HikariDataSource       : MyHikariCp - Shutdown initiated...
 2019-08-16 08:10:50.681  INFO 21357 --- [       Thread-8] com.zaxxer.hikari.HikariDataSource       : MyHikariCp - Shutdown completed.
 ```
+
+## 参考链接
+1. [HikariCP](https://github.com/brettwooldridge/HikariCP)
+2. [Down-the-Rabbit-Hole](https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole)
+3. [Springboot 2.0选择HikariCP](https://blog.csdn.net/zxl315/article/details/80420688)
