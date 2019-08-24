@@ -58,6 +58,85 @@ public interface TransactionDefinition {
 | PROPAGATION_NEVER | 5 | 不支持事务，如果有事务就抛出异常 | |
 | **PROPAGATION_NESTED** | 6 | 当前有事务就在当前事务再起一个事务 | 1. 里面的事务拥有独立的属性，如回滚状态<br/>2. 里面的事务回滚并不会影响外面的事务 |
 
+#### REQUIRES_NEW / NESTED
+1. **REQUIRES_NEW**：始终启动一个事务，两个事务**没有关联**
+2. **NESTED**：在原事务内启动一个**内嵌事务**，两个事务有关联，**外部事务回滚，内嵌事务也会回滚**
+
+```java
+@Slf4j
+@Component
+public class PersonServiceImpl implements PersonService {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private PersonService personService;
+}
+```
+
+##### 外部事务回滚
+REQUIRES_NEW：外部事务回滚，不影响内部事务提交
+```java
+@Override
+@Transactional(rollbackFor = RuntimeException.class)
+public void outerTransaction() {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('A')");
+    try {
+        personService.innerTransaction();
+    } catch (RollbackException ignored) {
+    }
+    throw new RuntimeException();
+}
+
+@Override
+@Transactional(rollbackFor = RollbackException.class, propagation = Propagation.REQUIRES_NEW)
+public void innerTransaction() throws RollbackException {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('B')");
+    //throw new RollbackException();
+}
+```
+_**NESTED：外部事务回滚，会导致内部事务也回滚!!**_
+```java
+@Override
+@Transactional(rollbackFor = RuntimeException.class)
+public void outerTransaction() {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('A')");
+    try {
+        personService.innerTransaction();
+    } catch (RollbackException ignored) {
+    }
+    throw new RuntimeException();
+}
+
+@Override
+@Transactional(rollbackFor = RollbackException.class, propagation = Propagation.NESTED)
+public void innerTransaction() throws RollbackException {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('B')");
+    //throw new RollbackException();
+}
+```
+
+##### 内部事务回滚
+无论内部事务的propagation为NESTED或者REQUIRES_NEW，内部事务回滚都不影响外部事务提交
+```java
+@Override
+@Transactional(rollbackFor = RuntimeException.class)
+public void outerTransaction() {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('A')");
+    try {
+        personService.innerTransaction();
+    } catch (RollbackException ignored) {
+    }
+    //throw new RuntimeException();
+}
+
+@Override
+@Transactional(rollbackFor = RollbackException.class, propagation = Propagation.NESTED)
+public void innerTransaction() throws RollbackException {
+    jdbcTemplate.update("INSERT INTO PERSON (NAME) VALUES ('B')");
+    throw new RollbackException();
+}
+```
+
 ### Isolation
 | 隔离性 | 值 | 脏读 | 不可重复读 | 幻读 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -157,6 +236,7 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
 ```
 
 ## 声明式事务
+Spring的声明式事务本质上是**通过AOP来增强类的功能**，而AOP本质上是为类做了一个代理，**实际调用的是增强后的代理类**
 <img src="https://spring-1253868755.cos.ap-guangzhou.myqcloud.com/spring-transaction-declarative.png" width=1000/>
 
 ### 基于注解的配置
@@ -180,7 +260,6 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
     - timeout
     - readOnly
     - rollbackFor/noRollbackFor
-
 
 ### PersonService接口
 由于@EnableTransactionManagement的mode默认值为**PROXY**，PROXY对应的是**JDK动态代理**（基于**接口**）
