@@ -7,6 +7,7 @@ categories:
 tags:
     - Data Structure
     - Algorithm
+    - Stack
 ---
 
 ## 实现
