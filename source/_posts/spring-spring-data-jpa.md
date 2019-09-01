@@ -572,5 +572,3 @@ Hibernate:
 
 findByItems_Name: 4
 ```
-
-## Repository to Bean
