@@ -1,5 +1,5 @@
 ---
-title: Kafka -- 幂等生产者 + 事务生产者
+title: Kafka -- 幂等性生产者 + 事务生产者
 mathjax: false
 date: 2019-08-19 22:29:07
 categories:
