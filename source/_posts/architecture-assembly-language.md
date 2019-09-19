@@ -2,9 +2,9 @@
 title: 架构 -- 汇编语言
 date: 2019-04-23 00:51:47
 categories:
-    Architecture
+    - Architecture
 tags:
-    Architecture
+    - Architecture
 ---
 
 ## 史前时代

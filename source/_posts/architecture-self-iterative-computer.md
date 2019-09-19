@@ -2,9 +2,9 @@
 title: 架构 -- 自我迭代的计算机
 date: 2019-05-02 08:24:21
 categories:
-    Architecture
+    - Architecture
 tags:
-    Architecture
+    - Architecture
 ---
 
 ## MVP

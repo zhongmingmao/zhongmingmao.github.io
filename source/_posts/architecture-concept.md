@@ -3,9 +3,9 @@ title: 架构 -- 概念
 mathjax: false
 date: 2019-08-11 15:08:02
 categories:
-    Architecture
+    - Architecture
 tags:
-    Architecture
+    - Architecture
 ---
 
 ## 系统 / 子系统

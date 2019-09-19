@@ -2,9 +2,9 @@
 title: 架构 -- 编程语言
 date: 2019-04-26 03:30:47
 categories:
-    Architecture
+    - Architecture
 tags:
-    Architecture
+    - Architecture
 ---
 
 ## 编程范式

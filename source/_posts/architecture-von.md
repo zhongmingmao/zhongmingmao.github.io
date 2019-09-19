@@ -2,9 +2,9 @@
 title: 架构 -- 冯·诺伊曼体系结构
 date: 2019-04-19 12:29:59
 categories:
-    Architecture
+    - Architecture
 tags:
-    Architecture
+    - Architecture
 ---
 
 ## 目标与组件
