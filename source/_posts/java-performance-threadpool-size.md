@@ -40,6 +40,30 @@ tags:
 | newScheduledThreadPool | 定时线程池，支持**定时**或者**周期性**地执行任务 |
 | newSingleThreadExecutor | 只创建一个线程，保证所有任务按照指定顺序（**FIFO**/**LIFO**/**优先级**）执行 |
 
+#### BlockingQueue
+1. ArrayBlockingQueue
+    - 基于**数组**结构实现的**有界**阻塞队列，按照**FIFO**原则对元素进行排序
+    - 使用**ReentrantLock**、**Condition**来实现线程安全
+2. LinkedBlockingQueue
+    - 基于**链表**结构实现的阻塞队列，按照**FIFO**原则对元素进行排序
+    - 使用**ReentrantLock**、**Condition**来实现线程安全
+    - **吞吐量**通常要高于ArrayBlockingQueue
+3. PriorityBlockingQueue
+    - 基于**二叉堆**结构实现的具有**优先级**的**无界**阻塞队列
+    - 队列**没有实现排序**，每当有数据变更时，都会将**最小**或**最大**的数据放在**堆最上面**的节点上
+    - 使用**ReentrantLock**、**Condition**来实现线程安全
+4. DelayQueue
+    - 支持**延时获取元素**的**无界**阻塞队列，基于**PriorityBlockingQueue**扩展实现
+5. SynchronousQueue
+    - **不存储多个元素**的阻塞队列，每次进行放入数据时，必须等待相应的消费者取走数据后，才可以再放入数据
+
+| 线程池类型 | 实现队列 |
+| --- | --- |
+| newCachedThreadPool | SynchronousQueue |
+| newFixedThreadPool | LinkedBlockingQueue |
+| newScheduledThreadPool | DelayedWorkQueue |
+| newSingleThreadExecutor | LinkedBlockingQueue |
+
 ### ThreadPoolExecutor
 ```java
 // 构造函数
