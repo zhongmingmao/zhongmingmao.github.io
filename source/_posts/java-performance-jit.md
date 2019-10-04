@@ -8,6 +8,7 @@ categories:
 tags:
     - Java
     - Java Performance
+    - JVM
     - JIT
 ---
 
