@@ -35,7 +35,7 @@ try (Producer<String, String> producer = new KafkaProducer<>(properties)) {
 <!-- more -->
 
 1. `bootstrap.servers`是Producer的核心参数之一，指定了Producer**启动**时要连接的Broker地址
-2. 如果`bootstrap.servers`指定了1000个Broker，那么Producer启动时会首先创建与这1000个Broker的**TCP连接*8
+2. 如果`bootstrap.servers`指定了1000个Broker，那么Producer启动时会首先创建与这1000个Broker的**TCP连接**
 3. 因此不建议把集群中所有的Broker信息都配置到`bootstrap.servers`中，通常配置**3~4台**足够
     - Producer一旦连接到集群中的**任意一台Broker**，就能拿到**整个集群**的Broker信息（**metadata request**）
 4. 在创建KafkaProducer实例时启动Sender线程是**不合理**的
