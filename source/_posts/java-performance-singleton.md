@@ -8,6 +8,7 @@ categories:
 tags:
     - Java
     - Java Performance
+    - Design Pattern
 ---
 
 ## 饿汉模式

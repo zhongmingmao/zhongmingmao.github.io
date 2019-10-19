@@ -8,6 +8,7 @@ categories:
 tags:
     - Java
     - Java Performance
+    - Design Pattern
 ---
 
 ## 原型模式
