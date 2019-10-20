@@ -236,3 +236,120 @@ public class Test {
     }
 }
 ```
+
+## Future模式
+
+### Task
+```java
+public interface Task<T, P> {
+    T doTask(P param);
+}
+```
+
+### TaskService
+```java
+public interface TaskService<T, P> {
+    // 提交任务，不返回结果
+    Future<?> submit(Runnable runnable);
+
+    // 提交任务，返回结果
+    Future<T> submit(Task<T, P> task, P param);
+}
+```
+
+### Future
+```java
+public interface Future<T> {
+    T get();
+
+    boolean done();
+}
+```
+
+### FutureTask
+```java
+public class FutureTask<T> implements Future<T> {
+    private T result;
+    private boolean isDone = false;
+    private final Object Lock = new Object();
+
+    @Override
+    public T get() {
+        synchronized (Lock) {
+            while (!isDone) {
+                try {
+                    Lock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean done() {
+        return isDone;
+    }
+
+    public void finish(T result) {
+        synchronized (Lock) {
+            if (isDone) {
+                return;
+            }
+            this.result = result;
+            isDone = true;
+            Lock.notifyAll();
+        }
+    }
+}
+```
+
+### TaskServiceImpl
+```java
+public class TaskServiceImpl<T, P> implements TaskService<T, P> {
+    @Override
+    public Future<?> submit(Runnable runnable) {
+        new Thread(() -> runnable.run(), Thread.currentThread().getName()).start();
+        return new FutureTask<Void>();
+    }
+
+    @Override
+    public Future<T> submit(Task<T, P> task, P param) {
+        FutureTask<T> future = new FutureTask<>();
+        new Thread(() -> {
+            T t = task.doTask(param);
+            future.finish(t);
+        }, Thread.currentThread().getName()).start();
+        return future;
+    }
+}
+```
+
+### TaskA
+```java
+public class TaskA<T, P> implements Task<T, P> {
+
+    @Override
+    public T doTask(P param) {
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return (T) param;
+    }
+}
+```
+
+### App
+```java
+public class App {
+    public static void main(String[] args) {
+        TaskService<String, String> taskService = new TaskServiceImpl<>();
+        Task<String, String> task = new TaskA<>();
+        Future<String> future = taskService.submit(task, "zhongmingmao");
+        System.out.println(future.get());
+    }
+}
+```
