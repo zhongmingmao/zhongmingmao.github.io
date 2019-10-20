@@ -12,6 +12,8 @@ tags:
 ---
 
 ## 饿汉模式
+
+### class
 ```java
 // 饿汉模式
 public final class Singleton {
@@ -36,6 +38,56 @@ public final class Singleton {
     - 可以保证**多线程**情况下实例的唯一性，而且getInstance直接返回唯一实例，**性能很高**
     - 在类成员变量比较多，或者变量比较大的情况下，这种模式可能会在没有使用类对象的情况下，**一直占用堆内存**
     - 第三方框架一般不会采用饿汉模式来实现单例模式
+
+### enum
+```java
+// 饿汉模式 + 枚举实现
+public enum Singleton {
+    INSTANCE;
+
+    public List<String> list;
+
+    // 默认构造函数
+    Singleton() {
+        list = new ArrayList<>();
+    }
+
+    public static Singleton getInstance() {
+        return INSTANCE;
+    }
+}
+```
+```java
+// javap -v
+  public static final Singleton INSTANCE;
+    descriptor: LSingleton;
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_ENUM
+
+  static {};
+    descriptor: ()V
+    flags: ACC_STATIC
+    Code:
+      stack=4, locals=0, args_size=0
+         0: new           #4                  // class Singleton
+         3: dup
+         4: ldc           #11                 // String INSTANCE
+         6: iconst_0
+         7: invokespecial #12                 // Method "<init>":(Ljava/lang/String;I)V
+        10: putstatic     #10                 // Field INSTANCE:LSingleton;
+        13: iconst_1
+        14: anewarray     #4                  // class Singleton
+        17: dup
+        18: iconst_0
+        19: getstatic     #10                 // Field INSTANCE:LSingleton;
+        22: aastore
+        23: putstatic     #1                  // Field $VALUES:[LSingleton;
+        26: return
+      LineNumberTable:
+        line 6: 0
+        line 5: 13
+```
+1. Java中的`enum`是一种**语法糖！！**，在javac编译后，枚举类中的**枚举域**会被声明为**static**属性
+2. 并且**枚举域的初始化**会被收录进静态代码块`static{}`，类初始化时会被收录进`<clinit>`，由JVM保证线程安全
 
 ## 懒汉模式
 
@@ -175,6 +227,35 @@ public final class Singleton {
 
     public static Singleton getInstance() {
         return InnerSingleton.instance;
+    }
+}
+```
+
+### enum
+```java
+// 懒汉模式 + 内部类 + 枚举实现
+public class Singleton {
+    public List<String> list;
+
+    private Singleton() {
+        list = new ArrayList<>();
+    }
+
+    private enum EnumSingleton {
+        INSTANCE;
+        private Singleton instance;
+
+        EnumSingleton() {
+            instance = new Singleton();
+        }
+
+        public Singleton getSingleton() {
+            return instance;
+        }
+    }
+
+    public static Singleton getInstance() {
+        return EnumSingleton.INSTANCE.getSingleton();
     }
 }
 ```
