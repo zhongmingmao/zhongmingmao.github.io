@@ -470,7 +470,7 @@ num 	  #instances	#bytes	Class description
 Heap traversal took 33.612 seconds.
 ```
 
-可以通过`jamp -dump:format=b,file=/tmp/heap.hprof`把**堆内存的使用情况**dump到文件中，随后通过**MAT**工具进行分析
+可以通过`jmap -dump:format=b,file=/tmp/heap.hprof`把**堆内存的使用情况**dump到文件中，随后通过**MAT**工具进行分析
 ```
 $ jmap -dump:format=b,file=/tmp/wall.hprof -F 23594
 Attaching to process ID 23594, please wait...
