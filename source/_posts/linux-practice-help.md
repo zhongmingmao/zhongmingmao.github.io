@@ -4,9 +4,10 @@ mathjax: false
 date: 2019-10-11 13:01:08
 categories:
     - Linux
-    - Linux Practice
+    - Practice
 tags:
     - Linux
+    - Linux Practice
 ---
 
 ## man
