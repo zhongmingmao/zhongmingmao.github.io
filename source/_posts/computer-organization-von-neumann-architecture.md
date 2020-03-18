@@ -1,5 +1,5 @@
 ---
-title: 计算机组成原理 -- First Draft
+title: 计算机组成 -- First Draft
 mathjax: false
 date: 2020-01-01 22:01:16
 categories:
