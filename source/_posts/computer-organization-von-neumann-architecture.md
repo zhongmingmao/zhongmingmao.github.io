@@ -4,10 +4,10 @@ mathjax: false
 date: 2020-01-01 22:01:16
 categories:
     - Computer Basics
-    - Computer Composition
+    - Computer Organization
 tags:
     - Computer Basics
-    - Computer Composition
+    - Computer Organization
 ---
 
 <img src='https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-composition-von-neumann-architecture.jpg' width=1000/>
