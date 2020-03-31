@@ -1,5 +1,5 @@
 ---
-title: goto
+title: 计算机组成 -- goto
 mathjax: false
 date: 2020-01-06 20:29:35
 categories:
