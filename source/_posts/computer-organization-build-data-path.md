@@ -89,3 +89,32 @@ tags:
 4. 『**译码**』的电路
    - 对**指令**进行**decode**
    - 拿到**内存地址**去**获取**对应的数据或者指令
+
+## 时序逻辑电路
+1. **组合**逻辑电路：**只需要给定输入，就能得到固定的输出**
+2. **时序**逻辑电路解决的问题
+   - **自动运行**
+     - 时序电路接通之后可以不停地开启和关闭开关，进入一个自动运行的状态
+     - 场景：控制器不停地让PC寄存器**自增读取**下一条指令
+   - **存储**
+     - 通过时序电路实现的**触发器**，能把计算结果**存储在特定的电路**里面
+     - 不像组合逻辑电路那样，一旦输入有任何变化，对应的输出也会改变
+   - 本质上解决了各个功能按照**时序协调**的问题
+     - 无论是程序实现的软件指令，还是硬件层面的各种指令操作，都有先后的顺序要求
+     - 时序电路使得不同的事件按照**时间顺序**发生
+
+### 时钟信号
+1. CPU的**主频**是由一个**晶体振荡器**来实现的，而这个晶体振荡器生成的**电路信号**，就是**时钟信号**
+2. 开关A，一开始是断开的，由**手工控制**；另一个开关B，一开始是合上的；磁性线圈对准开关B
+   - 一旦合上开关A，磁性线圈会通电，产生磁性，开关B就会从合上变成断开
+   - 一旦开关B断开，电路中断，磁性线圈失去磁性，于是开关B又会**弹回到**合上的状态
+   - 这样，电路就会来回不断地在**开启**、**关闭**两个状态中切换，对**下游电路**来说，就不断地产生**0**和**1**的信号
+3. 这种按照**固定周期**不断在0和1之间切换的信号，就是**时钟信号**（Clock Signal）
+4. **反馈电路**：_**把电路的输出信号作为输入信号，在回到当前电路**_
+   - 通过**反相器**（Inverter）实现的时钟信号
+
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-crystal-oscillator.jpg" width=800/>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-clock-signal.jpg" width=800/>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-feedback-circuit-inverter.jpg" width=800/>
+
+### D触发器 -- 存储
