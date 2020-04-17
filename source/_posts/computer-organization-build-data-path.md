@@ -118,3 +118,64 @@ tags:
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-feedback-circuit-inverter.jpg" width=800/>
 
 ### D触发器 -- 存储
+
+#### RS触发器
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-rs-trigger.jpg" width=1000/>
+
+##### 或非门
+| NOR | **0** | **1** |
+| --- | --- | --- |
+| **0** | 1 | 0 |
+| **1** | 0 | 0 |
+
+##### 过程
+1. 电路一开始，输入开关都是关闭的
+   - A的输入：<0,0>，A的输出：1
+   - B的输入：<1,0>，B的输出：0，反馈到A，没有任何变化，Q的输出：0
+2. 把A的开关R合上
+   - A的输入：<0,1>，A的输出：0
+   - B的输入：<0,0>，B的输出：1，反馈到A，Q的输出：1
+   - A的输入：<1,1>，A的输出：0
+   - 电路仍然是**稳定**的，不会像晶振那样震荡
+3. 把A的开关R打开
+   - A的输入：<1,0>，A的输出：0
+   - B的输入：<0,0>，B的输出：1，反馈到A，Q的输出：1
+   - 电路依然是**稳定**的，开关R、S的状态和第一步是一样的，但Q的输出是1（**保留上一步的输出**）
+4. 把B的开关S合上
+   - B的输入：<?,1>，B的输出：0，Q的输出：0
+5. 小结
+   - **接通开关R，输出变为1，即使断开开关，输出还是1；接通开始S，输出变为0，即使断开开关，输出还是0**
+   - **当两个开关都断开的时候，最终的输出结果，取决于之前动作的输出结果 -- 记忆功能**
+   - RS触发器也称为**复位置位**触发器（**Reset-Set Flip Flop**）
+
+| R | S | Q |
+| --- | --- | --- |
+| 1 | 0 | 1 |
+| 0 | 1 | 0 |
+| 0 | 0 | Q |
+| 1 | 1 | NA |
+
+#### D触发器
+
+##### 控制何时往Q写入数据
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-rs-flip-flop-clk.jpg" width=1000/>
+
+1. 在RS触发器的基础上，在R和S开关之后，加入两个**与门**，同时给这两个与门加入一个**时钟信号CLK**作为电路输入
+2. 当时钟信号CLK在**低电平**的时候，与门的输入里有一个0，两个实际的R和S后的与门的输出**必然为0**
+   - 无论怎么按R和S开关，根据R-S触发器的真值表，**对应的Q值都不会发生变化**
+3. 当时钟信号CLK在**高电平**的时候，与门的一个输入为1，输出结果**完全取决于R和S的开关**
+   - 此时可以通过开关R和S，来决定对应Q的输出
+4. 小结
+   - 通过一个**时钟信号**，可以在**特定的时间**对输出Q进行**写入**操作
+
+##### D触发器
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-build-data-path-rs-flip-flop-clk-d.jpg" width=1000/>
+
+1. 让R和S的开关，通过一个**反相器**连起来，就是**通过同一个开关控制R和S**
+2. 当CLK信号是1，R和S就可以设置输出Q；当CLK信号是0，无论R和S怎么设置，输出信号都不会改变
+3. 用来控制R和S两个开关的信号，视为一个输入的**数据信号**，即**Data**，这就是D型触发器的由来
+4. 小结：把R和S两个信号通过一个反相器合并，可以通过一个数据信号进行Q的写入操作
+5. 一个D触发器，只能控制**1bit**的读写
+   - 如果同时拿出多个D触发器并列在一起，并且把用**同一个CLK信号**控制所有D触发器的开关
+   - 这样就变成了N位的D触发器，可以同时控制N位的读写
+6. CPU里的**寄存器**可以直接通过**D触发器**来构造的
