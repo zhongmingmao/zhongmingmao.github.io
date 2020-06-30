@@ -253,3 +253,11 @@ $$
 摊还分析：每一次$O(n)$的插入操作，都会跟着$n-1$次$O(1)$的插入操作，均摊下来，一组连续操作的均摊时间复杂度为$O(1)$
 均摊时间复杂度和摊还分析的应用场景比较特殊，不会经常用到，一般**均摊时间复杂度**就等于**最好时间复杂度**
 均摊时间复杂度可以理解为一种特殊的平均时间复杂度，无需区分
+
+## 主定理
+| Algorithm | Recurrence relationship | Run time |
+| --- | --- | --- |
+| Binary search | $T(n) = T(\frac{n}{2}) + O(1)$ | $O(logn)$ |
+| Binary tree traversal | $T(n) = 2T(\frac{n}{2}) + O(1)$ | $O(n)$ |
+| Optimal sorted matrix search | $T(n) = 2T(\frac{n}{2}) + O(logn)$ | $O(n)$ |
+| Merge sort | $T(n) = 2T(\frac{n}{2}) + O(n)$ | $O(nlogn)$ |
