@@ -2,8 +2,8 @@
 title: 左耳听风 -- 技术基础
 mathjax: false
 date: 2020-02-06 19:35:14
-categories:
-tags:
+categories: Career
+tags: Career
 ---
 
 ## 技术变现
