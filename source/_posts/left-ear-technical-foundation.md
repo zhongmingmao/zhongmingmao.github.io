@@ -10,3 +10,6 @@ tags: Career
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-liquidity.png" width=1000/>
 
 <!-- more -->
+
+## 技术领导力
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-leadership.png" width=1000/>
