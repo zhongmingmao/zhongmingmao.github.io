@@ -16,3 +16,6 @@ tags: Career
 
 ## Go + Docker
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-go-docker.png" width=1000/>
+
+## 学习 + 职业
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-study-career.png" width=1000/>
