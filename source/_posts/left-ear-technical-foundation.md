@@ -19,3 +19,6 @@ tags: Career
 
 ## 学习 + 职业
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-study-career.png" width=1000/>
+
+## Leader
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-leader.png" width=1000/>
