@@ -25,3 +25,6 @@ tags: Career
 
 ## 时间管理
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-time-management.png" width=1000/>
+
+## 故障处理
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-trouble-shooting.png" width=1000/>
