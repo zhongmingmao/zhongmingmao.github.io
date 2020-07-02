@@ -28,3 +28,6 @@ tags: Career
 
 ## 故障处理
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-trouble-shooting.png" width=1000/>
+
+## 表象 + 本质
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-technical-foundation-appearance-essence.png" width=1000/>
