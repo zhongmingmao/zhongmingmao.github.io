@@ -10,3 +10,6 @@ tags: Career
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-ice-fire.png" width=1000/>
 
 <!-- more -->
+
+## 难点
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-difficulty.png" width=1000/>
