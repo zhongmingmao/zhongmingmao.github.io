@@ -19,3 +19,6 @@ tags: Career
 
 ## 全栈监控
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-monitor.png" width=1000/>
+
+## 服务调度
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-service-scheduling.png" width=1000/>
