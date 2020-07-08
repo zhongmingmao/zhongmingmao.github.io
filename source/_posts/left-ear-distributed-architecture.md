@@ -13,3 +13,6 @@ tags: Career
 
 ## 难点
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-difficulty.png" width=1000/>
+
+## 技术栈
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-key-tec.png" width=1000/>
