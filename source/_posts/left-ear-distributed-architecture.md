@@ -25,3 +25,6 @@ tags: Career
 
 ## 流量和数据调度
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-traffic%2Bdata-scheduling.png" width=1000/>
+
+## PaaS平台的本质
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-paas.png" width=1000/>
