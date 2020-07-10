@@ -28,3 +28,6 @@ tags: Career
 
 ## PaaS平台的本质
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-paas.png" width=1000/>
+
+## 经典资料
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-distributed-architecture-material.png" width=1000/>
