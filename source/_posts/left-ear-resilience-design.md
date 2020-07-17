@@ -13,3 +13,6 @@ tags: Career
 
 ## 隔离设计
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-isolation.png" width=1000/>
+
+## 异步通信设计
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-async.png" width=1000/>
