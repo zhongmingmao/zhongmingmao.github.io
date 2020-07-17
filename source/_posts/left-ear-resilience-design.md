@@ -10,3 +10,6 @@ tags: Career
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-overview.png" width=1000/>
 
 <!-- more -->
+
+## 隔离设计
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-isolation.png" width=1000/>
