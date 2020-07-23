@@ -22,3 +22,6 @@ tags: Career
 
 ## 服务状态
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-service-state.png" width=1000/>
+
+## 补偿事务
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-transaction-make-up.png" width=1000/>
