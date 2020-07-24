@@ -25,3 +25,6 @@ tags: Career
 
 ## 补偿事务
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-transaction-make-up.png" width=1000/>
+
+## 重试设计
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-retry.png" width=1000/>
