@@ -31,3 +31,6 @@ tags: Career
 
 ## 熔断设计
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-circuit.png" width=1000/>
+
+## 限流设计
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-limiting.png" width=1000/>
