@@ -37,3 +37,6 @@ tags: Career
 
 ## 降级设计
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-degradation.png" width=1000/>
+
+## 总结
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-summary.png" width=1000/>
