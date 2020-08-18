@@ -34,3 +34,6 @@ tags: Career
 
 ## 限流设计
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-limiting.png" width=1000/>
+
+## 降级设计
+<img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/left-ear-resilience-design-degradation.png" width=1000/>
