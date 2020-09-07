@@ -2,8 +2,10 @@
 title: 左耳听风 -- 弹力设计
 mathjax: false
 date: 2020-02-08 22:12:45
-categories: Career
-tags: Career
+categories:
+    - Distributed
+    - Design Pattern
+tags: Distributed Design Pattern
 ---
 
 ## 概述

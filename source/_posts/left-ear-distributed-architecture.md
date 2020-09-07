@@ -2,8 +2,10 @@
 title: 左耳听风 -- 分布式系统架构
 mathjax: false
 date: 2020-02-07 22:12:45
-categories: Career
-tags: Career
+categories:
+    - Distributed
+    - Architecture
+tags: Distributed Architecture
 ---
 
 ## 冰与火
