@@ -15,3 +15,6 @@ tags: Distributed Design Pattern
 
 ## 配置中心
 ![left-ear-management-design-configuration-center-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-configuration-center-compressed.png)
+
+## 边车模式
+![left-ear-management-design-sidecar-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-sidecar-compressed.png)
