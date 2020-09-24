@@ -18,3 +18,6 @@ tags: Distributed Design Pattern
 
 ## 边车模式
 ![left-ear-management-design-sidecar-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-sidecar-compressed.png)
+
+## Service Mash
+![left-ear-management-design-service-mash-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-service-mash-compressed.png)
