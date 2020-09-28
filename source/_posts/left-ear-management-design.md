@@ -21,3 +21,6 @@ tags: Distributed Design Pattern
 
 ## Service Mash
 ![left-ear-management-design-service-mash-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-service-mash-compressed.png)
+
+## 网关模式
+![left-ear-management-design-gateway-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-gateway-compressed.png)
