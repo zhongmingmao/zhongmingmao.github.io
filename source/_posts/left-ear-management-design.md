@@ -24,3 +24,6 @@ tags: Distributed Design Pattern
 
 ## 网关模式
 ![left-ear-management-design-gateway-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-gateway-compressed.png)
+
+## 部署升级策略
+![left-ear-management-design-deployment-upgrade-strategy-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-deployment-upgrade-strategy-compressed.png)
