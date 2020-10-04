@@ -12,3 +12,6 @@ tags: Distributed Design Pattern
 ![left-ear-performance-design-cache-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-cache-compressed.png)
 
 <!-- more -->
+
+## 异步处理
+![left-ear-performance-design-asynchronous-processing-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-asynchronous-processing-compressed.png)
