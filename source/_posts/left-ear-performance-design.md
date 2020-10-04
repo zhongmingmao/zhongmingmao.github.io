@@ -18,3 +18,6 @@ tags: Distributed Design Pattern
 
 ## 数据库扩展
 ![left-ear-performance-design-database-extension-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-database-extension-compressed.png)
+
+## 秒杀
+![left-ear-performance-design-spike-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-spike-compressed.png)
