@@ -21,3 +21,6 @@ tags: Distributed Design Pattern
 
 ## 秒杀
 ![left-ear-performance-design-spike-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-spike-compressed.png)
+
+## 边缘计算
+![left-ear-performance-design-edge-computing-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-edge-computing-compressed.png)
