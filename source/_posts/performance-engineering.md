@@ -14,3 +14,8 @@ tags:
 ![performance-engineering-code-performance-system-capacity-compressed.png](https://performance-engineering-1253868755.cos.ap-guangzhou.myqcloud.com/compressed/performance-engineering-code-performance-system-capacity-compressed.png)
 
 <!-- more -->
+
+## 性能定律 + 数理基础
+
+### 三定律
+![performance-engineering-performance-law-mathematical-basis-three-laws-compressed.png](https://performance-engineering-1253868755.cos.ap-guangzhou.myqcloud.com/compressed/performance-engineering-performance-law-mathematical-basis-three-laws-compressed.png)
