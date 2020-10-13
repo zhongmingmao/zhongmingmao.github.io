@@ -19,3 +19,6 @@ tags:
 
 ### 三定律
 ![performance-engineering-performance-law-mathematical-basis-three-laws-compressed.png](https://performance-engineering-1253868755.cos.ap-guangzhou.myqcloud.com/compressed/performance-engineering-performance-law-mathematical-basis-three-laws-compressed.png)
+
+### 概率统计 + 排队论
+![performance-engineering-performance-law-mathematical-basis-probability-statistical-queuing-theory-compressed.png](https://performance-engineering-1253868755.cos.ap-guangzhou.myqcloud.com/compressed/performance-engineering-performance-law-mathematical-basis-probability-statistical-queuing-theory-compressed.png)
