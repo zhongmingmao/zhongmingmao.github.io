@@ -153,57 +153,52 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 ```
 ```java
 public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            // 子SocketChannel
-            final Channel child = (Channel) msg;
-            ...
-            try {
-                // 将子SocketChannel绑定到workerGroup上
-                childGroup.register(child).addListener(new ChannelFutureListener() {
-                    ...
-                });
-            } catch (Throwable t) {
-                forceClose(child, t);
-            }
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        // 子SocketChannel
+        final Channel child = (Channel) msg;
+        ...
+        try {
+            // 将子SocketChannel绑定到workerGroup上
+            childGroup.register(child).addListener(new ChannelFutureListener() {
+                ...
+            });
+        } catch (Throwable t) {
+            forceClose(child, t);
         }
-}
-```
-
-## 为什么Netty的Main Reactor大多并不能用到整一个线程组，而只能用到线程组里面的一个？
-服务端只能绑定一个`SocketAddress`
-![network-netty-3-reactor-boss-group](https://network-netty-1253868755.cos.ap-guangzhou.myqcloud.com/network-netty-3-reactor-boss-group.png)
-
-## Netty给Channel分配NIO Event Loop的规则是什么？
-```java ServerBootstrap$ServerBootstrapAcceptor
-public void channelRead(ChannelHandlerContext ctx, Object msg) {
-    // SocketChannel
-    final Channel child = (Channel) msg;
-    ...
-
-    try {
-        // SocketChannel绑定到workerGroup
-        // childGroup如何选择EventLoop，来注册SocketChannel？
-        childGroup.register(child).addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (!future.isSuccess()) {
-                    forceClose(child, future.cause());
-                }
-            }
-        });
-    } catch (Throwable t) {
-        forceClose(child, t);
     }
 }
 ```
 
-### MultithreadEventLoopGroup
-![network-netty-3-reactor-EventLoopGroup-register](https://network-netty-1253868755.cos.ap-guangzhou.myqcloud.com/network-netty-3-reactor-EventLoopGroup-register.png)
-```java MultithreadEventLoopGroup
-@Override
+## 为什么Netty的Main Reactor大多并不能用到整一个线程组，而只能用到线程组里面的一个？
+服务端只能绑定一个`SocketAddress`，并且只能绑定一次
+![network-netty-3-reactor-boss-group](https://network-netty-1253868755.cos.ap-guangzhou.myqcloud.com/network-netty-3-reactor-boss-group.png)
+
+## Netty给Channel分配NIO Event Loop的规则是什么？
+```java
+public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        // 子SocketChannel
+        final Channel child = (Channel) msg;
+        ...
+        try {
+            // 将子SocketChannel绑定到workerGroup上，但如何绑定呢？
+            // 绑定：建立Channel和EventLoop的关系
+            // register方法的注释：Register a Channel with this EventLoop
+            childGroup.register(child).addListener(new ChannelFutureListener() {
+                ...
+            });
+        } catch (Throwable t) {
+            forceClose(child, t);
+        }
+    }
+}
+```
+在Netty中，EventLoopGroup的默认实现是MultithreadEventLoopGroup
+```java
 public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
     @Override
     public ChannelFuture register(Channel channel) {
+        // 返回下一个EventLoop，然后注册Channel
         return next().register(channel);
     }
 
@@ -213,74 +208,45 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     }
 }
 ```
-
-### MultithreadEventExecutorGroup
-```java MultithreadEventExecutorGroup
-private final EventExecutorChooserFactory.EventExecutorChooser chooser;
-
-@Override
-public EventExecutor next() {
-    return chooser.next();
-}
-```
-
-### EventExecutorChooserFactory
-```java EventExecutorChooserFactory
-@UnstableApi
-public interface EventExecutorChooserFactory {
-
-    EventExecutorChooser newChooser(EventExecutor[] executors);
-
-    @UnstableApi
-    interface EventExecutorChooser {
-        EventExecutor next();
+```java
+public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
+    // 默认实现DefaultEventExecutorChooserFactory
+    private final EventExecutorChooserFactory.EventExecutorChooser chooser;
+    @Override
+    public EventExecutor next() {
+        return chooser.next();
     }
 }
 ```
-
-### DefaultEventExecutorChooserFactory
-```java DefaultEventExecutorChooserFactory
-@SuppressWarnings("unchecked")
-@Override
-public EventExecutorChooser newChooser(EventExecutor[] executors) {
-    if (isPowerOfTwo(executors.length)) {
-        return new PowerOfTwoEventExecutorChooser(executors);
-    } else {
-        return new GenericEventExecutorChooser(executors);
+```java
+public final class DefaultEventExecutorChooserFactory implements EventExecutorChooserFactory {
+    public EventExecutorChooser newChooser(EventExecutor[] executors) {
+        if (isPowerOfTwo(executors.length)) {
+            return new PowerOfTwoEventExecutorChooser(executors);
+        } else {
+            return new GenericEventExecutorChooser(executors);
+        }
     }
 }
 ```
-
-#### GenericEventExecutorChooser
-```java GenericEventExecutorChooser
+```java
 private static final class GenericEventExecutorChooser implements EventExecutorChooser {
     private final AtomicInteger idx = new AtomicInteger();
     private final EventExecutor[] executors;
-
-    GenericEventExecutorChooser(EventExecutor[] executors) {
-        this.executors = executors;
-    }
-
+    ...
     @Override
     public EventExecutor next() {
         return executors[Math.abs(idx.getAndIncrement() % executors.length)];
     }
 }
 ```
-
-#### PowerOfTwoEventExecutorChooser
-```java PowerOfTwoEventExecutorChooser
+```java
 private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser {
     private final AtomicInteger idx = new AtomicInteger();
     private final EventExecutor[] executors;
-
-    PowerOfTwoEventExecutorChooser(EventExecutor[] executors) {
-        this.executors = executors;
-    }
-
-    @Override
+    ...
     public EventExecutor next() {
-        // 位运算比除法运算的效率更高
+        // Netty的性能优化：位运算比除法运算的效率更高
         return executors[idx.getAndIncrement() & executors.length - 1];
     }
 }
