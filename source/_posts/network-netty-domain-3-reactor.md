@@ -152,7 +152,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 }
 ```
 ```java
-public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
+private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         // 子SocketChannel
         final Channel child = (Channel) msg;
@@ -170,12 +170,12 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 ```
 
 ## 为什么Netty的Main Reactor大多并不能用到整一个线程组，而只能用到线程组里面的一个？
-服务端只能绑定一个`SocketAddress`，并且只能绑定一次
+Server只能绑定一个`SocketAddress`，并且只能绑定一次
 ![network-netty-3-reactor-boss-group](https://network-netty-1253868755.cos.ap-guangzhou.myqcloud.com/network-netty-3-reactor-boss-group.png)
 
 ## Netty给Channel分配NIO Event Loop的规则是什么？
 ```java
-public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
+private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         // 子SocketChannel
         final Channel child = (Channel) msg;
@@ -193,7 +193,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 }
 ```
-在Netty中，EventLoopGroup的默认实现是MultithreadEventLoopGroup
+在Netty中，NioEventLoopGroup继承MultithreadEventLoopGroup
 ```java
 public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
     @Override
@@ -254,40 +254,39 @@ private static final class PowerOfTwoEventExecutorChooser implements EventExecut
 
 ## 通用模式的NIO实现多路复用器是怎么跨平台的？
 
-### NioEventLoopGroup
-```java NioEventLoopGroup
+```java
 public class NioEventLoopGroup extends MultithreadEventLoopGroup {
     public NioEventLoopGroup(int nThreads, Executor executor) {
         this(nThreads, executor, SelectorProvider.provider());
     }
 }
 ```
-
-### SelectorProvider
-```java SelectorProvider
-public static SelectorProvider provider() {
-    synchronized (lock) {
-        if (provider != null)
-            return provider;
-        return AccessController.doPrivileged(
-            new PrivilegedAction<SelectorProvider>() {
-                public SelectorProvider run() {
-                        if (loadProviderFromProperty())
+```java
+public abstract class SelectorProvider {
+    public static SelectorProvider provider() {
+        synchronized (lock) {
+            if (provider != null)
+                return provider;
+            return AccessController.doPrivileged(
+                new PrivilegedAction<SelectorProvider>() {
+                    public SelectorProvider run() {
+                            if (loadProviderFromProperty())
+                                return provider;
+                            if (loadProviderAsService())
+                                return provider;
+                            provider = sun.nio.ch.DefaultSelectorProvider.create(); // JDK rt.jar 跨平台实现的关键
                             return provider;
-                        if (loadProviderAsService())
-                            return provider;
-                        provider = sun.nio.ch.DefaultSelectorProvider.create(); // JDK rt.jar 跨平台实现的关键
-                        return provider;
-                    }
-                });
+                        }
+                    });
+        }
     }
 }
 ```
-
-### DefaultSelectorProvider
-```java DefaultSelectorProvider
-public static SelectorProvider create() {
-    //  MacOS/BSD
-    return new KQueueSelectorProvider(); // JDK rt.jar
+```java
+public class DefaultSelectorProvider {
+    public static SelectorProvider create() {
+        //  MacOS/BSD
+        return new KQueueSelectorProvider(); // JDK rt.jar
+    }
 }
 ```
