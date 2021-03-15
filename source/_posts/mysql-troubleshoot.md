@@ -108,8 +108,9 @@ FLUSH TABLES WITH READ LOCK;
 ```
 
 #### 执行时序
+
 | 时刻 | session A | session B | session C | session D |
-| ---- | ---- | ---- | ---- |
+| --- | --- | --- | --- | --- |
 | T1 | SELECT SLEEP(1) FROM t; | | | |
 | T2 | | | | SHOW PROCESSLIST; |
 | T3 | | FLUSH TABLES t; | | |
