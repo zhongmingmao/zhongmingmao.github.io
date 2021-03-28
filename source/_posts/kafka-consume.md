@@ -22,6 +22,7 @@ tags:
 
 ##### 1个消费者
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_1.png" width="400">
+
 1. 主题T1有4个分区，然后创建消费者C1，C1是消费者群组G1里唯一的消费者，C1订阅T1
 2. 消费者C1将接收主题T1的**全部**4个分区的消息
 
@@ -29,6 +30,7 @@ tags:
 
 ##### 2个消费者
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_2.png" width="400">
+
 1. 如果群组G1新增一个消费者C2，那么每个消费者将**分别从两个分区接收消息**
 2. 假设C1接收分区0和分区2的消息，C2接收分区1和分区3的消息
 
@@ -48,6 +50,7 @@ tags:
 
 #### 消费者群组横向扩展
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer_topic_5.png" width="400">
+
 1. Kafka设计的主要目标之一，就是要让Kafka主题里的数据能够满足企业各种应用场景（**不同的消费者群组**）的需求
 2. 在这些场景里，每个应用程序可以获取到**所有的消息**，而不只是其中的一部分
 3. 只要保证每个应用程序有自己的消费者群组，就可以让它们获取到主题所有的消息
