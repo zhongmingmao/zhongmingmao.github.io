@@ -49,6 +49,7 @@ tags:
 
 ### 主题和分区
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/topic.png" width="600">
+
 1. Kafka的消息通过**主题**进行分类，主题类似于数据库的表，或者文件系统里的文件夹
 2. **主题可以被分为若干个分区**，_**一个分区就是一个提交日志**_
 3. 消息以**追加**的方式写入分区，然后以**FIFO**的顺序读取
@@ -61,6 +62,7 @@ tags:
 
 ### 生产者和消费者
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/consumer.png" width="600">
+
 1. 生产者**创建消息**
   - 一般情况下，一个消息会被发布到特定的主题上
   - 默认情况下，**生产者把消息均匀地分布到主题的所有分区上**，而并不关心特定消息会被写到哪个分区
