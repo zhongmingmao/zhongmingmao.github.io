@@ -68,3 +68,6 @@ hw.l1dcachesize: 32768
 | Memory | DRAM | 0.015 | 100ns | 访问延时 **15×SRAM**，价格 **1/40×SRAM** |
 | Disk | SSD（NAND） | 0.0004 | 150μs | 访问延时 **1500×DRAM**，价格 **1/40×DRAM** |
 | Disk | HDD | 0.00004 | 10ms | 访问延时 **70×SSD**，价格 **1/10×SSD** |
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

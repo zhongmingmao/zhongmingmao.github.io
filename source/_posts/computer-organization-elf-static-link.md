@@ -227,3 +227,6 @@ Disassembly of section .fini:
     - Linux下的装载器只能解析ELF格式，而不能解析PE格式
 2. **Wine**：兼容PE格式的装载器
 3. **WSL**（Windows Subsystem for Linux）：可以解析和加载ELF格式的文件
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

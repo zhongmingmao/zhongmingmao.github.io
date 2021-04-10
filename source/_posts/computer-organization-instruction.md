@@ -112,3 +112,6 @@ int main()
 
 打孔代表1，没打孔代表0
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-instruction-mips-add-punching-tape.png" width=600/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

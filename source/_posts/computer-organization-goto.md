@@ -138,3 +138,6 @@ int main()
 2. `jle`跳转的地址，是`jle`指令前面的地址14（**向前跳转**）
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-goto-for.jpg" width=1000/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

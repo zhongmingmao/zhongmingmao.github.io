@@ -42,3 +42,6 @@ tags:
     - 把『螺旋线圈+磁性开关』的组合，从**默认关闭**（只有通电才打开），换成**默认打开**（只有通电才关闭）
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-circuit-inverter.jpg" width=600/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

@@ -136,3 +136,6 @@ tags:
      - 人为地给SSD预留50%的预留空间，以确保SSD的**写放大效应尽可能小**，不会影响数据库的**访问性能**
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-ssd-aerospike.jpg" width=1000/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

@@ -91,3 +91,6 @@ tags:
     - 用**复杂电路**，但更短的门延迟和时钟周期来计算一个**复杂的指令**
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-multiplier-parallel-3.jpg" width=600/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

@@ -14,3 +14,6 @@ tags:
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-knowledge-map.png" width=1000/>
 
 <!-- more -->
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

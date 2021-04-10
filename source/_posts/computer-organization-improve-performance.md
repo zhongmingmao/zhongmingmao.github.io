@@ -39,3 +39,6 @@ CPU time = 时钟周期时间（Clock Cycle Time） × CPU时钟周期数（CPU 
 1. 加速**大概率**事件（**CPU -> GPU -> TPU**）
 2. 通过**流水线**提高性能
 3. 通过**预测**提高性能（**分支和冒险**、**局部性原理**）
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

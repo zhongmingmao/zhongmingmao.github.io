@@ -90,3 +90,6 @@ tags:
    - 对于不同状态**触发的事件操作**，可能来自于**当前CPU核心**，也可能来自**总线里其他CPU核心广播出来的信号**
 
 <!-- <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-mesi-state-machine.jpg" width=800/> -->
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

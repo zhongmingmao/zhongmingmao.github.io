@@ -400,3 +400,6 @@ Time spent is 19ms
   - 更多的计算机指令，在流水线里顺序运行下去了，而不是把运行到一半的指令丢弃掉，再去重新加载新的指令执行
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-loop.jpg" width=800/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

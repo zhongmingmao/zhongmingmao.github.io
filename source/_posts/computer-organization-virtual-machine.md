@@ -71,3 +71,6 @@ tags:
 3. Docker严格来说不能算是一种虚拟化技术，只能算是一种**资源隔离**的技术
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-vm-docker.png" width=800/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

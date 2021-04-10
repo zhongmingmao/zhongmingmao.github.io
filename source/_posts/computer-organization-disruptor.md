@@ -210,3 +210,6 @@ public class LockBenchmark {
     }
 }
 ```
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

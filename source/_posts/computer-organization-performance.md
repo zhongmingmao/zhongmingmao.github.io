@@ -61,3 +61,6 @@ CPU time = 时钟周期时间（Clock Cycle） × CPU时钟周期数（CPU Cycle
      - 流水线技术（Pipeline）
    - **减少指令数**
      - 编译器的挑战
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

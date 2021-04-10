@@ -55,3 +55,6 @@ tags:
 
 ## 分层思想
 **门电路 -> 半加器 -> 全加器 -> 加法器 -> ALU**
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

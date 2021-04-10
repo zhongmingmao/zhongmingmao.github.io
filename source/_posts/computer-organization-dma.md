@@ -113,3 +113,6 @@ public long transferFrom(FileChannel fileChannel, long position, long count) thr
 7. 吞吐率提升：**300%**
 
 <img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-dma-2-times.jpg" width=1000/>
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)

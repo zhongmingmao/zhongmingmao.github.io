@@ -132,3 +132,6 @@ Actual DISK READ:	0.00 0.00 BActual DISK WRITE:          664.20 M/s
      2 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [kthreadd]
      3 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [kworker/0:0]
 ```
+
+## 参考资料
+[深入浅出计算机组成原理](https://time.geekbang.org/column/intro/100026001)
