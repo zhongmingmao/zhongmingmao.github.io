@@ -24,3 +24,6 @@ tags: Distributed Design Pattern
 
 ## 边缘计算
 ![left-ear-performance-design-edge-computing-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-performance-design-edge-computing-compressed.png)
+
+## 参考资料
+[左耳听风](https://time.geekbang.org/column/intro/100002201)

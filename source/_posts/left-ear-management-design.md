@@ -27,3 +27,6 @@ tags: Distributed Design Pattern
 
 ## 部署升级策略
 ![left-ear-management-design-deployment-upgrade-strategy-compressed](https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-management-design-deployment-upgrade-strategy-compressed.png)
+
+## 参考资料
+[左耳听风](https://time.geekbang.org/column/intro/100002201)

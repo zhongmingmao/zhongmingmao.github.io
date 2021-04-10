@@ -33,3 +33,6 @@ tags: Distributed Architecture
 
 ## 经典资料
 <img src="https://left-ear-1253868755.cos.ap-nanjing.myqcloud.com/compressed/left-ear-distributed-architecture-material-compressed.png" width=1000/>
+
+## 参考资料
+[左耳听风](https://time.geekbang.org/column/intro/100002201)
