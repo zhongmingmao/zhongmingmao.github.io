@@ -483,3 +483,6 @@ Heap dump file created
 $ du -sh /tmp/wall.hprof
 231M	/tmp/wall.hprof
 ```
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

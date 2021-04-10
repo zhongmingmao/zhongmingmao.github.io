@@ -92,3 +92,4 @@ tags:
 
 ## 参考资料
 1. [老生常谈，HashMap的死循环](https://juejin.im/post/5a66a08d5188253dc3321da0)
+2. [Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

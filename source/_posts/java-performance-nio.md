@@ -295,3 +295,6 @@ while (true) {
     - 表示可以有多少个Socket连接到Tomcat上，默认10000
     - 在**BIO**模式中，一个线程只能处理一个连接，一般maxThreads与maxConnections的值相同
     - 在**NIO**模式中，一个线程可以同时处理多个连接，maxThreads应该比maxConnections大很多
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

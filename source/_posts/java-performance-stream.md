@@ -270,3 +270,6 @@ final <R> R evaluate(TerminalOp<E_OUT, R> terminalOp) {
     - 生成一个**数据处理链表**，通过Java 8的**Spliterator迭代器**进行数据处理
 4. 并行处理
     - 对中间操作的处理跟串行处理的方式是一样的，但在终结操作中，Stream将结合**ForkJoin**框架对集合进行切片处理
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

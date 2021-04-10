@@ -123,3 +123,6 @@ tags:
 1. JDK 1.7中，Java发布了NIO2，即**AIO**
 2. AIO实现了**真正意义上的异步IO**，直接将IO操作交给操作系统进行异步处理
 3. 但很多通信框架依然使用NIO，这是因为**异步IO模型在Linux内核中没有实现**
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

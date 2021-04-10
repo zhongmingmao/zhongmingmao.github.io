@@ -135,3 +135,6 @@ public class Point {
 2. 优化锁的关键：**降低锁竞争**
     - synchronized同步锁：**减少锁粒度**、**减少锁占用时间**
     - Lock同步锁：**锁分离**
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

@@ -58,3 +58,6 @@ CPU占用率、内存使用率、磁盘IO、网络IO
 
 ## 参考标准
 将**上一迭代版本**的性能指标作为参考标准
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

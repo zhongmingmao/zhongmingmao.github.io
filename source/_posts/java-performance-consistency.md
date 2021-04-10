@@ -107,3 +107,6 @@ public class Example {
 
 ### 弱一致性 - 读写锁
 不能保证任何一次读都能读到最近一次写入的数据，但能保证**最终**可以读到写入的数据，**读写锁**就是弱一致性
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

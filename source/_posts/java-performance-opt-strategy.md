@@ -103,3 +103,6 @@ tags:
 
 ## 小结
 <img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-opt-strategy.jpg" width=1000/>
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

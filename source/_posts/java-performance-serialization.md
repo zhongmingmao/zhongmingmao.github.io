@@ -351,3 +351,6 @@ log.info("{}", t4 - t3); // 182
 1. ProtoBuf不仅**压缩**存储数据的效果好，而且**编解码**的性能也是很好的
 2. ProtoBuf的编码和解码过程结合**.proto**文件格式，加上Protocol Buffers独特的编码格式
     - 只需要**简单的数据运算**以及**位移**等操作就可以完成编码和解码
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

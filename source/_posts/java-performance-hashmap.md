@@ -214,3 +214,6 @@ if (oldTab != null) {
 5. 如果链表过长，查询数据的时间复杂度会增加，HashMap在JDK 1.8中使用**红黑树**来解决这个问题
 
 <img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-hashmap.jpg" width=1000/>
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

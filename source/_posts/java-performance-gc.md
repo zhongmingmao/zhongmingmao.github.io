@@ -181,3 +181,6 @@ JVM提供了不同的GC算法来实现上面的GC机制
 ### 选择合适的GC回收器
 1. **响应速度快：CMS、G1**
 2. **吞吐量高：Parallel Scavenge**
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

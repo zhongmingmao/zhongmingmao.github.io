@@ -224,3 +224,6 @@ public void foo() {
 -XX:+EliminateLocks 开启锁消除（JDK 1.8默认开启）
 -XX:+EliminateAllocations 开启标量替换（JDK 1.8默认开启）
 ```
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

@@ -280,3 +280,6 @@ mysql> show variables like 'long_query_time';
 | long_query_time | 1.000000 |
 +-----------------+----------+
 ```
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

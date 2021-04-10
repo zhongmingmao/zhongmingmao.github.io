@@ -138,3 +138,6 @@ class Student {
 
 创建一个JVMCase对象，并调用sayHello非静态方法和print静态方法
 <img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-jvm-memory-model-example-4.jpg" width=800>
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

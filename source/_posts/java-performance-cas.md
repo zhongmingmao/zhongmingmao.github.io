@@ -102,3 +102,6 @@ public final native boolean compareAndSwapInt(Object o, long offset, int expecte
 3. CAS乐观锁在**高并发写大于读**的场景下
     - 大部分线程的原子操作会失败，失败后的线程将不断重试CAS原子操作，导致**大量线程长时间占用CPU资源**
     - JDK 1.8中，新增了原子类**LongAdder**，采用**空间换时间**的思路解决了这个问题，但**实时性不高**
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

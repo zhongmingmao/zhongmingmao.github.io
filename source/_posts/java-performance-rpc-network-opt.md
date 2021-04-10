@@ -139,3 +139,6 @@ tags:
 | net.ipv4.ip_local_port_range | 客户端连接服务器时，需要动态分配源端口号，该配置项表示**向外连接的端口范围** |
 | net.ipv4.tcp_max_tw_buckets | 1. 当一个连接关闭时，TCP会通过**四次挥手**来完成一次关闭连接操作，在请求量比较大的情况下，消费端会有大量**TIME_WAIT**状态的连接<br/>2. 该参数可以限制TIME_WAIT状态的连接数量，如果TIME_WAIT的连接数量超过该值，TIME_WAIT将会立即被清除掉并打印警告信息 |
 | net.ipv4.tcp_tw_reuse | 1. 客户端每次连接服务器时，都会获得一个**新的源端口**以实现**连接的唯一性**，在TIME_WAIT状态的连接数量过大的情况下，会增加端口号的占用时间<br/>2. 由于处于TIME_WAIT状态的连接属于**关闭**连接，所以新创建的连接可以**复用**该端口号 |
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

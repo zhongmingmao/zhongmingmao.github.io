@@ -353,3 +353,6 @@ public class App {
     }
 }
 ```
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)

@@ -94,3 +94,6 @@ System.out.println(s1 == s3); // true
 1. split使用正则表达式实现了强大的分割功能，但_**正在表达式的性能非常不稳定**_
     - 使用不恰当会引起**回溯**问题，导致CPU居高不下
 2. 所以应该谨慎使用split方法，可以考虑用indexOf来替代
+
+## 参考资料
+[Java性能调优实战](https://time.geekbang.org/column/intro/100028001)
