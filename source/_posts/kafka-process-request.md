@@ -73,3 +73,6 @@ while (true) {
         - 等到条件满足后，IO线程会继续处理该请求，并将Response放入**对应**网络线程的响应队列中
 6. Kafka将PRODUCE、FETCH这类请求称为**数据类请求**，把LeaderAndIsr、StopReplica这类请求称为**控制类请求**
     - 在**Kafka 2.3**，正式实现了**数据类请求**和**控制类请求**的**分离**（**完全拷贝**一套组件，实现两类请求的分离）
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

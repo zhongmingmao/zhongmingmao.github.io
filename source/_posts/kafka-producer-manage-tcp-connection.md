@@ -82,3 +82,6 @@ KafkaProducer   - Kafka producer has been closed
     - 关闭TCP连接的发起方是**Kafka客户端**，属于**被动关闭**的场景
         - 被动关闭的后果就是会产生大量的**CLOSE_WAIT**连接
         - _**Producer端或Client端没有机会显式地观测到此TCP连接已被中断**_
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

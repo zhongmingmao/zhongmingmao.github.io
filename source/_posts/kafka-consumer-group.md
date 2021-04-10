@@ -70,3 +70,6 @@ tags:
     - **所有Consumer实例共同参与，全部重新分配所有分区**
         - 更高效的分配方案：**尽量少改动**，这样可以**复用**已经建立的**TCP连接**
     - Rebalance的过程可能会**持续很久**
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

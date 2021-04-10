@@ -123,3 +123,6 @@ $ kafka-server-start config/server.properties
     - 随后操作系统根据**LRU算法**会**定期**将页缓存上的**脏数据**落盘到物理磁盘上
     - Flush落盘时间默认是**5秒**，如果页缓存中的数据在写入到磁盘之前，机器宕机了，会造成**数据丢失**
     - 但Kafka在**软件层面**已经提供了**多副本的冗余机制**，因此**适当地调大**Flush落盘时间是个合理的做法
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

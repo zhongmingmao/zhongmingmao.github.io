@@ -217,3 +217,6 @@ console-consumer-60394::NULL
 zhongmingmao::NULL
 console-consumer-49544::GroupMetadata(groupId=console-consumer-49544, generation=1, protocolType=Some(consumer), currentState=Stable, members=Map(consumer-1-5629e772-0ef1-4248-b9ed-42f997f54a4a -> MemberMetadata(memberId=consumer-1-5629e772-0ef1-4248-b9ed-42f997f54a4a, groupInstanceId=Some(null), clientId=consumer-1, clientHost=/127.0.0.1, sessionTimeoutMs=10000, rebalanceTimeoutMs=300000, supportedProtocols=List(range), )))
 ```
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

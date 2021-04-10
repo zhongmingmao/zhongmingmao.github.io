@@ -72,3 +72,6 @@ tags:
     - **开启**Unclean Leader Election可能会造成**数据丢失**（C），但提高了**可用性**（A）
     - **关闭**Unclean Leader Election维护了**数据一致性**（C），但牺牲了**可用性**（A）
         - 强烈**推荐**关闭Unclean Leader Election
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

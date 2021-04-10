@@ -194,3 +194,6 @@ $ kafka-consumer-groups --bootstrap-server localhost:9092 --group test-group --r
 ```
 $ kafka-consumer-groups --bootstrap-server localhost:9092 --group test-group --reset-offsets --by-duration PT0H30M0S --execute
 ```
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

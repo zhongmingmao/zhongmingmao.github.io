@@ -125,3 +125,6 @@ partition: zhongmingmao-2, lag: 0
 
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-consumer-jmx-lag-lead.png" width=1000/>
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-consumer-jmx-partition-lag-lead.png" width=1000/>
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

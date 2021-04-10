@@ -58,3 +58,6 @@ tags:
 
 ### Consumer
 1. `enable.auto.commit = false`，确保消息消费完再手动提交
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

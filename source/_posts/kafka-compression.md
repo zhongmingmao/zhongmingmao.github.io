@@ -110,3 +110,6 @@ Producer<String, String> producer = new KafkaProducer<>(props);
 | _**lz4**_ 1.8.3 | 2.101 | _**800 MB/s**_ | _**4220 MB/s**_ |
 | snappy 1.1.4 | 2.073 | 580 MB/s | 2020 MB/s |
 | lzf 3.6 -1 | 2.077 | 440 MB/s | 930 MB/s |
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

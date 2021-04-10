@@ -110,3 +110,6 @@ try (AdminClient client = AdminClient.create(props)) {
     System.out.println(size); // 264599218
 }
 ```
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

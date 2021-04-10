@@ -119,3 +119,6 @@ while (true) {
 }
 ...
 ```
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

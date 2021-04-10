@@ -87,3 +87,6 @@ tags:
         - 生产者：`request-latency`，消息生产请求的延时，最直接表征Producer程序的**TPS**
         - 消费者：`records-lag`、`records-lead`，直接反应消费者的**消费进度**
         - 消费者组：`join rate`、`sync rate`，表征**Rebalance的频繁程度**
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

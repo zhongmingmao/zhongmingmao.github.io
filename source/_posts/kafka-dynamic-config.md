@@ -151,3 +151,6 @@ Configs for broker 0 are:
     - 新的连接会使用新的Keystore，**阶段性地调整这些参数，有利于增加安全性**
 4. num.replica.fetchers
     - **提高Follower拉取副本的速度**
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

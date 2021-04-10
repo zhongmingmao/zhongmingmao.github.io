@@ -74,3 +74,6 @@ tags:
     - 如果位移主题**无限期膨胀**，占用过多的磁盘空间，检查下Log Cleaner线程的状态
 
 <img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-offset-topic-compact.jpeg" width=800/>
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

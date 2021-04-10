@@ -91,3 +91,6 @@ try {
 1. 幂等性Producer和事务Producer都是Kafka社区为了实现**精确一次**处理语义所提供的工具，只是**作用范围**不同而已
 2. 幂等性Producer只能保证**单分区、单会话**上的消息幂等性；而事务Producer能够保证**跨分区、跨会话**的幂等性
 3. 事务Producer与幂等性Producer相比，**性能更差**
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

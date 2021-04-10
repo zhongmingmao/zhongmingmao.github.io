@@ -76,3 +76,6 @@ tags:
 2. Consumer**消费时间过长**，主动发起离开组的请求而引发的Rebalance
     - 如果消费逻辑很重（如DB操作），可以将`max.poll.interval.ms`设置得大一点
 3. 关注Consumer端的**GC**表现，频繁的**Full GC**会引起**非预期的Rebalance**
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

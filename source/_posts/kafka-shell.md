@@ -161,3 +161,6 @@ $ kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group zho
 GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                     HOST            CLIENT-ID
 zhongmingmao    zhongmingmao    0          -               10000002        -               consumer-1-338796c8-e062-47e5-94d0-ed8d686a004f /127.0.0.1      consumer-1
 ```
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)

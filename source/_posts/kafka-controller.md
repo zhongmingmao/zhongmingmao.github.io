@@ -118,3 +118,6 @@ kafka在ZK中创建的znode
     - 如果删除了某个主题，那么控制器会给主题的所有副本所在的Broker发送StopReplica请求
     - 如果此时Broker上有大量Produce请求堆积，那么StopReplica请求只能**排队**
     - 既然主题都要被删除了，继续处理Produce请求就显得很没有意义
+
+## 参考资料
+[Kafka核心技术与实战](https://time.geekbang.org/column/intro/100029201)
