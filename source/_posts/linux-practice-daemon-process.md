@@ -125,3 +125,6 @@ lrwx------. 1 root root 64 12月 16 06:14 2 -> socket:[20381]
 lrwx------. 1 root root 64 12月 16 06:14 3 -> socket:[20529]
 lrwx------. 1 root root 64 12月 16 06:14 4 -> socket:[20538]
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

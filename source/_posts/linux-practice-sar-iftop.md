@@ -204,3 +204,6 @@ yum install iftop
 ```
 
 <img src="https://linux-practice-1253868755.cos.ap-guangzhou.myqcloud.com/linux-practice-iftop.jpg"/>
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

@@ -625,3 +625,6 @@ sync:x:5:0:sync:/sbin:/bin/sync
      2	bin:x:1:1:bin:/bin:/sbin/nologin
      1	root:x:0:0:root:/root:/bin/bash
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

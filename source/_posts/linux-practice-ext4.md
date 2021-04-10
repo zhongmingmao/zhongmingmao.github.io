@@ -270,3 +270,6 @@ group::r--
 mask::r--
 other::r--
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

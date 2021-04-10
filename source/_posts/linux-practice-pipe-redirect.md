@@ -125,3 +125,6 @@ EOF
 [root@localhost ~]# cat a.sh
 echo "hello bash"
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

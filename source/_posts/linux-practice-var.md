@@ -301,3 +301,6 @@ echo ~/.bash_profile
 [root@localhost ~]# echo ${IPTS[1]}
 10.0.0.2
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

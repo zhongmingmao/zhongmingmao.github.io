@@ -47,3 +47,6 @@ ls is aliased to `ls --color=auto'
 
 ## info
 1. info比help更**详细**，`info ls`
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

@@ -77,3 +77,6 @@ pwd
 ## 内建命令
 1. 内建命令**不需要创建子进程**（如cd、pwd等）
 2. 内建命令**对当前Shell生效**
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

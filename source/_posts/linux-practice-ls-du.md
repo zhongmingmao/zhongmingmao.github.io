@@ -56,4 +56,5 @@ tmpfs                     98M     0   98M    0% /run/user/0
 1.8G	centos7.vmwarevm
 ```
 
-
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

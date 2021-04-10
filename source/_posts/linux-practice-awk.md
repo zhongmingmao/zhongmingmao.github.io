@@ -353,3 +353,6 @@ function 函数名 (参数) {
 [root@localhost ~]# awk 'function double(str) {return str str} BEGIN{print double("hello awk")}'
 hello awkhello awk
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)

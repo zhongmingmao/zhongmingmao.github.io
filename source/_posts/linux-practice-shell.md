@@ -707,3 +707,6 @@ if [ -f /etc/bashrc ]; then
     . /etc/bashrc
 fi
 ```
+
+## 参考资料
+[Linux实战技能100讲](https://time.geekbang.org/course/intro/100029601)
