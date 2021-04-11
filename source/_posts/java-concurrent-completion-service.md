@@ -142,3 +142,6 @@ try {
 3. CompletionService能够让异步任务的执行结果有序化，**先执行完的先进入阻塞队列**，避免无谓的等待
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

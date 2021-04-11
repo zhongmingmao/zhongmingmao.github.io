@@ -155,3 +155,6 @@ synchronized (list) {
 3. 上面提到的Queue，只有**ArrayBlockingQueue**和**LinkedBlockingQueue**是支持有界的
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

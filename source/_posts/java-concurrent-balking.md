@@ -224,3 +224,6 @@ public class Singleton {
     - _**Guarded Suspension模式会等待if条件为真（利用管程模型来实现），而Balking模式不会等待**_
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

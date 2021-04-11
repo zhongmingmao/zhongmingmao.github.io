@@ -133,3 +133,6 @@ class T2 implements Callable<String> {
 
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

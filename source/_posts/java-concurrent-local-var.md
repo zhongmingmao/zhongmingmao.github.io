@@ -65,3 +65,6 @@ int[] c = b;
     - 不会再分配给其他线程，从而保证了Connection不会有并发问题
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

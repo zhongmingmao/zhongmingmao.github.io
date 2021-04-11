@@ -140,3 +140,6 @@ public class BlockedQueue<T> {
 4. JUC包实现的管程**支持多个条件变量**（例如ReentrantLock），但需要开发人员手动进行加锁和解锁操作
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

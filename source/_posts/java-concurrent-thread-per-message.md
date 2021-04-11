@@ -56,3 +56,6 @@ try (ServerSocketChannel ssc = ServerSocketChannel.open().bind(new InetSocketAdd
     - _**Java在未来一定会提供轻量级线程**_
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

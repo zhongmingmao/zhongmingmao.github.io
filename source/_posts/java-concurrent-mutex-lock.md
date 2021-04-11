@@ -281,3 +281,6 @@ public class Account {
     - 中间状态：例如在32位机器上写long型变量，转账操作（账户A减少100，但账户B还未增加100）
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

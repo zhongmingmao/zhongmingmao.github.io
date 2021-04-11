@@ -129,3 +129,6 @@ public class Account {
 3. **并发量**：能**同时**处理的请求数量，一般来说随着并发量的增加，延迟也会增加，所以**延迟一般是基于并发量来说的**
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

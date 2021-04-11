@@ -148,3 +148,6 @@ class Singleton {
     - 但技术在解决一个问题的同时，必然会带来另一个问题，因此需要权衡
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

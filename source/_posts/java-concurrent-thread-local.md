@@ -120,3 +120,6 @@ public static void main(String[] args) {
         - 如果业务逻辑依赖InheritableThreadLocal，有可能导致业务逻辑计算错误，比内存泄露更致命
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

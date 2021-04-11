@@ -186,3 +186,6 @@ public final boolean compareAndSet(T obj, long expect, long update)
     - 所有原子类的方法都是针对**单个共享变量**的，如果需要解决多个变量的原子性问题，还是要采用**互斥锁**的方案
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

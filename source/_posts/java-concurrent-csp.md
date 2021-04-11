@@ -143,3 +143,6 @@ func main() {
     - Tony Hoare在并发领域还有另一项重要成就，即**霍尔管程模型**，这是**Java**解决并发问题的**理论基础**
 2. Java可以借助第三方类库**JCSP**来支持CSP模型，相比Go的实现，**JCSP更接近理论模型**
     - JCSP并没有经过广泛的生产环境检验，因此**不推荐在生产环境使用**
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

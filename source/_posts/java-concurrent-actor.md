@@ -105,3 +105,6 @@ public class CounterActor extends UntypedAbstractActor {
     - 不保证消息送达的顺序与发送的顺序是一致的
     - 不保证消息会被百分百处理
 2. 实现Actor模型的厂商都在尝试解决上面三个问题，但解决得并不完美，所以使用Actor模型是有**成本**的
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

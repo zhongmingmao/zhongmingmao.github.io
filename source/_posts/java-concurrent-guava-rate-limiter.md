@@ -130,3 +130,6 @@ public class SimpleLimiter {
 4. 令牌桶算法和漏桶算法很像一个硬币的正反面
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

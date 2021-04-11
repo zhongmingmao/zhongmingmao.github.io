@@ -130,3 +130,6 @@ try {
 2. 但只有写锁支持条件变量，**读锁是不支持条件变量的**，读锁调用newCondition，会抛出UnsupportedOperationException
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

@@ -232,3 +232,6 @@ if (index == 0) {  // tripped
 4. CyclicBarrier的计数器是可以**循环利用**的，具备**自动重置**的功能，还支持设置**回调函数**
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

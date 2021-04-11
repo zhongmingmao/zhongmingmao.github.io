@@ -109,3 +109,6 @@ public class ObjPool<T, R> {
 3. 管程模型理论上解决了信号量模型的一些不足，主要体现在**易用性**和**工程化**方面
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

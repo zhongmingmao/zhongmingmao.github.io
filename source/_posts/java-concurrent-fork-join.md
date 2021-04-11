@@ -156,3 +156,6 @@ result.forEach((word, count) -> System.out.println(word + " : " + count));
     - 因此，建议_**用不同的ForkJoinPool执行不同类型的计算任务**_
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

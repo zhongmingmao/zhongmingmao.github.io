@@ -140,3 +140,6 @@ public class Proxy {
     - 已经进入阻塞队列中的任务会被**剥夺**执行的机会，并且作为shutdownNow()的返回值返回
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)

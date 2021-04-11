@@ -77,3 +77,6 @@ tags:
     - 在压测的过程中，要重点关注**CPU、IO设备的利用率**和性能指标（**延迟+吞吐量**）之间的关系
 
 <!-- indicate-the-source -->
+
+## 参考资料
+[Java并发编程实战](https://time.geekbang.org/column/intro/100023901)
