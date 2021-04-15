@@ -180,5 +180,7 @@ total 40
 
 <img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-annotation-processor-lombok.png" width=250/>
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
 
 <!-- indicate-the-source -->

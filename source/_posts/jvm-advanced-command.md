@@ -691,4 +691,7 @@ $ jcmd 3721 JFR.stop name=abc,duration=120s
 Stopped recording "abc,duration=120s".
 ```
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

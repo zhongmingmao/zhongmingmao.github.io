@@ -342,4 +342,7 @@ Hello, World 0xdeadbeef
     - **调整参数位置**（C调用和Java调用传参的方式不一样）
     - 从C函数返回时**清理线程私有句柄块**
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

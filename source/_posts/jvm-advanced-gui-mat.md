@@ -90,5 +90,6 @@ MAT默认按**Shallow Heap**倒排，手动选择按**Retained Heap**倒排，�
 ## 参考资料
 1. [Shallow vs. Retained Heap](https://help.eclipse.org/neon/index.jsp?topic=%2Forg.eclipse.mat.ui.help%2Fconcepts%2Fshallowretainedheap.html)
 2. [Dominator Tree](https://help.eclipse.org/neon/index.jsp?topic=%2Forg.eclipse.mat.ui.help%2Fconcepts%2Fdominatortree.html)
+3. [深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
 
 <!-- indicate-the-source -->

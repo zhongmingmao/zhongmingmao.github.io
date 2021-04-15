@@ -420,4 +420,7 @@ java.lang.Integer: 20
     - 因此会统计到**实际没有发生**的新建对象操作
 3. 因此当使用字节码注入开发profiler，**仅能表示在被注入的情况下程序的执行状态**
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

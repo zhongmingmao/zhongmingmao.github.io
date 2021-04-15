@@ -293,4 +293,7 @@ public final class Integer ... {
         - **表示不保留这一份机器码，并且需要重新收集profile，再重新编译**
         - 因为之前收集到的profile已经**不能准确**反映程序的运行情况，需要重新收集
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->
