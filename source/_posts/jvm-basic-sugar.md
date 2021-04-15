@@ -222,4 +222,7 @@ public void func(java.lang.String);
 1. 每个case截获的字符串都是一个**常量值**，取其**hashCode**，当成**int值的switch**
 2. 由于hashCode有可能发生**碰撞**，因此还需要借助`String.equals`逐个比较发生了碰撞的字符串
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

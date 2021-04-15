@@ -205,4 +205,7 @@ public me.zhongmingmao.basic.jol.C(java.lang.String);
 2. [对象内存布局 - JOL使用教程 2](http://zhongmingmao.me/2016/07/03/jvm-jol-tutorial-2/)
 3. [对象内存布局 - JOL使用教程 3](http://zhongmingmao.me/2016/07/04/jvm-jol-tutorial-3/)
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

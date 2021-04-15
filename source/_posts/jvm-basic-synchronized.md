@@ -189,5 +189,6 @@ public synchronized void eoo(java.lang.Object);
 1. https://wiki.openjdk.java.net/display/HotSpot/Synchronization
 2. http://stas-blogspot.blogspot.com/2011/07/most-complete-list-of-xx-options-for.html
 3. https://www.cnblogs.com/paddix/p/5405678.html
+4. [深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
 
 <!-- indicate-the-source -->

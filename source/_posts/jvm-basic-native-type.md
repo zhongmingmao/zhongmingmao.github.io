@@ -196,4 +196,7 @@ public class User {
 2. 对于**boolean**和**char**这两个**无符号**类型来说，加载伴随着**零扩展**
 3. 对于**byte**和**short**这两个**有符号**类型来说，加载伴随着**符号扩展**
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

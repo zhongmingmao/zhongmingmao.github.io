@@ -402,4 +402,7 @@ log.info("{}ms", end - start);
 
 ### 方法内联（跳过，后续介绍）
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

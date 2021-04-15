@@ -158,6 +158,7 @@ tags:
         - **卡表中不同卡的标识位之间的伪共享**
         - 在HotSpot中，使用-XX:+UseCondCardMark来尽量减少写卡表的操作
 
-
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
 
 <!-- indicate-the-source -->

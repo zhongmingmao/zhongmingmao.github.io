@@ -122,4 +122,7 @@ public class JMMVolatile {
 4. 理想情况下，对volatile字段的使用应当是**读多写少**，并且应当**只有一个线程进行写操作**
 5. volatile字段的**每次访问**均需要**直接从内存中读写**
 
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
+
 <!-- indicate-the-source -->

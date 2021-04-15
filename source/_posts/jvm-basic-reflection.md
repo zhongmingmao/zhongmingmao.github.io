@@ -414,6 +414,7 @@ public class V6 {
     - 逃逸分析不再起效（解决方案：循环外构造数组，峰值性能：892.4ms，为基准耗时的8倍）
     - 每个调用能够记录的类型数目太少，默认2（-XX:TypeProfileWidth=5，峰值性能：1456.2ms，为基准耗时的13倍）
 
-
+## 参考资料
+[深入拆解Java虚拟机](https://time.geekbang.org/column/intro/100010301)
 
 <!-- indicate-the-source -->
