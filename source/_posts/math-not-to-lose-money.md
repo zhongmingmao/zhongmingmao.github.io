@@ -1,5 +1,5 @@
 ---
-title: 数学 -- 保证不输钱
+title: 项目立项 -- 保证不亏钱
 mathjax: true
 date: 2020-01-05 22:02:14
 categories:
