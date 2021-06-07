@@ -374,3 +374,6 @@ bin  boot  dev  etc  home  lib  lib32  lib64  libx32  media  mnt  opt  proc  roo
     └── resolv.conf
 ```
 
+# 参考资料
+
+[深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201)
