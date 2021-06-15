@@ -826,10 +826,6 @@ spec:
       emptyDir: {}
 ```
 
-
-
-
-
 # 参考资料
 
 1. [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201)
