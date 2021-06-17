@@ -120,7 +120,7 @@ $ kubeadm init --config kubeadm.yaml
 ## 操作系统
 
 ```
-# uname -a
+# # uname -a
 Linux ubuntu 4.15.0-144-generic #148-Ubuntu SMP Sat May 8 02:33:43 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
 
 # cat /etc/issue
@@ -129,9 +129,9 @@ Ubuntu 18.04.5 LTS \n \l
 
 ## 集群环境
 
-|      | Master       | Worker       |
-| ---- | ------------ | ------------ |
-| IP   | 172.16.155.9 | 172.16.155.8 |
+|      | Master        | Worker 1      | Worker 2      |
+| ---- | ------------- | ------------- | ------------- |
+| IP   | 172.16.155.10 | 172.16.155.11 | 172.16.155.12 |
 
 ## 安装Docker
 
@@ -140,10 +140,10 @@ Ubuntu 18.04.5 LTS \n \l
 ```
 # apt-get update
 
-# sudo apt-get install docker.io
+# apt-get install docker.io
 
 # docker --version
-Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.
+Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
 
 # systemctl enable docker
 ```
@@ -209,7 +209,11 @@ NAME      TYPE SIZE USED PRIO
 ```
 
 ```
-# hostnamectl set-hostname worker
+# hostnamectl set-hostname worker-1
+```
+
+```
+# hostnamectl set-hostname worker-2
 ```
 
 ## 初始化Master节点
@@ -219,8 +223,8 @@ NAME      TYPE SIZE USED PRIO
 ### 初始化命令
 
 ```
-# kubeadm init --pod-network-cidr=10.244.0.0/16
-[init] Using Kubernetes version: v1.21.1
+# kubeadm init
+[init] Using Kubernetes version: v1.21.2
 [preflight] Running pre-flight checks
 	[WARNING IsDockerSystemdCheck]: detected "cgroupfs" as the Docker cgroup driver. The recommended driver is "systemd". Please follow the guide at https://kubernetes.io/docs/setup/cri/
 [preflight] Pulling images required for setting up a Kubernetes cluster
@@ -229,15 +233,15 @@ NAME      TYPE SIZE USED PRIO
 [certs] Using certificateDir folder "/etc/kubernetes/pki"
 [certs] Generating "ca" certificate and key
 [certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local master] and IPs [10.96.0.1 172.16.155.9]
+[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local master] and IPs [10.96.0.1 172.16.155.10]
 [certs] Generating "apiserver-kubelet-client" certificate and key
 [certs] Generating "front-proxy-ca" certificate and key
 [certs] Generating "front-proxy-client" certificate and key
 [certs] Generating "etcd/ca" certificate and key
 [certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [localhost master] and IPs [172.16.155.9 127.0.0.1 ::1]
+[certs] etcd/server serving cert is signed for DNS names [localhost master] and IPs [172.16.155.10 127.0.0.1 ::1]
 [certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [localhost master] and IPs [172.16.155.9 127.0.0.1 ::1]
+[certs] etcd/peer serving cert is signed for DNS names [localhost master] and IPs [172.16.155.10 127.0.0.1 ::1]
 [certs] Generating "etcd/healthcheck-client" certificate and key
 [certs] Generating "apiserver-etcd-client" certificate and key
 [certs] Generating "sa" key and public key
@@ -255,13 +259,13 @@ NAME      TYPE SIZE USED PRIO
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 16.008594 seconds
+[apiclient] All control plane components are healthy after 15.503873 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config-1.21" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Skipping phase. Please see --upload-certs
 [mark-control-plane] Marking the node master as control-plane by adding the labels: [node-role.kubernetes.io/master(deprecated) node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node master as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]
-[bootstrap-token] Using token: jveetr.cv43c4ijmqtv3fdn
+[bootstrap-token] Using token: iu9xto.mdex6vkt8296vfgf
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -290,13 +294,13 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 172.16.155.9:6443 --token jveetr.cv43c4ijmqtv3fdn \
-	--discovery-token-ca-cert-hash sha256:901087e288c964d8659ed6425fce1f42897325ae8f8d7c494f699abe64f56b61
+kubeadm join 172.16.155.10:6443 --token iu9xto.mdex6vkt8296vfgf \
+	--discovery-token-ca-cert-hash sha256:f711d139e579ee3fbf2294ccd02dc1727261705b8a6c0e5eb681766dd32266bc
 ```
 
 ```
 # kubeadm token create --print-join-command
-kubeadm join 172.16.155.9:6443 --token f3tkru.pmwthtfl2w692wnd --discovery-token-ca-cert-hash sha256:901087e288c964d8659ed6425fce1f42897325ae8f8d7c494f699abe64f56b61
+kubeadm join 172.16.155.10:6443 --token i1vo0v.n4cdvjdci05s8jzj --discovery-token-ca-cert-hash sha256:f711d139e579ee3fbf2294ccd02dc1727261705b8a6c0e5eb681766dd32266bc
 ```
 
 ```
@@ -359,8 +363,8 @@ config.yaml  cpu_manager_state  device-plugins  kubeadm-flags.env  pki  plugins 
 
 ```
 # kubectl get nodes
-NAME     STATUS     ROLES                  AGE   VERSION
-master   NotReady   control-plane,master   19m   v1.21.1
+NAME     STATUS     ROLES                  AGE     VERSION
+master   NotReady   control-plane,master   3m45s   v1.21.1
 ```
 
 ```
@@ -378,42 +382,42 @@ Labels:             beta.kubernetes.io/arch=amd64
 Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: /var/run/dockershim.sock
                     node.alpha.kubernetes.io/ttl: 0
                     volumes.kubernetes.io/controller-managed-attach-detach: true
-CreationTimestamp:  Wed, 09 Jun 2021 14:09:48 +0000
+CreationTimestamp:  Thu, 17 Jun 2021 03:54:54 +0000
 Taints:             node-role.kubernetes.io/master:NoSchedule
                     node.kubernetes.io/not-ready:NoSchedule
 Unschedulable:      false
 Lease:
   HolderIdentity:  master
   AcquireTime:     <unset>
-  RenewTime:       Wed, 09 Jun 2021 14:31:25 +0000
+  RenewTime:       Thu, 17 Jun 2021 03:58:49 +0000
 Conditions:
   Type             Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
   ----             ------  -----------------                 ------------------                ------                       -------
-  MemoryPressure   False   Wed, 09 Jun 2021 14:30:09 +0000   Wed, 09 Jun 2021 14:09:44 +0000   KubeletHasSufficientMemory   kubelet has sufficient memory available
-  DiskPressure     False   Wed, 09 Jun 2021 14:30:09 +0000   Wed, 09 Jun 2021 14:09:44 +0000   KubeletHasNoDiskPressure     kubelet has no disk pressure
-  PIDPressure      False   Wed, 09 Jun 2021 14:30:09 +0000   Wed, 09 Jun 2021 14:09:44 +0000   KubeletHasSufficientPID      kubelet has sufficient PID available
-  Ready            False   Wed, 09 Jun 2021 14:30:09 +0000   Wed, 09 Jun 2021 14:09:44 +0000   KubeletNotReady              container runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:docker: network plugin is not ready: cni config uninitialized
+  MemoryPressure   False   Thu, 17 Jun 2021 03:55:09 +0000   Thu, 17 Jun 2021 03:54:50 +0000   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure     False   Thu, 17 Jun 2021 03:55:09 +0000   Thu, 17 Jun 2021 03:54:50 +0000   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure      False   Thu, 17 Jun 2021 03:55:09 +0000   Thu, 17 Jun 2021 03:54:50 +0000   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready            False   Thu, 17 Jun 2021 03:55:09 +0000   Thu, 17 Jun 2021 03:54:50 +0000   KubeletNotReady              container runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:docker: network plugin is not ready: cni config uninitialized
 Addresses:
-  InternalIP:  172.16.155.9
+  InternalIP:  172.16.155.10
   Hostname:    master
 Capacity:
   cpu:                2
   ephemeral-storage:  19475088Ki
   hugepages-1Gi:      0
   hugepages-2Mi:      0
-  memory:             4015808Ki
+  memory:             4015816Ki
   pods:               110
 Allocatable:
   cpu:                2
   ephemeral-storage:  17948241072
   hugepages-1Gi:      0
   hugepages-2Mi:      0
-  memory:             3913408Ki
+  memory:             3913416Ki
   pods:               110
 System Info:
   Machine ID:                 dc90a271f5e740f8862195956da9eefc
-  System UUID:                F9974D56-4B63-E3B5-7E6A-3F20068FAB07
-  Boot ID:                    e9403b54-517e-440d-bd38-6920dd092f38
+  System UUID:                96184D56-E479-2E14-5C46-331A8CB645BB
+  Boot ID:                    55176940-dd9c-4f4e-9989-f224b4df425d
   Kernel Version:             4.15.0-144-generic
   OS Image:                   Ubuntu 18.04.5 LTS
   Operating System:           linux
@@ -421,16 +425,14 @@ System Info:
   Container Runtime Version:  docker://20.10.2
   Kubelet Version:            v1.21.1
   Kube-Proxy Version:         v1.21.1
-PodCIDR:                      10.244.0.0/24
-PodCIDRs:                     10.244.0.0/24
 Non-terminated Pods:          (5 in total)
   Namespace                   Name                              CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
   ---------                   ----                              ------------  ----------  ---------------  -------------  ---
-  kube-system                 etcd-master                       100m (5%)     0 (0%)      100Mi (2%)       0 (0%)         21m
-  kube-system                 kube-apiserver-master             250m (12%)    0 (0%)      0 (0%)           0 (0%)         21m
-  kube-system                 kube-controller-manager-master    200m (10%)    0 (0%)      0 (0%)           0 (0%)         21m
-  kube-system                 kube-proxy-n8djq                  0 (0%)        0 (0%)      0 (0%)           0 (0%)         21m
-  kube-system                 kube-scheduler-master             100m (5%)     0 (0%)      0 (0%)           0 (0%)         21m
+  kube-system                 etcd-master                       100m (5%)     0 (0%)      100Mi (2%)       0 (0%)         3m57s
+  kube-system                 kube-apiserver-master             250m (12%)    0 (0%)      0 (0%)           0 (0%)         4m
+  kube-system                 kube-controller-manager-master    200m (10%)    0 (0%)      0 (0%)           0 (0%)         3m57s
+  kube-system                 kube-proxy-wtl6h                  0 (0%)        0 (0%)      0 (0%)           0 (0%)         3m52s
+  kube-system                 kube-scheduler-master             100m (5%)     0 (0%)      0 (0%)           0 (0%)         3m57s
 Allocated resources:
   (Total limits may be over 100 percent, i.e., overcommitted.)
   Resource           Requests    Limits
@@ -441,19 +443,17 @@ Allocated resources:
   hugepages-1Gi      0 (0%)      0 (0%)
   hugepages-2Mi      0 (0%)      0 (0%)
 Events:
-  Type    Reason                   Age                From        Message
-  ----    ------                   ----               ----        -------
-  Normal  Starting                 21m                kubelet     Starting kubelet.
-  Normal  NodeHasSufficientMemory  21m (x4 over 21m)  kubelet     Node master status is now: NodeHasSufficientMemory
-  Normal  NodeHasNoDiskPressure    21m (x4 over 21m)  kubelet     Node master status is now: NodeHasNoDiskPressure
-  Normal  NodeHasSufficientPID     21m (x3 over 21m)  kubelet     Node master status is now: NodeHasSufficientPID
-  Normal  NodeAllocatableEnforced  21m                kubelet     Updated Node Allocatable limit across pods
-  Normal  Starting                 21m                kubelet     Starting kubelet.
-  Normal  NodeHasSufficientMemory  21m                kubelet     Node master status is now: NodeHasSufficientMemory
-  Normal  NodeHasNoDiskPressure    21m                kubelet     Node master status is now: NodeHasNoDiskPressure
-  Normal  NodeHasSufficientPID     21m                kubelet     Node master status is now: NodeHasSufficientPID
-  Normal  NodeAllocatableEnforced  21m                kubelet     Updated Node Allocatable limit across pods
-  Normal  Starting                 21m                kube-proxy  Starting kube-proxy.
+  Type    Reason                   Age                  From        Message
+  ----    ------                   ----                 ----        -------
+  Normal  NodeHasSufficientMemory  4m8s (x6 over 4m9s)  kubelet     Node master status is now: NodeHasSufficientMemory
+  Normal  NodeHasNoDiskPressure    4m8s (x5 over 4m9s)  kubelet     Node master status is now: NodeHasNoDiskPressure
+  Normal  NodeHasSufficientPID     4m8s (x5 over 4m9s)  kubelet     Node master status is now: NodeHasSufficientPID
+  Normal  Starting                 3m57s                kubelet     Starting kubelet.
+  Normal  NodeHasSufficientMemory  3m57s                kubelet     Node master status is now: NodeHasSufficientMemory
+  Normal  NodeHasNoDiskPressure    3m57s                kubelet     Node master status is now: NodeHasNoDiskPressure
+  Normal  NodeHasSufficientPID     3m57s                kubelet     Node master status is now: NodeHasSufficientPID
+  Normal  NodeAllocatableEnforced  3m57s                kubelet     Updated Node Allocatable limit across pods
+  Normal  Starting                 3m51s                kube-proxy  Starting kube-proxy.
 ```
 
 ### 查看系统Pod状态
@@ -463,13 +463,13 @@ Events:
 ```
 # kubectl get pods -n kube-system
 NAME                             READY   STATUS    RESTARTS   AGE
-coredns-558bd4d5db-gw9tg         0/1     Pending   0          30m
-coredns-558bd4d5db-p65vh         0/1     Pending   0          30m
-etcd-master                      1/1     Running   0          31m
-kube-apiserver-master            1/1     Running   0          31m
-kube-controller-manager-master   1/1     Running   0          31m
-kube-proxy-n8djq                 1/1     Running   0          30m
-kube-scheduler-master            1/1     Running   0          31m
+coredns-558bd4d5db-5fp2q         0/1     Pending   0          5m44s
+coredns-558bd4d5db-kh8db         0/1     Pending   0          5m44s
+etcd-master                      1/1     Running   0          5m49s
+kube-apiserver-master            1/1     Running   0          5m52s
+kube-controller-manager-master   1/1     Running   0          5m49s
+kube-proxy-wtl6h                 1/1     Running   0          5m44s
+kube-scheduler-master            1/1     Running   0          5m49s
 ```
 
 ### 部署网络插件（Weave）
@@ -490,14 +490,14 @@ daemonset.apps/weave-net created
 ```
 # kubectl get pods -n kube-system
 NAME                             READY   STATUS    RESTARTS   AGE
-coredns-558bd4d5db-gw9tg         1/1     Running   0          11h
-coredns-558bd4d5db-p65vh         1/1     Running   0          11h
-etcd-master                      1/1     Running   0          11h
-kube-apiserver-master            1/1     Running   0          11h
-kube-controller-manager-master   1/1     Running   0          11h
-kube-proxy-n8djq                 1/1     Running   0          11h
-kube-scheduler-master            1/1     Running   0          11h
-weave-net-5w7j5                  2/2     Running   1          63s
+coredns-558bd4d5db-5fp2q         1/1     Running   0          7m41s
+coredns-558bd4d5db-kh8db         1/1     Running   0          7m41s
+etcd-master                      1/1     Running   0          7m46s
+kube-apiserver-master            1/1     Running   0          7m49s
+kube-controller-manager-master   1/1     Running   0          7m46s
+kube-proxy-wtl6h                 1/1     Running   0          7m41s
+kube-scheduler-master            1/1     Running   0          7m46s
+weave-net-kqj8j                  2/2     Running   1          97s
 ```
 
 ## Worker节点加入到集群
@@ -510,7 +510,7 @@ weave-net-5w7j5                  2/2     Running   1          63s
 ### kubeadm join
 
 ```
-# kubeadm join 172.16.155.9:6443 --token tj94rc.i1np3575iq41eagv --discovery-token-ca-cert-hash sha256:901087e288c964d8659ed6425fce1f42897325ae8f8d7c494f699abe64f56b61
+# kubeadm join 172.16.155.10:6443 --token p9njhv.n8ucpc2rkpis7kxu --discovery-token-ca-cert-hash sha256:f711d139e579ee3fbf2294ccd02dc1727261705b8a6c0e5eb681766dd32266bc
 [preflight] Running pre-flight checks
 	[WARNING IsDockerSystemdCheck]: detected "cgroupfs" as the Docker cgroup driver. The recommended driver is "systemd". Please follow the guide at https://kubernetes.io/docs/setup/cri/
 [preflight] Reading configuration from the cluster...
@@ -574,10 +574,13 @@ volumeStatsAggPeriod: 0s
 Worker与Master上的`/etc/kubernetes/pki/ca.crt`完全一致
 ```
 root@master:~# md5sum /etc/kubernetes/pki/ca.crt
-368df29b03f75df4ccca280da921136f  /etc/kubernetes/pki/ca.crt
+635804b8f65abe2177ca50dfbf6599e2  /etc/kubernetes/pki/ca.crt
 
-root@worker:~# md5sum /etc/kubernetes/pki/ca.crt
-368df29b03f75df4ccca280da921136f  /etc/kubernetes/pki/ca.crt
+root@worker-1:~# md5sum /etc/kubernetes/pki/ca.crt
+635804b8f65abe2177ca50dfbf6599e2  /etc/kubernetes/pki/ca.crt
+
+root@worker-2:~# md5sum /etc/kubernetes/pki/ca.crt
+635804b8f65abe2177ca50dfbf6599e2  /etc/kubernetes/pki/ca.crt
 ```
 
 Worker节点没有需要启动的Static Pod
@@ -585,17 +588,21 @@ Worker节点没有需要启动的Static Pod
 root@master:~# ls /etc/kubernetes/manifests
 etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml
 
-root@worker:~# ls /etc/kubernetes/manifests | wc -l
+root@worker-1:~# ls /etc/kubernetes/manifests | wc -l
+0
+
+root@worker-2:~# ls /etc/kubernetes/manifests | wc -l
 0
 ```
 
 ### 在Master上查看节点状态
 
 ```
-# kubectl get nodes
-NAME     STATUS   ROLES                  AGE    VERSION
-master   Ready    control-plane,master   11h    v1.21.1
-worker   Ready    <none>                 2m6s   v1.21.1
+root@master:~# kubectl get nodes
+NAME       STATUS   ROLES                  AGE     VERSION
+master     Ready    control-plane,master   27m     v1.21.1
+worker-1   Ready    <none>                 3m55s   v1.21.1
+worker-2   Ready    <none>                 88s     v1.21.1
 ```
 
 ## Taint/Toleration
@@ -659,6 +666,150 @@ $ kubectl taint nodes --all node-role.kubernetes.io/master-
    - 存储插件会在容器里挂载一个基于网络或者其它机制的**远程数据卷**
    - 在容器里面创建的文件，保存在**远程存储服务器**上，或者以**分布式**的方式保存在**多个节点**上，**与宿主机没有绑定关系**
 
+### Rook
+
+1. Rook是基于**Ceph**的Kubernetes存储插件
+2. Rook支持**水平扩展**、**迁移**、**灾难备份**、**监控**等大量的**企业级功能**，是一个完整的、**生产级可用**的容器存储插件
+3. **Rook巧妙地依赖了Kubernetes提供的编排能力**，合理使用了Operator、CRD等重要扩展特性
+4. Rook是目前社区中基于Kubernetes构建的**最完善最成熟**的容器存储插件
+
+```
+# kubectl taint nodes --all node-role.kubernetes.io/master-
+node/master untainted
+taint "node-role.kubernetes.io/master" not found
+taint "node-role.kubernetes.io/master" not found
+```
+
+```
+# kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/common.yaml
+namespace/rook-ceph created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-object-bucket created
+serviceaccount/rook-ceph-admission-controller created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-admission-controller-role created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-admission-controller-rolebinding created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-cluster-mgmt created
+role.rbac.authorization.k8s.io/rook-ceph-system created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-global created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-mgr-cluster created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-object-bucket created
+serviceaccount/rook-ceph-system created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-system created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-global created
+serviceaccount/rook-ceph-osd created
+serviceaccount/rook-ceph-mgr created
+serviceaccount/rook-ceph-cmd-reporter created
+role.rbac.authorization.k8s.io/rook-ceph-osd created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-osd created
+clusterrole.rbac.authorization.k8s.io/rook-ceph-mgr-system created
+role.rbac.authorization.k8s.io/rook-ceph-mgr created
+role.rbac.authorization.k8s.io/rook-ceph-cmd-reporter created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-cluster-mgmt created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-osd created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-mgr created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-mgr-system created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-mgr-cluster created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-osd created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-cmd-reporter created
+Warning: policy/v1beta1 PodSecurityPolicy is deprecated in v1.21+, unavailable in v1.25+
+podsecuritypolicy.policy/00-rook-privileged created
+clusterrole.rbac.authorization.k8s.io/psp:rook created
+clusterrolebinding.rbac.authorization.k8s.io/rook-ceph-system-psp created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-default-psp created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-osd-psp created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-mgr-psp created
+rolebinding.rbac.authorization.k8s.io/rook-ceph-cmd-reporter-psp created
+serviceaccount/rook-csi-cephfs-plugin-sa created
+serviceaccount/rook-csi-cephfs-provisioner-sa created
+role.rbac.authorization.k8s.io/cephfs-external-provisioner-cfg created
+rolebinding.rbac.authorization.k8s.io/cephfs-csi-provisioner-role-cfg created
+clusterrole.rbac.authorization.k8s.io/cephfs-csi-nodeplugin created
+clusterrole.rbac.authorization.k8s.io/cephfs-external-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/rook-csi-cephfs-plugin-sa-psp created
+clusterrolebinding.rbac.authorization.k8s.io/rook-csi-cephfs-provisioner-sa-psp created
+clusterrolebinding.rbac.authorization.k8s.io/cephfs-csi-nodeplugin created
+clusterrolebinding.rbac.authorization.k8s.io/cephfs-csi-provisioner-role created
+serviceaccount/rook-csi-rbd-plugin-sa created
+serviceaccount/rook-csi-rbd-provisioner-sa created
+role.rbac.authorization.k8s.io/rbd-external-provisioner-cfg created
+rolebinding.rbac.authorization.k8s.io/rbd-csi-provisioner-role-cfg created
+clusterrole.rbac.authorization.k8s.io/rbd-csi-nodeplugin created
+clusterrole.rbac.authorization.k8s.io/rbd-external-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/rook-csi-rbd-plugin-sa-psp created
+clusterrolebinding.rbac.authorization.k8s.io/rook-csi-rbd-provisioner-sa-psp created
+clusterrolebinding.rbac.authorization.k8s.io/rbd-csi-nodeplugin created
+clusterrolebinding.rbac.authorization.k8s.io/rbd-csi-provisioner-role created
+```
+
+```
+# kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+configmap/rook-ceph-operator-config created
+deployment.apps/rook-ceph-operator created
+```
+
+```
+# kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/crds.yaml
+customresourcedefinition.apiextensions.k8s.io/cephblockpools.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephclients.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephclusters.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephfilesystemmirrors.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephfilesystems.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephnfses.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephobjectrealms.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephobjectstores.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephobjectstoreusers.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephobjectzonegroups.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephobjectzones.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/cephrbdmirrors.ceph.rook.io created
+customresourcedefinition.apiextensions.k8s.io/objectbucketclaims.objectbucket.io created
+customresourcedefinition.apiextensions.k8s.io/objectbuckets.objectbucket.io created
+customresourcedefinition.apiextensions.k8s.io/volumereplicationclasses.replication.storage.openshift.io created
+customresourcedefinition.apiextensions.k8s.io/volumereplications.replication.storage.openshift.io created
+customresourcedefinition.apiextensions.k8s.io/volumes.rook.io created
+```
+
+```
+# kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+cephcluster.ceph.rook.io/rook-ceph created
+```
+
+```
+# kubectl get pods --all-namespaces
+NAMESPACE     NAME                                                READY   STATUS      RESTARTS   AGE
+kube-system   coredns-558bd4d5db-5fp2q                            1/1     Running     0          71m
+kube-system   coredns-558bd4d5db-kh8db                            1/1     Running     0          71m
+kube-system   etcd-master                                         1/1     Running     0          71m
+kube-system   kube-apiserver-master                               1/1     Running     0          71m
+kube-system   kube-controller-manager-master                      1/1     Running     0          71m
+kube-system   kube-proxy-5f2nh                                    1/1     Running     0          47m
+kube-system   kube-proxy-jmc66                                    1/1     Running     0          44m
+kube-system   kube-proxy-wtl6h                                    1/1     Running     0          71m
+kube-system   kube-scheduler-master                               1/1     Running     0          71m
+kube-system   weave-net-7v66z                                     2/2     Running     1          44m
+kube-system   weave-net-gqm8l                                     2/2     Running     1          47m
+kube-system   weave-net-kqj8j                                     2/2     Running     1          65m
+rook-ceph     csi-cephfsplugin-6wjpz                              3/3     Running     0          34m
+rook-ceph     csi-cephfsplugin-8fz2q                              3/3     Running     0          11m
+rook-ceph     csi-cephfsplugin-dr479                              3/3     Running     0          34m
+rook-ceph     csi-cephfsplugin-provisioner-775dcbbc86-bb7r7       6/6     Running     0          34m
+rook-ceph     csi-cephfsplugin-provisioner-775dcbbc86-stx6j       6/6     Running     0          34m
+rook-ceph     csi-rbdplugin-f4vh2                                 3/3     Running     0          35m
+rook-ceph     csi-rbdplugin-provisioner-5868bd8b55-krt57          6/6     Running     0          34m
+rook-ceph     csi-rbdplugin-provisioner-5868bd8b55-mpjzg          6/6     Running     0          34m
+rook-ceph     csi-rbdplugin-t76w7                                 3/3     Running     0          35m
+rook-ceph     csi-rbdplugin-xpmb2                                 3/3     Running     0          11m
+rook-ceph     rook-ceph-crashcollector-master-7c7c6b974-xc2dq     1/1     Running     0          7m57s
+rook-ceph     rook-ceph-crashcollector-worker-1-7f7dbb4cd-fcqk4   1/1     Running     0          7m50s
+rook-ceph     rook-ceph-crashcollector-worker-2-f594fb54f-gnrwk   1/1     Running     0          7m50s
+rook-ceph     rook-ceph-mgr-a-bcd4d588-tt4g9                      1/1     Running     0          7m57s
+rook-ceph     rook-ceph-mon-a-7598d86b7d-f8qsf                    1/1     Running     0          11m
+rook-ceph     rook-ceph-mon-b-6f9dd5f6cc-v2v4c                    1/1     Running     0          11m
+rook-ceph     rook-ceph-mon-c-b9b76dbc5-2gkhc                     1/1     Running     0          10m
+rook-ceph     rook-ceph-operator-75c6d6bbfc-pm6gh                 1/1     Running     0          39m
+rook-ceph     rook-ceph-osd-prepare-master-h2svr                  0/1     Completed   0          2m38s
+rook-ceph     rook-ceph-osd-prepare-worker-1-ncgdk                0/1     Completed   0          2m36s
+rook-ceph     rook-ceph-osd-prepare-worker-2-6tf6p                0/1     Completed   0          2m34s
+```
+
 # 容器化
 
 ## 基本概念
@@ -718,7 +869,7 @@ deployment.apps/nginx-deployment created
 ```
 # kubectl get deployments
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-nginx-deployment   4/4     4            4           2m6s
+nginx-deployment   4/4     4            4           46s
 ```
 
 ## 查看Pod列表
@@ -726,55 +877,55 @@ nginx-deployment   4/4     4            4           2m6s
 ```
 # kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-746fbb99df-7gxdz   1/1     Running   0          2m39s
-nginx-deployment-746fbb99df-bntdr   1/1     Running   0          2m39s
-nginx-deployment-746fbb99df-nhpqx   1/1     Running   0          2m39s
-nginx-deployment-746fbb99df-v849h   1/1     Running   0          2m39s
+nginx-deployment-746fbb99df-5gpv6   1/1     Running   0          51s
+nginx-deployment-746fbb99df-8vwkf   1/1     Running   0          51s
+nginx-deployment-746fbb99df-jcp6c   1/1     Running   0          51s
+nginx-deployment-746fbb99df-x7zc4   1/1     Running   0          51s
 
 # kubectl get pods -l app=nginx
 NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-746fbb99df-7gxdz   1/1     Running   0          3m15s
-nginx-deployment-746fbb99df-bntdr   1/1     Running   0          3m15s
-nginx-deployment-746fbb99df-nhpqx   1/1     Running   0          3m15s
-nginx-deployment-746fbb99df-v849h   1/1     Running   0          3m15s
+nginx-deployment-746fbb99df-5gpv6   1/1     Running   0          74s
+nginx-deployment-746fbb99df-8vwkf   1/1     Running   0          74s
+nginx-deployment-746fbb99df-jcp6c   1/1     Running   0          74s
+nginx-deployment-746fbb99df-x7zc4   1/1     Running   0          74s
 ```
 
 ## 查看Pod详情
 
 1. Namespace:    default
-2. Node:         **worker/172.16.155.8**
-3. Controlled By:  **ReplicaSet/nginx-deployment-746fbb99df**
-4. Container ID:   docker://**1170f2917b97c237f759adeebba40db2e1d02666738c9c4951f98412ca0f6965**
+2. Node:         worker-1/172.16.155.11
+3. Controlled By:  ReplicaSet/nginx-deployment-746fbb99df
+4. Container ID:   docker://e12fcf41371e1332c7baddf89f68eae627b033c4f61d2472b1c0897fe4f0557e
 
 ```
-# kubectl describe pod nginx-deployment-746fbb99df-7gxdz
-Name:         nginx-deployment-746fbb99df-7gxdz
+# kubectl describe pod nginx-deployment-746fbb99df-5gpv6
+Name:         nginx-deployment-746fbb99df-5gpv6
 Namespace:    default
 Priority:     0
-Node:         worker/172.16.155.8
-Start Time:   Thu, 10 Jun 2021 03:42:43 +0000
+Node:         worker-1/172.16.155.11
+Start Time:   Thu, 17 Jun 2021 06:08:30 +0000
 Labels:       app=nginx
               pod-template-hash=746fbb99df
 Annotations:  <none>
 Status:       Running
-IP:           10.44.0.2
+IP:           10.44.0.5
 IPs:
-  IP:           10.44.0.2
+  IP:           10.44.0.5
 Controlled By:  ReplicaSet/nginx-deployment-746fbb99df
 Containers:
   nginx:
-    Container ID:   docker://1170f2917b97c237f759adeebba40db2e1d02666738c9c4951f98412ca0f6965
+    Container ID:   docker://e12fcf41371e1332c7baddf89f68eae627b033c4f61d2472b1c0897fe4f0557e
     Image:          nginx:1.7.9
     Image ID:       docker-pullable://nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451
     Port:           <none>
     Host Port:      <none>
     State:          Running
-      Started:      Thu, 10 Jun 2021 03:43:14 +0000
+      Started:      Thu, 17 Jun 2021 06:08:58 +0000
     Ready:          True
     Restart Count:  0
     Environment:    <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-dldcm (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-qfc55 (ro)
 Conditions:
   Type              Status
   Initialized       True
@@ -782,7 +933,7 @@ Conditions:
   ContainersReady   True
   PodScheduled      True
 Volumes:
-  kube-api-access-dldcm:
+  kube-api-access-qfc55:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -793,33 +944,21 @@ Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type    Reason     Age    From               Message
-  ----    ------     ----   ----               -------
-  Normal  Scheduled  6m58s  default-scheduler  Successfully assigned default/nginx-deployment-746fbb99df-7gxdz to worker
-  Normal  Pulling    6m56s  kubelet            Pulling image "nginx:1.7.9"
-  Normal  Pulled     6m28s  kubelet            Successfully pulled image "nginx:1.7.9" in 27.938889113s
-  Normal  Created    6m28s  kubelet            Created container nginx
-  Normal  Started    6m27s  kubelet            Started container nginx
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  115s  default-scheduler  Successfully assigned default/nginx-deployment-746fbb99df-5gpv6 to worker-1
+  Normal  Pulling    113s  kubelet            Pulling image "nginx:1.7.9"
+  Normal  Pulled     88s   kubelet            Successfully pulled image "nginx:1.7.9" in 24.967209413s
+  Normal  Created    87s   kubelet            Created container nginx
+  Normal  Started    87s   kubelet            Started container nginx
 ```
 
-## 查看Worker上的运行中Docker容器
+## 查看worker-1上的运行中Docker容器
 
 ```
-# docker ps
-CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS          PORTS     NAMES
-2d0b8488835b   nginx                    "nginx -g 'daemon of…"   12 minutes ago   Up 12 minutes             k8s_nginx_nginx-deployment-746fbb99df-v849h_default_e4eb2be3-4af9-48ca-884d-f3340afc9f4d_0
-98779d73cec0   nginx                    "nginx -g 'daemon of…"   12 minutes ago   Up 12 minutes             k8s_nginx_nginx-deployment-746fbb99df-bntdr_default_4c6bd471-500b-4d1e-889f-2da2e9d2bfa7_0
-1170f2917b97   nginx                    "nginx -g 'daemon of…"   12 minutes ago   Up 12 minutes             k8s_nginx_nginx-deployment-746fbb99df-7gxdz_default_86dc3aa3-cba3-4562-a0fc-510d68e9a70a_0
-cba8a20f35ee   nginx                    "nginx -g 'daemon of…"   13 minutes ago   Up 13 minutes             k8s_nginx_nginx-deployment-746fbb99df-nhpqx_default_daaaf4f8-935f-4846-8ab2-b0df3ce8bfe2_0
-d5b281de919b   k8s.gcr.io/pause:3.4.1   "/pause"                 13 minutes ago   Up 13 minutes             k8s_POD_nginx-deployment-746fbb99df-v849h_default_e4eb2be3-4af9-48ca-884d-f3340afc9f4d_0
-e3597f3b2ad9   k8s.gcr.io/pause:3.4.1   "/pause"                 13 minutes ago   Up 13 minutes             k8s_POD_nginx-deployment-746fbb99df-bntdr_default_4c6bd471-500b-4d1e-889f-2da2e9d2bfa7_0
-e665c07aad5a   k8s.gcr.io/pause:3.4.1   "/pause"                 13 minutes ago   Up 13 minutes             k8s_POD_nginx-deployment-746fbb99df-nhpqx_default_daaaf4f8-935f-4846-8ab2-b0df3ce8bfe2_0
-9581c7150302   k8s.gcr.io/pause:3.4.1   "/pause"                 13 minutes ago   Up 13 minutes             k8s_POD_nginx-deployment-746fbb99df-7gxdz_default_86dc3aa3-cba3-4562-a0fc-510d68e9a70a_0
-f226f6308296   df29c0a4002c             "/home/weave/launch.…"   2 hours ago      Up 2 hours                k8s_weave_weave-net-sjpzt_kube-system_ac9c18bf-7aa9-4468-980e-def831428be3_1
-0c80617a68ad   weaveworks/weave-npc     "/usr/bin/launch.sh"     2 hours ago      Up 2 hours                k8s_weave-npc_weave-net-sjpzt_kube-system_ac9c18bf-7aa9-4468-980e-def831428be3_0
-f3cd0ea9fc9a   k8s.gcr.io/kube-proxy    "/usr/local/bin/kube…"   2 hours ago      Up 2 hours                k8s_kube-proxy_kube-proxy-755pn_kube-system_d4eec817-f7a9-47b4-95a4-f09432d239c4_0
-5c6eb80bc32f   k8s.gcr.io/pause:3.4.1   "/pause"                 2 hours ago      Up 2 hours                k8s_POD_weave-net-sjpzt_kube-system_ac9c18bf-7aa9-4468-980e-def831428be3_0
-b616b07b15d0   k8s.gcr.io/pause:3.4.1   "/pause"                 2 hours ago      Up 2 hours                k8s_POD_kube-proxy-755pn_kube-system_d4eec817-f7a9-47b4-95a4-f09432d239c4_0
+root@worker-1:~# docker ps | grep nginx
+e12fcf41371e   nginx                                              "nginx -g 'daemon of…"   3 minutes ago       Up 3 minutes                 k8s_nginx_nginx-deployment-746fbb99df-5gpv6_default_ddd40c6d-3ac0-41ea-95df-59cc70d47b20_0
+6f476f443421   k8s.gcr.io/pause:3.4.1                             "/pause"                 3 minutes ago       Up 3 minutes                 k8s_POD_nginx-deployment-746fbb99df-5gpv6_default_ddd40c6d-3ac0-41ea-95df-59cc70d47b20_0
 ```
 
 ## 升级Nginx
@@ -855,27 +994,19 @@ spec:
 deployment.apps/nginx-deployment configured
 
 # kubectl get pods
-NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-746fbb99df-7gxdz   1/1     Running   0          37m
-nginx-deployment-746fbb99df-bntdr   1/1     Running   0          37m
-nginx-deployment-746fbb99df-nhpqx   1/1     Running   0          37m
-nginx-deployment-746fbb99df-v849h   1/1     Running   0          37m
-
-# kubectl get pods
 NAME                                READY   STATUS              RESTARTS   AGE
-nginx-deployment-746fbb99df-7gxdz   1/1     Running             0          38m
-nginx-deployment-746fbb99df-bntdr   1/1     Running             0          38m
-nginx-deployment-746fbb99df-nhpqx   1/1     Running             0          38m
-nginx-deployment-746fbb99df-v849h   0/1     Terminating         0          38m
-nginx-deployment-7cd7fc4dbf-7c245   0/1     ContainerCreating   0          3s
-nginx-deployment-7cd7fc4dbf-bnpqb   0/1     ContainerCreating   0          3s
+nginx-deployment-746fbb99df-5gpv6   1/1     Running             0          4m33s
+nginx-deployment-746fbb99df-8vwkf   1/1     Running             0          4m33s
+nginx-deployment-746fbb99df-x7zc4   1/1     Running             0          4m33s
+nginx-deployment-7cd7fc4dbf-fzlkp   0/1     ContainerCreating   0          4s
+nginx-deployment-7cd7fc4dbf-tjmbg   0/1     ContainerCreating   0          4s
 
 # kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-7cd7fc4dbf-2d52c   1/1     Running   0          26s
-nginx-deployment-7cd7fc4dbf-7c245   1/1     Running   0          50s
-nginx-deployment-7cd7fc4dbf-8q292   1/1     Running   0          23s
-nginx-deployment-7cd7fc4dbf-bnpqb   1/1     Running   0          50s
+nginx-deployment-7cd7fc4dbf-fzlkp   1/1     Running   0          91s
+nginx-deployment-7cd7fc4dbf-stdbk   1/1     Running   0          57s
+nginx-deployment-7cd7fc4dbf-tjmbg   1/1     Running   0          91s
+nginx-deployment-7cd7fc4dbf-tnx8g   1/1     Running   0          54s
 ```
 
 ## Volume
@@ -929,44 +1060,44 @@ deployment.apps/nginx-deployment configured
 
 # kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-75f76dcfd9-l2fms   1/1     Running   0          66s
-nginx-deployment-75f76dcfd9-m7jfv   1/1     Running   0          63s
-nginx-deployment-75f76dcfd9-nqw7n   1/1     Running   0          66s
-nginx-deployment-75f76dcfd9-xphpl   1/1     Running   0          63s
+nginx-deployment-75f76dcfd9-2zddq   1/1     Running   0          36s
+nginx-deployment-75f76dcfd9-hqtf8   1/1     Running   0          34s
+nginx-deployment-75f76dcfd9-np5m7   1/1     Running   0          34s
+nginx-deployment-75f76dcfd9-vnth7   1/1     Running   0          37s
 ```
 
 Type:       EmptyDir (**a temporary directory that shares a pod's lifetime**)
 
 ```
-# kubectl describe pod nginx-deployment-75f76dcfd9-l2fms
-Name:         nginx-deployment-75f76dcfd9-l2fms
+# kubectl describe pod nginx-deployment-75f76dcfd9-2zddq
+Name:         nginx-deployment-75f76dcfd9-2zddq
 Namespace:    default
 Priority:     0
-Node:         worker/172.16.155.8
-Start Time:   Thu, 10 Jun 2021 04:37:36 +0000
+Node:         master/172.16.155.10
+Start Time:   Thu, 17 Jun 2021 06:16:16 +0000
 Labels:       app=nginx
               pod-template-hash=75f76dcfd9
 Annotations:  <none>
 Status:       Running
-IP:           10.44.0.1
+IP:           10.32.0.9
 IPs:
-  IP:           10.44.0.1
+  IP:           10.32.0.9
 Controlled By:  ReplicaSet/nginx-deployment-75f76dcfd9
 Containers:
   nginx:
-    Container ID:   docker://0b3b7523443a2b8c4e0dc8421f5f89ce4b305a51b1a49ebb66b12450036059da
+    Container ID:   docker://3e0d33d9be2be59e604e57746076ad4a5714a4addcd6e5380ecc1f9a6cb32980
     Image:          nginx:1.8
     Image ID:       docker-pullable://nginx@sha256:c97ee70c4048fe79765f7c2ec0931957c2898f47400128f4f3640d0ae5d60d10
     Port:           <none>
     Host Port:      <none>
     State:          Running
-      Started:      Thu, 10 Jun 2021 04:37:38 +0000
+      Started:      Thu, 17 Jun 2021 06:16:18 +0000
     Ready:          True
     Restart Count:  0
     Environment:    <none>
     Mounts:
       /usr/share/nginx/html from nginx-vol (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-kwzr4 (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-r4b4k (ro)
 Conditions:
   Type              Status
   Initialized       True
@@ -978,7 +1109,7 @@ Volumes:
     Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
     Medium:
     SizeLimit:  <unset>
-  kube-api-access-kwzr4:
+  kube-api-access-r4b4k:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -991,17 +1122,17 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type    Reason     Age   From               Message
   ----    ------     ----  ----               -------
-  Normal  Scheduled  2m    default-scheduler  Successfully assigned default/nginx-deployment-75f76dcfd9-l2fms to worker
-  Normal  Pulled     118s  kubelet            Container image "nginx:1.8" already present on machine
-  Normal  Created    118s  kubelet            Created container nginx
-  Normal  Started    118s  kubelet            Started container nginx
+  Normal  Scheduled  73s   default-scheduler  Successfully assigned default/nginx-deployment-75f76dcfd9-2zddq to master
+  Normal  Pulled     72s   kubelet            Container image "nginx:1.8" already present on machine
+  Normal  Created    72s   kubelet            Created container nginx
+  Normal  Started    71s   kubelet            Started container nginx
 ```
 
 ## kubectl exec
 
 ```
-# kubectl exec -it nginx-deployment-75f76dcfd9-l2fms -- /bin/bash
-root@nginx-deployment-75f76dcfd9-l2fms:/# ls /usr/share/nginx/html | wc -l
+# kubectl exec -it nginx-deployment-75f76dcfd9-2zddq -- /bin/bash
+root@nginx-deployment-75f76dcfd9-2zddq:/# ls /usr/share/nginx/html | wc -l
 0
 ```
 
@@ -1031,13 +1162,24 @@ spec:
 service/nginx-service created
 
 # kubectl get services -o wide
-NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   SELECTOR
-kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP        14h   <none>
-nginx-service   NodePort    10.104.145.21   <none>        80:32600/TCP   18s   app=nginx
+NAME            TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE    SELECTOR
+kubernetes      ClusterIP   10.96.0.1     <none>        443/TCP        145m   <none>
+nginx-service   NodePort    10.109.88.7   <none>        80:32600/TCP   13s    app=nginx
 ```
 
 ```
-# curl http://10.104.145.21
+# curl http://10.109.88.7
+<html>
+<head><title>403 Forbidden</title></head>
+<body bgcolor="white">
+<center><h1>403 Forbidden</h1></center>
+<hr><center>nginx/1.8.1</center>
+</body>
+</html>
+```
+
+```
+# curl http://172.16.155.10:32600
 <html>
 <head><title>403 Forbidden</title></head>
 <body bgcolor="white">
@@ -1046,7 +1188,7 @@ nginx-service   NodePort    10.104.145.21   <none>        80:32600/TCP   18s   a
 </body>
 </html>
 
-# curl http://172.16.155.9:32600
+# curl http://172.16.155.11:32600
 <html>
 <head><title>403 Forbidden</title></head>
 <body bgcolor="white">
@@ -1055,7 +1197,7 @@ nginx-service   NodePort    10.104.145.21   <none>        80:32600/TCP   18s   a
 </body>
 </html>
 
-# curl http://172.16.155.8:32600
+# curl http://172.16.155.12:32600
 <html>
 <head><title>403 Forbidden</title></head>
 <body bgcolor="white">
@@ -1070,19 +1212,19 @@ nginx-service   NodePort    10.104.145.21   <none>        80:32600/TCP   18s   a
 ```
 # kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
-nginx-deployment-75f76dcfd9-l2fms   1/1     Running   0          13m
-nginx-deployment-75f76dcfd9-m7jfv   1/1     Running   0          13m
-nginx-deployment-75f76dcfd9-nqw7n   1/1     Running   0          13m
-nginx-deployment-75f76dcfd9-xphpl   1/1     Running   0          13m
+nginx-deployment-75f76dcfd9-2zddq   1/1     Running   0          5m45s
+nginx-deployment-75f76dcfd9-hqtf8   1/1     Running   0          5m43s
+nginx-deployment-75f76dcfd9-np5m7   1/1     Running   0          5m43s
+nginx-deployment-75f76dcfd9-vnth7   1/1     Running   0          5m46s
 
 # kubectl get deployments
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-nginx-deployment   4/4     4            4           68m
+nginx-deployment   4/4     4            4           13m
 
 # kubectl get services -o wide
-NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
-kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP        14h     <none>
-nginx-service   NodePort    10.104.145.21   <none>        80:32600/TCP   5m16s   app=nginx
+NAME            TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+kubernetes      ClusterIP   10.96.0.1     <none>        443/TCP        147m    <none>
+nginx-service   NodePort    10.109.88.7   <none>        80:32600/TCP   2m16s   app=nginx
 ```
 
 ```
@@ -1101,8 +1243,8 @@ No resources found in default namespace.
 No resources found in default namespace.
 
 # kubectl get services -o wide
-NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE   SELECTOR
-kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   14h   <none>
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE    SELECTOR
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   148m   <none>
 ```
 
 # 参考资料
