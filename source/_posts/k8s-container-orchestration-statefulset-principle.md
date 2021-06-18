@@ -420,6 +420,30 @@ www-web-1   Bound     pvc-15c79307-b507-11e6-932f-42010a800002   1Gi        RWO 
 2. Kubernetes通过**Headless Service**，为这些**有编号的Pod**，在**DNS服务器**中生成带有**同样编号的DNS记录**
 3. StatefulSet为每个Pod分配并创建一个**同样编号的PVC**
 
+# 工程化优势
+
+> StatefulSet是对**现有典型运维业务**的**容器化抽象**
+
+## 滚动更新
+
+> patch：修改API Object的指定字段
+> StatefulSet控制器会按照**与Pod编号相反的顺序**，从最后一个Pod开始，逐一更新，如果更新发生错误，滚动更新会停止
+
+```
+# kubectl patch statefulset mysql --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"mysql:5.7.23"}]'
+statefulset.apps/mysql patched
+```
+
+## 灰度发布
+
+> 应用的多个实例中被指定的一部分不会被更新到最新版本
+> `partition=2`：当Pod模板发生变化时，只有序号**≥2**的Pod会被更新
+
+```
+# kubectl patch statefulset mysql -p '{"spec":{"updateStrategy":{"type":"RollingUpdate","rollingUpdate":{"partition":2}}}}'
+statefulset.apps/mysql patched
+```
+
 # 参考资料
 
 1. [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201)
