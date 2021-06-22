@@ -1,0 +1,90 @@
+---
+title: 声明式API -- API Object
+mathjax: false
+date: 2021-06-21 11:21:32
+categories:
+    - Cloud Native
+    - Kubernetes
+tags:
+    - Cloud Native
+    - Kubernetes
+---
+
+# 资源路径
+
+1. 一个API对象在**Etcd**里的完整资源路径：**Group** + **Version** + **Resource**
+2. Group
+   - 位置
+     - **核心对象**（Pod、Node等）的Group为**`""`**，直接放在**`/api`**
+     - **非核心对象**（CronJob等）放在`/apis`
+   - 按**功能**归类
+     - Job和CronJob都是**batch**（离线业务）
+3. Version：同一个API Object可以有多个版本
+
+![](https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/geek/image-20210621113412635.png)
+
+```yaml
+apiVersion: batch/v2alpha1
+kind: CronJob
+...
+```
+
+<!-- more -->
+
+# 创建过程
+
+1. 发起用于**创建CronJob**的**POST**请求：将YAML提交给APIServer
+2. APIServer过滤请求：授权、超时处理、审计等
+3. MUX + Routes：APIServer完成**URL**和**Handler**（找到CronJob的**类型定义**）绑定
+4. 根据CronJob的类型定义，使用用户提交的YAML文件的字段，**创建一个CronJob对象**
+   - **Convert**：将用户提交的YAML文件转换成一个**Super Version**对象（该API资源类型**所有版本**的**字段全集**）
+5. **Validation**：验证该对象里的各个字段是否合法
+   - 被**验证过**的API对象，都保存在了APIServer里一个叫作**Registry**的数据结构
+   - 只要一个**API对象的定义**能够在Registry查到，说明这是一个有效的Kubernetes API对象
+6. APIServer把验证过的API对象转换成用户**最初提交的版本**，进行**序列化**操作，并调用**Etcd**的API把它保存起来
+
+![](https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/geek/image-20210621115336844.png)
+
+# CRD
+
+> CRD：**Custom Resource Definition**
+
+## example-network.yaml -- CR（Custom Resource）
+
+```yaml example-network.yaml
+apiVersion: samplecrd.k8s.io/v1
+kind: Network
+metadata:
+  name: example-network
+spec:
+  cidr: 192.168.0.0/16
+  gateway: 192.168.0.1
+```
+
+## network.yaml -- CRD（Custom Resource Definition）
+
+Kubernetes能够认识和处理所有声明了API类型为`samplecrd.k8s.io/v1/network`的YAML文件
+
+```yaml network.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: networks.samplecrd.k8s.io
+spec:
+  group: samplecrd.k8s.io
+  version: v1
+  names:
+    kind: Network
+    plural: networks
+  scope: Namespaced
+```
+
+## 代码目录
+
+
+
+
+
+# 参考资料
+
+1. [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201)
