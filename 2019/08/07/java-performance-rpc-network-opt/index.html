@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="服务框架的核心 大型服务框架的核心：RPC通信 微服务的核心是远程通信和服务治理 远程通信提供了服务之间通信的桥梁，服务治理提供了服务的后勤保障   服务的拆分增加了通信的成本，因此远程通信很容易成为系统瓶颈 在满足一定的服务治理需求的前提下，对远程通信的性能需求是技术选型的主要影响因素   很多微服务框架中的服务通信是基于RPC通信实现的 在没有进行组件扩展的前提下，Spring Cloud是基">
+<meta name="keywords" content="Java,Java Performance,RPC,Network">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java性能 -- 优化RPC网络通信">
+<meta property="og:url" content="http://zhongmingmao.me/2019/08/07/java-performance-rpc-network-opt/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="服务框架的核心 大型服务框架的核心：RPC通信 微服务的核心是远程通信和服务治理 远程通信提供了服务之间通信的桥梁，服务治理提供了服务的后勤保障   服务的拆分增加了通信的成本，因此远程通信很容易成为系统瓶颈 在满足一定的服务治理需求的前提下，对远程通信的性能需求是技术选型的主要影响因素   很多微服务框架中的服务通信是基于RPC通信实现的 在没有进行组件扩展的前提下，Spring Cloud是基">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-benchmark-rt.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-benchmark-tps.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-architecture-evolution.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-rmi-principle.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-tcp-udp.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-3-way-handshake.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-4-way-handshake.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java性能 -- 优化RPC网络通信">
+<meta name="twitter:description" content="服务框架的核心 大型服务框架的核心：RPC通信 微服务的核心是远程通信和服务治理 远程通信提供了服务之间通信的桥梁，服务治理提供了服务的后勤保障   服务的拆分增加了通信的成本，因此远程通信很容易成为系统瓶颈 在满足一定的服务治理需求的前提下，对远程通信的性能需求是技术选型的主要影响因素   很多微服务框架中的服务通信是基于RPC通信实现的 在没有进行组件扩展的前提下，Spring Cloud是基">
+<meta name="twitter:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-benchmark-rt.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/08/07/java-performance-rpc-network-opt/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Java性能 -- 优化RPC网络通信 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/08/07/java-performance-rpc-network-opt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Java性能 -- 优化RPC网络通信
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-07 10:50:00" itemprop="dateCreated datePublished" datetime="2019-08-07T10:50:00+08:00">2019-08-07</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">3.3k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">6 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="服务框架的核心"><a href="#服务框架的核心" class="headerlink" title="服务框架的核心"></a>服务框架的核心</h2><ol>
+<li>大型服务框架的核心：<strong>RPC通信</strong></li>
+<li>微服务的核心是<strong>远程通信</strong>和<strong>服务治理</strong><ul>
+<li>远程通信提供了<strong>服务之间通信的桥梁</strong>，服务治理提供了<strong>服务的后勤保障</strong></li>
+</ul>
+</li>
+<li>服务的拆分增加了<strong>通信的成本</strong>，因此<strong>远程通信</strong>很容易成为<strong>系统瓶颈</strong><ul>
+<li>在满足一定的服务治理需求的前提下，对<strong>远程通信的性能</strong>需求是技术选型的<strong>主要影响因素</strong></li>
+</ul>
+</li>
+<li>很多<strong>微服务框架</strong>中的服务通信是基于<strong>RPC通信</strong>实现的<ul>
+<li>在没有进行组件扩展的前提下，Spring Cloud是基于Feign组件实现RPC通信（基于<strong>HTTP+JSON</strong>序列化）</li>
+<li>Dubbo是基于<strong>SPI</strong>扩展了很多RPC通信框架，包括RMI、Dubbo、Hessian等（默认为<strong>Dubbo+Hessian</strong>序列化）</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h3 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h3><p>基于Dubbo:2.6.4，<strong>单一TCP长连接+Protobuf</strong>（响应时间和吞吐量更优），<strong>短连接的HTTP+JSON序列化</strong><br><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-benchmark-rt.jpg" width="1000/"><br><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-benchmark-tps.jpg" width="1000/"></p>
+<h2 id="RPC通信"><a href="#RPC通信" class="headerlink" title="RPC通信"></a>RPC通信</h2><h3 id="架构演化"><a href="#架构演化" class="headerlink" title="架构演化"></a>架构演化</h3><p>无论是微服务、SOA、还是RPC架构，都是<strong>分布式服务架构</strong>，都需要实现<strong>服务之间的互相通信</strong>，通常把这种通信统称为<strong>RPC通信</strong><br><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-architecture-evolution.jpg" width="1000/"></p>
+<h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><ol>
+<li>RPC：Remote Process Call，<strong>远程服务调用</strong>，通过网络请求远程计算机程序服务的通信技术</li>
+<li>RPC框架封装了<strong>底层网络通信</strong>和<strong>序列化</strong>等技术<ul>
+<li>只需要在项目中引入<strong>各个服务的接口包</strong>，就可以在代码中调用RPC服务（如同调用<strong>本地方法</strong>一样）</li>
+</ul>
+</li>
+</ol>
+<h3 id="RMI"><a href="#RMI" class="headerlink" title="RMI"></a>RMI</h3><ol>
+<li>RMI：Remote Method Invocation</li>
+<li>RMI是<strong>JDK自带</strong>的RPC通信框架，已经成熟地应用于<strong>EJB</strong>和<strong>Spring</strong>，是<strong>纯Java</strong>网络分布式应用系统的核心解决方案</li>
+<li>RMI实现了一台虚拟机应用对远程方法的调用可以同对本地方法调用一样，RMI封装好了远程通信的具体细节</li>
+</ol>
+<h4 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h4><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-rmi-principle.jpg" width="1000/">
+
+<ol>
+<li>RMI<strong>远程代理对象</strong>是RMI中<strong>最核心</strong>的组件，除了对象本身所在的虚拟机，其他虚拟机也可以调用此对象的方法</li>
+<li>这些虚拟机可以分布在<strong>不同的主机</strong>上，通过远程代理对象，远程应用可以用网络协议和服务进行通信</li>
+</ol>
+<h4 id="高并发下的性能瓶颈"><a href="#高并发下的性能瓶颈" class="headerlink" title="高并发下的性能瓶颈"></a>高并发下的性能瓶颈</h4><ol>
+<li><strong>Java默认序列化</strong><ul>
+<li>RMI的序列化方式采用的是Java默认序列化，<strong>性能不好</strong>，而且<strong>不支持跨语言</strong></li>
+</ul>
+</li>
+<li><strong>TCP短连接</strong><ul>
+<li>RMI是基于<strong>TCP短连接</strong>实现的，在高并发情况下，大量请求会带来大量TCP连接的<strong>创建</strong>和<strong>销毁</strong>，<strong>非常消耗性能</strong></li>
+</ul>
+</li>
+<li><strong>阻塞式网络IO</strong><ul>
+<li>Socket编程中使用<strong>传统的IO模型</strong>，在高并发场景下基于<strong>短连接</strong>实现的网络通信就很容易产生<strong>IO阻塞</strong>，<strong>性能将大打折扣</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="优化路径"><a href="#优化路径" class="headerlink" title="优化路径"></a>优化路径</h3><h4 id="TCP-UDP"><a href="#TCP-UDP" class="headerlink" title="TCP / UDP"></a>TCP / UDP</h4><ol>
+<li>网络传输协议有<strong>TCP</strong>和<strong>UDP</strong>，两个协议都是基于Socket编程</li>
+<li>基于TCP协议实现的Socket通信是<strong>有连接</strong>的<ul>
+<li>传输数据要通过<strong>三次握手</strong>来实现数据传输的<strong>可靠性</strong>，而传输数据是<strong>没有边界</strong>的，采用的是<strong>字节流</strong>模式</li>
+</ul>
+</li>
+<li>基于UDP协议实现的Socket通信，客户端不需要建立连接，只需要创建一个套接字发送数据给服务端<ul>
+<li>基于UDP协议实现的Socket通信具有<strong>不可靠性</strong></li>
+<li>UDP发送的数据采用的是<strong>数据报</strong>模式，每个UDP的数据报都有一个长度，该长度与数据一起发送到服务端</li>
+</ul>
+</li>
+<li>为了保证<strong>数据传输的可靠性</strong>，通常情况下会采用<strong>TCP协议</strong><ul>
+<li>在局域网且对数据传输的可靠性没有要求的情况下，可以考虑使用UDP协议，UDP协议的效率比TCP协议高</li>
+</ul>
+</li>
+</ol>
+<img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-tcp-udp.jpg" width="1000/">
+
+<h4 id="长连接"><a href="#长连接" class="headerlink" title="长连接"></a>长连接</h4><ol>
+<li>服务之间的通信不同于客户端与服务端之间的通信</li>
+<li>由于客户端数量众多，基于<strong>短连接</strong>实现请求，可以避免长时间地占用连接，导致系统资源浪费</li>
+<li>服务之间的通信，连接的消费端不会像客户端那么多，但消费端向服务端请求的数量却一样多<ul>
+<li>基于<strong>长连接</strong>实现，可以省去大量建立TCP连接和关闭TCP连接的操作，从而<strong>减少系统的性能消耗</strong>，节省时间</li>
+</ul>
+</li>
+</ol>
+<h4 id="优化Socket通信"><a href="#优化Socket通信" class="headerlink" title="优化Socket通信"></a>优化Socket通信</h4><ol>
+<li>传统的Socket通信主要存在<strong>IO阻塞，线程模型缺陷以及内存拷贝</strong>等问题，Netty4对Socket通信编程做了很多方面的优化</li>
+<li>实现<strong>非阻塞IO</strong>：多路复用器<strong>Selector</strong>实现了非阻塞IO通信</li>
+<li>高效的<strong>Reactor线程模型</strong><ul>
+<li>Netty使用了<strong>主从Reactor多线程模型</strong></li>
+<li><strong>主线程</strong>：用于客户端的<strong>连接</strong>请求操作，一旦连接建立成功，将会<strong>监听IO事件</strong>，监听到事件后会创建一个<strong>链路请求</strong></li>
+<li>链路请求将会注册到负责IO操作的<strong>IO工作线程</strong>上，由IO工作线程负责后续的IO操作</li>
+<li>Reactor线程模型解决了在<strong>高并发</strong>的情况下，由于单个NIO线程无法监听海量客户端和满足大量IO操作造成的问题</li>
+</ul>
+</li>
+<li><strong>串行设计</strong><ul>
+<li>服务端在接收消息之后，存在着编码、解码、读取和发送等<strong>链路</strong>操作</li>
+<li>如果这些操作基于<strong>并行</strong>实现，无疑会导致<strong>严重的锁竞争</strong>，进而导致系统的<strong>性能下降</strong></li>
+<li>为了提升性能，Netty采用<strong>串行无锁化</strong>完成链路操作，提供了<strong>Pipeline</strong>，实现链路的各个操作在运行期间<strong>不会切换线程</strong></li>
+</ul>
+</li>
+<li><strong>零拷贝</strong><ul>
+<li>数据从<strong>内存</strong>发到<strong>网络</strong>中，存在<strong>两次拷贝</strong>，先是从<strong>用户空间</strong>拷贝到<strong>内核空间</strong>，再从<strong>内核空间</strong>拷贝到<strong>网络IO</strong></li>
+<li>NIO提供的ByteBuffer可以使用<strong>Direct Buffer</strong>模式<ul>
+<li>直接开辟一个<strong>非堆物理内存</strong>，不需要进行字节缓冲区的二次拷贝，可以<strong>直接将数据写入到内核空间</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>优化<strong>TCP参数</strong>配置，提高<strong>网络吞吐量</strong>，Netty可以基于ChannelOption来设置<ul>
+<li><strong>TCP_NODELAY</strong>：用于控制是否开启<strong>Nagle算法</strong><ul>
+<li>Nagle算法通过<strong>缓存</strong>的方式将小的数据包组成一个大的数据包，从而<strong>避免大量发送小的数据包</strong>，导致<strong>网络阻塞</strong></li>
+<li>在对<strong>时延敏感</strong>的应用场景，可以选择<strong>关闭</strong>该算法</li>
+</ul>
+</li>
+<li><strong>SO_RCVBUF</strong> / <strong>SO_SNDBUF</strong>：Socket<strong>接收缓冲区</strong>和<strong>发送缓冲区</strong>的大小</li>
+<li><strong>SO_BACKLOG</strong>：指定<strong>客户端连接请求缓冲队列的大小</strong><ul>
+<li>服务端处理客户端<strong>连接请求</strong>是<strong>按顺序</strong>处理的，<em><strong>同一时间只能处理一个客户端连接</strong></em></li>
+<li>当有多个客户端进来的时候，服务端将不能处理的客户端连接请求放在队列中等待处理</li>
+</ul>
+</li>
+<li><strong>SO_KEEPALIVE</strong><ul>
+<li>连接会检查<strong>长时间没有发送数据的客户端的连接状态</strong>，检测到客户端断开连接后，服务端将<strong>回收</strong>该连接</li>
+<li>将该值设置得小一些，可以提高回收连接的效率</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="定制报文格式"><a href="#定制报文格式" class="headerlink" title="定制报文格式"></a>定制报文格式</h4><ol>
+<li>设计一套报文，用于描述具体的校验、操作、传输数据等内容</li>
+<li>为了提高传输效率，可以根据实际情况来设计，尽量实现<strong>报体小，满足功能，易解析</strong>等特性</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>长度（字节）</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>魔数</td>
+<td>4</td>
+<td><strong>协议的标识</strong>，类似于字节码的魔数，通常为固定数字</td>
+</tr>
+<tr>
+<td>版本号</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>序列化算法</td>
+<td>1</td>
+<td>Protobuf / Thrift</td>
+</tr>
+<tr>
+<td>指令</td>
+<td>1</td>
+<td>类似于HTTP中的增删改查</td>
+</tr>
+<tr>
+<td>数据长度</td>
+<td>4</td>
+<td></td>
+</tr>
+<tr>
+<td>数据</td>
+<td>N</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="编解码"><a href="#编解码" class="headerlink" title="编解码"></a>编解码</h4><ol>
+<li>实现一个通信协议，需要<strong>兼容优秀的序列化框架</strong></li>
+<li>如果只是单纯的数据对象传输，可以选择性能相对较好的<strong>Protobuf序列化</strong>，有利于提高网络通信的性能</li>
+</ol>
+<h4 id="Linux的TCP参数设置"><a href="#Linux的TCP参数设置" class="headerlink" title="Linux的TCP参数设置"></a>Linux的TCP参数设置</h4><p>三次握手<br><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-3-way-handshake.jpg" width="600/"></p>
+<p>四次挥手<br><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-rpc-4-way-handshake.jpg" width="600/"></p>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fs.file-max = 194448 / ulimit</td>
+<td>Linux默认<strong>单个进程</strong>可以打开的文件数量上限为1024，Socket也是文件</td>
+</tr>
+<tr>
+<td>net.ipv4.tcp_keepalive_time</td>
+<td>与Netty的<strong>SO_KEEPALIVE</strong>配置项的作用一致</td>
+</tr>
+<tr>
+<td>net.ipv4.tcp_max_syn_backlog</td>
+<td><strong>SYN队列的长度</strong>，加大队列长度，可以容纳更多<strong>等待连接</strong>的网络连接数</td>
+</tr>
+<tr>
+<td>net.ipv4.ip_local_port_range</td>
+<td>客户端连接服务器时，需要动态分配源端口号，该配置项表示<strong>向外连接的端口范围</strong></td>
+</tr>
+<tr>
+<td>net.ipv4.tcp_max_tw_buckets</td>
+<td>1. 当一个连接关闭时，TCP会通过<strong>四次挥手</strong>来完成一次关闭连接操作，在请求量比较大的情况下，消费端会有大量<strong>TIME_WAIT</strong>状态的连接<br>2. 该参数可以限制TIME_WAIT状态的连接数量，如果TIME_WAIT的连接数量超过该值，TIME_WAIT将会立即被清除掉并打印警告信息</td>
+</tr>
+<tr>
+<td>net.ipv4.tcp_tw_reuse</td>
+<td>1. 客户端每次连接服务器时，都会获得一个<strong>新的源端口</strong>以实现<strong>连接的唯一性</strong>，在TIME_WAIT状态的连接数量过大的情况下，会增加端口号的占用时间<br>2. 由于处于TIME_WAIT状态的连接属于<strong>关闭</strong>连接，所以新创建的连接可以<strong>复用</strong>该端口号</td>
+</tr>
+</tbody></table>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100028001" target="_blank" rel="noopener">Java性能调优实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/06/26/java-performance-arraylist-linkedlist/" rel="bookmark">Java性能 -- ArrayList + LinkedList</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/20/java-performance-cas/" rel="bookmark">Java性能 --  CAS乐观锁</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/04/java-performance-command-line-tool/" rel="bookmark">Java性能 -- 命令行工具</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/30/java-performance-concurrent-container/" rel="bookmark">Java性能 -- 并发容器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/21/java-performance-concurrent-design-pattern/" rel="bookmark">Java性能 -- 并发设计模式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/08/07/java-performance-rpc-network-opt/" title="Java性能 -- 优化RPC网络通信">http://zhongmingmao.me/2019/08/07/java-performance-rpc-network-opt/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/java-performance/" rel="tag"><i class="fa fa-tag"></i> Java Performance</a>
+          
+            <a href="/tags/rpc/" rel="tag"><i class="fa fa-tag"></i> RPC</a>
+          
+            <a href="/tags/network/" rel="tag"><i class="fa fa-tag"></i> Network</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/02/kafka-compression/" rel="next" title="Kafka -- 压缩">
+                <i class="fa fa-chevron-left"></i> Kafka -- 压缩
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/09/kafka-no-msg-loss/" rel="prev" title="Kafka -- 无消息丢失">
+                Kafka -- 无消息丢失 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#服务框架的核心"><span class="nav-number">1.</span> <span class="nav-text">服务框架的核心</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#性能测试"><span class="nav-number">1.1.</span> <span class="nav-text">性能测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RPC通信"><span class="nav-number">2.</span> <span class="nav-text">RPC通信</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#架构演化"><span class="nav-number">2.1.</span> <span class="nav-text">架构演化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#概念"><span class="nav-number">2.2.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RMI"><span class="nav-number">2.3.</span> <span class="nav-text">RMI</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#实现原理"><span class="nav-number">2.3.1.</span> <span class="nav-text">实现原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#高并发下的性能瓶颈"><span class="nav-number">2.3.2.</span> <span class="nav-text">高并发下的性能瓶颈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#优化路径"><span class="nav-number">2.4.</span> <span class="nav-text">优化路径</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TCP-UDP"><span class="nav-number">2.4.1.</span> <span class="nav-text">TCP / UDP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#长连接"><span class="nav-number">2.4.2.</span> <span class="nav-text">长连接</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#优化Socket通信"><span class="nav-number">2.4.3.</span> <span class="nav-text">优化Socket通信</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#定制报文格式"><span class="nav-number">2.4.4.</span> <span class="nav-text">定制报文格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编解码"><span class="nav-number">2.4.5.</span> <span class="nav-text">编解码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Linux的TCP参数设置"><span class="nav-number">2.4.6.</span> <span class="nav-text">Linux的TCP参数设置</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">3.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

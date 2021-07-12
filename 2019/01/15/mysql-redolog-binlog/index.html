@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="更新语句123mysql&amp;gt; CREATE TABLE T (id INT PRIMARY KEY, c INT);mysql&amp;gt; UPDATE T SET c=c+1 WHERE id=2;  执行过程">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- redolog + binlog">
+<meta property="og:url" content="http://zhongmingmao.me/2019/01/15/mysql-redolog-binlog/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="更新语句123mysql&amp;gt; CREATE TABLE T (id INT PRIMARY KEY, c INT);mysql&amp;gt; UPDATE T SET c=c+1 WHERE id=2;  执行过程">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-architecture.png">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-redo-log.jpg">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-update-procedure-1.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- redolog + binlog">
+<meta name="twitter:description" content="更新语句123mysql&amp;gt; CREATE TABLE T (id INT PRIMARY KEY, c INT);mysql&amp;gt; UPDATE T SET c=c+1 WHERE id=2;  执行过程">
+<meta name="twitter:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-architecture.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/01/15/mysql-redolog-binlog/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- redolog + binlog | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/01/15/mysql-redolog-binlog/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- redolog + binlog
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-01-15 19:11:56" itemprop="dateCreated datePublished" datetime="2019-01-15T19:11:56+08:00">2019-01-15</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">7.2k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">13 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="更新语句"><a href="#更新语句" class="headerlink" title="更新语句"></a>更新语句</h2><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE T (id INT PRIMARY KEY, c INT);</span><br><span class="line"></span><br><span class="line">mysql&gt; UPDATE T SET c=c+1 WHERE id=2;</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><a id="more"></a>
+
+<img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-architecture.png" width="500/">
+
+
+<ol>
+<li>通过连接器，客户端与MySQL建立连接</li>
+<li>update语句会把<strong>T表上的所有查询缓存清空</strong></li>
+<li>分析器会通过词法分析和语法分析识别这是一条更新语句</li>
+<li>优化器会决定使用id这个索引（聚簇索引）</li>
+<li>执行器负责具体执行，找到匹配的一行，然后更新</li>
+<li>更新过程中还会涉及<strong>redolog</strong>（重做日志）和<strong>binlog</strong>（归档日志）的操作</li>
+</ol>
+<h2 id="redolog-–-InnoDB"><a href="#redolog-–-InnoDB" class="headerlink" title="redolog – InnoDB"></a>redolog – InnoDB</h2><ol>
+<li>如果每次更新操作都需要<strong>直接写入磁盘</strong>（在磁盘中找到相关的记录并更新），整个过程的<strong>IO成本</strong>和<strong>查找成本</strong>都很高</li>
+<li>针对这种情况，MySQL采用的是<strong>WAL</strong>技术（<strong>Write-Ahead Logging</strong>）：<em><strong>先写日志，再写磁盘</strong></em></li>
+<li>当有一条记录需要更新的时候，InnoDB会先把记录写到<strong>redolog</strong>（redolog buffer），并<strong>更新内存</strong>（buffer pool）<ul>
+<li>InnoDB会在适当的时候（例如系统空闲），将这个操作记录到磁盘里面（<strong>刷脏页</strong>）</li>
+</ul>
+</li>
+<li>InnoDB的redolog是<strong>固定大小</strong>的，如果每个日志文件大小为1GB，4个日志文件为一组<ul>
+<li>redolog的总大小为4GB，<em><strong>循环写</strong></em></li>
+<li>write pos是<strong>当前记录的位置</strong>，一边写一边后移，写到3号文件末尾后就回到0号文件开头<ul>
+<li>redolog是<strong>顺序写</strong>，数据文件是<strong>随机写</strong></li>
+</ul>
+</li>
+<li>checkpoint是<strong>当前要擦除的位置</strong>，<strong>擦除记录前需要先把对应的数据落盘</strong>（更新内存页，等待刷脏页）</li>
+<li>write pos到checkpoint之间的部分可以用来<strong>记录新的操作</strong><ul>
+<li>如果write pos赶上了checkpoint，说明redolog已<strong>满</strong>，不能再执行新的更新操作，需要先推进checkpoint</li>
+<li><strong>只要write pos未赶上checkpoint，就可以执行新的更新操作</strong></li>
+</ul>
+</li>
+<li>checkpoint到write pos之间的部分<strong>等待落盘</strong>（先更新内存页，然后等待刷脏页）<ul>
+<li>如果checkpoint赶上了write pos，说明redolog已<strong>空</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>有了redolog之后，InnoDB能保证数据库即使发生<strong>异常重启</strong>，<strong>之前提交的记录都不会丢失</strong>，达到<strong>crash-safe</strong></li>
+<li>如果redolog太小，会导致很快被写满，然后就不得不强行刷redolog，这样<strong>WAL</strong>机制的能力就无法发挥出来<ul>
+<li>如果磁盘能达到几TB，那么可以将redolog设置4个一组，每个日志文件大小为1GB</li>
+</ul>
+</li>
+</ol>
+<img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-redo-log.jpg" width="400/">
+
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># innodb_log_file_size -&gt; 单个redolog文件的大小</span></span><br><span class="line"><span class="comment"># 268435456 Bytes = 256 MB</span></span><br><span class="line">mysql&gt; SHOW VARIABLES LIKE '%innodb_log_file%';</span><br><span class="line">+<span class="comment">---------------------------+-----------+</span></span><br><span class="line">| Variable_name             | Value     |</span><br><span class="line">+<span class="comment">---------------------------+-----------+</span></span><br><span class="line">| innodb_log_file_size      | 268435456 |</span><br><span class="line">| innodb_log_files_in_group | 3         |</span><br><span class="line">+<span class="comment">---------------------------+-----------+</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里的written是指写到磁盘缓存</span></span><br><span class="line"><span class="comment"># 0 -&gt; Logs are written and flushed to disk once per second</span></span><br><span class="line"><span class="comment"># 1 -&gt; Logs are written and flushed to disk at each transaction commit</span></span><br><span class="line"><span class="comment"># 2 -&gt; Logs are written after each transaction commit and flushed to disk once per second</span></span><br><span class="line">mysql&gt; SHOW VARIABLES LIKE '%innodb_flush_log_at_trx_commit%';</span><br><span class="line">+<span class="comment">--------------------------------+-------+</span></span><br><span class="line">| Variable_name                  | Value |</span><br><span class="line">+<span class="comment">--------------------------------+-------+</span></span><br><span class="line">| innodb_flush_log_at_trx_commit | 2     |</span><br><span class="line">+<span class="comment">--------------------------------+-------+</span></span><br></pre></td></tr></table></figure>
+
+<p><a href="https://dev.mysql.com/doc/refman/5.6/en/innodb-parameters.html#sysvar_innodb_flush_log_at_trx_commit" target="_blank" rel="noopener">innodb_flush_log_at_trx_commit</a></p>
+<h3 id="数据落盘"><a href="#数据落盘" class="headerlink" title="数据落盘"></a>数据落盘</h3><ol>
+<li>redolog并<strong>没有记录数据页的完整记录</strong>，只是记录<strong>数据页的变更</strong>，因此redolog本身并<strong>没有直接更新磁盘页的能力</strong></li>
+<li>MySQL实例正常运行，在<strong>内存中的数据页</strong>被修改后，跟<strong>磁盘上的数据页</strong>不一致，称为<strong>脏页</strong><ul>
+<li>最终的<strong>数据落盘</strong>，指的是<strong>把内存中的数据页覆盖磁盘上的数据页</strong>，这个过程<strong>与redolog无关</strong></li>
+</ul>
+</li>
+<li>在崩溃恢复的场景，InnoDB如果判断是下面的<code>2.a</code>场景<ul>
+<li>就会<strong>读取磁盘上对应的数据页到内存</strong>中，然后<strong>应用redolog</strong>，更新内存页</li>
+<li>更新完成后，这个内存页就变成了脏页，等待被刷到磁盘上</li>
+</ul>
+</li>
+</ol>
+<h3 id="redolog-buffer"><a href="#redolog-buffer" class="headerlink" title="redolog buffer"></a>redolog buffer</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t1;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t2;</span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>redolog buffer用于存放redolog</li>
+<li>执行完第一个<code>INSERT</code>后，内存中（<strong>buffer pool</strong>）的数据页被修改了，另外<strong>redolog buffer</strong>也写入了日志</li>
+<li><code>COMMIT</code>：真正把日志写到redolog（ib_logfileX）</li>
+<li>自动开启事务的SQL语句<strong>隐式</strong>包含上述过程</li>
+</ol>
+<h2 id="binlog-–-Server"><a href="#binlog-–-Server" class="headerlink" title="binlog – Server"></a>binlog – Server</h2><ol>
+<li><strong>redolog是InnoDB特有的日志，binlog属于Server层日志</strong></li>
+<li>有两份日志的历史原因<ul>
+<li>一开始并没有InnoDB，采用的是MyISAM，但<strong>MyISAM没有crash-safe的能力</strong>，<strong>binlog日志只能用于归档</strong></li>
+<li>InnoDB是以插件的形式引入MySQL的，<strong>为了实现crash-safe</strong>，InnoDB采用了<strong>redolog</strong>的方案</li>
+</ul>
+</li>
+<li>binlog一开始的设计就是<strong>不支持崩溃恢复</strong>（原库）的，如果不考虑搭建从库等操作，<strong>binlog是可以关闭的</strong>（sql_log_bin）</li>
+<li>redolog vs binlog<ul>
+<li>redolog是InnoDB特有的，binlog是MySQL的Server层实现的，所有层都可以使用</li>
+<li>redolog是<strong>物理日志</strong>，记录某个<strong>数据页</strong>上做了什么<strong>修改</strong><ul>
+<li>binlog是<strong>逻辑日志</strong>，记录某个<strong>语句的原始逻辑</strong></li>
+<li>逻辑日志：<strong>提供给别的引擎用</strong>，是大家都能理解的逻辑，例如<strong>搭建从库</strong></li>
+<li>物理日志：<strong>只能内部使用</strong>，其他引擎无法共享内部的物理格式</li>
+</ul>
+</li>
+<li>redolog是<strong>循环写</strong>，<strong>空间固定</strong>，<strong>不能持久保存</strong>，没有<strong>归档</strong>功能<ul>
+<li>binlog是<strong>追加写</strong>，<strong>空间不受限制</strong>，有<strong>归档</strong>功能</li>
+</ul>
+</li>
+<li>redolog主要用于<strong>crash-safe</strong>，原库恢复<ul>
+<li>binlog主要用于恢复成<strong>临时库</strong>（从库）</li>
+</ul>
+</li>
+<li>崩溃恢复的过程<strong>不写binlog</strong>（可能需要<strong>读binlog</strong>，如果binlog有打开，一般都会打开）<ul>
+<li>用binlog恢复实例（从库），需要<strong>写redolog</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><em><strong>redolog支持事务的持久性，undolog支持事务的隔离性</strong></em></li>
+<li>redolog对应用开发来说是<strong>透明</strong>的</li>
+<li>binlog有两种模式<ul>
+<li><strong>statement格式</strong>：SQL语句</li>
+<li><strong>row格式</strong>：行内容（记两条，更新前和更新后），<strong>推荐</strong><ul>
+<li>日志一样的可以用于<strong>重放</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW VARIABLES LIKE '%sql_log_bin%';</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br><span class="line">| Variable_name | Value |</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br><span class="line">| sql_log_bin   | ON    |</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="update-内部流程"><a href="#update-内部流程" class="headerlink" title="update 内部流程"></a>update 内部流程</h2><p>浅色框在<strong>InnoDB内部</strong>执行，深色框在<strong>执行器中</strong>执行<br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-update-procedure-1.jpg" width="500/"></p>
+<ol>
+<li>执行器先通过InnoDB获取id=2这一行，id是主键，InnoDB可以通过<strong>聚簇索引</strong>找到这一行<ul>
+<li>如果<strong>id=2这一行所在的数据页</strong>本来就在内存（<strong>InnoDB Buffer Pool</strong>）中，直接返回给执行器</li>
+<li>否则先从磁盘读入内存，然后再返回</li>
+</ul>
+</li>
+<li>执行器拿到InnoDB返回的行数据，进行<strong>+1</strong>操作，得到新的一行数据，再调用InnoDB的引擎接口写入这行数据</li>
+<li>InnoDB首先将这行新数据<strong>更新到内存</strong>（<strong>InnoDB Buffer Pool</strong>）中，同时将这个更新操作<strong>记录到redolog</strong>（物理记录）<ul>
+<li>更新到内存中，在<strong>事务提交后，后续的查询就可以直接在内存中读取该数据页</strong>，但此时的数据可能<strong>还没有真正落盘</strong><ul>
+<li>但在<strong>事务提交前，其他事务是无法看到这个内存修改的</strong></li>
+<li>而在<strong>事务提交后，说明已经成功写入了redolog，可崩溃恢复，不会丢数据，因此可以直接读内存的数据</strong></li>
+</ul>
+</li>
+<li>刚更新的内存是不会删除的，除非内存不够用，在数据从内存删除之前，系统会保证它们已经落盘</li>
+<li>此时redolog处于<strong>prepare</strong>状态（<strong>prepare标签</strong>），然后告诉执行器执行完成，<strong>随时可以提交事务</strong><ul>
+<li>对其他事务来说，刚刚修改的内存是<strong>不可见</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>执行器生成这个操作的<strong>binlog</strong>（<strong>逻辑记录</strong>）并写入磁盘<ul>
+<li><strong>binlog写成功事务就算成功</strong>，可以提交事务<ul>
+<li>哪怕崩溃恢复，也会恢复binlog写成功的事务（此时对应的redolog处于prepare状态）</li>
+</ul>
+</li>
+<li><strong>binlog如果没写成功就回滚</strong>，回滚会<strong>写redolog</strong>，打上<strong>rollback标签</strong>，binlog则会直接丢弃<ul>
+<li>如果binlog不丢弃，则会传播到从库</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>执行器调用InnoDB的<strong>提交事务</strong>接口，InnoDB把刚刚写入的redolog改成<strong>commit</strong>状态，更新完成<ul>
+<li>redolog打上了<strong>commit标签</strong></li>
+<li>commit表示两个日志都生效了</li>
+<li>commit完成后才会返回客户端</li>
+</ul>
+</li>
+</ol>
+<p><a href="https://dev.mysql.com/doc/refman/5.6/en/replication-options-binary-log.html#sysvar_sync_binlog" target="_blank" rel="noopener">sync_binlog</a></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 0 -&gt; Disables synchronization of the binary log to disk by the MySQL server</span></span><br><span class="line"><span class="comment">#       Instead, the MySQL server relies on the operating system to flush the binary log to disk from time to time as it does for any other file</span></span><br><span class="line"><span class="comment">#       This setting provides the best performance    </span></span><br><span class="line"><span class="comment"># 1 -&gt; Enables synchronization of the binary log to disk before transactions are committed</span></span><br><span class="line"><span class="comment">#       This is the safest setting but can have a negative impact on performance due to the increased number of disk writes</span></span><br><span class="line"><span class="comment"># N -&gt; The binary log is synchronized to disk after N binary log commit groups have been collected</span></span><br><span class="line"><span class="comment">#       A higher value improves performance, but with an increased risk of data loss</span></span><br><span class="line">mysql&gt; SHOW VARIABLES LIKE '%sync_binlog%';</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br><span class="line">| Variable_name | Value |</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br><span class="line">| sync_binlog   | 0     |</span><br><span class="line">+<span class="comment">---------------+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果系统IO能扛得住，采用双1</span></span><br><span class="line">For the greatest possible durability and consistency in a replication setup that uses InnoDB <span class="keyword">with</span> transactions, <span class="keyword">use</span> these <span class="keyword">settings</span>:</span><br><span class="line">sync_binlog=<span class="number">1.</span></span><br><span class="line">innodb_flush_log_at_trx_commit=<span class="number">1.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 实际中的线上环境可能会做一定的权衡，innodb_flush_log_at_trx_commit=2，sync_binlog=0</span></span><br><span class="line"><span class="comment"># 最多丢失1s的redolog，丢失部分binlog</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># 归纳</span><br><span class="line">innodb_flush_log_at_trx_commit</span><br><span class="line">    0 -&gt; write+flush by second</span><br><span class="line">    1 -&gt; write+flush by commit</span><br><span class="line">    2 -&gt; write by commit, flush by second</span><br><span class="line"></span><br><span class="line">sync_binlog</span><br><span class="line">    0 -&gt; rely on os</span><br><span class="line">    1 -&gt; 1 commit</span><br><span class="line">    N -&gt; N commit</span><br></pre></td></tr></table></figure>
+
+<h3 id="redolog的两阶段提交"><a href="#redolog的两阶段提交" class="headerlink" title="redolog的两阶段提交"></a>redolog的两阶段提交</h3><ol>
+<li>目的：为了让redolog和binlog的<strong>逻辑一致</strong></li>
+<li>脑洞：假设不采用两阶段提交<ul>
+<li>有两种顺序：redolog-&gt;binlog，或者binlog-&gt;redolog</li>
+<li>此时可以认为redolog和binlog<strong>完全独立</strong><ul>
+<li><em><strong>崩溃恢复完全依赖于redolog（原库），恢复临时库完全依赖于binlog</strong></em></li>
+</ul>
+</li>
+<li>按照上面的两种顺序，都会导致redolog和binlog逻辑上的不一致<ul>
+<li>假设原库crash后执行<strong>原库恢复</strong>+执行<strong>临时库恢复</strong>，恢复出来的数据是不一致的（主从不一致）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>恢复清醒：两阶段提交（假设是<strong>双1</strong>的配置）<ul>
+<li>redolog prepare + binlog成功，<strong>提交事务</strong>，崩溃恢复后也会继续提交事务（redolog commit），逻辑一致</li>
+<li>redolog prepare + binlog失败，<strong>回滚事务</strong>，崩溃恢复后也会继续回滚事务（redolog rollback），逻辑一致<ul>
+<li>一个事务的binlog是有<strong>固定格式</strong>的</li>
+<li>redolog与binlog是通过<strong>事务id</strong>（<strong>XID</strong>）进行<strong>关联</strong>的</li>
+<li>此时binglog中没有对应的记录，事务记录是不完整的</li>
+</ul>
+</li>
+<li>崩溃恢复后是会从<strong>checkpoint</strong>开始往后主动刷数据</li>
+</ul>
+</li>
+<li>采用非双1的配置，在极端环境下会出现redolog与binlog<strong>不一致</strong>的情况<ul>
+<li><strong>优先保证redolog</strong>，先原库崩溃恢复，再处理从库（原库可以在崩溃恢复后，重新做一次<strong>全量备份</strong>，重建从库）</li>
+</ul>
+</li>
+</ol>
+<h4 id="redolog-gt-binlog"><a href="#redolog-gt-binlog" class="headerlink" title="redolog-&gt;binlog"></a>redolog-&gt;binlog</h4><ol>
+<li>反证：事务的<strong>持久性</strong>问题</li>
+<li>对InnoDB而言，redolog有commit标签，代表这个事务不能再回滚</li>
+<li>假若后续的binlog写失败了，此时<strong>数据</strong>与<strong>binlog</strong>是不一致的，<strong>主从也不一致</strong></li>
+</ol>
+<h4 id="只有binlog"><a href="#只有binlog" class="headerlink" title="只有binlog"></a>只有binlog</h4><p>binlog是<strong>逻辑日志</strong>，没有记录数据页的更新细节，<em><strong>没有能力恢复数据页</strong></em></p>
+<h4 id="只有redolog"><a href="#只有redolog" class="headerlink" title="只有redolog"></a>只有redolog</h4><ol>
+<li>如果仅从<strong>崩溃恢复</strong>的角度来说，<strong>binlog是可以关掉的</strong><ul>
+<li>因为<strong>崩溃恢复是redolog的功能</strong></li>
+<li>此时没有两阶段提交，但系统依然是<strong>crash-safe</strong>的</li>
+</ul>
+</li>
+<li>但线上一般都会打开binlog，binlog有着redolog无法替代的功能<ul>
+<li>首先是<strong>归档</strong>功能，redolog是循环写，起不到归档的作用</li>
+<li><em><strong>binlog复制：MySQL高可用的基础</strong></em><ul>
+<li><strong>主从复制</strong></li>
+<li>异构系统（如数据分析系统）会<strong>消费MySQL的binlog</strong>来更新自己的数据</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="崩溃恢复"><a href="#崩溃恢复" class="headerlink" title="崩溃恢复"></a>崩溃恢复</h2><h3 id="判断逻辑"><a href="#判断逻辑" class="headerlink" title="判断逻辑"></a>判断逻辑</h3><ol>
+<li>如果redolog里面的事务是<strong>完整</strong>的，即已经有了<strong>commit标签</strong>，那么<strong>直接提交</strong></li>
+<li>如果redolog里面的事务只有<strong>prepare</strong>标签，则需要判断<strong>事务对应的binlog是否存在并完整</strong><ul>
+<li>a. 如果<strong>是</strong>，则<strong>提交事务</strong></li>
+<li>b. 如果<strong>否</strong>，则<strong>回滚事务</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="redolog与binlog关联"><a href="#redolog与binlog关联" class="headerlink" title="redolog与binlog关联"></a>redolog与binlog关联</h3><ol>
+<li>redolog和binlog有一个<strong>共同的数据字段</strong>：<strong>XID</strong></li>
+<li>崩溃恢复时，会按顺序扫描redolog<ul>
+<li>如果碰到既有prepare标签又有commit标签的redolog，就直接提交</li>
+<li>如果碰到只有prepare标签但没有commit标签的redolog，就拿着对应的XID去binlog找对应的事务<ul>
+<li>后续需要校验事务对应的binlog的完整性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="binlog的完整性"><a href="#binlog的完整性" class="headerlink" title="binlog的完整性"></a>binlog的完整性</h3><ol>
+<li>binlog格式<ul>
+<li>statement格式，最后会有<code>COMMMIT;</code></li>
+<li>row格式，最后会有一个<code>XID Event</code></li>
+</ul>
+</li>
+<li>从MySQL 5.6.2开始，引入了<strong>binlog-checksum</strong>，用于验证binlog内容的正确性<ul>
+<li>binlog可能由于<strong>磁盘原因</strong>，在<strong>日志中间</strong>出错，MySQL可以通过校验checksum来发现</li>
+</ul>
+</li>
+</ol>
+<h2 id="异常重启"><a href="#异常重启" class="headerlink" title="异常重启"></a>异常重启</h2><h3 id="时刻A"><a href="#时刻A" class="headerlink" title="时刻A"></a>时刻A</h3><ol>
+<li>对应上面<code>2.b</code>的情况</li>
+<li><strong>redolog还未提交，binlog还未写</strong>，在崩溃恢复时，事务会<strong>回滚</strong></li>
+<li>由于binlog还没写，也<strong>不会传到备库</strong></li>
+</ol>
+<h3 id="时刻B"><a href="#时刻B" class="headerlink" title="时刻B"></a>时刻B</h3><ol>
+<li>对应上面的<code>2.a</code>的情况，崩溃恢复过程中事务会被提交</li>
+<li>此时binlog已经写入了，之后会被<strong>从库</strong>或<strong>临时库</strong>使用<ul>
+<li>因此<strong>主库</strong>也需要提交这个事务，保证<strong>主从一致</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/01/15/mysql-redolog-binlog/" title="MySQL -- redolog + binlog">http://zhongmingmao.me/2019/01/15/mysql-redolog-binlog/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/14/mysql-architecture/" rel="next" title="MySQL -- 基础架构">
+                <i class="fa fa-chevron-left"></i> MySQL -- 基础架构
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/16/mysql-transaction-isolation/" rel="prev" title="MySQL -- 事务隔离">
+                MySQL -- 事务隔离 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#更新语句"><span class="nav-number">1.</span> <span class="nav-text">更新语句</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#执行过程"><span class="nav-number">2.</span> <span class="nav-text">执行过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redolog-–-InnoDB"><span class="nav-number">3.</span> <span class="nav-text">redolog – InnoDB</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据落盘"><span class="nav-number">3.1.</span> <span class="nav-text">数据落盘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#redolog-buffer"><span class="nav-number">3.2.</span> <span class="nav-text">redolog buffer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#binlog-–-Server"><span class="nav-number">4.</span> <span class="nav-text">binlog – Server</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#update-内部流程"><span class="nav-number">5.</span> <span class="nav-text">update 内部流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#redolog的两阶段提交"><span class="nav-number">5.1.</span> <span class="nav-text">redolog的两阶段提交</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#redolog-gt-binlog"><span class="nav-number">5.1.1.</span> <span class="nav-text">redolog-&gt;binlog</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#只有binlog"><span class="nav-number">5.1.2.</span> <span class="nav-text">只有binlog</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#只有redolog"><span class="nav-number">5.1.3.</span> <span class="nav-text">只有redolog</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#崩溃恢复"><span class="nav-number">6.</span> <span class="nav-text">崩溃恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#判断逻辑"><span class="nav-number">6.1.</span> <span class="nav-text">判断逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#redolog与binlog关联"><span class="nav-number">6.2.</span> <span class="nav-text">redolog与binlog关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#binlog的完整性"><span class="nav-number">6.3.</span> <span class="nav-text">binlog的完整性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异常重启"><span class="nav-number">7.</span> <span class="nav-text">异常重启</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#时刻A"><span class="nav-number">7.1.</span> <span class="nav-text">时刻A</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#时刻B"><span class="nav-number">7.2.</span> <span class="nav-text">时刻B</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

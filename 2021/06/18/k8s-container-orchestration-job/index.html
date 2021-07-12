@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="编排对象 在线业务：Deployment、StatefulSet、DaemonSet 离线业务：Job、CronJob  Jobjob.yaml Job对象不需要定义spec.selector（借助UUID）  job.yaml12345678910111213141516apiVersion: batch/v1kind: Jobmetadata:  name: pispec:  template">
+<meta name="keywords" content="Cloud Native,Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="容器编排 -- Job">
+<meta property="og:url" content="http://zhongmingmao.me/2021/06/18/k8s-container-orchestration-job/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="编排对象 在线业务：Deployment、StatefulSet、DaemonSet 离线业务：Job、CronJob  Jobjob.yaml Job对象不需要定义spec.selector（借助UUID）  job.yaml12345678910111213141516apiVersion: batch/v1kind: Jobmetadata:  name: pispec:  template">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="容器编排 -- Job">
+<meta name="twitter:description" content="编排对象 在线业务：Deployment、StatefulSet、DaemonSet 离线业务：Job、CronJob  Jobjob.yaml Job对象不需要定义spec.selector（借助UUID）  job.yaml12345678910111213141516apiVersion: batch/v1kind: Jobmetadata:  name: pispec:  template">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2021/06/18/k8s-container-orchestration-job/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>容器编排 -- Job | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2021/06/18/k8s-container-orchestration-job/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">容器编排 -- Job
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-06-18 17:43:45" itemprop="dateCreated datePublished" datetime="2021-06-18T17:43:45+08:00">2021-06-18</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/" itemprop="url" rel="index"><span itemprop="name">Cloud Native</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">14k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">26 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="编排对象"><a href="#编排对象" class="headerlink" title="编排对象"></a>编排对象</h1><ol>
+<li><strong>在线</strong>业务：Deployment、StatefulSet、DaemonSet</li>
+<li><strong>离线</strong>业务：<strong>Job、CronJob</strong></li>
+</ol>
+<h1 id="Job"><a href="#Job" class="headerlink" title="Job"></a>Job</h1><h2 id="job-yaml"><a href="#job-yaml" class="headerlink" title="job.yaml"></a>job.yaml</h2><ol>
+<li>Job对象不需要定义<strong>spec.selector</strong>（借助<strong>UUID</strong>）</li>
+</ol>
+<figure class="highlight yaml"><figcaption><span>job.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">batch/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Job</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">resouer/ubuntu-bc</span></span><br><span class="line"><span class="attr">          command:</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">sh</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">"echo 'scale=10000; 4*a(1)' | bc -l"</span></span><br><span class="line"><span class="attr">      restartPolicy:</span> <span class="string">Never</span></span><br><span class="line"><span class="attr">  backoffLimit:</span> <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h2 id="创建Job"><a href="#创建Job" class="headerlink" title="创建Job"></a>创建Job</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># kubectl apply -f job.yaml</span><br><span class="line">job.batch/pi created</span><br><span class="line"></span><br><span class="line"># kubectl get jobs</span><br><span class="line">NAME   COMPLETIONS   DURATION   AGE</span><br><span class="line">pi     0/1           32s        32s</span><br></pre></td></tr></table></figure>
+
+<h2 id="spec-selector"><a href="#spec-selector" class="headerlink" title="spec.selector"></a>spec.selector</h2><p>Job对象创建后，<strong>Pod Template.Labels</strong>与<strong>Job.Selector</strong>匹配（Kubernetes<strong>自动</strong>添加，因此不需要指定<strong>spec.selector</strong>）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"># kubectl describe jobs/pi</span><br><span class="line">Name:           pi</span><br><span class="line">Namespace:      default</span><br><span class="line">Selector:       controller-uid=429d2dea-e880-4ddb-83f7-0fcbc3156f24</span><br><span class="line">Labels:         controller-uid=429d2dea-e880-4ddb-83f7-0fcbc3156f24</span><br><span class="line">                job-name=pi</span><br><span class="line">Annotations:    &lt;none&gt;</span><br><span class="line">Parallelism:    1</span><br><span class="line">Completions:    1</span><br><span class="line">Start Time:     Fri, 18 Jun 2021 10:26:28 +0000</span><br><span class="line">Pods Statuses:  1 Running / 0 Succeeded / 0 Failed</span><br><span class="line">Pod Template:</span><br><span class="line">  Labels:  controller-uid=429d2dea-e880-4ddb-83f7-0fcbc3156f24</span><br><span class="line">           job-name=pi</span><br><span class="line">  Containers:</span><br><span class="line">   pi:</span><br><span class="line">    Image:      resouer/ubuntu-bc</span><br><span class="line">    Port:       &lt;none&gt;</span><br><span class="line">    Host Port:  &lt;none&gt;</span><br><span class="line">    Command:</span><br><span class="line">      sh</span><br><span class="line">      -c</span><br><span class="line">      echo &apos;scale=10000; 4*a(1)&apos; | bc -l</span><br><span class="line">    Environment:  &lt;none&gt;</span><br><span class="line">    Mounts:       &lt;none&gt;</span><br><span class="line">  Volumes:        &lt;none&gt;</span><br><span class="line">Events:</span><br><span class="line">  Type    Reason            Age   From            Message</span><br><span class="line">  ----    ------            ----  ----            -------</span><br><span class="line">  Normal  SuccessfulCreate  67s   job-controller  Created pod: pi-b5q6f</span><br></pre></td></tr></table></figure>
+
+<h2 id="查看运行结果"><a href="#查看运行结果" class="headerlink" title="查看运行结果"></a>查看运行结果</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get pods</span><br><span class="line">NAME       READY   STATUS      RESTARTS   AGE</span><br><span class="line">pi-b5q6f   0/1     Completed   0          5m19s</span><br><span class="line"></span><br><span class="line"># kubectl logs pi-b5q6f</span><br><span class="line">3.141592653589793238462643383279502884197169399375105820974944592307\</span><br><span class="line">81640628620899862803482534211706798214808651328230664709384460955058\</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h2 id="restartPolicy"><a href="#restartPolicy" class="headerlink" title="restartPolicy"></a>restartPolicy</h2><table>
+<thead>
+<tr>
+<th>编排对象</th>
+<th>restartPolicy</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Deployment</td>
+<td><strong>Always</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>Job</td>
+<td><strong>Never</strong></td>
+<td>离线作业失败后，Job控制器会<strong>重建一个新Pod</strong><br>重试次数为<strong>spec.backoffLimit</strong>，重建间隔10s、20s、40s等</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>OnFailure</strong></td>
+<td>离线作业失败后，Job控制器会<strong>重启Pod里的容器</strong></td>
+</tr>
+</tbody></table>
+<h2 id="Deadline"><a href="#Deadline" class="headerlink" title="Deadline"></a>Deadline</h2><p><strong>spec.activeDeadlineSeconds</strong>：最长运行时间，一旦运行超时，Job的<strong>所有Pod</strong>都会被终止</p>
+<figure class="highlight yaml"><figcaption><span>job.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">batch/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Job</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">resouer/ubuntu-bc</span></span><br><span class="line"><span class="attr">          command:</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">sh</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">"echo 'scale=10000; 4*a(1)' | bc -l"</span></span><br><span class="line"><span class="attr">      restartPolicy:</span> <span class="string">Never</span></span><br><span class="line"><span class="attr">  backoffLimit:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">  activeDeadlineSeconds:</span> <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># kubectl apply -f job.yaml</span><br><span class="line">job.batch/pi created</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get jobs</span><br><span class="line">NAME   COMPLETIONS   DURATION   AGE</span><br><span class="line">pi     0/1           48s        49s</span><br><span class="line"></span><br><span class="line"># kubectl get pods -w</span><br><span class="line">NAME       READY   STATUS    RESTARTS   AGE</span><br><span class="line">pi-87fwr   0/1     Pending   0          0s</span><br><span class="line">pi-87fwr   0/1     Pending   0          0s</span><br><span class="line">pi-87fwr   0/1     ContainerCreating   0          0s</span><br><span class="line">pi-87fwr   1/1     Running             0          7s</span><br><span class="line">pi-87fwr   1/1     Terminating         0          10s</span><br><span class="line">pi-87fwr   0/1     Terminating         0          40s</span><br><span class="line">pi-87fwr   0/1     Terminating         0          41s</span><br><span class="line">pi-87fwr   0/1     Terminating         0          41s</span><br></pre></td></tr></table></figure>
+
+<p><strong>DeadlineExceeded</strong>：Job was active longer than specified deadline</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># kubectl describe jobs/pi</span><br><span class="line">Name:                     pi</span><br><span class="line">Namespace:                default</span><br><span class="line">Selector:                 controller-uid=1b9515fb-1327-47e9-9c0b-d2d8395836ad</span><br><span class="line">Labels:                   controller-uid=1b9515fb-1327-47e9-9c0b-d2d8395836ad</span><br><span class="line">                          job-name=pi</span><br><span class="line">Annotations:              &lt;none&gt;</span><br><span class="line">Parallelism:              1</span><br><span class="line">Completions:              1</span><br><span class="line">Start Time:               Fri, 18 Jun 2021 11:05:09 +0000</span><br><span class="line">Active Deadline Seconds:  10s</span><br><span class="line">Pods Statuses:            0 Running / 0 Succeeded / 0 Failed</span><br><span class="line">Pod Template:</span><br><span class="line">  Labels:  controller-uid=1b9515fb-1327-47e9-9c0b-d2d8395836ad</span><br><span class="line">           job-name=pi</span><br><span class="line">  Containers:</span><br><span class="line">   pi:</span><br><span class="line">    Image:      resouer/ubuntu-bc</span><br><span class="line">    Port:       &lt;none&gt;</span><br><span class="line">    Host Port:  &lt;none&gt;</span><br><span class="line">    Command:</span><br><span class="line">      sh</span><br><span class="line">      -c</span><br><span class="line">      echo &apos;scale=10000; 4*a(1)&apos; | bc -l</span><br><span class="line">    Environment:  &lt;none&gt;</span><br><span class="line">    Mounts:       &lt;none&gt;</span><br><span class="line">  Volumes:        &lt;none&gt;</span><br><span class="line">Events:</span><br><span class="line">  Type     Reason            Age                From            Message</span><br><span class="line">  ----     ------            ----               ----            -------</span><br><span class="line">  Normal   SuccessfulCreate  80s                job-controller  Created pod: pi-87fwr</span><br><span class="line">  Normal   SuccessfulDelete  70s                job-controller  Deleted pod: pi-87fwr</span><br><span class="line">  Warning  DeadlineExceeded  70s (x2 over 70s)  job-controller  Job was active longer than specified deadline</span><br></pre></td></tr></table></figure>
+
+<h2 id="Batch"><a href="#Batch" class="headerlink" title="Batch"></a>Batch</h2><ol>
+<li><strong>spec.parallelism</strong>：一个Job在任意时间最多可以启动多少个<strong>Pod同时运行</strong></li>
+<li><strong>spec.completions</strong>：Job至少要完成的Pod数（Job的<strong>最少完成数</strong>）</li>
+</ol>
+<h3 id="batch-yaml"><a href="#batch-yaml" class="headerlink" title="batch.yaml"></a>batch.yaml</h3><figure class="highlight yaml"><figcaption><span>batch.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">batch/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Job</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  parallelism:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">  completions:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">pi</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">resouer/ubuntu-bc</span></span><br><span class="line"><span class="attr">          command:</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">sh</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">            -</span> <span class="string">echo</span> <span class="string">'scale=5000; 4*a(1)'</span> <span class="string">| bc -l</span></span><br><span class="line"><span class="string"></span><span class="attr">      restartPolicy:</span> <span class="string">Never</span></span><br><span class="line"><span class="attr">  backoffLimit:</span> <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="创建Job-1"><a href="#创建Job-1" class="headerlink" title="创建Job"></a>创建Job</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># kubectl apply -f batch.yaml</span><br><span class="line">job.batch/pi created</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看Job"><a href="#查看Job" class="headerlink" title="查看Job"></a>查看Job</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get jobs -w</span><br><span class="line">NAME   COMPLETIONS   DURATION   AGE</span><br><span class="line">pi     0/4                      0s</span><br><span class="line">pi     0/4           0s         0s</span><br><span class="line">pi     1/4           38s        38s</span><br><span class="line">pi     2/4           42s        42s</span><br><span class="line">pi     3/4           71s        71s</span><br><span class="line">pi     4/4           75s        75s</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看Pod"><a href="#查看Pod" class="headerlink" title="查看Pod"></a>查看Pod</h3><ol>
+<li>pi-6c7kc在<strong>38</strong>s完成任务，pi-wsmjs接力，在<strong>71</strong>s（38+33）完成任务</li>
+<li>pi-9wkrl在<strong>41</strong>s完成任务，pi-wqj9k接力，在<strong>75</strong>s（41+34）完成任务</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get pods -w</span><br><span class="line">NAME       READY   STATUS    RESTARTS   AGE</span><br><span class="line">pi-6c7kc   0/1     Pending   0          0s</span><br><span class="line">pi-6c7kc   0/1     Pending   0          0s</span><br><span class="line">pi-9wkrl   0/1     Pending   0          0s</span><br><span class="line">pi-6c7kc   0/1     ContainerCreating   0          0s</span><br><span class="line">pi-9wkrl   0/1     Pending             0          0s</span><br><span class="line">pi-9wkrl   0/1     ContainerCreating   0          0s</span><br><span class="line">pi-6c7kc   1/1     Running             0          9s</span><br><span class="line">pi-9wkrl   1/1     Running             0          11s</span><br><span class="line">pi-6c7kc   0/1     Completed           0          38s</span><br><span class="line"></span><br><span class="line">pi-wsmjs   0/1     Pending             0          0s</span><br><span class="line">pi-wsmjs   0/1     Pending             0          0s</span><br><span class="line">pi-wsmjs   0/1     ContainerCreating   0          0s</span><br><span class="line">pi-9wkrl   0/1     Completed           0          41s</span><br><span class="line"></span><br><span class="line">pi-wqj9k   0/1     Pending             0          0s</span><br><span class="line">pi-wqj9k   0/1     Pending             0          0s</span><br><span class="line">pi-wqj9k   0/1     ContainerCreating   0          1s</span><br><span class="line">pi-wsmjs   1/1     Running             0          6s</span><br><span class="line">pi-wqj9k   1/1     Running             0          7s</span><br><span class="line">pi-wsmjs   0/1     Completed           0          33s</span><br><span class="line"></span><br><span class="line">pi-wqj9k   0/1     Completed           0          34s</span><br></pre></td></tr></table></figure>
+
+<h1 id="CronJob"><a href="#CronJob" class="headerlink" title="CronJob"></a>CronJob</h1><ol>
+<li>CronJob是一个专门用来<strong>管理Job对象</strong>的控制器，Cron：<strong>分钟、小时、日、月、星期</strong></li>
+<li><strong>spec.concurrencyPolicy</strong>：某个Job还没执行完，另一个新Job可能已经产生<ul>
+<li><strong>Allow</strong>（默认）：允许这些Job同时存在</li>
+<li><strong>Forbid</strong>：不会创建新Pod，该<strong>创建周期被跳过</strong></li>
+<li><strong>Replace</strong>：新Pod替代旧Pod</li>
+</ul>
+</li>
+<li><strong>spec.startingDeadlineSeconds</strong><ul>
+<li>如果某一次<strong>Job创建失败</strong>，这次创建会被标记为<strong>miss</strong></li>
+<li>在过去startingDeadlineSeconds秒里，如果miss次数达到<strong>100</strong>次，那么<strong>这个Job不会被创建执行</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="cron-yaml"><a href="#cron-yaml" class="headerlink" title="cron.yaml"></a>cron.yaml</h2><figure class="highlight yaml"><figcaption><span>cron.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">batch/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">CronJob</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">hello</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  schedule:</span> <span class="string">'*/1 * * * *'</span></span><br><span class="line"><span class="attr">  jobTemplate:</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      template:</span></span><br><span class="line"><span class="attr">        spec:</span></span><br><span class="line"><span class="attr">          containers:</span></span><br><span class="line"><span class="attr">            - name:</span> <span class="string">hello</span></span><br><span class="line"><span class="attr">              image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">              args:</span></span><br><span class="line"><span class="bullet">                -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">                -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">                -</span> <span class="string">date;</span> <span class="string">echo</span> <span class="string">Hello</span> <span class="string">from</span> <span class="string">the</span> <span class="string">Kubernetes</span> <span class="string">cluster</span></span><br><span class="line"><span class="attr">          restartPolicy:</span> <span class="string">OnFailure</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="创建CronJob"><a href="#创建CronJob" class="headerlink" title="创建CronJob"></a>创建CronJob</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># kubectl apply -f cron.yaml</span><br><span class="line">Warning: batch/v1beta1 CronJob is deprecated in v1.21+, unavailable in v1.25+; use batch/v1 CronJob</span><br><span class="line">cronjob.batch/hello created</span><br><span class="line"></span><br><span class="line"># kubectl get cronjobs</span><br><span class="line">NAME    SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE</span><br><span class="line">hello   */1 * * * *   False     0        &lt;none&gt;          18s</span><br><span class="line"></span><br><span class="line"># kubectl get jobs</span><br><span class="line">No resources found in default namespace.</span><br><span class="line"></span><br><span class="line"># kubectl get pods</span><br><span class="line">No resources found in default namespace.</span><br></pre></td></tr></table></figure>
+
+<h2 id="查看CronJob"><a href="#查看CronJob" class="headerlink" title="查看CronJob"></a>查看CronJob</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get cronjobs</span><br><span class="line">NAME    SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE</span><br><span class="line">hello   */1 * * * *   False     0        32s             6m10s</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"># kubectl describe cronjob hello</span><br><span class="line">Name:                          hello</span><br><span class="line">Namespace:                     default</span><br><span class="line">Labels:                        &lt;none&gt;</span><br><span class="line">Annotations:                   &lt;none&gt;</span><br><span class="line">Schedule:                      */1 * * * *</span><br><span class="line">Concurrency Policy:            Allow</span><br><span class="line">Suspend:                       False</span><br><span class="line">Successful Job History Limit:  3</span><br><span class="line">Failed Job History Limit:      1</span><br><span class="line">Starting Deadline Seconds:     &lt;unset&gt;</span><br><span class="line">Selector:                      &lt;unset&gt;</span><br><span class="line">Parallelism:                   &lt;unset&gt;</span><br><span class="line">Completions:                   &lt;unset&gt;</span><br><span class="line">Pod Template:</span><br><span class="line">  Labels:  &lt;none&gt;</span><br><span class="line">  Containers:</span><br><span class="line">   hello:</span><br><span class="line">    Image:      busybox</span><br><span class="line">    Port:       &lt;none&gt;</span><br><span class="line">    Host Port:  &lt;none&gt;</span><br><span class="line">    Args:</span><br><span class="line">      /bin/sh</span><br><span class="line">      -c</span><br><span class="line">      date; echo Hello from the Kubernetes cluster</span><br><span class="line">    Environment:     &lt;none&gt;</span><br><span class="line">    Mounts:          &lt;none&gt;</span><br><span class="line">  Volumes:           &lt;none&gt;</span><br><span class="line">Last Schedule Time:  Fri, 18 Jun 2021 12:03:00 +0000</span><br><span class="line">Active Jobs:         &lt;none&gt;</span><br><span class="line">Events:</span><br><span class="line">  Type    Reason            Age    From                Message</span><br><span class="line">  ----    ------            ----   ----                -------</span><br><span class="line">  Normal  SuccessfulCreate  5m37s  cronjob-controller  Created job hello-27066958</span><br><span class="line">  Normal  SawCompletedJob   5m32s  cronjob-controller  Saw completed job: hello-27066958, status: Complete</span><br><span class="line">  Normal  SuccessfulCreate  4m37s  cronjob-controller  Created job hello-27066959</span><br><span class="line">  Normal  SawCompletedJob   4m32s  cronjob-controller  Saw completed job: hello-27066959, status: Complete</span><br><span class="line">  Normal  SuccessfulCreate  3m37s  cronjob-controller  Created job hello-27066960</span><br><span class="line">  Normal  SawCompletedJob   3m29s  cronjob-controller  Saw completed job: hello-27066960, status: Complete</span><br><span class="line">  Normal  SuccessfulCreate  2m37s  cronjob-controller  Created job hello-27066961</span><br><span class="line">  Normal  SuccessfulDelete  2m32s  cronjob-controller  Deleted job hello-27066958</span><br><span class="line">  Normal  SawCompletedJob   2m32s  cronjob-controller  Saw completed job: hello-27066961, status: Complete</span><br><span class="line">  Normal  SuccessfulCreate  97s    cronjob-controller  Created job hello-27066962</span><br><span class="line">  Normal  SawCompletedJob   92s    cronjob-controller  Saw completed job: hello-27066962, status: Complete</span><br><span class="line">  Normal  SuccessfulDelete  91s    cronjob-controller  Deleted job hello-27066959</span><br><span class="line">  Normal  SuccessfulCreate  37s    cronjob-controller  Created job hello-27066963</span><br><span class="line">  Normal  SawCompletedJob   31s    cronjob-controller  Saw completed job: hello-27066963, status: Complete</span><br><span class="line">  Normal  SuccessfulDelete  31s    cronjob-controller  Deleted job hello-27066960</span><br></pre></td></tr></table></figure>
+
+<h2 id="查看Job-1"><a href="#查看Job-1" class="headerlink" title="查看Job"></a>查看Job</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get jobs</span><br><span class="line">NAME             COMPLETIONS   DURATION   AGE</span><br><span class="line">hello-27066961   1/1           5s         2m44s</span><br><span class="line">hello-27066962   1/1           5s         104s</span><br><span class="line">hello-27066963   1/1           5s         44s</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"># kubectl describe job hello-27066963</span><br><span class="line">Name:           hello-27066963</span><br><span class="line">Namespace:      default</span><br><span class="line">Selector:       controller-uid=9dbaca75-b541-4302-8b02-41cdbe4574ab</span><br><span class="line">Labels:         controller-uid=9dbaca75-b541-4302-8b02-41cdbe4574ab</span><br><span class="line">                job-name=hello-27066963</span><br><span class="line">Annotations:    &lt;none&gt;</span><br><span class="line">Controlled By:  CronJob/hello</span><br><span class="line">Parallelism:    1</span><br><span class="line">Completions:    1</span><br><span class="line">Start Time:     Fri, 18 Jun 2021 12:03:00 +0000</span><br><span class="line">Completed At:   Fri, 18 Jun 2021 12:03:05 +0000</span><br><span class="line">Duration:       5s</span><br><span class="line">Pods Statuses:  0 Running / 1 Succeeded / 0 Failed</span><br><span class="line">Pod Template:</span><br><span class="line">  Labels:  controller-uid=9dbaca75-b541-4302-8b02-41cdbe4574ab</span><br><span class="line">           job-name=hello-27066963</span><br><span class="line">  Containers:</span><br><span class="line">   hello:</span><br><span class="line">    Image:      busybox</span><br><span class="line">    Port:       &lt;none&gt;</span><br><span class="line">    Host Port:  &lt;none&gt;</span><br><span class="line">    Args:</span><br><span class="line">      /bin/sh</span><br><span class="line">      -c</span><br><span class="line">      date; echo Hello from the Kubernetes cluster</span><br><span class="line">    Environment:  &lt;none&gt;</span><br><span class="line">    Mounts:       &lt;none&gt;</span><br><span class="line">  Volumes:        &lt;none&gt;</span><br><span class="line">Events:</span><br><span class="line">  Type    Reason            Age   From            Message</span><br><span class="line">  ----    ------            ----  ----            -------</span><br><span class="line">  Normal  SuccessfulCreate  61s   job-controller  Created pod: hello-27066963-bglrb</span><br><span class="line">  Normal  Completed         56s   job-controller  Job completed</span><br></pre></td></tr></table></figure>
+
+<h2 id="查看Pod-1"><a href="#查看Pod-1" class="headerlink" title="查看Pod"></a>查看Pod</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get pods</span><br><span class="line">NAME                   READY   STATUS      RESTARTS   AGE</span><br><span class="line">hello-27066962-p5kdq   0/1     Completed   0          2m6s</span><br><span class="line">hello-27066963-bglrb   0/1     Completed   0          66s</span><br><span class="line">hello-27066964-jdrlr   0/1     Completed   0          6s</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"># kubectl describe pod hello-27066963-bglrb</span><br><span class="line">Name:         hello-27066963-bglrb</span><br><span class="line">Namespace:    default</span><br><span class="line">Priority:     0</span><br><span class="line">Node:         master/172.16.155.10</span><br><span class="line">Start Time:   Fri, 18 Jun 2021 12:03:00 +0000</span><br><span class="line">Labels:       controller-uid=9dbaca75-b541-4302-8b02-41cdbe4574ab</span><br><span class="line">              job-name=hello-27066963</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">Status:       Succeeded</span><br><span class="line">IP:           10.32.0.7</span><br><span class="line">IPs:</span><br><span class="line">  IP:           10.32.0.7</span><br><span class="line">Controlled By:  Job/hello-27066963</span><br><span class="line">Containers:</span><br><span class="line">  hello:</span><br><span class="line">    Container ID:  docker://7077911c86e7599ab71077226d2a9418563947119d6122e838661f022b1399d0</span><br><span class="line">    Image:         busybox</span><br><span class="line">    Image ID:      docker-pullable://busybox@sha256:930490f97e5b921535c153e0e7110d251134cc4b72bbb8133c6a5065cc68580d</span><br><span class="line">    Port:          &lt;none&gt;</span><br><span class="line">    Host Port:     &lt;none&gt;</span><br><span class="line">    Args:</span><br><span class="line">      /bin/sh</span><br><span class="line">      -c</span><br><span class="line">      date; echo Hello from the Kubernetes cluster</span><br><span class="line">    State:          Terminated</span><br><span class="line">      Reason:       Completed</span><br><span class="line">      Exit Code:    0</span><br><span class="line">      Started:      Fri, 18 Jun 2021 12:03:05 +0000</span><br><span class="line">      Finished:     Fri, 18 Jun 2021 12:03:05 +0000</span><br><span class="line">    Ready:          False</span><br><span class="line">    Restart Count:  0</span><br><span class="line">    Environment:    &lt;none&gt;</span><br><span class="line">    Mounts:</span><br><span class="line">      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-nqs4d (ro)</span><br><span class="line">Conditions:</span><br><span class="line">  Type              Status</span><br><span class="line">  Initialized       True</span><br><span class="line">  Ready             False</span><br><span class="line">  ContainersReady   False</span><br><span class="line">  PodScheduled      True</span><br><span class="line">Volumes:</span><br><span class="line">  kube-api-access-nqs4d:</span><br><span class="line">    Type:                    Projected (a volume that contains injected data from multiple sources)</span><br><span class="line">    TokenExpirationSeconds:  3607</span><br><span class="line">    ConfigMapName:           kube-root-ca.crt</span><br><span class="line">    ConfigMapOptional:       &lt;nil&gt;</span><br><span class="line">    DownwardAPI:             true</span><br><span class="line">QoS Class:                   BestEffort</span><br><span class="line">Node-Selectors:              &lt;none&gt;</span><br><span class="line">Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s</span><br><span class="line">                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s</span><br><span class="line">Events:</span><br><span class="line">  Type    Reason     Age   From               Message</span><br><span class="line">  ----    ------     ----  ----               -------</span><br><span class="line">  Normal  Scheduled  89s   default-scheduler  Successfully assigned default/hello-27066963-bglrb to master</span><br><span class="line">  Normal  Pulling    88s   kubelet            Pulling image &quot;busybox&quot;</span><br><span class="line">  Normal  Pulled     85s   kubelet            Successfully pulled image &quot;busybox&quot; in 2.967621665s</span><br><span class="line">  Normal  Created    84s   kubelet            Created container hello</span><br><span class="line">  Normal  Started    84s   kubelet            Started container hello</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://time.geekbang.org/column/intro/100015201" target="_blank" rel="noopener">深入剖析Kubernetes</a></li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/12/cloud-native-k8s-config/" rel="bookmark">应用配置管理</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-container/" rel="bookmark">Kubernetes -- 容器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-core-concept/" rel="bookmark">Kubernetes -- 核心概念</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/11/cloud-native-k8s-orchestration-core-principle/" rel="bookmark">应用编排与管理 -- 核心原理</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/12/cloud-native-k8s-orchestration-daemonset/" rel="bookmark">应用编排与管理 -- DaemonSet</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2021/06/18/k8s-container-orchestration-job/" title="容器编排 -- Job">http://zhongmingmao.me/2021/06/18/k8s-container-orchestration-job/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/cloud-native/" rel="tag"><i class="fa fa-tag"></i> Cloud Native</a>
+          
+            <a href="/tags/kubernetes/" rel="tag"><i class="fa fa-tag"></i> Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/06/17/k8s-container-orchestration-daemonset/" rel="next" title="容器编排 -- DaemonSet">
+                <i class="fa fa-chevron-left"></i> 容器编排 -- DaemonSet
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/06/18/cloud-native-java/" rel="prev" title="Graal VM:云原生时代的Java（转载）">
+                Graal VM:云原生时代的Java（转载） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#编排对象"><span class="nav-number">1.</span> <span class="nav-text">编排对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Job"><span class="nav-number">2.</span> <span class="nav-text">Job</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#job-yaml"><span class="nav-number">2.1.</span> <span class="nav-text">job.yaml</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建Job"><span class="nav-number">2.2.</span> <span class="nav-text">创建Job</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spec-selector"><span class="nav-number">2.3.</span> <span class="nav-text">spec.selector</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看运行结果"><span class="nav-number">2.4.</span> <span class="nav-text">查看运行结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#restartPolicy"><span class="nav-number">2.5.</span> <span class="nav-text">restartPolicy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Deadline"><span class="nav-number">2.6.</span> <span class="nav-text">Deadline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Batch"><span class="nav-number">2.7.</span> <span class="nav-text">Batch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#batch-yaml"><span class="nav-number">2.7.1.</span> <span class="nav-text">batch.yaml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建Job-1"><span class="nav-number">2.7.2.</span> <span class="nav-text">创建Job</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看Job"><span class="nav-number">2.7.3.</span> <span class="nav-text">查看Job</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看Pod"><span class="nav-number">2.7.4.</span> <span class="nav-text">查看Pod</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CronJob"><span class="nav-number">3.</span> <span class="nav-text">CronJob</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cron-yaml"><span class="nav-number">3.1.</span> <span class="nav-text">cron.yaml</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建CronJob"><span class="nav-number">3.2.</span> <span class="nav-text">创建CronJob</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看CronJob"><span class="nav-number">3.3.</span> <span class="nav-text">查看CronJob</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看Job-1"><span class="nav-number">3.4.</span> <span class="nav-text">查看Job</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看Pod-1"><span class="nav-number">3.5.</span> <span class="nav-text">查看Pod</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

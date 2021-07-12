@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="CPU 上下文 CPU 上下文 CPU 在运行任何任务前，必须的依赖环境   CPU 寄存器 CPU 内置的容量小、但速度极快的内存   程序计数器 存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置    CPU 上下文切换 切换过程 先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来 然后加载新任务的上下文到这些寄存器和程序计数器 最后再跳转到程序计数器">
+<meta name="keywords" content="Linux,Linux Performance">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux性能 -- CPU -- 上下文切换">
+<meta property="og:url" content="http://zhongmingmao.me/2020/03/02/linux-performance-cpu-context-switch/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="CPU 上下文 CPU 上下文 CPU 在运行任何任务前，必须的依赖环境   CPU 寄存器 CPU 内置的容量小、但速度极快的内存   程序计数器 存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置    CPU 上下文切换 切换过程 先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来 然后加载新任务的上下文到这些寄存器和程序计数器 最后再跳转到程序计数器">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-ring.png">
+<meta property="og:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-cs.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux性能 -- CPU -- 上下文切换">
+<meta name="twitter:description" content="CPU 上下文 CPU 上下文 CPU 在运行任何任务前，必须的依赖环境   CPU 寄存器 CPU 内置的容量小、但速度极快的内存   程序计数器 存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置    CPU 上下文切换 切换过程 先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来 然后加载新任务的上下文到这些寄存器和程序计数器 最后再跳转到程序计数器">
+<meta name="twitter:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-ring.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2020/03/02/linux-performance-cpu-context-switch/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Linux性能 -- CPU -- 上下文切换 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2020/03/02/linux-performance-cpu-context-switch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Linux性能 -- CPU -- 上下文切换
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-03-02 17:25:02" itemprop="dateCreated datePublished" datetime="2020-03-02T17:25:02+08:00">2020-03-02</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">12k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">22 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="CPU-上下文"><a href="#CPU-上下文" class="headerlink" title="CPU 上下文"></a>CPU 上下文</h1><ol>
+<li>CPU 上下文<ul>
+<li>CPU 在运行任何任务前，必须的依赖环境</li>
+</ul>
+</li>
+<li><strong>CPU 寄存器</strong><ul>
+<li>CPU 内置的容量小、但速度极快的内存</li>
+</ul>
+</li>
+<li><strong>程序计数器</strong><ul>
+<li>存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置</li>
+</ul>
+</li>
+</ol>
+<h1 id="CPU-上下文切换"><a href="#CPU-上下文切换" class="headerlink" title="CPU 上下文切换"></a>CPU 上下文切换</h1><ol>
+<li>切换过程<ul>
+<li>先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来</li>
+<li>然后加载新任务的上下文到这些寄存器和程序计数器</li>
+<li>最后再跳转到程序计数器所指的新位置，运行新任务</li>
+</ul>
+</li>
+<li>保存下来的上下文，会存储在<strong>系统内核</strong>中，并在任务重新调度执行时再次加载进来</li>
+</ol>
+<a id="more"></a>
+
+<h1 id="CPU特权等级-amp-进程运行空间-amp-系统调用"><a href="#CPU特权等级-amp-进程运行空间-amp-系统调用" class="headerlink" title="CPU特权等级 &amp; 进程运行空间 &amp; 系统调用"></a>CPU特权等级 &amp; 进程运行空间 &amp; 系统调用</h1><p><img src="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-ring.png" alt="linux-performance-ring.png"></p>
+<ol>
+<li><strong>进程的运行空间</strong>分为<strong>内核空间</strong>和<strong>用户空间</strong><ul>
+<li>内核空间（Ring 0）<ul>
+<li>具有最高权限，可以直接访问所有资源</li>
+</ul>
+</li>
+<li>用户空间（Ring 3）<ul>
+<li>只能访问受限资源，不能直接访问内存等硬件设备，必须通过<strong>系统调用</strong>陷入到内核中，才能访问这些特权资源</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>进程在<strong>用户空间</strong>运行时，被成为<strong>进程的用户态</strong>；而<strong>陷入内核空间</strong>的时候，被称为<strong>进程的内核态</strong><ul>
+<li>从用户态到内核态的转变，需要通过<strong>系统调用</strong>来完成</li>
+</ul>
+</li>
+<li><strong>系统调用</strong>的过程会发生 <strong>CPU 上下文的切换</strong><ul>
+<li><strong>一次系统调用，发生了两次 CPU 上下文切换</strong></li>
+<li>CPU 寄存器里原来用户态的指令位置，需要先保存起来。接着，为了执行内核态代码，CPU 寄存器需要更新为内核态指令的新位置。最后才是跳转到内核态运行内核任务</li>
+<li>而系统调用结束后，CPU 寄存器需要恢复原来保存的用户态，然后再切换到用户空间，继续运行进程</li>
+</ul>
+</li>
+<li>在<strong>系统调用</strong>过程中，不会涉及到<strong>虚拟内存</strong>等<strong>进程用户态的资源</strong>，也<strong>不会切换进程</strong><ul>
+<li><strong>系统调用</strong>过程中一直是<strong>同一个进程</strong>在运行<ul>
+<li>系统调用过程通常称为<strong>特权模式切换</strong>，而不是上下文切换</li>
+<li>系统调用过程中，CPU 的上下文切换还是<strong>无法避免</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="CPU-上下文切换的分类"><a href="#CPU-上下文切换的分类" class="headerlink" title="CPU 上下文切换的分类"></a>CPU 上下文切换的分类</h1><p>任务分类：<strong>进程</strong>、<strong>线程</strong>、<strong>中断</strong></p>
+<h2 id="进程上下文切换"><a href="#进程上下文切换" class="headerlink" title="进程上下文切换"></a>进程上下文切换</h2><h3 id="进程上下文切换-VS-系统调用"><a href="#进程上下文切换-VS-系统调用" class="headerlink" title="进程上下文切换 VS 系统调用"></a>进程上下文切换 VS 系统调用</h3><ol>
+<li>进程是由内核来管理和调度的，<strong>进程的切换只能发生在内核态</strong><ul>
+<li>进程的上下文不仅包括<strong>用户空间</strong>的资源（虚拟内存、栈、全局变量），还包括<strong>内核空间</strong>的状态（内核堆栈、寄存器）</li>
+</ul>
+</li>
+<li><strong>进程的上下文切换</strong>比<strong>系统调用</strong>多了一步（<strong>用户态资源</strong>：虚拟内存等）<ul>
+<li>在保存当前进程的内核状态和 CPU 寄存器之前，需要先把该进程的虚拟内存、栈等保存下来（<strong>用户态</strong>）</li>
+<li>而加载了下一进程的内核态后，还需要刷新进程的虚拟内存和用户栈</li>
+</ul>
+</li>
+<li>保存上下文和恢复上下文的过程并不是免费的，需要<strong>内核在 CPU 上运行</strong>才能完成<ul>
+<li>每次上下文切换都需要<strong>几十纳秒</strong>到<strong>数微秒</strong>的 CPU 时间 – 相当<strong>可观</strong></li>
+</ul>
+</li>
+</ol>
+<p><img src="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-cs.png" alt="linux-performance-cs.png"></p>
+<h3 id="进程切换"><a href="#进程切换" class="headerlink" title="进程切换"></a>进程切换</h3><ol>
+<li>Linux 为<strong>每个 CPU</strong> 都维护了一个<strong>就绪队列</strong>，将<strong>活跃进程</strong>（即<strong>正在运行</strong>和<strong>正在等待 CPU</strong> 的进程）按照优先级和等待 CPU 的时间排序<ul>
+<li>选择<strong>优先级最高</strong>和<strong>等待 CPU 时间最长</strong>的进程</li>
+</ul>
+</li>
+<li>进程调度的场景<ul>
+<li>进程<strong>执行完成</strong>，释放之前使用的CPU，此时再从 CPU 的就绪队列中，拿一个新的进程来运行</li>
+<li>当某个进程的<strong>时间片耗尽</strong>，会被系统<strong>挂起</strong>，切换到正在等待 CPU 的进程运行 – 非自愿上下文切换</li>
+<li>进程在<strong>系统资源不足</strong>（如内存不足），进程也会被<strong>挂起</strong>，并由系统调度其它进程运行 – 自愿上下文切换</li>
+<li>进程通过<strong>sleep</strong> 方法将自己<strong>主动挂起</strong></li>
+<li>当有<strong>优先级更高</strong>的进程运行时，当前进程可能会被<strong>挂起</strong></li>
+<li>发生<strong>硬件中断</strong>时，<strong>CPU 上的进程会被中断挂起，转而执行内核中的中断服务程序</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="线程上下文切换"><a href="#线程上下文切换" class="headerlink" title="线程上下文切换"></a>线程上下文切换</h2><ol>
+<li><strong>线程</strong>是<strong>调度</strong>的基本单位，<strong>进程</strong>则是<strong>资源拥有</strong>的基本单位<ul>
+<li>内核中的任务调度，实际的调度对象是线程</li>
+<li>进程只是给线程提供了<strong>虚拟内存</strong>、<strong>全局变量</strong>等资源</li>
+<li>等价理解<ul>
+<li>当进程只有一个线程时，进程等于线程</li>
+<li>当进程有多个线程时，这些线程会共享相同的<strong>虚拟内存</strong>和<strong>全局变量</strong>等资源<ul>
+<li>这些资源在同进程内线程上下文切换时是<strong>不需要修改</strong>的</li>
+</ul>
+</li>
+<li>线程也有自己的私有数据，如<strong>栈</strong>和<strong>寄存器</strong><ul>
+<li>在上下文切换时<strong>需要保存</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>切换场景<ul>
+<li>前后两个线程属于<strong>不同进程</strong>，此时资源不共享，切换过程等同于<strong>进程上下文切换</strong></li>
+<li>前后两个线程属于<strong>同一个进程</strong>，此时<strong>虚拟内存</strong>是共享的<ul>
+<li>只需要切换<strong>线程的私有数据</strong>、<strong>寄存器</strong>等不共享的数据</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>同进程内的线程切换</strong>，要比多进程间的切换消耗更少的资源<ul>
+<li>多线程替代多进程的一个优势：适用于需要<strong>频繁切换</strong>的场景</li>
+</ul>
+</li>
+</ol>
+<h2 id="中断上下文切换"><a href="#中断上下文切换" class="headerlink" title="中断上下文切换"></a>中断上下文切换</h2><ol>
+<li>为了快速响应硬件的事件，<strong>中断处理会打断进程的正常调度和执行</strong>，转而调用中断处理程序，<strong>响应设备事件</strong><ul>
+<li>打断其他进程时，就需要将进程当前的状态保存下来</li>
+</ul>
+</li>
+<li>与进程上下文不同，<strong>中断上下文切换并不涉及到进程的用户态</strong><ul>
+<li>即便中断过程打断了一个正处在用户态的进程，也不需要保存和恢复这个进程的虚拟内存、全局变量等用户态资源</li>
+<li><strong>中断上下文</strong>，其实只包括<strong>内核态</strong>中断服务程序执行所必需的状态，包括 CPU 寄存器、内核堆栈、硬件中断参数等</li>
+</ul>
+</li>
+<li><strong>对同一个 CPU 来说，中断处理比进程拥有更高的优先级</strong>，所以<strong>中断上下文切</strong>换并不会与<strong>进程上下文切换</strong>同时发生</li>
+</ol>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><table>
+<thead>
+<tr>
+<th>切换类型</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>系统调用</td>
+<td>1. 同一进程内执行，不切换进程<br>2. 不涉及进程用户态资源（虚拟内存等）</td>
+</tr>
+<tr>
+<td>进程上下文切换</td>
+<td>用户态资源 + 内核态资源</td>
+</tr>
+<tr>
+<td>线程上下文切换</td>
+<td>1. 同进程；共享数据无需切换<br>2. 不同进程：等同于进程上下文切换</td>
+</tr>
+<tr>
+<td>中断上下文切换</td>
+<td>1. 更高优先级<br>2. 不涉及进程用户态</td>
+</tr>
+</tbody></table>
+<h1 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h1><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>vmstat</strong></td>
+<td>常用的系统性能分析工具<br>主要用来分析系统的内存使用情况<br>常用来分析 <strong>CPU 上下文切换</strong>和<strong>中断</strong>的次数</td>
+</tr>
+<tr>
+<td><strong>pidstat</strong></td>
+<td>vmstat提供系统总体的上下文切换情况，通过<strong>pidstat -w</strong>查看每个进程的详细情况</td>
+</tr>
+<tr>
+<td><strong>/proc/interrupts</strong></td>
+<td><strong>/proc</strong>是 Linux 的一个<strong>虚拟文件系统</strong>，用于<strong>内核空间</strong>和<strong>用户空间</strong>之间的通信<br>/proc/interrupts提供一个<strong>只读</strong>的中断使用情况</td>
+</tr>
+<tr>
+<td><strong>sysbench</strong></td>
+<td>多线程的基准测试工具，用来评估不同系统参数下的数据库负载情况<br>可以用来模拟<strong>上下文切换过多</strong>的情况</td>
+</tr>
+</tbody></table>
+<h2 id="vmstat"><a href="#vmstat" class="headerlink" title="vmstat"></a>vmstat</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# vmstat 5 3</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 1  0      0 2687000 143792 818280    0    0    15    50  116  140  7  2 91  0  0</span><br><span class="line"> 0  0      0 2687000 143796 818280    0    0     0     4  165  210  0  0 100  0  0</span><br><span class="line"> 0  0      0 2687000 143800 818284    0    0     0     5  164  206  0  0 100  0  0</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>cs</strong>（context switch）：每秒上下文切换的次数</li>
+<li><strong>in</strong>（interrupt）：每秒中断的次数</li>
+<li><strong>r</strong>（Running or Runnable）：<strong>就绪队列</strong>的长度，正在运行和等待 CPU 的进程数</li>
+<li><strong>b</strong>（Blocked）：处于不可中断睡眠状态的进程数</li>
+</ol>
+<h2 id="pidstat-w"><a href="#pidstat-w" class="headerlink" title="pidstat -w"></a>pidstat -w</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# pidstat -w 5</span><br><span class="line">Linux 5.4.0-62-generic (ubuntu) 	02/03/21 	_x86_64_	(2 CPU)</span><br><span class="line"></span><br><span class="line">02:19:42      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">02:19:47        0        10      8.96      0.00  ksoftirqd/0</span><br><span class="line">02:19:47        0        11     20.92      0.00  rcu_sched</span><br><span class="line">02:19:47        0        12      0.20      0.00  migration/0</span><br><span class="line">02:19:47        0        17      0.20      0.00  migration/1</span><br><span class="line">02:19:47        0       208      0.20      0.00  irq/16-vmwgfx</span><br><span class="line">02:19:47        0       333      0.20      0.00  kworker/1:1H-kblockd</span><br><span class="line">02:19:47        0       356      0.40      0.00  kworker/0:1H-kblockd</span><br><span class="line">02:19:47        0       419      0.60      0.40  jbd2/dm-0-8</span><br><span class="line">02:19:47        0       491      0.60      0.00  systemd-journal</span><br><span class="line">02:19:47        0       694      1.20      0.00  multipathd</span><br><span class="line">02:19:47        0       743     11.16      0.00  vmtoolsd</span><br><span class="line">02:19:47     1000      4491      1.39      0.00  sshd</span><br><span class="line">02:19:47     1000      4594      0.40      0.00  sshd</span><br><span class="line">02:19:47        0      8089      1.79      1.79  watch</span><br><span class="line">02:19:47        0      8180      0.20      0.00  mpstat</span><br><span class="line">02:19:47        0     29689      8.57      0.00  kworker/u256:2-events_power_efficient</span><br><span class="line">02:19:47        0     31207      7.97      0.20  kworker/1:0-events</span><br><span class="line">02:19:47        0     32230     34.46      8.17  kworker/0:0-pm</span><br><span class="line">02:19:47        0     32532      0.20      0.00  kworker/u256:1-events_unbound</span><br><span class="line">02:19:47        0     34059      1.00      0.00  kworker/0:2-mpt_poll_0</span><br><span class="line">02:19:47        0     34155      0.20      0.00  pidstat</span><br></pre></td></tr></table></figure>
+
+<p><strong>cswch/s</strong></p>
+<blockquote>
+<p>Total number of voluntary context switches the task made per second.  </p>
+<p>A voluntary context switch occurs when a task blocks because it <strong>requires a resource that is unavailable</strong>.</p>
+</blockquote>
+<blockquote>
+<p>自愿上下文切换，进程无法获得所需资源导致的上下文切换，如 IO、内存等系统资源不足时</p>
+</blockquote>
+<p><strong>nvcswch/s</strong></p>
+<blockquote>
+<p>Total  number  of non voluntary context switches the task made per second.  </p>
+<p>A involuntary context switch takes place when a task <strong>executes for the duration of its time slice and then is forced to relinquish the processor</strong>.</p>
+</blockquote>
+<blockquote>
+<p>非自愿上下文切换，进程由于时间片已到等原因，被系统强制调度，进而发生的上下文切换</p>
+<p>如大量进程都在争抢 CPU 时，很容易发生非自愿上下文切换</p>
+</blockquote>
+<h1 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h1><h2 id="系统空闲"><a href="#系统空闲" class="headerlink" title="系统空闲"></a>系统空闲</h2><p>空闲时，<strong>cs</strong>为137，<strong>in</strong>为113，<strong>r</strong> 和<strong>b</strong>都是0</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# vmstat 1 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 0  0      0 2686684 144920 818968    0    0    13    46  113  137  6  2 92  0  0</span><br></pre></td></tr></table></figure>
+
+<h2 id="多线程调度（模拟）"><a href="#多线程调度（模拟）" class="headerlink" title="多线程调度（模拟）"></a>多线程调度（模拟）</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# sysbench --threads=10 --max-time=300 threads run</span><br><span class="line">WARNING: --max-time is deprecated, use --time instead</span><br><span class="line">sysbench 1.0.18 (using system LuaJIT 2.1.0-beta3)</span><br><span class="line"></span><br><span class="line">Running the test with following options:</span><br><span class="line">Number of threads: 10</span><br><span class="line">Initializing random number generator from current time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Initializing worker threads...</span><br><span class="line"></span><br><span class="line">Threads started!</span><br></pre></td></tr></table></figure>
+
+<h2 id="vmstat-1"><a href="#vmstat-1" class="headerlink" title="vmstat"></a>vmstat</h2><ol>
+<li>指标<ul>
+<li><strong>cs</strong>从137上升到<strong>123,150</strong></li>
+<li><strong>r</strong> 就绪队列的长度达到<strong>8</strong>，远超 CPU 个数，会导致大量的 CPU 竞争</li>
+<li><strong>us + sy = 100</strong>，CPU 使用率达到了100%，<strong>sy</strong> 高达<strong>96</strong>，说明 CPU 主要被<strong>内核</strong>占用</li>
+<li><strong>in</strong>从113上升到<strong>8,147</strong></li>
+</ul>
+</li>
+<li>小结<ul>
+<li>系统的<strong>就绪队列</strong>（正在运行和等待 CPU）过长，导致了大量的<strong>上下文切换</strong>，而上下文切换又导致了<strong>系统 CPU 的占用率</strong>升高</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 7  0      0 2673072 145324 823228    0    0     0     0 7580 118394  4 96  0  0  0</span><br><span class="line"> 8  0      0 2670552 145324 823228    0    0     0     0 8147 123150  5 95  1  0  0</span><br></pre></td></tr></table></figure>
+
+<h2 id="pidstat-w-u"><a href="#pidstat-w-u" class="headerlink" title="pidstat -w -u"></a>pidstat -w -u</h2><p>sysbench使用率为199%，但cswch比较小，主要是pidstat默认显示进程的指标数据</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# pidstat -w -u 1 1</span><br><span class="line">Linux 5.4.0-62-generic (ubuntu) 	02/03/21 	_x86_64_	(2 CPU)</span><br><span class="line"></span><br><span class="line">03:01:55      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">03:01:56        0       491    1.00    0.00    0.00    0.00    1.00     0  systemd-journal</span><br><span class="line">03:01:56        0     38285    9.00  190.00    0.00    0.00  199.00     1  sysbench</span><br><span class="line">03:01:56        0     38362    0.00    1.00    0.00    0.00    1.00     1  pidstat</span><br><span class="line"></span><br><span class="line">03:01:55      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">03:01:56        0        10     10.00      0.00  ksoftirqd/0</span><br><span class="line">03:01:56        0        11     27.00      0.00  rcu_sched</span><br><span class="line">03:01:56        0        18      2.00      0.00  ksoftirqd/1</span><br><span class="line">03:01:56        0       208      2.00      0.00  irq/16-vmwgfx</span><br><span class="line">03:01:56        0       491      2.00      3.00  systemd-journal</span><br><span class="line">03:01:56        0       694      2.00      0.00  multipathd</span><br><span class="line">03:01:56        0       743     11.00      0.00  vmtoolsd</span><br><span class="line">03:01:56        0     31207      8.00      0.00  kworker/1:0-mm_percpu_wq</span><br><span class="line">03:01:56        0     38319     44.00      0.00  kworker/0:0-events</span><br><span class="line">03:01:56        0     38340      7.00      0.00  kworker/u256:0-events_power_efficient</span><br><span class="line">03:01:56        0     38362      1.00      1.00  pidstat</span><br></pre></td></tr></table></figure>
+
+<h2 id="pidstat-w-u-t"><a href="#pidstat-w-u-t" class="headerlink" title="pidstat -w -u -t"></a>pidstat -w -u -t</h2><p>__sysbench线程的%wait和nvcswch/s都很高，在争抢 CPU</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# pidstat -w -u -t 1 1</span><br><span class="line">Linux 5.4.0-62-generic (ubuntu) 	02/03/21 	_x86_64_	(2 CPU)</span><br><span class="line"></span><br><span class="line">03:03:04      UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">03:03:05        0     31207         -    0.00    0.98    0.00    0.00    0.98     1  kworker/1:0-mm_percpu_wq</span><br><span class="line">03:03:05        0         -     31207    0.00    0.98    0.00    0.00    0.98     1  |__kworker/1:0-mm_percpu_wq</span><br><span class="line">03:03:05        0     38285         -    7.84  181.37    0.00    0.00  189.22     1  sysbench</span><br><span class="line">03:03:05        0         -     38286    0.98   17.65    0.00   60.78   18.63     1  |__sysbench</span><br><span class="line">03:03:05        0         -     38287    0.00   18.63    0.00   54.90   18.63     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38288    0.00   18.63    0.00   60.78   18.63     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38289    0.98   16.67    0.00   47.06   17.65     1  |__sysbench</span><br><span class="line">03:03:05        0         -     38290    0.98   19.61    0.00   56.86   20.59     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38291    0.00   19.61    0.00   59.80   19.61     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38292    0.98   18.63    0.00   64.71   19.61     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38293    0.98   17.65    0.00   32.35   18.63     1  |__sysbench</span><br><span class="line">03:03:05        0         -     38294    0.00   17.65    0.00   63.73   17.65     0  |__sysbench</span><br><span class="line">03:03:05        0         -     38295    0.98   16.67    0.00   62.75   17.65     0  |__sysbench</span><br><span class="line">03:03:05        0     38394         -    0.98    0.98    0.00    0.00    1.96     1  pidstat</span><br><span class="line">03:03:05        0         -     38394    0.98    0.98    0.00    0.00    1.96     1  |__pidstat</span><br><span class="line"></span><br><span class="line">03:03:04      UID      TGID       TID   cswch/s nvcswch/s  Command</span><br><span class="line">03:03:05        0        10         -      7.84      0.00  ksoftirqd/0</span><br><span class="line">03:03:05        0         -        10      7.84      0.00  |__ksoftirqd/0</span><br><span class="line">03:03:05        0        11         -     16.67      0.00  rcu_sched</span><br><span class="line">03:03:05        0         -        11     16.67      0.00  |__rcu_sched</span><br><span class="line">03:03:05        0        18         -      3.92      0.00  ksoftirqd/1</span><br><span class="line">03:03:05        0         -        18      3.92      0.00  |__ksoftirqd/1</span><br><span class="line">03:03:05        0       208         -      0.98      0.00  irq/16-vmwgfx</span><br><span class="line">03:03:05        0         -       208      0.98      0.00  |__irq/16-vmwgfx</span><br><span class="line">03:03:05        0       694         -      0.98      0.00  multipathd</span><br><span class="line">03:03:05        0         -       694      0.98      0.00  |__multipathd</span><br><span class="line">03:03:05        0         -       698      0.98      0.00  |__multipathd</span><br><span class="line">03:03:05        0       743         -     12.75      0.00  vmtoolsd</span><br><span class="line">03:03:05        0         -       743     12.75      0.00  |__vmtoolsd</span><br><span class="line">03:03:05        0         -       769      0.98      0.00  |__HangDetector</span><br><span class="line">03:03:05        0     31207         -      3.92      0.00  kworker/1:0-mm_percpu_wq</span><br><span class="line">03:03:05        0         -     31207      3.92      0.00  |__kworker/1:0-mm_percpu_wq</span><br><span class="line">03:03:05        0     37864         -     43.14      0.98  kworker/0:2-events</span><br><span class="line">03:03:05        0         -     37864     43.14      0.98  |__kworker/0:2-events</span><br><span class="line">03:03:05        0         -     38286   1619.61  10933.33  |__sysbench</span><br><span class="line">03:03:05        0         -     38287   1710.78  12132.35  |__sysbench</span><br><span class="line">03:03:05        0         -     38288   1490.20   6037.25  |__sysbench</span><br><span class="line">03:03:05        0         -     38289   2418.63   5999.02  |__sysbench</span><br><span class="line">03:03:05        0         -     38290   1464.71  12793.14  |__sysbench</span><br><span class="line">03:03:05        0         -     38291   1267.65  13917.65  |__sysbench</span><br><span class="line">03:03:05        0         -     38292    737.25  12780.39  |__sysbench</span><br><span class="line">03:03:05        0         -     38293   3509.80   5676.47  |__sysbench</span><br><span class="line">03:03:05        0         -     38294   1344.12   7692.16  |__sysbench</span><br><span class="line">03:03:05        0         -     38295   1077.45   9229.41  |__sysbench</span><br><span class="line">03:03:05        0     38319         -      1.96      0.00  kworker/0:0-events</span><br><span class="line">03:03:05        0         -     38319      1.96      0.00  |__kworker/0:0-events</span><br><span class="line">03:03:05        0     38340         -      4.90      0.00  kworker/u256:0-events_power_efficient</span><br><span class="line">03:03:05        0         -     38340      4.90      0.00  |__kworker/u256:0-events_power_efficient</span><br><span class="line">03:03:05        0     38394         -      0.98      3.92  pidstat</span><br><span class="line">03:03:05        0         -     38394      0.98      3.92  |__pidstat</span><br></pre></td></tr></table></figure>
+
+<h2 id="proc-interrupts"><a href="#proc-interrupts" class="headerlink" title="/proc/interrupts"></a>/proc/interrupts</h2><ol>
+<li><strong>中断</strong>只发生在<strong>内核态</strong>，pidstat只是一个进程的性能分析工具，并不提供任何关于中断的详细信息</li>
+<li>变化速度最快的是 <strong>RES</strong>（重调度中断）<ul>
+<li><strong>唤醒空闲状态的 CPU 来调度新的任务运行</strong></li>
+<li>在多处理器系统（<strong>SMP</strong>）中，调度器用来分散任务到不同 CPU 的机制<ul>
+<li>通常也被称为<strong>处理器间中断</strong>（Inter-Processor Interrupts，<strong>IPI</strong>）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# watch -d cat /proc/interrupts</span><br><span class="line">            CPU0       CPU1</span><br><span class="line">...</span><br><span class="line"> RES:    3836812    3200375   Rescheduling interrupts</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h2><ol>
+<li>上下文切换多少次算正常<ul>
+<li>取决于系统本身的 CPU 性能（<strong>几百~一万</strong>）</li>
+<li>超过<strong>一万次</strong>或者切换次数出现<strong>数量级</strong>的增长，可能出现了性能问题</li>
+</ul>
+</li>
+<li>根据上下文切换的类型，做具体分析<ul>
+<li><strong>自愿上下文切换</strong>变多，进程都在<strong>等待资源</strong>，有可能发生 IO 等问题</li>
+<li><strong>非自愿上下文切换</strong>变多，进程都在被<strong>强制调度</strong>，都在争抢 CPU，<strong>CPU 成为了瓶颈</strong></li>
+<li><strong>中断</strong>次数变多，CPU 被中断处理程序占用，通过<strong>/proc/interrupts</strong>来分析具体的中断类型</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/03/01/linux-performance-cpu-load-average/" rel="bookmark">Linux性能 -- CPU -- 平均负载</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/03/03/linux-performance-cpu-usage/" rel="bookmark">Linux性能 -- CPU -- 使用率</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/23/linux-practice-awk/" rel="bookmark">Linux使用 -- awk</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/12/linux-practice-daemon-process/" rel="bookmark">Linux使用 -- 守护进程</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/14/linux-practice-ext4/" rel="bookmark">Linux使用 -- ext4（inode + datablock）</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2020/03/02/linux-performance-cpu-context-switch/" title="Linux性能 -- CPU -- 上下文切换">http://zhongmingmao.me/2020/03/02/linux-performance-cpu-context-switch/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          
+            <a href="/tags/linux-performance/" rel="tag"><i class="fa fa-tag"></i> Linux Performance</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/03/01/linux-performance-cpu-load-average/" rel="next" title="Linux性能 -- CPU -- 平均负载">
+                <i class="fa fa-chevron-left"></i> Linux性能 -- CPU -- 平均负载
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/03/03/linux-performance-cpu-usage/" rel="prev" title="Linux性能 -- CPU -- 使用率">
+                Linux性能 -- CPU -- 使用率 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CPU-上下文"><span class="nav-number">1.</span> <span class="nav-text">CPU 上下文</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CPU-上下文切换"><span class="nav-number">2.</span> <span class="nav-text">CPU 上下文切换</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CPU特权等级-amp-进程运行空间-amp-系统调用"><span class="nav-number">3.</span> <span class="nav-text">CPU特权等级 &amp; 进程运行空间 &amp; 系统调用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CPU-上下文切换的分类"><span class="nav-number">4.</span> <span class="nav-text">CPU 上下文切换的分类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#进程上下文切换"><span class="nav-number">4.1.</span> <span class="nav-text">进程上下文切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#进程上下文切换-VS-系统调用"><span class="nav-number">4.1.1.</span> <span class="nav-text">进程上下文切换 VS 系统调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#进程切换"><span class="nav-number">4.1.2.</span> <span class="nav-text">进程切换</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程上下文切换"><span class="nav-number">4.2.</span> <span class="nav-text">线程上下文切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断上下文切换"><span class="nav-number">4.3.</span> <span class="nav-text">中断上下文切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">4.4.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#工具"><span class="nav-number">5.</span> <span class="nav-text">工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#vmstat"><span class="nav-number">5.1.</span> <span class="nav-text">vmstat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pidstat-w"><span class="nav-number">5.2.</span> <span class="nav-text">pidstat -w</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#案例"><span class="nav-number">6.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统空闲"><span class="nav-number">6.1.</span> <span class="nav-text">系统空闲</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多线程调度（模拟）"><span class="nav-number">6.2.</span> <span class="nav-text">多线程调度（模拟）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vmstat-1"><span class="nav-number">6.3.</span> <span class="nav-text">vmstat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pidstat-w-u"><span class="nav-number">6.4.</span> <span class="nav-text">pidstat -w -u</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pidstat-w-u-t"><span class="nav-number">6.5.</span> <span class="nav-text">pidstat -w -u -t</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#proc-interrupts"><span class="nav-number">6.6.</span> <span class="nav-text">/proc/interrupts</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结-1"><span class="nav-number">6.7.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

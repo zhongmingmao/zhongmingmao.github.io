@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Broker参数存储 log.dir：表示单个路径 log.dirs：表示多个路径，推荐使用 /home/kafka1,/home/kafka2,/home/kafka3 线上生产环境中一定要为log.dirs配置多个路径，格式为CSV，逗号分隔 建议把不同的路径挂载到不同的物理磁盘上 提升读写性能，比起单块硬盘，多块物理磁盘同时读写数据有更高的吞吐量 能够实现故障转移（Failover），从Ka">
+<meta name="keywords" content="Middleware,MQ,Kafka,Stream">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka -- 集群参数">
+<meta property="og:url" content="http://zhongmingmao.me/2019/07/19/kafka-cluster-param/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="Broker参数存储 log.dir：表示单个路径 log.dirs：表示多个路径，推荐使用 /home/kafka1,/home/kafka2,/home/kafka3 线上生产环境中一定要为log.dirs配置多个路径，格式为CSV，逗号分隔 建议把不同的路径挂载到不同的物理磁盘上 提升读写性能，比起单块硬盘，多块物理磁盘同时读写数据有更高的吞吐量 能够实现故障转移（Failover），从Ka">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka -- 集群参数">
+<meta name="twitter:description" content="Broker参数存储 log.dir：表示单个路径 log.dirs：表示多个路径，推荐使用 /home/kafka1,/home/kafka2,/home/kafka3 线上生产环境中一定要为log.dirs配置多个路径，格式为CSV，逗号分隔 建议把不同的路径挂载到不同的物理磁盘上 提升读写性能，比起单块硬盘，多块物理磁盘同时读写数据有更高的吞吐量 能够实现故障转移（Failover），从Ka">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/07/19/kafka-cluster-param/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka -- 集群参数 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/07/19/kafka-cluster-param/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kafka -- 集群参数
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-07-19 13:12:41" itemprop="dateCreated datePublished" datetime="2019-07-19T13:12:41+08:00">2019-07-19</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/" itemprop="url" rel="index"><span itemprop="name">Middleware</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/" itemprop="url" rel="index"><span itemprop="name">MQ</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">3.4k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">6 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Broker参数"><a href="#Broker参数" class="headerlink" title="Broker参数"></a>Broker参数</h2><h3 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h3><ol>
+<li>log.dir：表示<strong>单个</strong>路径</li>
+<li>log.dirs：表示<strong>多个</strong>路径，<strong>推荐使用</strong><ul>
+<li><code>/home/kafka1,/home/kafka2,/home/kafka3</code></li>
+<li>线上生产环境中一定要为log.dirs配置多个路径，格式为<strong>CSV</strong>，<strong>逗号分隔</strong></li>
+<li>建议把不同的路径<strong>挂载</strong>到不同的<strong>物理磁盘</strong>上<ul>
+<li><strong>提升读写性能</strong>，比起单块硬盘，多块物理磁盘同时读写数据有<strong>更高的吞吐量</strong></li>
+<li>能够实现<strong>故障转移</strong>（Failover），从Kafka 1.1引入，坏掉的磁盘上的数据会自动地转移到其他正常的磁盘上</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h3 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h3><ol>
+<li>Zookeeper是一个<strong>分布式协调框架</strong>，负责协调管理并保存<strong>Kafka集群的所有元数据信息</strong><ul>
+<li>集群有哪些Broker在运行，创建了哪些Topic，每个Topic有多少分区、分区的Leader副本在哪些机器上</li>
+</ul>
+</li>
+<li>zookeeper.connect，CSV格式，<code>zk1:2181,zk2:2181,zk3:2181</code></li>
+<li>Zookeeper地chroot，只需写<strong>一次</strong>，<code>zk1:2181,zk2:2181,zk3:2181/kafka1</code>和<code>zk1:2181,zk2:2181,zk3:2181/kafka2</code></li>
+</ol>
+<h3 id="连接"><a href="#连接" class="headerlink" title="连接"></a>连接</h3><ol>
+<li>listeners<ul>
+<li>监听器，告知外部连接者通过什么协议来访问指定主机名和端口开放的Kafka服务</li>
+<li>逗号分隔的三元组，格式：<code>&lt;协议名称，主机名，端口号&gt;</code><ul>
+<li>协议名称可能是标准的名字，如PLAINTEXT表示明文传输，SSL表示使用SSL或者TLS加密传输</li>
+<li>协议名称也可能是自定义的，如<code>CONTROLLER://localhost:9092</code><ul>
+<li>如果使用自定义的协议名称，需要通过<code>listener.security.protocol.map</code>来说明底层使用的<strong>安全协议</strong></li>
+<li>listener.security.protocol.map=CONTROLLER:PLAINTEXT</li>
+</ul>
+</li>
+<li><strong>主机名推荐使用域名，而非IP</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>advertised.listeners<ul>
+<li>对外发布的监听器</li>
+</ul>
+</li>
+<li>host.name/port<ul>
+<li>已过期参数，无需设置</li>
+</ul>
+</li>
+</ol>
+<h3 id="Topic"><a href="#Topic" class="headerlink" title="Topic"></a>Topic</h3><ol>
+<li>auto.create.topics.enable<ul>
+<li>是否允许自动创建Topic，建议设置为<strong>false</strong></li>
+<li>在线上环境，每个部门被分配的Topic应该由运维部门严格把控</li>
+</ul>
+</li>
+<li>unclean.leader.election.enable<ul>
+<li>是否允许Unclean Leader选举，建议设置为<strong>false</strong></li>
+<li>Kafka的分区有多个副本，这些副本中只能有一个副本对外提供服务，即<strong>Leader副本</strong></li>
+<li>并不是所有副本都有资格竞选Leader，<em><strong>只有保存数据比较多的副本才有资格竞选Leader</strong></em></li>
+<li>如果保存数据比较多的副本挂了，该参数发挥作用<ul>
+<li>设置为false，坚决不让落后太多的副本竞选Leader，后果就是这个<strong>分区不可用</strong>了，因为没有Leader</li>
+<li>设置为true，允许从落后太多的副本中选举出一个Leader，后果就是<strong>数据有可能丢失</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>auto.leader.rebalance.enable<ul>
+<li>是否允许<strong>定期</strong>进行Leader选举，建议设置为<strong>false</strong></li>
+<li>与上一参数最大的不同是，它不是选Leader，而是<em><strong>换Leader</strong></em></li>
+<li>换Leader的<strong>代价很高</strong>，并且本质上<strong>没有任何性能收益</strong><ul>
+<li>原本向A发送请求的所有客户端都要切换成向B发送请求</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="数据留存"><a href="#数据留存" class="headerlink" title="数据留存"></a>数据留存</h3><ol>
+<li>log.retention.{hours|minutes|ms}<ul>
+<li>控制<strong>一条消息</strong>可以被保存多长时间，优先级：ms &gt; minutes &gt; hours，推荐使用<strong>hours</strong></li>
+</ul>
+</li>
+<li>log.retention.bytes<ul>
+<li>指定Broker为消息保存的<strong>总磁盘容量大小</strong>，默认值为<strong>-1</strong>，表示<strong>不限制</strong></li>
+<li>应用场景：在云上构建多租户的Kafka集群，每个租户只能使用100GB的磁盘空间，避免租户恶意使用过多的磁盘空间</li>
+</ul>
+</li>
+<li>message.max.bytes<ul>
+<li>控制Broker能够接收的<strong>最大消息大小</strong></li>
+<li>默认值为1000012，小于1MB，实际场景中，消息突破1MB的场景很常见，所以线上环境一般会设置一个比较大的值</li>
+</ul>
+</li>
+</ol>
+<h2 id="Topic参数"><a href="#Topic参数" class="headerlink" title="Topic参数"></a>Topic参数</h2><p>如果同时设置了Topic级别参数和全局Broker参数，Topic级别参数会<strong>覆盖</strong>全局Broker参数的值</p>
+<h3 id="数据留存-1"><a href="#数据留存-1" class="headerlink" title="数据留存"></a>数据留存</h3><p>retention.ms、retention.bytes、message.max.bytes</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建Topic时进行设置，保存最近半年的交易数据，单个消息很大，但也不会超过5MB</span></span><br><span class="line">$ kafka-topics --bootstrap-server localhost:9092 --create --topic transaction --partitions 1 --replication-factor 1 --config retention.ms=15552000000 --config max.message.bytes=5242880</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改Topic级别参数，将消息的最大大小修改为10MB</span></span><br><span class="line"><span class="comment"># 推荐使用kafka-configs，社区未来很有可能统一使用kafka-configs来调整Topic级别参数</span></span><br><span class="line">$ kafka-configs --zookeeper localhost:2181 --entity-type topics --entity-name transaction --alter --add-config max.message.bytes=10485760</span><br></pre></td></tr></table></figure>
+
+<h2 id="JVM参数"><a href="#JVM参数" class="headerlink" title="JVM参数"></a>JVM参数</h2><ol>
+<li>Kafka服务端代码是用<strong>Scala</strong>语言编写的，最终要编译成<strong>Class文件</strong>在<strong>JVM</strong>上运行</li>
+<li>不推荐将Kafka运行在Java 6或Java 7的环境上，Kafka从<strong>2.0.0</strong>开始，正式摒弃<strong>对Java 7的支持</strong></li>
+<li>将JVM的堆大小设置为<strong>6GB</strong>，这是业界比较公认的合理值，默认的1GB太小<ul>
+<li>Kafka Broker在与客户端交互时，会在JVM堆上创建大量的<strong>ByteBuffer</strong>实例</li>
+</ul>
+</li>
+<li>垃圾收集器<ul>
+<li>Java 7<ul>
+<li>如果Broker所在机器的<strong>CPU资源非常充裕</strong>，建议使用<strong>CMS收集器</strong>，-XX:+UseCurrentMarkSweepGC</li>
+<li>否则使用<strong>吞吐量收集器</strong>，-XX:+UseParallelGC</li>
+</ul>
+</li>
+<li>Java 8<ul>
+<li>使用<strong>G1收集器</strong>，在没有任何调优的情况下，<strong>G1的表现要优于CMS</strong></li>
+<li>主要体现在<strong>更少的Full GC</strong>，<strong>更少的调整参数</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">export</span> KAFKA_HEAP_OPTS=--Xms6g  --Xmx6g</span><br><span class="line">$ <span class="built_in">export</span> KAFKA_JVM_PERFORMANCE_OPTS= -server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=<span class="literal">true</span></span><br><span class="line">$ kafka-server-start config/server.properties</span><br></pre></td></tr></table></figure>
+
+<h2 id="OS参数"><a href="#OS参数" class="headerlink" title="OS参数"></a>OS参数</h2><ol>
+<li>文件描述符限制<ul>
+<li><code>ulimit -n</code>，文件描述符系统资源<strong>并没有很昂贵</strong>，设置成一个很大的值也是合理的</li>
+</ul>
+</li>
+<li>文件系统类型<ul>
+<li><strong>日志型文件系统</strong>：ext3、ext4、XFS，<strong>XFS的性能强于ext4</strong>，所以生产环境最好使用<strong>XFS</strong></li>
+</ul>
+</li>
+<li>Swappiness<ul>
+<li>不建议将Swap空间设置为0<ul>
+<li>因为一旦设置为0，当物理内存耗尽时，操作系统会触发<strong>OOM Killer</strong></li>
+<li>OOM Killer会<strong>随机</strong>挑选一个进程然后kill掉，<strong>不会给出任何预警</strong></li>
+</ul>
+</li>
+<li>可以将Swap空间设置为很小的值，例如1<ul>
+<li>当开始使用Swap空间时，至少能够观测到Broker<strong>性能急剧下降</strong>，留有<strong>调优</strong>和<strong>诊断</strong>问题的时间</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Flush落盘时间<ul>
+<li>向Kafka发送数据并不需要等到数据被写入磁盘才会认为成功，只需被写入到操作系统的<strong>页缓存</strong>（Page Cache）即可</li>
+<li>随后操作系统根据<strong>LRU算法</strong>会<strong>定期</strong>将页缓存上的<strong>脏数据</strong>落盘到物理磁盘上</li>
+<li>Flush落盘时间默认是<strong>5秒</strong>，如果页缓存中的数据在写入到磁盘之前，机器宕机了，会造成<strong>数据丢失</strong></li>
+<li>但Kafka在<strong>软件层面</strong>已经提供了<strong>多副本的冗余机制</strong>，因此<strong>适当地调大</strong>Flush落盘时间是个合理的做法</li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100029201" target="_blank" rel="noopener">Kafka核心技术与实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/28/kafka-admin-client/" rel="bookmark">Kafka -- KafkaAdminClient</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/01/kafka-avoid-rebalance/" rel="bookmark">Kafka -- 避免重平衡</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-bijection/" rel="bookmark">Kafka -- Avro + Twitter Bijection</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/15/kafka-avro-introduction/" rel="bookmark">Kafka -- Avro入门</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-native/" rel="bookmark">Kafka -- Avro + Kafka Native API</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/07/19/kafka-cluster-param/" title="Kafka -- 集群参数">http://zhongmingmao.me/2019/07/19/kafka-cluster-param/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/middleware/" rel="tag"><i class="fa fa-tag"></i> Middleware</a>
+          
+            <a href="/tags/mq/" rel="tag"><i class="fa fa-tag"></i> MQ</a>
+          
+            <a href="/tags/kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a>
+          
+            <a href="/tags/stream/" rel="tag"><i class="fa fa-tag"></i> Stream</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/18/java-performance-hashmap/" rel="next" title="Java性能 -- HashMap">
+                <i class="fa fa-chevron-left"></i> Java性能 -- HashMap
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/22/java-performance-io-model/" rel="prev" title="Java性能 -- IO模型">
+                Java性能 -- IO模型 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Broker参数"><span class="nav-number">1.</span> <span class="nav-text">Broker参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#存储"><span class="nav-number">1.1.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Zookeeper"><span class="nav-number">1.2.</span> <span class="nav-text">Zookeeper</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#连接"><span class="nav-number">1.3.</span> <span class="nav-text">连接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Topic"><span class="nav-number">1.4.</span> <span class="nav-text">Topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据留存"><span class="nav-number">1.5.</span> <span class="nav-text">数据留存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Topic参数"><span class="nav-number">2.</span> <span class="nav-text">Topic参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据留存-1"><span class="nav-number">2.1.</span> <span class="nav-text">数据留存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JVM参数"><span class="nav-number">3.</span> <span class="nav-text">JVM参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OS参数"><span class="nav-number">4.</span> <span class="nav-text">OS参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">5.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

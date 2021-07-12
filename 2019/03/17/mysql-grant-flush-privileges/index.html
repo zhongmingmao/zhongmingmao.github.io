@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="创建用户1CREATE USER &apos;ua&apos;@&apos;%&apos; IDENTIFIED BY &apos;pa&apos;;   用户名+地址才表示一个用户，ua@ip1和ua@ip2代表的是两个不同的用户 在磁盘上，往mysql.user表里插入一行，由于没有指定权限，所有表示权限的字段都是N 在内存里，往数组acl_users里插入一个acl_user对象，该对象的access字段的值为0">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 权限">
+<meta property="og:url" content="http://zhongmingmao.me/2019/03/17/mysql-grant-flush-privileges/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="创建用户1CREATE USER &apos;ua&apos;@&apos;%&apos; IDENTIFIED BY &apos;pa&apos;;   用户名+地址才表示一个用户，ua@ip1和ua@ip2代表的是两个不同的用户 在磁盘上，往mysql.user表里插入一行，由于没有指定权限，所有表示权限的字段都是N 在内存里，往数组acl_users里插入一个acl_user对象，该对象的access字段的值为0">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- 权限">
+<meta name="twitter:description" content="创建用户1CREATE USER &apos;ua&apos;@&apos;%&apos; IDENTIFIED BY &apos;pa&apos;;   用户名+地址才表示一个用户，ua@ip1和ua@ip2代表的是两个不同的用户 在磁盘上，往mysql.user表里插入一行，由于没有指定权限，所有表示权限的字段都是N 在内存里，往数组acl_users里插入一个acl_user对象，该对象的access字段的值为0">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/03/17/mysql-grant-flush-privileges/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- 权限 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/03/17/mysql-grant-flush-privileges/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- 权限
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-17 14:30:42" itemprop="dateCreated datePublished" datetime="2019-03-17T14:30:42+08:00">2019-03-17</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">5.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">11 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">IDENTIFIED</span> <span class="keyword">BY</span> <span class="string">'pa'</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>用户名+地址才表示一个用户，<code>ua@ip1</code>和<code>ua@ip2</code>代表的是两个不同的用户</li>
+<li>在磁盘上，往<code>mysql.user</code>表里插入一行，由于没有指定权限，所有表示权限的字段都是N</li>
+<li>在内存里，往数组<code>acl_users</code>里插入一个<code>acl_user</code>对象，该对象的<code>access</code>字段的值为0</li>
+</ol>
+<a id="more"></a>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM mysql.user WHERE user = 'ua'\G;</span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">                  Host: %</span><br><span class="line">                  User: ua</span><br><span class="line">           Select_priv: N</span><br><span class="line">           Insert_priv: N</span><br><span class="line">           Update_priv: N</span><br><span class="line">           Delete_priv: N</span><br><span class="line">           Create_priv: N</span><br><span class="line">             Drop_priv: N</span><br><span class="line">           Reload_priv: N</span><br><span class="line">         Shutdown_priv: N</span><br><span class="line">          Process_priv: N</span><br><span class="line">             File_priv: N</span><br><span class="line">            Grant_priv: N</span><br><span class="line">       References_priv: N</span><br><span class="line">            Index_priv: N</span><br><span class="line">            Alter_priv: N</span><br><span class="line">          Show_db_priv: N</span><br><span class="line">            Super_priv: N</span><br><span class="line"> Create_tmp_table_priv: N</span><br><span class="line">      Lock_tables_priv: N</span><br><span class="line">          Execute_priv: N</span><br><span class="line">       Repl_slave_priv: N</span><br><span class="line">      Repl_client_priv: N</span><br><span class="line">      Create_view_priv: N</span><br><span class="line">        Show_view_priv: N</span><br><span class="line">   Create_routine_priv: N</span><br><span class="line">    Alter_routine_priv: N</span><br><span class="line">      Create_user_priv: N</span><br><span class="line">            Event_priv: N</span><br><span class="line">          Trigger_priv: N</span><br><span class="line">Create_tablespace_priv: N</span><br><span class="line">              ssl_type:</span><br><span class="line">            ssl_cipher:</span><br><span class="line">           x509_issuer:</span><br><span class="line">          x509_subject:</span><br><span class="line">         max_questions: 0</span><br><span class="line">           max_updates: 0</span><br><span class="line">       max_connections: 0</span><br><span class="line">  max_user_connections: 0</span><br><span class="line">                plugin: caching_sha2_password</span><br><span class="line">      password_expired: N</span><br><span class="line"> password_last_changed: 2019-03-17 14:33:56</span><br><span class="line">     password_lifetime: NULL</span><br><span class="line">        account_locked: N</span><br><span class="line">      Create_role_priv: N</span><br><span class="line">        Drop_role_priv: N</span><br><span class="line">Password_reuse_history: NULL</span><br><span class="line">   Password_reuse_time: NULL</span><br></pre></td></tr></table></figure>
+
+<h2 id="权限范围"><a href="#权限范围" class="headerlink" title="权限范围"></a>权限范围</h2><h3 id="全局权限"><a href="#全局权限" class="headerlink" title="全局权限"></a>全局权限</h3><p>作用于整个MySQL实例，权限信息保存在<code>mysql.user</code>，要给用户ua赋一个最高权限的语句如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">PRIVILEGES</span> <span class="keyword">ON</span> *.* <span class="keyword">to</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">WITH</span> <span class="keyword">GRANT</span> <span class="keyword">OPTION</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>在磁盘上，将<code>mysql.user</code>表里的用户<code>&#39;ua&#39;@&#39;%&#39;</code>这一行中所有表示权限的字段都修改为Y</li>
+<li>在内存里，从数组<code>acl_users</code>中找到这个用户对应的对象，将<code>access</code>值（<strong>权限位</strong>）修改为二进制的全1</li>
+<li>这个<code>GRANT</code>命令执行完成后，如果有新的客户端使用用户ua登录成功<ul>
+<li>MySQL会为<strong>新连接</strong>维护一个<strong>线程对象</strong></li>
+<li>然后从<code>acl_users</code>数组里查到用户ua的权限，并<strong>将权限值拷贝到这个线程对象</strong>中</li>
+<li>之后在这个连接中执行的语句，所有关于全局权限的判断，都直接使用线程对象内部保存的权限位</li>
+</ul>
+</li>
+<li><code>GRANT</code>命令对于全局权限，同时更新了磁盘和内存，命令完成后<strong>即时生效</strong><ul>
+<li>接下来新创建的连接会使用新的权限</li>
+<li>对于一个<strong>已经存在的连接</strong>，它的<strong>全局权限不受影响</strong>（因为判断时采用的是线程对象内部的权限值）</li>
+</ul>
+</li>
+</ol>
+<h4 id="回收权限"><a href="#回收权限" class="headerlink" title="回收权限"></a>回收权限</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">REVOKE</span> <span class="keyword">ALL</span> <span class="keyword">PRIVILEGES</span> <span class="keyword">ON</span> *.* <span class="keyword">FROM</span> <span class="string">'ua'</span>@<span class="string">'%'</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>在磁盘上，将<code>mysql.user</code>表里的用户<code>&#39;ua&#39;@&#39;%&#39;</code>这一行中所有表示权限的字段都修改为N</li>
+<li>在内存里，从数组<code>acl_users</code>中找到这个用户对应的<code>acl_user</code>对象，将<code>access</code>的值修改为0</li>
+</ol>
+<h3 id="DB权限"><a href="#DB权限" class="headerlink" title="DB权限"></a>DB权限</h3><p>让用户<code>&#39;ua&#39;@&#39;%&#39;</code>拥有库db1的所有权限</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">PRIVILEGES</span> <span class="keyword">ON</span> db1.* <span class="keyword">to</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">WITH</span> <span class="keyword">GRANT</span> <span class="keyword">OPTION</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>基于库的权限记录保存在<code>mysql.db</code>中，在内存里则保存在数组<code>acl_dbs</code>中</li>
+<li>在磁盘上，往<code>mysql.db</code>表中插入一行记录，所有权限位的字段设置为Y</li>
+<li>在内存中，增加一个对象到数组<code>acl_dbs</code>，该对象的权限位为全1</li>
+<li>每次需要判断一个用户对一个数据库读写权限的时候，都需要遍历一遍<code>acl_dbs</code>数组（多线程共享）<ul>
+<li>根据<code>user</code>、<code>host</code>和<code>db</code>找到匹配的对象，然后根据对象的权限位来判断</li>
+</ul>
+</li>
+<li><code>GRANT</code>命令对于<strong>已经存在的连接</strong>的影响，全局权限和基于DB的权限是不一样的<ul>
+<li>全局权限：<strong>线程私有</strong></li>
+<li>基于DB的权限：<strong>线程共享</strong></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM mysql.db WHERE user = 'ua'\G;</span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">                 Host: %</span><br><span class="line">                   Db: db1</span><br><span class="line">                 User: ua</span><br><span class="line">          Select_priv: Y</span><br><span class="line">          Insert_priv: Y</span><br><span class="line">          Update_priv: Y</span><br><span class="line">          Delete_priv: Y</span><br><span class="line">          Create_priv: Y</span><br><span class="line">            Drop_priv: Y</span><br><span class="line">           Grant_priv: Y</span><br><span class="line">      References_priv: Y</span><br><span class="line">           Index_priv: Y</span><br><span class="line">           Alter_priv: Y</span><br><span class="line">Create_tmp_table_priv: Y</span><br><span class="line">     Lock_tables_priv: Y</span><br><span class="line">     Create_view_priv: Y</span><br><span class="line">       Show_view_priv: Y</span><br><span class="line">  Create_routine_priv: Y</span><br><span class="line">   Alter_routine_priv: Y</span><br><span class="line">         Execute_priv: Y</span><br><span class="line">           Event_priv: Y</span><br><span class="line">         Trigger_priv: Y</span><br></pre></td></tr></table></figure>
+
+<h4 id="操作序列"><a href="#操作序列" class="headerlink" title="操作序列"></a>操作序列</h4><table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>CONNECT(root,root);<br>CREATE DATABASE db1;<br>CREATE USER ‘ua’@’%’ IDENTIFIED BY ‘pa’;<br>GRANT SUPER ON *.* TO ‘ua’@’%’;<br>GRANT ALL PRIVILEGES ON db1.* TO ‘ua’@’%’;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td></td>
+<td>CONNECT(ua,pa)<br>SET GLOBAL sync_binlog=1;<br>(Query OK)<br>CREATE TABLE db1.t(c INT);<br>(Query OK)</td>
+<td>CONNECT(ua,pa)<br>USE db1;</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>REVOKE SUPER ON *.* FROM ‘ua’@’%’;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T4</td>
+<td></td>
+<td>SET GLOBAL sync_binlog=1;<br>(Query OK)<br>ALTER TABLE db1.t ENGINE=InnoDB;<br>(Query OK)</td>
+<td>ALTER TABLE t ENGINE=InnoDB;<br>(Query OK)</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>REVOKE ALL PRIVILEGES ON db1.* FROM ‘ua’@’%’;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T6</td>
+<td></td>
+<td>SET GLOBAL sync_binlog=1;<br>(Query OK)<br>ALTER TABLE db1.t ENGINE=InnoDB;<br>(ALTER command denied)</td>
+<td>ALTER TABLE t ENGINE=InnoDB;(Query OK)</td>
+</tr>
+</tbody></table>
+<ol>
+<li><code>SET GLOBAL sync_binlog=1;</code>这个操作需要<code>SUPER</code>权限</li>
+<li>虽然用户ua的<code>SUPER</code>权限在T3时刻被回收了，但在T4时刻执行<code>SET GLOBAL</code>的时候，权限验证还是通过了<ul>
+<li>这是因为<code>SUPER</code>是全局权限，这个信息在<strong>线程对象</strong>中，而<code>REVOKE</code>操作影响不了线程对象</li>
+</ul>
+</li>
+<li>在T4时刻去掉用户ua对db1库的所有权限后，session B在T6时刻再操作db1的表时，就会报<strong>权限不足</strong><ul>
+<li>这是因为<code>acl_dbs</code>是一个<strong>全局数组</strong>，所有线程判断db权限都会用该数组</li>
+<li>因此<code>REVOKE</code>操作会立马影响到session</li>
+</ul>
+</li>
+<li>特殊逻辑<ul>
+<li>如果当前会话已经在某个db里面，之前use这个db时拿到的库权限就会保存在<strong>会话变量</strong>中</li>
+<li>session C在T2执行了<code>USE db1</code>，拿到这个库的权限，在切换出db1之前，一直对db1有权限</li>
+</ul>
+</li>
+</ol>
+<h3 id="表权限和列权限"><a href="#表权限和列权限" class="headerlink" title="表权限和列权限"></a>表权限和列权限</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> db1.t1(<span class="keyword">id</span> <span class="built_in">INT</span>, a <span class="built_in">INT</span>);</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">PRIVILEGES</span> <span class="keyword">ON</span> db1.t1 <span class="keyword">TO</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">WITH</span> <span class="keyword">GRANT</span> <span class="keyword">OPTION</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">SELECT</span>(<span class="keyword">id</span>), <span class="keyword">INSERT</span>(<span class="keyword">id</span>,a) <span class="keyword">ON</span> db1.t1 <span class="keyword">TO</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">WITH</span> <span class="keyword">GRANT</span> <span class="keyword">OPTION</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>表权限定义在表<code>mysql.tables_priv</code>，列权限定义在表<code>mysql.columns_priv</code><ul>
+<li>这两类权限组合起来存放在<strong>内存的hash结构</strong>：<code>column_priv_hash</code></li>
+</ul>
+</li>
+<li>跟DB权限类似，这两个权限在每次<code>GRANT</code>的时候都会修改数据表，也会同步修改内存的hash结构</li>
+<li>因此这两类权限的操作，也会立马影响到<strong>已经存在的连接</strong></li>
+</ol>
+<h2 id="FLUSH-PRIVILEGES"><a href="#FLUSH-PRIVILEGES" class="headerlink" title="FLUSH PRIVILEGES"></a>FLUSH PRIVILEGES</h2><ol>
+<li><code>FLUSH PRIVILEGES</code>命令会清空<code>acl_users</code>数组（_<strong>全局权限</strong>_）<ul>
+<li>然后从<code>mysql.user</code>表中读取数据重新加载，重新构造一个<code>acl_users</code>数组</li>
+<li>以数据表中的数据为准，会将<strong>全局权限</strong>的内存数组重新加载一遍</li>
+</ul>
+</li>
+<li>同样的，对于<strong>DB权限</strong>、<strong>表权限和列权限</strong>，MySQL也做了同样的处理</li>
+<li>如果<strong>内存的权限数据</strong>和<strong>磁盘数据表的权限数据</strong>相同的话，不需要执行<code>FLUSH PRIVILEGES</code><ul>
+<li>如果都是用<code>GRANT/REVOKE</code>语句执行的话，内存和数据表的数据应该保持<strong>同步更新</strong>的</li>
+<li>正常情况下，在执行<code>GRANT</code>命令之后，没有必要跟着执行<code>FLUSH PRIVILEGES</code>命令</li>
+</ul>
+</li>
+</ol>
+<h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><ol>
+<li>当数据表的权限数据与内存中的权限数据<strong>不一致</strong>，通过<code>FLUSH PRIVILEGES</code>来<strong>重建内存数据</strong>，达到一致状态</li>
+<li>这种不一致的状态往往由于<strong>不规范的操作</strong>导致的，例如直接用DML语句操作系统权限表</li>
+</ol>
+<h3 id="不规范操作1"><a href="#不规范操作1" class="headerlink" title="不规范操作1"></a>不规范操作1</h3><table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>client A</th>
+<th>client B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>CONNECT(root,root)<br>CREATE USER ‘ua’@’%’ IDENTIFIED BY ‘pa’;</td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td></td>
+<td>CONNECT(ua,pa)<br>(Connect OK)<br>DISCONNECT</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>DELETE FROM mysql.user WHERE user=’ua’;</td>
+<td></td>
+</tr>
+<tr>
+<td>T4</td>
+<td></td>
+<td>CONNECT(ua,pa)<br>(Connect OK)<br>DISCONNECT</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>FLUSH PRIVILEGES;</td>
+<td></td>
+</tr>
+<tr>
+<td>T6</td>
+<td></td>
+<td>CONNECT(ua,pa)<br>(Access Denied)</td>
+</tr>
+</tbody></table>
+<ol>
+<li>T3时刻虽然使用了<code>DELETE</code>语句删除了用户ua，但在T4时刻，仍然可以用用户ua连接成功<ul>
+<li>因为内存中<code>acl_users</code>数组中还有这个用户，系统判断时认为用户还正常存在的</li>
+</ul>
+</li>
+<li>T5时刻执行过<code>FLUSH PRIVILEGES</code>命令后，内存更新，T6时刻就会报<code>Access Denied</code>错误</li>
+<li>直接操作系统权限表是很不规范的操作</li>
+</ol>
+<h3 id="不规范操作2"><a href="#不规范操作2" class="headerlink" title="不规范操作2"></a>不规范操作2</h3><table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>client A</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>CONNECT(root,root)<br>CREATE USER ‘ua’@’%’ IDENTIFIED BY ‘pa’;</td>
+</tr>
+<tr>
+<td>T2</td>
+<td>DELETE FROM mysql.user WHERE user=’ua’;</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>GRANT SUPER ON *.* TO ‘ua’@’%’ WITH GRANT OPTION;<br>(ERROR 1133 (42000): Can’t find any matching row in the user table)</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>CREATE USER ‘ua’@’%’ IDENTIFIED BY ‘pa’;<br>(ERROR 1396 (HY000): Operation CREATE USER failed for ‘ua’@’%’)</td>
+</tr>
+</tbody></table>
+<ol>
+<li>在T2时刻直接删除了数据表的记录，而内存的数据还存在</li>
+<li>T3时刻给用户ua赋权限失败，因为<code>mysql.user</code>表找不到这行记录</li>
+<li>T4时刻也无法重新创建用户ua，因为在内存判断的时候，会认为这个用户还存在</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/03/17/mysql-grant-flush-privileges/" title="MySQL -- 权限">http://zhongmingmao.me/2019/03/17/mysql-grant-flush-privileges/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/16/mysql-copy-table/" rel="next" title="MySQL -- 拷贝表">
+                <i class="fa fa-chevron-left"></i> MySQL -- 拷贝表
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/17/mysql-partition-table/" rel="prev" title="MySQL -- 分区表">
+                MySQL -- 分区表 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建用户"><span class="nav-number">1.</span> <span class="nav-text">创建用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限范围"><span class="nav-number">2.</span> <span class="nav-text">权限范围</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#全局权限"><span class="nav-number">2.1.</span> <span class="nav-text">全局权限</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#回收权限"><span class="nav-number">2.1.1.</span> <span class="nav-text">回收权限</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DB权限"><span class="nav-number">2.2.</span> <span class="nav-text">DB权限</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#操作序列"><span class="nav-number">2.2.1.</span> <span class="nav-text">操作序列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表权限和列权限"><span class="nav-number">2.3.</span> <span class="nav-text">表权限和列权限</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FLUSH-PRIVILEGES"><span class="nav-number">3.</span> <span class="nav-text">FLUSH PRIVILEGES</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用场景"><span class="nav-number">3.1.</span> <span class="nav-text">使用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不规范操作1"><span class="nav-number">3.2.</span> <span class="nav-text">不规范操作1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不规范操作2"><span class="nav-number">3.3.</span> <span class="nav-text">不规范操作2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

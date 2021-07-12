@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="缓存行填充缓存行大小1234567$ sysctl -a | grep -E &amp;apos;cacheline|cachesize&amp;apos;hw.cachesize: 17179869184 32768 262144 6291456 0 0 0 0 0 0hw.cachelinesize: 64hw.l1icachesize: 32768hw.l1dcachesize: 32768hw.l2cac">
+<meta name="keywords" content="Computer Basics,Computer Organization">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机组成 -- Disruptor">
+<meta property="og:url" content="http://zhongmingmao.me/2020/02/04/computer-organization-disruptor/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="缓存行填充缓存行大小1234567$ sysctl -a | grep -E &amp;apos;cacheline|cachesize&amp;apos;hw.cachesize: 17179869184 32768 262144 6291456 0 0 0 0 0 0hw.cachelinesize: 64hw.l1icachesize: 32768hw.l1dcachesize: 32768hw.l2cac">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-cache-invalid.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-cache-line-padding.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-producer-consumer.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-queue.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-queue-lock-contention.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-ringbuffer-lock-free.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.132Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="计算机组成 -- Disruptor">
+<meta name="twitter:description" content="缓存行填充缓存行大小1234567$ sysctl -a | grep -E &amp;apos;cacheline|cachesize&amp;apos;hw.cachesize: 17179869184 32768 262144 6291456 0 0 0 0 0 0hw.cachelinesize: 64hw.l1icachesize: 32768hw.l1dcachesize: 32768hw.l2cac">
+<meta name="twitter:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-cache-invalid.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2020/02/04/computer-organization-disruptor/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>计算机组成 -- Disruptor | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2020/02/04/computer-organization-disruptor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">计算机组成 -- Disruptor
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-02-05 00:07:50" itemprop="dateCreated datePublished" datetime="2020-02-05T00:07:50+08:00">2020-02-05</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/computer-basics/" itemprop="url" rel="index"><span itemprop="name">Computer Basics</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/computer-basics/computer-organization/" itemprop="url" rel="index"><span itemprop="name">Computer Organization</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">5.3k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">10 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="缓存行填充"><a href="#缓存行填充" class="headerlink" title="缓存行填充"></a>缓存行填充</h2><h3 id="缓存行大小"><a href="#缓存行大小" class="headerlink" title="缓存行大小"></a>缓存行大小</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ sysctl -a | grep -E &apos;cacheline|cachesize&apos;</span><br><span class="line">hw.cachesize: 17179869184 32768 262144 6291456 0 0 0 0 0 0</span><br><span class="line">hw.cachelinesize: 64</span><br><span class="line">hw.l1icachesize: 32768</span><br><span class="line">hw.l1dcachesize: 32768</span><br><span class="line">hw.l2cachesize: 262144</span><br><span class="line">hw.l3cachesize: 6291456</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h3 id="RingBufferPad"><a href="#RingBufferPad" class="headerlink" title="RingBufferPad"></a>RingBufferPad</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferPad</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>变量p1~p7本身没有实际意义，只能用于<strong>缓存行填充</strong>，为了尽可能地用上<strong>CPU Cache</strong></li>
+<li>访问CPU里的<strong>L1 Cache</strong>或者<strong>L2 Cache</strong>，访问延时是<strong>内存</strong>的<strong>1/15</strong>乃至<strong>1/100</strong>（内存的访问速度，是远远慢于CPU Cache的）<ul>
+<li>因此，为了追求极限性能，需要尽可能地从<strong>CPU Cache</strong>里面读取数据</li>
+</ul>
+</li>
+<li><strong>CPU Cache</strong>装载内存里面的数据，不是一个个字段加载的，而是加载一整个<strong>缓存行</strong><ul>
+<li>64位的Intel CPU，缓存行通常是<strong>64 Bytes</strong>，一个long类型的数据需要8 Bytes，因此会一下子加载8个long类型的数据</li>
+<li>遍历数组元素速度很快，后面连续7次的数据访问都会命中CPU Cache，不需要重新从内存里面去读取数据</li>
+</ul>
+</li>
+</ol>
+<h3 id="缓存失效"><a href="#缓存失效" class="headerlink" title="缓存失效"></a>缓存失效</h3><img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-cache-invalid.jpg" width="800/">
+
+<ol>
+<li>CPU在加载数据的时候，会把这个数据从<strong>内存</strong>加载到<strong>CPU Cache</strong>里面</li>
+<li>此时，CPU Cache里面除了这个数据，还会加载这个数据<strong>前后定义</strong>的其他变量</li>
+<li>Disruptor是一个<strong>多线程</strong>的服务器框架，在这个数据前后定义的其他变量，可能会被多个不同的线程去更新数据，读取数据<ul>
+<li>这些写入和读取请求，可能会来自于<strong>不同的CPU Core</strong></li>
+<li>为了保证数据的<strong>同步更新</strong>，不得不把CPU Cache里面的数据，<strong>重新写回</strong>到内存里面或者<strong>重新</strong>从内存里面<strong>加载</strong></li>
+<li>CPU Cache的<strong>写回</strong>和<strong>加载</strong>，都是以整个<strong>Cache Line</strong>作为单位的</li>
+</ul>
+</li>
+<li>如果常量的缓存失效，当再次读取这个值的时候，需要重新从<strong>内存</strong>读取，读取速度会大大<strong>变慢</strong></li>
+</ol>
+<h3 id="缓存行填充-1"><a href="#缓存行填充-1" class="headerlink" title="缓存行填充"></a>缓存行填充</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferPad</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferFields</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">RingBufferPad</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> indexMask;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Object[] entries;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">int</span> bufferSize;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Sequencer sequencer;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBuffer</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">RingBufferFields</span>&lt;<span class="title">E</span>&gt; <span class="keyword">implements</span> <span class="title">Cursored</span>, <span class="title">EventSequencer</span>&lt;<span class="title">E</span>&gt;, <span class="title">EventSink</span>&lt;<span class="title">E</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-cache-line-padding.jpg" width="1000/">
+
+<ol>
+<li>Disruptor在RingBufferFields里面定义的变量前后分别定义了7个long类型的变量<ul>
+<li>前面7个<strong>继承</strong>自RingBufferPad，后面7个直接<strong>定义</strong>在RingBuffer类中</li>
+<li>这14个变量<strong>没有任何实际用途</strong>，既不会去<strong>读</strong>，也不会去<strong>写</strong></li>
+</ul>
+</li>
+<li>RingBufferFields里面定义的变量都是<code>final</code>的，第一次写入之后就不会再进行修改<ul>
+<li>一旦被加载到CPU Cache之后，只要被<strong>频繁地读取访问</strong>，就<strong>不会被换出CPU Cache</strong></li>
+<li>无论在内存的什么位置，这些<strong>变量所在的Cache Line</strong>都不会有任何<strong>写更新</strong>的请求</li>
+</ul>
+</li>
+</ol>
+<h2 id="空间局部性-分支预测"><a href="#空间局部性-分支预测" class="headerlink" title="空间局部性 + 分支预测"></a>空间局部性 + 分支预测</h2><ol>
+<li>Disruptor整个框架是一个高速的<strong>生产者-消费者</strong>模型下的<strong>队列</strong><ul>
+<li>生产者不停地往队列里面生产新的需要处理的任务</li>
+<li>消费者不停地从队列里面处理掉这些任务</li>
+</ul>
+</li>
+<li>要实现一个<strong>队列</strong>，最合适的数据结构应该是<strong>链表</strong>，如Java中的<strong>LinkedBlockingQueue</strong></li>
+<li>Disruptor并没有使用LinkedBlockingQueue，而是使用了<strong>RingBuffer</strong>的数据结构<ul>
+<li><strong>RingBuffer</strong>的底层实现是一个<strong>固定长度的数组</strong></li>
+<li>比起链表形式的实现，数组的数据在内存里面会存在<strong>空间局部性</strong><ul>
+<li>数组的连续多个元素会一并加载到CPU Cache里面，所以访问遍历的速度会更快</li>
+<li><strong>链表</strong>里面的各个节点的数据，<strong>多半不会出现在相邻的内存空间</strong></li>
+</ul>
+</li>
+<li>数据的遍历访问还有一个很大的优势，就是CPU层面的<strong>分支预测</strong>会很<strong>准确</strong><ul>
+<li>可以更有效地利用CPU里面的<strong>多级流水线</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-producer-consumer.jpg" width="800/">
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-queue.jpg" width="800/">
+
+<h2 id="CAS-gt-无锁"><a href="#CAS-gt-无锁" class="headerlink" title="CAS -&gt; 无锁"></a>CAS -&gt; 无锁</h2><h3 id="缓慢的锁"><a href="#缓慢的锁" class="headerlink" title="缓慢的锁"></a>缓慢的锁</h3><ol>
+<li>Disruptor作为一个高性能的生产者-消费者队列系统，一个核心的设计：通过<strong>RingBuffer</strong>实现一个<strong>无锁队列</strong></li>
+<li>Java里面的LinkedBlockingQueue，比起Disruptor的RingBuffer要<strong>慢</strong>很多，主要原因<ul>
+<li><strong>链表</strong>的数据在内存里面的布局对于<strong>高速缓存</strong>并<strong>不友好</strong></li>
+<li>LinkedBlockingQueue对于<strong>锁</strong>的依赖<ul>
+<li>一般来说消费者比生产者快（不然队列会<strong>堆积</strong>），因为大部分时候，队列是<strong>空</strong>的，生产者和消费者一样会产生<strong>竞争</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>LinkedBlockingQueue的锁机制是通过<strong>ReentrantLock</strong>，需要<strong>JVM</strong>进行<strong>裁决</strong><ul>
+<li>锁的争夺，会把没有拿到锁的线程<strong>挂起等待</strong>，也需要进行一次<strong>上下文切换</strong></li>
+<li>上下文切换的过程，需要把<strong>当前执行线程的寄存器</strong>等信息，保存到<strong>内存中的线程栈</strong>里面<ul>
+<li>意味：已经加载到<strong>高速缓存</strong>里面的指令或者数据，又回到<strong>主内存</strong>里面，进一步拖慢性能</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-queue-lock-contention.jpg" width="800/">
+
+<h3 id="RingBuffer"><a href="#RingBuffer" class="headerlink" title="RingBuffer"></a>RingBuffer</h3><ol>
+<li>加锁很慢，所以Disruptor的解决方案是<strong>无锁</strong>（没有<strong>操作系统</strong>层面的锁）</li>
+<li>Disruptor利用了一个<strong>CPU硬件支持的指令</strong>，称之为<strong>CAS</strong>（Compare And Swap）</li>
+<li>Disruptor的RingBuffer创建一个<strong>Sequence</strong>对象，用来指向当前的RingBuffer的<strong>头</strong>和<strong>尾</strong><ul>
+<li>头和尾的标识，不是通过一个指针来实现的，而是通过一个<strong>序号</strong></li>
+</ul>
+</li>
+<li>RingBuffer在进行生产者和消费者之间的资源协调，采用的是<strong>对比序号</strong>的方式<ul>
+<li>当生产者想要往队列里面加入新数据的时候，会把当前生产者的Sequence的序号，加上需要加入的新数据的数量</li>
+<li>然后和实际的消费者所在的位置进行对比，看下队列里是不是有足够的空间加入这些数据<ul>
+<li>而不是直接<strong>覆盖</strong>掉消费者还没处理完的数据</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CAS指令，既不是基础库里的一个<strong>函数</strong>，也不是操作系统里面实现的一个<strong>系统调用</strong>，而是一个<strong>CPU硬件支持的机器指令</strong><ul>
+<li>在Intel CPU上，为<code>cmpxchg</code>指令：<code>compxchg [ax] (隐式参数，EAX累加器), [bx] (源操作数地址), [cx] (目标操作数地址)</code></li>
+<li>第一个操作数不在指令里面出现，是一个隐式的操作数，即<strong>EAX累加寄存器</strong>里面的值</li>
+<li>第二个操作数就是源操作数，指令会对比这个操作数和上面EAX累加寄存器里面的值</li>
+<li>伪代码：<code>IF [ax]== [bx] THEN [ZF] = 1, [bx] = [cx] ELSE [ZF] = 0, [ax] = [bx]</code></li>
+<li>单个指令是<strong>原子</strong>的，意味着使用CAS操作的时候，<strong>不需要单独进行加锁</strong>，直接调用即可</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-disruptor-ringbuffer-lock-free.jpg" width="800/">
+
+<figure class="highlight java"><figcaption><span>Sequence</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">addAndGet</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> increment)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">long</span> currentValue;</span><br><span class="line">    <span class="keyword">long</span> newValue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果CAS操作没有成功，会不断等待重试</span></span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        currentValue = get();</span><br><span class="line">        newValue = currentValue + increment;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> (!compareAndSet(currentValue, newValue));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> newValue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">compareAndSet</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> expectedValue, <span class="keyword">final</span> <span class="keyword">long</span> newValue)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 调用CAS指令</span></span><br><span class="line">    <span class="keyword">return</span> UNSAFE.compareAndSwapLong(<span class="keyword">this</span>, VALUE_OFFSET, expectedValue, newValue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Benchmark"><a href="#Benchmark" class="headerlink" title="Benchmark"></a>Benchmark</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LockBenchmark</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> MAX = <span class="number">500_000_000L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">runIncrement</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> counter = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">while</span> (counter &lt; MAX) &#123;</span><br><span class="line">            counter++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"Time spent is "</span> + (end - start) + <span class="string">"ms without lock"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">runIncrementWithLock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Lock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">        <span class="keyword">long</span> counter = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">while</span> (counter &lt; MAX) &#123;</span><br><span class="line">            <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">                counter++;</span><br><span class="line">                lock.unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"Time spent is "</span> + (end - start) + <span class="string">"ms with lock"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">runIncrementAtomic</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        AtomicLong counter = <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">while</span> (counter.incrementAndGet() &lt; MAX) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"Time spent is "</span> + (end - start) + <span class="string">"ms with cas"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        runIncrement();</span><br><span class="line">        runIncrementWithLock();</span><br><span class="line">        runIncrementAtomic();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Time spent is 153ms without lock</span></span><br><span class="line">        <span class="comment">// Time spent is 7801ms with lock</span></span><br><span class="line">        <span class="comment">// Time spent is 3164ms with cas</span></span><br><span class="line">        <span class="comment">// 7801 / 153 ≈ 51</span></span><br><span class="line">        <span class="comment">// 3164 / 153 ≈ 21   </span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100026001" target="_blank" rel="noopener">深入浅出计算机组成原理</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/13/computer-organization-adder/" rel="bookmark">计算机组成 -- 加法器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/11/computer-organization-binary/" rel="bookmark">计算机组成 -- 二进制编码</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/16/computer-organization-build-data-path/" rel="bookmark">计算机组成 -- 建立数据通路</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/28/computer-organization-bus/" rel="bookmark">计算机组成 -- 总线</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/26/computer-organization-cache/" rel="bookmark">计算机组成 -- 高速缓存</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2020/02/04/computer-organization-disruptor/" title="计算机组成 -- Disruptor">http://zhongmingmao.me/2020/02/04/computer-organization-disruptor/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/computer-basics/" rel="tag"><i class="fa fa-tag"></i> Computer Basics</a>
+          
+            <a href="/tags/computer-organization/" rel="tag"><i class="fa fa-tag"></i> Computer Organization</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/02/04/computer-organization-dmp/" rel="next" title="计算机组成 -- DMP">
+                <i class="fa fa-chevron-left"></i> 计算机组成 -- DMP
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/02/06/left-ear-technical-foundation/" rel="prev" title="左耳听风 -- 技术基础">
+                左耳听风 -- 技术基础 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存行填充"><span class="nav-number">1.</span> <span class="nav-text">缓存行填充</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存行大小"><span class="nav-number">1.1.</span> <span class="nav-text">缓存行大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RingBufferPad"><span class="nav-number">1.2.</span> <span class="nav-text">RingBufferPad</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存失效"><span class="nav-number">1.3.</span> <span class="nav-text">缓存失效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存行填充-1"><span class="nav-number">1.4.</span> <span class="nav-text">缓存行填充</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#空间局部性-分支预测"><span class="nav-number">2.</span> <span class="nav-text">空间局部性 + 分支预测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAS-gt-无锁"><span class="nav-number">3.</span> <span class="nav-text">CAS -&gt; 无锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓慢的锁"><span class="nav-number">3.1.</span> <span class="nav-text">缓慢的锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RingBuffer"><span class="nav-number">3.2.</span> <span class="nav-text">RingBuffer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Benchmark"><span class="nav-number">3.3.</span> <span class="nav-text">Benchmark</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

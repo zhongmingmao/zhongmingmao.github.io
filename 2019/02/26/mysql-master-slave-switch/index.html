@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="一主多从">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 主从切换">
+<meta property="og:url" content="http://zhongmingmao.me/2019/02/26/mysql-master-slave-switch/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="一主多从">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-multi-slave.png">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-crash-switch.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- 主从切换">
+<meta name="twitter:description" content="一主多从">
+<meta name="twitter:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-multi-slave.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/02/26/mysql-master-slave-switch/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- 主从切换 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/02/26/mysql-master-slave-switch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- 主从切换
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-27 01:10:39" itemprop="dateCreated datePublished" datetime="2019-02-27T01:10:39+08:00">2019-02-27</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">9.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">18 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一主多从"><a href="#一主多从" class="headerlink" title="一主多从"></a>一主多从</h2><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-multi-slave.png" width="500/">
+
+
+<a id="more"></a>
+
+<ol>
+<li>虚线箭头为<strong>主从关系</strong>，<code>A</code>和<code>A&#39;</code>互为主从，<code>B</code>、<code>C</code>、<code>D</code>指向主库<code>A</code></li>
+<li>一主多从的设置，一般用于<strong>读写分离</strong>，主库负责<strong>所有的写入</strong>和<strong>一部分读</strong>，其它读请求由从库分担</li>
+</ol>
+<h2 id="主库故障切换"><a href="#主库故障切换" class="headerlink" title="主库故障切换"></a>主库故障切换</h2><p><code>A&#39;</code>成为新的主库，<code>B</code>、<code>C</code>、<code>D</code>指向主库<code>A&#39;</code><br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-crash-switch.png" width="500/"></p>
+<h2 id="基于位点的切换"><a href="#基于位点的切换" class="headerlink" title="基于位点的切换"></a>基于位点的切换</h2><p><code>B</code>原先是<code>A</code>的从库，本地记录的也是<code>A</code>的位点，但<strong>相同的日志</strong>，<code>A</code>的位点与<code>A&#39;</code>的位点是<strong>不同</strong>的</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 节点B设置为节点A'的从库</span></span><br><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure>
+
+<h3 id="寻找位点"><a href="#寻找位点" class="headerlink" title="寻找位点"></a>寻找位点</h3><ol>
+<li><em><strong>很难精确，只能大概获取一个位置</strong></em></li>
+<li>由于在切换过程中<strong>不能丢数据</strong>，在寻找位点的时候，总是找一个<strong>稍微往前的位点</strong>，跳过那些已经在<code>B</code>执行过的事务</li>
+</ol>
+<h4 id="常规步骤"><a href="#常规步骤" class="headerlink" title="常规步骤"></a>常规步骤</h4><ol>
+<li>等待新主库<code>A&#39;</code>将所有<code>relaylog</code>全部执行完</li>
+<li>在<code>A&#39;</code>上执行<code>SHOW MASTER STATUS</code>，得到<code>A&#39;</code>上最新的<code>File</code>和<code>Position</code></li>
+<li>获取原主库<code>A</code>发生故障的时刻<code>T</code></li>
+<li>使用<code>mysqlbinlog</code>解析<code>A&#39;</code>的<code>File</code>，得到时刻<code>T</code>的位点</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- end_log_pos=123，表示在时刻T，A'写入新binlog的位置，作为B的CHANGE MASTER TO命令的MASTER_LOG_POS参数</span></span><br><span class="line">$ mysqlbinlog /var/lib/mysql/slave-bin.000009 <span class="comment">--start-datetime='2019-02-26 17:44:00' --stop-datetime='2019-02-26 17:45:00' | grep end_log_pos</span></span><br><span class="line"><span class="comment">#190226 17:42:01 server id 2  end_log_pos 123 CRC32 0x5b852e9b 	Start: binlog v 4, server v 5.7.25-log created 190226 17:42:01 at startup</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="位点不精确"><a href="#位点不精确" class="headerlink" title="位点不精确"></a>位点不精确</h4><ol>
+<li>假设在时刻<code>T</code>，原主库<code>A</code>已经执行完成了一个<code>INSERT</code>语句，插入一行记录<code>R</code><ul>
+<li>并且已经将<code>binlog</code>传给<code>A&#39;</code>和B，然后原主库<code>A</code>掉电</li>
+</ul>
+</li>
+<li>在<code>B</code>上，由于已经同步了<code>binlog</code>，<code>R</code>这一行是已经存在的</li>
+<li>在新主库<code>A&#39;</code>上，<code>R</code>这一行也是存在的，日志写在了<code>123</code>这个位置之后</li>
+<li>在<code>B</code>上执行<code>CHANGE MASTER TO</code>，执行<code>A&#39;</code>的<code>File</code>文件的<code>123</code>位置<ul>
+<li>就会把插入<code>R</code>这一行数据的<code>binlog</code>又同步到<code>B</code>去执行</li>
+<li><code>B</code>的同步线程会报<strong>重复主键</strong>错误，然后停止同步</li>
+</ul>
+</li>
+</ol>
+<h5 id="跳过错误"><a href="#跳过错误" class="headerlink" title="跳过错误"></a>跳过错误</h5><p>方式1：主动跳过一个事务，需要<strong>持续观察</strong>，每次碰到这些错误，就执行一次跳过命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> sql_slave_skip_counter=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">START</span> <span class="keyword">SLAVE</span>;</span><br></pre></td></tr></table></figure>
+
+<p>方式1：设置<code>slave_skip_errors=1032,1062</code>，<code>1032</code>错误是删除数据时<strong>找不到行</strong>，<code>1062</code>错误是插入数据时报<strong>唯一键冲突</strong><br>在<strong>主从切换过程</strong>中，直接跳过<code>1032</code>和<code>1062</code>是<strong>无损</strong>的，等主从间的同步关系建立完成后，需要将<code>slave_skip_errors</code>恢复为<code>OFF</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW VARIABLES LIKE '%slave_skip_errors%';</span><br><span class="line">+<span class="comment">-------------------+-------+</span></span><br><span class="line">| Variable_name     | Value |</span><br><span class="line">+<span class="comment">-------------------+-------+</span></span><br><span class="line">| slave_skip_errors | OFF   |</span><br><span class="line">+<span class="comment">-------------------+-------+</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="基于GTID的切换"><a href="#基于GTID的切换" class="headerlink" title="基于GTID的切换"></a>基于GTID的切换</h2><ol>
+<li>GTID: Global Transaction Identifier，<strong>全局事务ID</strong></li>
+<li>在事务<strong>提交</strong>时生成，是事务的唯一标识，组成<code>GTID = server_uuid:gno</code><ul>
+<li><code>server_uuid</code>是实例第一次<strong>启动</strong>时自动生成的，是一个<strong>全局唯一</strong> 的值</li>
+<li><code>gno</code>是一个整数，初始值为<code>1</code>，每次<strong>提交事务</strong>时分配，<code>+1</code></li>
+</ul>
+</li>
+<li>官方定义：<code>GTID = source_id:transaction_id</code><ul>
+<li><code>source_id</code>即<code>server_uuid</code></li>
+<li><code>transaction_id</code>容易造成误解<ul>
+<li><code>transaction_id</code>一般指事务ID，是在事务<strong>执行过程</strong>中分配的，即使事务<strong>回滚</strong>了，事务ID也会<strong>递增</strong></li>
+<li>而<code>gno</code>只有在事务<strong>提交</strong>时才会分配，因此<code>GTID</code>往往是<strong>连续</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>开启<code>GTID</code>模式，添加启动参数<code>gtid_mode=ON</code>和<code>enforce_gtid_consistency=ON</code></li>
+<li>在<code>GTID</code>模式下，每个事务都会跟一个<code>GTID</code>一一对应，生成<code>GTID</code>的方式由参数<code>gtid_next</code>（Session）控制</li>
+<li>每个MySQL实例都维护了一个<code>GTID</code>集合，用于表示：<em><strong>实例执行过的所有事务</strong></em></li>
+</ol>
+<h3 id="gtid-next"><a href="#gtid-next" class="headerlink" title="gtid_next"></a>gtid_next</h3><ol>
+<li><code>gtid_next=AUTOMATIC</code>，MySQL会将<code>server_uuid:gno</code>分配给该事务<ul>
+<li>记录<code>binlog</code>时，会先记录一行<code>SET @@SESSION.GTID_NEXT=server_uuid:gno</code>，将该<code>GTID</code>加入到本实例的<code>GTID</code>集合</li>
+</ul>
+</li>
+<li><code>gtid_next=UUID:NUMBER</code>，通过<code>SET @@SESSION.GTID_NEXT=current_gtid</code>执行<ul>
+<li>如果<code>current_gtid</code>已经<strong>存在</strong>于实例的<code>GTID</code>集合中，那么接下来执行的这个事务会直接被系统<strong>忽略</strong></li>
+<li>如果<code>current_gtid</code>并<strong>没有存在</strong>于实例的<code>GTID</code>集合中，那么接下来执行的这个事务会被分配为<code>current_gtid</code></li>
+<li><code>current_gtid</code>只能给<strong>一个事务</strong>使用，如果执行下一个事务，需要把<code>gtid_next</code>设置成另一个<code>GTID</code>或者<code>AUTOMATIC</code></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- gtid_next=AUTOMATIC</span></span><br><span class="line">mysql&gt; SHOW BINLOG EVENTS IN 'master-bin.000003';</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br><span class="line">| Log_name          | Pos | Event_type     | Server_id | End_log_pos | Info                                                                                                                                       |</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br><span class="line">| master-bin.000003 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                                                                                                      |</span><br><span class="line">| master-bin.000003 | 123 | Previous_gtids |         1 |         194 | b8502fe3-3b4a-11e9-9562-0242ac110002:1-5                                                                                                   |</span><br><span class="line">| master-bin.000003 | 194 | Gtid           |         1 |         259 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b8502fe3-3b4a-11e9-9562-0242ac110002:6'</span>                                                                          |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000003</span> | <span class="number">259</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">484</span> | <span class="keyword">GRANT</span> <span class="keyword">REPLICATION</span> <span class="keyword">SLAVE</span> <span class="keyword">ON</span> *.* <span class="keyword">TO</span> <span class="string">'replication'</span>@<span class="string">'%'</span> <span class="keyword">IDENTIFIED</span> <span class="keyword">WITH</span> <span class="string">'mysql_native_password'</span> <span class="keyword">AS</span> <span class="string">'*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9'</span> |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000003</span> | <span class="number">484</span> | Gtid           |         <span class="number">1</span> |         <span class="number">549</span> | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b8502fe3-3b4a-11e9-9562-0242ac110002:7'</span>                                                                          |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000003</span> | <span class="number">549</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">643</span> | <span class="keyword">CREATE</span> <span class="keyword">DATABASE</span> <span class="keyword">test</span>                                                                                                                       |</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">1</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="对应的binlog"><a href="#对应的binlog" class="headerlink" title="对应的binlog"></a>对应的binlog</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW MASTER STATUS;</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line">| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set                         |</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line">| master-bin.000004 |      877 |              |                  | b8502fe3-3b4a-11e9-9562-0242ac110002:1-12 |</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SHOW BINLOG EVENTS IN 'master-bin.000004';</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br><span class="line">| Log_name          | Pos | Event_type     | Server_id | End_log_pos | Info                                                               |</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br><span class="line">| master-bin.000004 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                              |</span><br><span class="line">| master-bin.000004 | 123 | Previous_gtids |         1 |         194 | b8502fe3-3b4a-11e9-9562-0242ac110002:1-9                           |</span><br><span class="line">| master-bin.000004 | 194 | Gtid           |         1 |         259 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b8502fe3-3b4a-11e9-9562-0242ac110002:10'</span> |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">259</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">373</span> | <span class="keyword">use</span> <span class="string">`test`</span>; <span class="keyword">DROP</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> <span class="comment">/* generated by server */</span>               |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">373</span> | Gtid           |         <span class="number">1</span> |         <span class="number">438</span> | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b8502fe3-3b4a-11e9-9562-0242ac110002:11'</span> |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">438</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">620</span> | <span class="keyword">use</span> <span class="string">`test`</span>; <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">620</span> | Gtid           |         <span class="number">1</span> |         <span class="number">685</span> | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b8502fe3-3b4a-11e9-9562-0242ac110002:12'</span> |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">685</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">757</span> | <span class="keyword">BEGIN</span>                                                              |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">757</span> | Table_map      |         <span class="number">1</span> |         <span class="number">802</span> | table_id: <span class="number">109</span> (test.t)                                             |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">802</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">846</span> | table_id: <span class="number">109</span> flags: STMT_END_F                                    |</span><br><span class="line">| <span class="keyword">master</span>-<span class="keyword">bin</span><span class="number">.000004</span> | <span class="number">846</span> | Xid            |         <span class="number">1</span> |         <span class="number">877</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=27 */</span>                                                |</span><br><span class="line">+<span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>事务<code>BEGIN</code>之前有一条<code>SET @@SESSION.GTID_NEXT</code></li>
+<li>如果实例X有从库Z，那么将<code>CREATE TABLE</code>和<code>INSERT</code>语句的<code>binlog</code>同步到从库Z执行<ul>
+<li>执行事务之前，会先执行两个<code>SET</code>命令，这样两个<code>GTID</code>就会被加入到从库Z的<code>GTID</code>集合</li>
+</ul>
+</li>
+</ol>
+<h4 id="主键冲突"><a href="#主键冲突" class="headerlink" title="主键冲突"></a>主键冲突</h4><ol>
+<li>如果实例X是实例Y的从库，之前实例Y上执行<code>INSERT INTO t VALUES (1,1)</code><ul>
+<li>对应的<code>GTID</code>为<code>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12</code></li>
+<li>实例X需要同步该事务过来执行，会报<strong>主键冲突</strong>的错误，实例X的同步线程停止，处理方法如下</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 实例X提交一个空事务，将该GTID加到实例X的GTID集合中</span></span><br><span class="line"><span class="keyword">SET</span> gtid_next=<span class="string">'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12'</span>;</span><br><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"><span class="comment">-- 实例X的Executed_Gtid_Set已经包含了aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12</span></span><br><span class="line">mysql&gt; SHOW MASTER STATUS;</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line">| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set                                                                  |</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line">| master-bin.000004 |     1087 |              |                  | aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12,b8502fe3-3b4a-11e9-9562-0242ac110002:1-12  |</span><br><span class="line">+<span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 恢复GTID的默认分配行为</span></span><br><span class="line"><span class="keyword">SET</span> gtid_next=<span class="keyword">AUTOMATIC</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 实例X还是会继续执行实例Y传过来的事务</span></span><br><span class="line"><span class="comment">-- 但由于实例X的GTID集合已经包含了aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12，因此实例X会直接跳过该事务</span></span><br><span class="line"><span class="keyword">START</span> <span class="keyword">SLAVE</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="主从切换"><a href="#主从切换" class="headerlink" title="主从切换"></a>主从切换</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CHANGE MASTER TO</span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$password</span><br><span class="line">master_auto_position=1</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>master_auto_position=1</code>：主从关系使用的是<code>GTID</code>协议，不再需要指定<code>MASTER_LOG_FILE</code>和<code>MASTER_LOG_POS</code></li>
+<li>实例<code>A&#39;</code>的<code>GTID</code>集合记为<code>set_a</code>，实例<code>B</code>的<code>GTID</code>集合记为<code>set_b</code></li>
+<li>实例<code>B</code>执行<code>START SLAVE</code>，取<code>binlog</code>的逻辑如下</li>
+</ol>
+<h4 id="START-SLAVE"><a href="#START-SLAVE" class="headerlink" title="START SLAVE"></a>START SLAVE</h4><ol>
+<li>实例<code>B</code>指定新主库<code>A&#39;</code>，基于<strong>主从协议</strong>建立连接</li>
+<li>实例<code>B</code>把<code>set_b</code>发送给<code>A&#39;</code></li>
+<li>实例<code>A&#39;</code>计算出<code>seb_a</code>和<code>set_b</code>的<code>GTID</code>差集（存在于<code>set_a</code>，但不存在于<code>set_b</code>的<code>GTID</code>集合）<ul>
+<li>判断实例<code>A&#39;</code>本地是否包含了<strong>差集需要的所有<code>binlog</code>事务</strong></li>
+<li>如果<strong>没有全部包含</strong>，说明实例<code>A&#39;</code>已经把实例<code>B</code>所需要的<code>binlog</code>删除掉了，直接返回错误</li>
+<li>如果<strong>全部包含</strong>，实例<code>A&#39;</code>从自己的<code>binlog</code>文件里面，找到第1个不在<code>set_b</code>的事务，发送给实例<code>B</code><ul>
+<li>然后从该事务开始，往后读文件，按顺序读取<code>binlog</code>，发给实例<code>B</code>去执行</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="位点-VS-GTID"><a href="#位点-VS-GTID" class="headerlink" title="位点 VS GTID"></a>位点 VS GTID</h4><ol>
+<li>基于<code>GTID</code>的主从关系里面，系统认为只要<strong>建立了主从关系</strong>，就必须保证<strong>主库发给从库的日志是完整</strong>的</li>
+<li>如果实例<code>B</code>需要的日志已经不存在了，那么实例<code>A&#39;</code>就拒绝将日志发送给实例<code>B</code></li>
+<li>基于<strong>位点</strong>的协议，是由<strong>从库决定</strong>的，从库指定哪个位点，主库就发送什么位点，不做<strong>日志完整性</strong>的判断</li>
+<li>基于<code>GTID</code>的协议，主从切换<strong>不再需要找位点</strong>，而找位点的工作在实例<code>A&#39;</code>内部<strong>自动完成</strong></li>
+</ol>
+<h4 id="日志格式"><a href="#日志格式" class="headerlink" title="日志格式"></a>日志格式</h4><ol>
+<li>切换前<ul>
+<li>实例<code>B</code>的<code>GTID</code>集合：<code>server_uuid_of_A:1-N</code></li>
+</ul>
+</li>
+<li>新主库<code>A&#39;</code>自己生成的<code>binlog</code>对应的<code>GTID</code>集合：<code>server_uuid_of_A&#39;:1-M</code></li>
+<li>切换后<ul>
+<li>实例<code>B</code>的<code>GTID</code>集合：<code>server_uuid_of_A:1-N,server_uuid_of_A&#39;:1-M</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/02/26/mysql-master-slave-switch/" title="MySQL -- 主从切换">http://zhongmingmao.me/2019/02/26/mysql-master-slave-switch/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/25/mysql-slave-parallel-replication/" rel="next" title="MySQL -- 从库并行复制">
+                <i class="fa fa-chevron-left"></i> MySQL -- 从库并行复制
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/02/mysql-read-write-separation/" rel="prev" title="MySQL -- 读写分离">
+                MySQL -- 读写分离 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一主多从"><span class="nav-number">1.</span> <span class="nav-text">一主多从</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主库故障切换"><span class="nav-number">2.</span> <span class="nav-text">主库故障切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于位点的切换"><span class="nav-number">3.</span> <span class="nav-text">基于位点的切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#寻找位点"><span class="nav-number">3.1.</span> <span class="nav-text">寻找位点</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#常规步骤"><span class="nav-number">3.1.1.</span> <span class="nav-text">常规步骤</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#位点不精确"><span class="nav-number">3.1.2.</span> <span class="nav-text">位点不精确</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#跳过错误"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">跳过错误</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于GTID的切换"><span class="nav-number">4.</span> <span class="nav-text">基于GTID的切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gtid-next"><span class="nav-number">4.1.</span> <span class="nav-text">gtid_next</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表初始化"><span class="nav-number">4.2.</span> <span class="nav-text">表初始化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#对应的binlog"><span class="nav-number">4.2.1.</span> <span class="nav-text">对应的binlog</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#主键冲突"><span class="nav-number">4.2.2.</span> <span class="nav-text">主键冲突</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#主从切换"><span class="nav-number">4.3.</span> <span class="nav-text">主从切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#START-SLAVE"><span class="nav-number">4.3.1.</span> <span class="nav-text">START SLAVE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#位点-VS-GTID"><span class="nav-number">4.3.2.</span> <span class="nav-text">位点 VS GTID</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#日志格式"><span class="nav-number">4.3.3.</span> <span class="nav-text">日志格式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">5.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="生产者概述   创建一个ProducerRecord对象，ProducerRecord对象包含Topic和Value，还可以指定Key或Partition 在发送ProducerRecord对象时，生产者先将Key和Partition序列化成字节数组，以便于在网络上传输 字节数组被传给分区器 如果在ProducerRecord对象里指定了Partition 那么分区器就不会做任何事情，直接返回指定">
+<meta name="keywords" content="Middleware,MQ,Kafka,Stream">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka -- 生产者">
+<meta property="og:url" content="http://zhongmingmao.me/2018/10/11/kafka-produce/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="生产者概述   创建一个ProducerRecord对象，ProducerRecord对象包含Topic和Value，还可以指定Key或Partition 在发送ProducerRecord对象时，生产者先将Key和Partition序列化成字节数组，以便于在网络上传输 字节数组被传给分区器 如果在ProducerRecord对象里指定了Partition 那么分区器就不会做任何事情，直接返回指定">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/producer_component.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka -- 生产者">
+<meta name="twitter:description" content="生产者概述   创建一个ProducerRecord对象，ProducerRecord对象包含Topic和Value，还可以指定Key或Partition 在发送ProducerRecord对象时，生产者先将Key和Partition序列化成字节数组，以便于在网络上传输 字节数组被传给分区器 如果在ProducerRecord对象里指定了Partition 那么分区器就不会做任何事情，直接返回指定">
+<meta name="twitter:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/producer_component.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2018/10/11/kafka-produce/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka -- 生产者 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2018/10/11/kafka-produce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kafka -- 生产者
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2018-10-11 22:13:31" itemprop="dateCreated datePublished" datetime="2018-10-11T22:13:31+08:00">2018-10-11</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/" itemprop="url" rel="index"><span itemprop="name">Middleware</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/" itemprop="url" rel="index"><span itemprop="name">MQ</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">7.6k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">14 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="生产者概述"><a href="#生产者概述" class="headerlink" title="生产者概述"></a>生产者概述</h2><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/definitive-guide/producer_component.png" width="600">
+
+<ol>
+<li>创建一个<code>ProducerRecord</code>对象，<code>ProducerRecord</code>对象包含<strong>Topic</strong>和<strong>Value</strong>，还可以指定<strong>Key</strong>或<strong>Partition</strong></li>
+<li>在发送<code>ProducerRecord</code>对象时，生产者先将<strong>Key</strong>和<strong>Partition</strong>序列化成<strong>字节数组</strong>，以便于在网络上传输</li>
+<li>字节数组被传给<strong>分区器</strong><ul>
+<li>如果在<code>ProducerRecord</code>对象里指定了<strong>Partition</strong><ul>
+<li>那么分区器就不会做任何事情，直接返回指定的分区</li>
+</ul>
+</li>
+<li>如果没有指定分区，那么分区器会根据<code>ProducerRecord</code>对象的<strong>Key</strong>来选择一个<strong>Partition</strong></li>
+<li>选择好分区后，生产者就知道该往哪个主题和分区发送这条记录</li>
+</ul>
+</li>
+<li>这条记录会被添加到一个<strong>记录批次</strong>里，一个批次内的<strong>所有</strong>消息都会被发送到<strong>相同的Topic和Partition</strong>上<ul>
+<li>有一个<strong>单独的线程</strong>负责把这些记录批次发送到相应的Broker</li>
+</ul>
+</li>
+<li>服务器在收到这些消息时会返回一个响应<ul>
+<li>如果消息成功写入Kafka，就会返回一个<code>RecordMetaData</code>对象<ul>
+<li>包含了<strong>Topic</strong>和<strong>Partition</strong>信息，以及<strong>记录在分区里的偏移量</strong></li>
+</ul>
+</li>
+<li>如果写入失败，就会返回一个错误</li>
+<li>生产者在收到错误之后会尝试<strong>重新发送消息</strong>，几次之后如果还是失败，就会返回错误信息</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="创建生产者"><a href="#创建生产者" class="headerlink" title="创建生产者"></a>创建生产者</h2><h3 id="必选属性"><a href="#必选属性" class="headerlink" title="必选属性"></a>必选属性</h3><h4 id="bootstrap-servers"><a href="#bootstrap-servers" class="headerlink" title="bootstrap.servers"></a>bootstrap.servers</h4><ol>
+<li>Broker的地址清单，<strong>host:port</strong></li>
+<li>清单里不需要包含所有的Broker地址，<strong>生产者会从给定的Broker里找到其它Broker的信息</strong><ul>
+<li>建议<strong>最少两个</strong>，一旦其中一个宕机，生产者仍然能够连接到集群上</li>
+</ul>
+</li>
+</ol>
+<h4 id="key-serializer"><a href="#key-serializer" class="headerlink" title="key.serializer"></a>key.serializer</h4><ol>
+<li>Broker希望接收到的消息的<strong>Key</strong>和<strong>Value</strong>都是<strong>字节数组</strong></li>
+<li>生产者接口允许使用<strong>参数化类型</strong>，因此可以把<strong>Java对象</strong>作为<strong>Key</strong>和<strong>Value</strong>发送给Broker</li>
+<li><code>key.serializer</code>必须是<code>org.apache.kafka.common.serialization.Serializer</code>的实现类</li>
+<li>生产者会通过<code>key.serializer</code>把<strong>Key对象</strong>序列化为<em><strong>字节数组</strong></em></li>
+<li>Kafka默认提供<ul>
+<li><code>ByteArraySerializer</code></li>
+<li><code>StringSerializer</code></li>
+<li><code>IntegerSerializer</code></li>
+</ul>
+</li>
+</ol>
+<h4 id="value-serializer"><a href="#value-serializer" class="headerlink" title="value.serializer"></a>value.serializer</h4><ol>
+<li>与<code>key.serializer</code>类似，<code>value.serializer</code>指定的类会把<strong>Value</strong>序列化成<strong>字节数组</strong></li>
+<li>如果<strong>Key</strong>和<strong>Value</strong>都是<strong>字符串</strong>，可以使用与<code>key.serializer</code>一样的序列化器</li>
+<li>如果<strong>Key</strong>是整数类型，而<strong>Value</strong>是字符串，那么需要使用不同的序列化器</li>
+</ol>
+<h4 id="Java代码"><a href="#Java代码" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Properties properties = <span class="keyword">new</span> Properties();</span><br><span class="line">properties.put(<span class="string">"bootstrap.servers"</span>, <span class="string">"localhost:9092"</span>);</span><br><span class="line">properties.put(<span class="string">"key.serializer"</span>, StringSerializer.class.getName());</span><br><span class="line">properties.put(<span class="string">"value.serializer"</span>, StringSerializer.class.getName());</span><br><span class="line">producer = <span class="keyword">new</span> KafkaProducer&lt;&gt;(properties);</span><br></pre></td></tr></table></figure>
+
+<h2 id="发送消息"><a href="#发送消息" class="headerlink" title="发送消息"></a>发送消息</h2><h3 id="发送方式"><a href="#发送方式" class="headerlink" title="发送方式"></a>发送方式</h3><h4 id="发送并忘记"><a href="#发送并忘记" class="headerlink" title="发送并忘记"></a>发送并忘记</h4><ol>
+<li>生产者把消息发送给服务器，但<strong>并不关心是否正常到达</strong></li>
+<li>Kafka是<strong>高可用</strong>的，而且生产者会<strong>自动尝试重发</strong></li>
+<li>但会<strong>丢失</strong>一些消息</li>
+</ol>
+<h4 id="同步发送"><a href="#同步发送" class="headerlink" title="同步发送"></a>同步发送</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Key对象和Value对象的类型必须与生产者对象的序列化器相匹配</span></span><br><span class="line"><span class="comment">// key.serializer -&gt; StringSerializer</span></span><br><span class="line"><span class="comment">// value.serializer -&gt; StringSerializer</span></span><br><span class="line">ProducerRecord&lt;String, String&gt; record = <span class="keyword">new</span> ProducerRecord&lt;&gt;(TOPIC, KEY, VALUE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 消息被放入缓冲区，使用单独的线程发送到服务端端</span></span><br><span class="line">Future&lt;RecordMetadata&gt; future = producer.send(record);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 调用Future对象的get()方法等待Kafka响应，如果服务器返回错误，get()方法会抛出异常</span></span><br><span class="line"><span class="comment">// 如果没有发生错误，会得到一个RecordMetadata对象，通过RecordMetadata对象可以获取消息的元数据</span></span><br><span class="line">RecordMetadata recordMetadata = future.get();</span><br><span class="line">log.info(<span class="string">"timestamp=&#123;&#125;"</span>, recordMetadata.timestamp());</span><br><span class="line">log.info(<span class="string">"partition=&#123;&#125;"</span>, recordMetadata.partition());</span><br><span class="line">log.info(<span class="string">"offset=&#123;&#125;"</span>, recordMetadata.offset());</span><br></pre></td></tr></table></figure>
+
+<h5 id="发送错误"><a href="#发送错误" class="headerlink" title="发送错误"></a>发送错误</h5><ol>
+<li><strong>可重试错误</strong>（可以通过重发消息来解决的错误）<ul>
+<li><strong>连接错误</strong>，可以通过再次建立连接来解决<ul>
+<li><code>KafkaProducer</code>可以被配置成<strong>自动重连</strong></li>
+<li>如果在多次重试后扔无法解决问题，应用程序会收到一个重试异常</li>
+</ul>
+</li>
+<li><strong>No Leader 错误</strong>，可以通过重新为分区选举领导来解决</li>
+</ul>
+</li>
+<li>无法通过重试解决的错误，例如消息太大，<code>KafkaProducer</code>不会进行任何重试，直接抛出异常</li>
+</ol>
+<h4 id="异步发送"><a href="#异步发送" class="headerlink" title="异步发送"></a>异步发送</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ProducerRecord&lt;String, String&gt; record = <span class="keyword">new</span> ProducerRecord&lt;&gt;(TOPIC, KEY, VALUE);</span><br><span class="line">Future&lt;RecordMetadata&gt; future = producer.send(record, (metadata, exception) -&gt; &#123;</span><br><span class="line">    <span class="comment">// 如果Kafka返回一个错误，onCompletion方法会抛出一个非空异常</span></span><br><span class="line">    log.info(<span class="string">"timestamp=&#123;&#125;"</span>, metadata.timestamp());</span><br><span class="line">    log.info(<span class="string">"partition=&#123;&#125;"</span>, metadata.partition());</span><br><span class="line">    log.info(<span class="string">"offset=&#123;&#125;"</span>, metadata.offset());</span><br><span class="line">&#125;);</span><br><span class="line">RecordMetadata recordMetadata = future.get();</span><br></pre></td></tr></table></figure>
+
+<h2 id="生产者配置"><a href="#生产者配置" class="headerlink" title="生产者配置"></a>生产者配置</h2><h3 id="acks"><a href="#acks" class="headerlink" title="acks"></a>acks</h3><ol>
+<li><code>acks</code>：必须有多少个<strong>分区副本</strong>收到消息，生产者才会认为<strong>消息写入是成功</strong>的</li>
+<li><strong>ack=0</strong>：生产者<strong>不会等待</strong>任何来自服务器的响应。<ul>
+<li>如果当中出现问题，导致服务器没有收到消息，那么生产者无从得知，会造成<strong>消息丢失</strong></li>
+<li>由于生产者不需要等待服务器的响应<ul>
+<li>所以可以以网络能够支持的最大速度发送消息，从而达到<strong>很高的吞吐量</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>acks=1</strong>（默认值）：只要集群的<strong>Leader节点</strong>收到消息，生产者就会收到一个来自服务器的成功响应<ul>
+<li>如果消息无法到达<strong>Leader节点</strong>（例如Leader节点崩溃，新的Leader节点还没有被选举出来）<ul>
+<li>生产者就会收到一个错误响应，为了避免数据丢失，生产者会<strong>重发消息</strong></li>
+</ul>
+</li>
+<li><em><strong>如果一个没有收到消息的节点成为新Leader，消息还是会丢失</strong></em></li>
+<li>此时的吞吐量主要取决于使用的是<strong>同步发送</strong>还是<strong>异步发送</strong><ul>
+<li>吞吐量还受到<strong>发送中消息数量的限制</strong>，例如生产者在收到服务器响应之前可以发送多少个消息</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>acks=all</strong>：只有当<strong>所有参与复制的节点</strong>全部都收到消息时，生产者才会收到一个来自服务器的成功响应<ul>
+<li>这种模式是<strong>最安全</strong>的<ul>
+<li>可以保证不止一个服务器收到消息，就算有服务器发生崩溃，整个集群依然可以运行</li>
+</ul>
+</li>
+<li><strong>延时比acks=1更高</strong>，因为要等待不止一个服务器节点接收消息</li>
+</ul>
+</li>
+</ol>
+<h3 id="buffer-memory"><a href="#buffer-memory" class="headerlink" title="buffer.memory"></a>buffer.memory</h3><ol>
+<li>该参数用来设置<strong>生产者内缓冲区</strong>的大小，生产者用缓冲区来缓冲要发送到服务器端的消息，默认为<code>32MB</code></li>
+<li>如果应用程序发送消息的速度超过了发送到服务器端速度，会导致生产者空间不足</li>
+<li>这个时候，<code>send()</code>方法调用要么被<strong>阻塞</strong>，要么<strong>抛出异常</strong>，取决于<code>block.on.buffer.full</code></li>
+</ol>
+<h3 id="compression-type"><a href="#compression-type" class="headerlink" title="compression.type"></a>compression.type</h3><ol>
+<li>默认情况下为<code>none</code>，消息在发送时是<strong>不会被压缩</strong>的</li>
+<li>该参数可以设置为<code>snappy</code>、<code>gzip</code>或者<code>lz4</code><ul>
+<li><code>snappy</code>压缩算法由Google发明<ul>
+<li>占用<strong>较少的CPU</strong>，却能提供<strong>较好的性能</strong>和相当<strong>可观的压缩比</strong></li>
+<li>适用于关注<strong>性能</strong>和<strong>网络带宽</strong>的场景</li>
+</ul>
+</li>
+<li><code>gzip</code>压缩算法<ul>
+<li>占用<strong>较多的CPU</strong>，但会提供<strong>更高的压缩比</strong></li>
+<li>适用于<strong>网络带宽比较有限</strong>的场景</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>压缩消息可以降低<strong>网络传输开销</strong>和<strong>存储开销</strong>，而这往往是向<code>Broker</code>发送消息的瓶颈</li>
+</ol>
+<h3 id="retries"><a href="#retries" class="headerlink" title="retries"></a>retries</h3><ol>
+<li>生产者从服务器收到的错误有可能是<strong>临时性错误</strong>（如分区找不到Leader）</li>
+<li>在这种情况下，<code>retries</code>参数决定了生产者可以<strong>重发消息的次数</strong><ul>
+<li>默认情况下，生产者会在每次重试之间等待<strong>100ms</strong>，控制参数为<code>retry.backoff.ms</code></li>
+<li>可以先测试一下恢复一个崩溃节点需要多少时间，假设为<code>T</code><ul>
+<li>让生产者<strong>总的重试时间</strong>比<code>T</code>长，否着生产者会<em><strong>过早地放弃重试</strong></em></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>有些错误不是临时性错误，没办法通过重试来解决（例如消息太大）</li>
+<li>一般情况下，因为生产者会<strong>自动</strong>进行重试，所以没必要在代码逻辑处理那些可重试的错误<ul>
+<li>只需要处理那些<strong>不可重试的错误</strong>或者<strong>重试次数超过上限</strong>的情况</li>
+</ul>
+</li>
+</ol>
+<h3 id="batch-size"><a href="#batch-size" class="headerlink" title="batch.size"></a>batch.size</h3><ol>
+<li>当有<strong>多个消息</strong>需要被发送到<strong>同一个分区</strong>时，生产者会把它们放在<strong>同一个批次</strong>里，默认值为<code>16KB</code><ul>
+<li>该参数指定了一个批次可以使用多<strong>内存大小</strong>，单位为<em><strong>字节</strong></em></li>
+</ul>
+</li>
+<li>当批次被填满，批次里的所有消息会被发送出去<ul>
+<li><strong>生产者不一定会等到批次被填满才发送</strong>，半满设置只有一个消息的批次也有可能被发送</li>
+<li>如果<code>batch.size</code>设置<strong>很大</strong>，也<strong>不会造成延迟</strong>，只是会占用<strong>更多的内存</strong></li>
+<li>如果<code>batch.size</code>设置<strong>很小</strong>，生产者需要<strong>频繁地发送消息</strong>，会增加一些<strong>额外的开销</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="linger-ms"><a href="#linger-ms" class="headerlink" title="linger.ms"></a>linger.ms</h3><ol>
+<li>该参数指定了生产者<strong>在发送批次之前等待更多消息加入批次的时间</strong>，默认值为0</li>
+<li><code>KafkaProducer</code>会在<strong>批次填满</strong>或者<strong>linger.ms达到上限</strong>时把批次发出去</li>
+<li>默认情况下，只要有可用的线程，生产者就会把消息发出去，就算批次里<strong>只有一个消息</strong></li>
+<li>设置<code>linger.ms</code>，会<strong>增加延迟</strong>，但也会<strong>提高吞吐量</strong><ul>
+<li>一次性发送更多的消息，平摊到单个消息的开销就变小了</li>
+</ul>
+</li>
+</ol>
+<h3 id="client-id"><a href="#client-id" class="headerlink" title="client.id"></a>client.id</h3><p>任意字符串，服务器会用它来识别<strong>消息的来源</strong>，还可以用在日志和配额指标里</p>
+<h3 id="max-in-flight-requests-per-connection"><a href="#max-in-flight-requests-per-connection" class="headerlink" title="max.in.flight.requests.per.connection"></a>max.in.flight.requests.per.connection</h3><ol>
+<li>该参数指定了生产者<strong>在收到服务器响应之前可以发送多少消息</strong>，默认值为5</li>
+<li>值越高，会占用<strong>越多的内存</strong>，不过也会<strong>提升吞吐量</strong></li>
+<li>如果设为<strong>1</strong>，可以保证消息是<strong>按照发送的顺序写入服务器</strong>，即使发生重试</li>
+</ol>
+<h3 id="timeout-ms、request-timeout-ms、metadata-fetch-timeout-ms"><a href="#timeout-ms、request-timeout-ms、metadata-fetch-timeout-ms" class="headerlink" title="timeout.ms、request.timeout.ms、metadata.fetch.timeout.ms"></a>timeout.ms、request.timeout.ms、metadata.fetch.timeout.ms</h3><ol>
+<li><code>timeout.ms</code>：指定了Broker<strong>等待同步副本返回消息确认</strong>的时间，默认值为30000<ul>
+<li>与<code>acks</code>的配置相匹配，如果在指定时间内没有收到同步副本的确认，那么Broker就会返回一个错误</li>
+</ul>
+</li>
+<li><code>request.timeout.ms</code>：指定了<strong>生产者</strong>在<strong>发送数据</strong>时<strong>等待服务器返回响应</strong>的时间，默认值为10000</li>
+<li><code>metadata.fetch.timeout.ms</code>：指定了<strong>生产者</strong>在<strong>获取元数据</strong>时<strong>等待服务器返回响应</strong>的时间，默认值为60000<ul>
+<li>如果等待响应超时，那么生产者要么<strong>重试</strong>发送数据，要么返回一个<strong>错误</strong>（抛出异常或者执行回调）</li>
+</ul>
+</li>
+</ol>
+<h3 id="max-block-ms"><a href="#max-block-ms" class="headerlink" title="max.block.ms"></a>max.block.ms</h3><ol>
+<li>该参数指定了在调用<code>send()</code>方法或使用<code>partitionsFor()</code>方法获取元数据时，<strong>生产者阻塞的时间</strong>，默认值为60000</li>
+<li>当生产者的<strong>发送缓冲区已满</strong>，或者<strong>没有可用的元数据</strong>时，上面两个方法会<strong>阻塞</strong></li>
+<li>在阻塞时间达到<code>max.block.ms</code>时，生产者就会抛出超时异常</li>
+</ol>
+<h3 id="max-request-size"><a href="#max-request-size" class="headerlink" title="max.request.size"></a>max.request.size</h3><ol>
+<li>该参数用于控制生产者发送<strong>单个请求的大小</strong>，默认值<code>1MB</code><ul>
+<li>可以指<strong>能发送的单个消息的最大值</strong>（因为一个请求最少有一个消息）</li>
+<li>也可以指<strong>单个请求里所有消息（一个批次，多个消息）的总大小</strong></li>
+</ul>
+</li>
+<li><code>Broker</code>对<strong>单个可接收消息的最大值</strong>也有自己的限制（<code>message.max.bytes</code>，默认值为<code>1000012</code>）<ul>
+<li>所以两边的配置最好可以<strong>匹配</strong>，避免生产者发送的消息被<code>Broker</code>拒绝</li>
+</ul>
+</li>
+</ol>
+<h3 id="receive-buffer-bytes、send-buffer-bytes"><a href="#receive-buffer-bytes、send-buffer-bytes" class="headerlink" title="receive.buffer.bytes、send.buffer.bytes"></a>receive.buffer.bytes、send.buffer.bytes</h3><ol>
+<li>这两个参数分别指定了<strong>TCP Socket</strong>接收和发送数据包的缓冲区大小<ul>
+<li>如果都被设为<strong>-1</strong>，就使用<strong>操作系统的默认值</strong></li>
+<li><code>receive.buffer.bytes</code>的默认值为<code>32KB</code></li>
+<li><code>send.buffer.bytes</code>的默认值为<code>128KB</code></li>
+</ul>
+</li>
+<li>如果生产者或消费者与Broker处于不同的数据中心，那么可以适当增大这些值</li>
+</ol>
+<h2 id="序列化器"><a href="#序列化器" class="headerlink" title="序列化器"></a>序列化器</h2><h3 id="自定义序列化"><a href="#自定义序列化" class="headerlink" title="自定义序列化"></a>自定义序列化</h3><ol>
+<li>如果发送到Kafka的对象不是简单的<strong>字符串</strong>或<strong>整型</strong>，那么可以使用<strong>序列化框架</strong>来创建消息记录<ul>
+<li>例如<strong>通用</strong>的序列化框架（推荐）：<code>Avro</code>、<code>Thrift</code>、<code>ProtoBuf</code></li>
+<li>也可以使用自定义序列化器，但不推荐</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 复杂对象</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Customer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 序列化器</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CustomerSerializer</span> <span class="keyword">implements</span> <span class="title">Serializer</span>&lt;<span class="title">Customer</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map&lt;String, ?&gt; configs, <span class="keyword">boolean</span> isKey)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 不做任何配置</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">byte</span>[] serialize(String topic, Customer customer) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == customer) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">byte</span>[] serializedName = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">int</span> strLen = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (customer.getName() != <span class="keyword">null</span>) &#123;</span><br><span class="line">            serializedName = customer.getName().getBytes(StandardCharsets.UTF_8);</span><br><span class="line">            strLen = serializedName.length;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Customer对象被序列化成</span></span><br><span class="line">        <span class="comment">//  1. id：占用4个字节</span></span><br><span class="line">        <span class="comment">//  2. name的长度：占用4个字节</span></span><br><span class="line">        <span class="comment">//  3. name：占用N个字节</span></span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">4</span> + <span class="number">4</span> + strLen);</span><br><span class="line">        buffer.putInt(customer.getId());</span><br><span class="line">        buffer.putInt(strLen);</span><br><span class="line">        buffer.put(serializedName);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> buffer.array();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 不需要关闭任何东西</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomSerializerTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String TOPIC = <span class="string">"Customer"</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String KEY = <span class="string">"Customer"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">customSerializerTest</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Customer value = <span class="keyword">new</span> Customer(<span class="number">1</span>, <span class="string">"zhongmingmao"</span>);</span><br><span class="line">        ProducerRecord&lt;String, Customer&gt; record = <span class="keyword">new</span> ProducerRecord&lt;&gt;(TOPIC, KEY, value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Avro"><a href="#Avro" class="headerlink" title="Avro"></a>Avro</h3><ol>
+<li><code>Apache Avro</code>是一种<strong>与编程语言无关</strong>的序列化格式</li>
+<li><code>Avro</code>数据通过<strong>与语言无关的schema</strong>来定义<ul>
+<li><code>schema</code>通过<strong>JSON</strong>来<strong>描述</strong>，数据被序列化成<strong>二进制文件</strong>或<strong>JSON文件</strong>，一般会使用二进制文件</li>
+<li><code>Avro</code>在<strong>读写文件</strong>时需要用到<code>schema</code>，<code>schema</code>一般是<strong>内嵌在数据文件</strong>里</li>
+</ul>
+</li>
+<li>重要特性<ul>
+<li><em><strong>当负责写消息的应用程序使用新的schema，负责读消息的应用程序可以继续处理消息而无需做任何改动</strong></em></li>
+<li>特别适用于Kafka这样的消息系统</li>
+</ul>
+</li>
+</ol>
+<h2 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h2><ol>
+<li>Kafka的消息是一个<strong>键值对</strong>，<code>ProducerRecord</code>对象可以只包含<code>Topic</code>和<code>Value</code>，<code>Key</code>可以设置为<strong>null</strong></li>
+<li>Key的作用<ul>
+<li>作为<em><strong>消息的附加信息</strong></em></li>
+<li>用来<em><strong>决定消息被写到主题的哪一个分区</strong></em></li>
+</ul>
+</li>
+<li>拥有<strong>相同Key的消息</strong>会被写入到<strong>同一个分区</strong></li>
+<li>如果<strong>Key为null</strong>，并且使用了<strong>默认的分区器</strong>，那么记录会被<strong>随机</strong>（<strong>轮询算法</strong>）地发送到主题内的各个<strong>可用分区</strong>上</li>
+<li>如果<strong>Key不为null</strong>，并且使用了<strong>默认的分区器</strong>，那么Kafka会对<code>Key</code>进行<strong>散列</strong>，然后根据散列值把消息<strong>映射</strong>到特定的分区上<ul>
+<li>使用的是<strong>Kafka内部的散列算法</strong>，即使升级Java版本，散列值也不会发生变化</li>
+<li><em><strong>同一个Key总是被映射到同一个分区上</strong></em><ul>
+<li>因此在映射时，会使用<strong>主题的所有分区</strong>，如果写入数据的分区是<strong>不可用</strong>的，那么就会<strong>发生错误</strong></li>
+</ul>
+</li>
+<li><em><strong>只有不改变分区数量的情况下，Key与分区之间的映射才能保持不变</strong></em><ul>
+<li>如果使用<code>Key</code>来映射分区，最好在创建主题的时候就把分区<strong>规划</strong>好，并且<strong>永远不要增加新分区</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>可以<strong>自定义分区器</strong></li>
+</ol>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/28/kafka-admin-client/" rel="bookmark">Kafka -- KafkaAdminClient</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/01/kafka-avoid-rebalance/" rel="bookmark">Kafka -- 避免重平衡</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-bijection/" rel="bookmark">Kafka -- Avro + Twitter Bijection</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/15/kafka-avro-introduction/" rel="bookmark">Kafka -- Avro入门</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-native/" rel="bookmark">Kafka -- Avro + Kafka Native API</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2018/10/11/kafka-produce/" title="Kafka -- 生产者">http://zhongmingmao.me/2018/10/11/kafka-produce/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/middleware/" rel="tag"><i class="fa fa-tag"></i> Middleware</a>
+          
+            <a href="/tags/mq/" rel="tag"><i class="fa fa-tag"></i> MQ</a>
+          
+            <a href="/tags/kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a>
+          
+            <a href="/tags/stream/" rel="tag"><i class="fa fa-tag"></i> Stream</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/10/08/kafka-install-cluster-docker/" rel="next" title="Kafka -- 集群安装与配置（Docker）">
+                <i class="fa fa-chevron-left"></i> Kafka -- 集群安装与配置（Docker）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/10/15/kafka-avro-introduction/" rel="prev" title="Kafka -- Avro入门">
+                Kafka -- Avro入门 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#生产者概述"><span class="nav-number">1.</span> <span class="nav-text">生产者概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建生产者"><span class="nav-number">2.</span> <span class="nav-text">创建生产者</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#必选属性"><span class="nav-number">2.1.</span> <span class="nav-text">必选属性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#bootstrap-servers"><span class="nav-number">2.1.1.</span> <span class="nav-text">bootstrap.servers</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#key-serializer"><span class="nav-number">2.1.2.</span> <span class="nav-text">key.serializer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#value-serializer"><span class="nav-number">2.1.3.</span> <span class="nav-text">value.serializer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java代码"><span class="nav-number">2.1.4.</span> <span class="nav-text">Java代码</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#发送消息"><span class="nav-number">3.</span> <span class="nav-text">发送消息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#发送方式"><span class="nav-number">3.1.</span> <span class="nav-text">发送方式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#发送并忘记"><span class="nav-number">3.1.1.</span> <span class="nav-text">发送并忘记</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#同步发送"><span class="nav-number">3.1.2.</span> <span class="nav-text">同步发送</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#发送错误"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">发送错误</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#异步发送"><span class="nav-number">3.1.3.</span> <span class="nav-text">异步发送</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#生产者配置"><span class="nav-number">4.</span> <span class="nav-text">生产者配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#acks"><span class="nav-number">4.1.</span> <span class="nav-text">acks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#buffer-memory"><span class="nav-number">4.2.</span> <span class="nav-text">buffer.memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#compression-type"><span class="nav-number">4.3.</span> <span class="nav-text">compression.type</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#retries"><span class="nav-number">4.4.</span> <span class="nav-text">retries</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#batch-size"><span class="nav-number">4.5.</span> <span class="nav-text">batch.size</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linger-ms"><span class="nav-number">4.6.</span> <span class="nav-text">linger.ms</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#client-id"><span class="nav-number">4.7.</span> <span class="nav-text">client.id</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#max-in-flight-requests-per-connection"><span class="nav-number">4.8.</span> <span class="nav-text">max.in.flight.requests.per.connection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#timeout-ms、request-timeout-ms、metadata-fetch-timeout-ms"><span class="nav-number">4.9.</span> <span class="nav-text">timeout.ms、request.timeout.ms、metadata.fetch.timeout.ms</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#max-block-ms"><span class="nav-number">4.10.</span> <span class="nav-text">max.block.ms</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#max-request-size"><span class="nav-number">4.11.</span> <span class="nav-text">max.request.size</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#receive-buffer-bytes、send-buffer-bytes"><span class="nav-number">4.12.</span> <span class="nav-text">receive.buffer.bytes、send.buffer.bytes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#序列化器"><span class="nav-number">5.</span> <span class="nav-text">序列化器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#自定义序列化"><span class="nav-number">5.1.</span> <span class="nav-text">自定义序列化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Avro"><span class="nav-number">5.2.</span> <span class="nav-text">Avro</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分区"><span class="nav-number">6.</span> <span class="nav-text">分区</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

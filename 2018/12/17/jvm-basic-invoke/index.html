@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="重载+重写 重载：方法名相同，但方法描述符不相同的方法之间的关系 重写：方法名相同，并且方法描述符也相同的方法之间的关系 方法描述符 Java：参数类型 JVM：参数类型+返回类型    重载 重载的方法在编译过程即可完成识别 具体到在每个方法调用时，Java编译器会根据传入参数的声明类型（不是实际类型）来选取重载方法   三阶段 在不允许自动装拆箱和可变长参数的情况下，选取重载方法 允许自动装拆">
+<meta name="keywords" content="Java,JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM基础 -- 方法调用">
+<meta property="og:url" content="http://zhongmingmao.me/2018/12/17/jvm-basic-invoke/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="重载+重写 重载：方法名相同，但方法描述符不相同的方法之间的关系 重写：方法名相同，并且方法描述符也相同的方法之间的关系 方法描述符 Java：参数类型 JVM：参数类型+返回类型    重载 重载的方法在编译过程即可完成识别 具体到在每个方法调用时，Java编译器会根据传入参数的声明类型（不是实际类型）来选取重载方法   三阶段 在不允许自动装拆箱和可变长参数的情况下，选取重载方法 允许自动装拆">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM基础 -- 方法调用">
+<meta name="twitter:description" content="重载+重写 重载：方法名相同，但方法描述符不相同的方法之间的关系 重写：方法名相同，并且方法描述符也相同的方法之间的关系 方法描述符 Java：参数类型 JVM：参数类型+返回类型    重载 重载的方法在编译过程即可完成识别 具体到在每个方法调用时，Java编译器会根据传入参数的声明类型（不是实际类型）来选取重载方法   三阶段 在不允许自动装拆箱和可变长参数的情况下，选取重载方法 允许自动装拆">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2018/12/17/jvm-basic-invoke/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JVM基础 -- 方法调用 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2018/12/17/jvm-basic-invoke/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">JVM基础 -- 方法调用
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2018-12-17 21:06:47" itemprop="dateCreated datePublished" datetime="2018-12-17T21:06:47+08:00">2018-12-17</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/baisc/" itemprop="url" rel="index"><span itemprop="name">Baisc</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">9.5k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">17 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="重载-重写"><a href="#重载-重写" class="headerlink" title="重载+重写"></a>重载+重写</h2><ol>
+<li>重载：方法名相同，但方法描述符不相同的方法之间的关系</li>
+<li>重写：方法名相同，并且方法描述符也相同的方法之间的关系</li>
+<li>方法描述符<ol>
+<li><strong>Java：参数类型</strong></li>
+<li><strong>JVM：参数类型+返回类型</strong></li>
+</ol>
+</li>
+</ol>
+<h3 id="重载"><a href="#重载" class="headerlink" title="重载"></a>重载</h3><ol>
+<li>重载的方法在<strong>编译过程</strong>即可完成识别<ul>
+<li>具体到在每个方法调用时，Java编译器会根据<strong>传入参数的声明类型</strong>（不是实际类型）来选取重载方法</li>
+</ul>
+</li>
+<li>三阶段<ul>
+<li>在不允许<strong>自动装拆箱</strong>和<strong>可变长参数</strong>的情况下，选取重载方法</li>
+<li>允许<strong>自动装拆箱</strong>，但不允许<strong>可变长参数</strong>的情况下，选取重载方法</li>
+<li>在允许<strong>自动装拆箱</strong>和<strong>可变长参数</strong>的情况下，选取重载方法</li>
+</ul>
+</li>
+<li>Java编译器在<strong>同一阶段</strong>找到多个适配的方法，依据<strong>形式参数的继承关系</strong>，选择最贴切的方法，原则：<strong>子类优先</strong></li>
+<li>重载来源<ul>
+<li><strong>同一个类中定义</strong></li>
+<li><strong>继承父类非私有同名方法</strong></li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h3 id="重写"><a href="#重写" class="headerlink" title="重写"></a>重写</h3><ol>
+<li>子类中定义了与父类中<strong>非私有的同名实例方法</strong>，且<strong>参数类型相同</strong><ul>
+<li>如果是<strong>静态方法</strong>，那么子类中的方法会<strong>隐藏</strong>父类中方法</li>
+</ul>
+</li>
+<li>方法<strong>重写</strong>是Java<strong>多态</strong>最重要的一种体现形式</li>
+</ol>
+<h2 id="静态绑定与-动态绑定"><a href="#静态绑定与-动态绑定" class="headerlink" title="静态绑定与+动态绑定"></a>静态绑定与+动态绑定</h2><ol>
+<li>JVM识别<strong>重载方法</strong>的关键在于<strong>类名</strong>，<strong>方法名</strong>和<strong>方法描述符</strong><ul>
+<li>方法描述符：<strong>参数类型 + 返回类型</strong></li>
+<li>如果在同一个类中出现多个<strong>方法名</strong>和<strong>方法描述符</strong>也相同的方法，那么JVM会在类的<strong>验证阶段报错</strong></li>
+<li>JVM的限制比Java语言的<strong>限制更少</strong>，Java语言：<strong>方法描述符 = 方法的参数类型</strong></li>
+</ul>
+</li>
+<li>JVM中关于<strong>重写方法</strong>的判定同样基于<strong>方法描述符</strong><ul>
+<li>如果子类定义了与父类中<strong>非私有实例方法同名的方法</strong>，那么只有当这两个方法的<strong>参数类型</strong>以及<strong>返回类型</strong>一致，JVM才会判定为重写</li>
+</ul>
+</li>
+<li><strong>Java语言中的重写</strong>而<strong>JVM中的非重写</strong>，编译器会通过生成<strong>桥接方法</strong>来实现Java中的重写语义，保证Java语言和JVM表现出来的重写语义一致</li>
+<li>对重载方法的区分在<strong>编译阶段</strong>已经完成，可以认为<strong>JVM不存在重载这一概念</strong></li>
+<li><strong>静态绑定</strong>：在<strong>解析阶段</strong>时能够<strong>直接识别</strong>目标方法</li>
+<li><strong>动态绑定</strong>：在<strong>运行过程</strong>中<strong>根据调用者的动态类型</strong>来识别目标方法</li>
+<li>重载 == 静态绑定，重写 == 动态绑定？<ul>
+<li>反例：<strong>重载不一定是静态绑定</strong>（某个类的重载方法可能被它的子类所重写）</li>
+<li>反例：<strong>重写不一定是动态绑定</strong>（final修饰目标方法）</li>
+<li>Java编译器会将<strong>对非私有实例方法的调用</strong>都编译为需要<strong>动态绑定</strong>的类型（可能进一步优化）</li>
+<li><strong>重载/重写</strong> 和 <strong>静态绑定/动态绑定</strong> 是<strong>两个不同纬度的描述</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="重载不一定是静态绑定"><a href="#重载不一定是静态绑定" class="headerlink" title="重载不一定是静态绑定"></a>重载不一定是静态绑定</h3><h4 id="Java代码"><a href="#Java代码" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 重载</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Overload</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        A a = <span class="keyword">new</span> B();</span><br><span class="line">        <span class="comment">// invokevirtual指令：A.func(int)和A.func(long)形成重载，但需要动态绑定</span></span><br><span class="line">        a.func(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">long</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> <span class="keyword">extends</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="字节码"><a href="#字节码" class="headerlink" title="字节码"></a>字节码</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">public static void main(java.lang.String[]);</span><br><span class="line">    descriptor: ([Ljava/lang/String;)V</span><br><span class="line">    flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=2, locals=2, args_size=1</span><br><span class="line">         0: new           #2                  // class me/zhongmingmao/basic/invoke/bind/B</span><br><span class="line">         3: dup</span><br><span class="line">         4: invokespecial #3                  // Method me/zhongmingmao/basic/invoke/bind/B.&quot;&lt;init&gt;&quot;:()V</span><br><span class="line">         7: astore_1</span><br><span class="line">         8: aload_1</span><br><span class="line">         9: iconst_1</span><br><span class="line">         // 虚方法调用</span><br><span class="line">        10: invokevirtual #4                  // Method me/zhongmingmao/basic/invoke/bind/A.func:(I)V</span><br><span class="line">        13: return</span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line 6: 0</span><br><span class="line">        line 7: 8</span><br><span class="line">        line 8: 13</span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            0      14     0  args   [Ljava/lang/String;</span><br><span class="line">            8       6     1     a   Lme/zhongmingmao/basic/invoke/bind/A;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重写不一定是动态绑定"><a href="#重写不一定是动态绑定" class="headerlink" title="重写不一定是动态绑定"></a>重写不一定是动态绑定</h3><h4 id="Java代码-1"><a href="#Java代码-1" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 重写</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Override</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        C c = <span class="keyword">new</span> C();</span><br><span class="line">        <span class="comment">// C.func()的flags为：ACC_FINAL</span></span><br><span class="line">        <span class="comment">// JVM能确定目标方法只有一个，invokevirtual指令将采用静态绑定</span></span><br><span class="line">        c.func();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="字节码-1"><a href="#字节码-1" class="headerlink" title="字节码"></a>字节码</h4><p>C</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">final void func();</span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_FINAL</span><br><span class="line">    Code:</span><br><span class="line">      stack=0, locals=1, args_size=1</span><br><span class="line">         0: return</span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line 13: 0</span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            0       1     0  this   Lme/zhongmingmao/basic/invoke/bind/C;</span><br></pre></td></tr></table></figure>
+
+<p>Override</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public static void main(java.lang.String[]);</span><br><span class="line">  descriptor: ([Ljava/lang/String;)V</span><br><span class="line">  flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">  Code:</span><br><span class="line">    stack=2, locals=2, args_size=1</span><br><span class="line">       0: new           #2                  // class me/zhongmingmao/basic/invoke/bind/C</span><br><span class="line">       3: dup</span><br><span class="line">       4: invokespecial #3                  // Method me/zhongmingmao/basic/invoke/bind/C.&quot;&lt;init&gt;&quot;:()V</span><br><span class="line">       7: astore_1</span><br><span class="line">       8: aload_1</span><br><span class="line">       9: invokevirtual #4                  // Method me/zhongmingmao/basic/invoke/bind/C.func:()V</span><br><span class="line">      12: return</span><br><span class="line">    LineNumberTable:</span><br><span class="line">      line 6: 0</span><br><span class="line">      line 7: 8</span><br><span class="line">      line 8: 12</span><br><span class="line">    LocalVariableTable:</span><br><span class="line">      Start  Length  Slot  Name   Signature</span><br><span class="line">          0      13     0  args   [Ljava/lang/String;</span><br><span class="line">          8       5     1     d   Lme/zhongmingmao/basic/invoke/bind/C;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="调用相关的指令"><a href="#调用相关的指令" class="headerlink" title="调用相关的指令"></a>调用相关的指令</h2><h3 id="具体指令"><a href="#具体指令" class="headerlink" title="具体指令"></a>具体指令</h3><ol>
+<li>invokestatic：调用静态方法</li>
+<li>invokespecial<ul>
+<li>调用<strong>私有实例方法</strong>、构造器</li>
+<li>使用<strong>super</strong>关键词调用父类的实例方法、构造器</li>
+<li>调用所实现接口的<strong>default方法</strong></li>
+</ul>
+</li>
+<li>invokevirtual：调用<strong>非私有实例方法</strong></li>
+<li>invokeinterface：调用接口方法</li>
+<li>invokedynamic：调用动态方法（比较复杂）</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Customer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isVip</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Merchant</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">double</span> ORIGINAL_DISCOUNT = <span class="number">0.8</span>d;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">discount</span><span class="params">(<span class="keyword">double</span> originalPrice, Customer customer)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> originalPrice * ORIGINAL_DISCOUNT;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Profiteer</span> <span class="keyword">extends</span> <span class="title">Merchant</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">discount</span><span class="params">(<span class="keyword">double</span> originalPrice, Customer customer)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (customer.isVip()) &#123; <span class="comment">// invokeinterface</span></span><br><span class="line">            <span class="keyword">return</span> originalPrice * priceDiscrimination(); <span class="comment">// invokestatic</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">super</span>.discount(originalPrice, customer); <span class="comment">// invokespecial</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">double</span> <span class="title">priceDiscrimination</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Random() <span class="comment">// invokespecial</span></span><br><span class="line">                .nextDouble() <span class="comment">// invokevirtual</span></span><br><span class="line">                + ORIGINAL_DISCOUNT;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="定位目标方法"><a href="#定位目标方法" class="headerlink" title="定位目标方法"></a>定位目标方法</h3><ol>
+<li>对于<strong>invokestatic</strong>和<strong>invokespecial</strong>，JVM在<strong>解析阶段</strong>能够<strong>直接识别</strong>具体的目标方法</li>
+<li>对于<strong>invokevirtual</strong>和<strong>invokeinterface</strong>，在绝大部分情况下，JVM需要在<strong>执行过程</strong>中，根据<strong>调用者的动态类型</strong>，来确定具体的目标方法<ul>
+<li>唯一例外：如果JVM能确定目标方法<strong>有且只有一个</strong>，例如目标方法被标记为final</li>
+</ul>
+</li>
+</ol>
+<h3 id="调用指令的符号引用"><a href="#调用指令的符号引用" class="headerlink" title="调用指令的符号引用"></a>调用指令的符号引用</h3><ol>
+<li>在编译过程中，并不知道目标方法的具体内存地址，因此，Java编译器会暂时用<strong>符号引用</strong>来表示该目标方法<ul>
+<li>符号引用包括：<strong>目标方法所在的类或接口的名字，以及目标方法的方法名和方法描述符</strong></li>
+</ul>
+</li>
+<li><strong>符号引用</strong>存储在<strong>class文件的常量池之中</strong>，根据<strong>目标方法是否为接口方法</strong>，这些引用可分为<strong>接口符号引用</strong>和<strong>非接口符号引用</strong></li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ javap -v Profiteer</span><br><span class="line">Constant pool:</span><br><span class="line">   #1 = Methodref          #8.#30         // me/zhongmingmao/basic/Merchant.&quot;&lt;init&gt;&quot;:()V</span><br><span class="line">   #2 = InterfaceMethodref #31.#32        // me/zhongmingmao/basic/Customer.isVip:()Z</span><br><span class="line">   #3 = Methodref          #11.#33        // me/zhongmingmao/basic/Profiteer.priceDiscrimination:()D</span><br><span class="line">   #4 = Methodref          #8.#34         // me/zhongmingmao/basic/Merchant.discount:(DLme/zhongmingmao/basic/Customer;)D</span><br><span class="line">...</span><br><span class="line">   #6 = Methodref          #5.#30         // java/util/Random.&quot;&lt;init&gt;&quot;:()V</span><br><span class="line">   #7 = Methodref          #5.#36         // java/util/Random.nextDouble:()D</span><br></pre></td></tr></table></figure>
+
+<h4 id="目标方法的查找步骤"><a href="#目标方法的查找步骤" class="headerlink" title="目标方法的查找步骤"></a>目标方法的查找步骤</h4><ol>
+<li>对于<strong>非接口符号引用</strong>，假设该符号引用所指向的类为C，查找步骤<ul>
+<li>在C中查找符合名字和描述符的方法</li>
+<li>如果没有找到，在C的<strong>父类</strong>中继续搜索，直至Object类</li>
+<li>如果没有找到，在C所<strong>直接实现或间接实现的接口</strong>中搜索，这一步搜索得到的目标方法必须是<strong>非私有、非静态</strong>的<ul>
+<li>如果目标方法在<strong>间接接口</strong>中，则需要满足<strong>C与该接口之间没有其他符合条件的目标方法</strong> – 越近，优先级越高</li>
+<li>如果有<strong>多个符合条件的目标方法</strong>，则<strong>任意返回</strong>其中一个</li>
+</ul>
+</li>
+<li><strong>静态方法</strong> 也可以通过<strong>子类</strong>来调用，子类的静态方法会<strong>隐藏</strong>父类中同名同描述符的静态方法</li>
+</ul>
+</li>
+<li>对于<strong>接口符号引用</strong>，假设该符号引用所指向的接口为I，查找步骤<ul>
+<li>在I中查找符合名字和描述符的方法</li>
+<li>如果没有找到，在<strong>Object类中的公有实例方法</strong>中搜索</li>
+<li>如果没有找到，则在I的<strong>超接口</strong>中搜索，这一步的搜索结果的要求<strong>与非接口符号引用的要求一致</strong></li>
+</ul>
+</li>
+<li>经过上述的<strong>解析</strong>步骤之后，<strong>符号引用会被解析成实际引用</strong><ul>
+<li>对于可以<strong>静态绑定</strong>的方法调用而言，实际引用的是<strong>一个指向方法的指针</strong></li>
+<li>对于需要<strong>动态绑定</strong>的方法调用而言，实际引用则是<strong>一个虚方法表的索引</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="虚方法调用"><a href="#虚方法调用" class="headerlink" title="虚方法调用"></a>虚方法调用</h2><ol>
+<li>JVM的虚方法调用指令<ul>
+<li>Java里所有<strong>非私有实例方法的调用</strong>都会编译成<strong>invokevirtual</strong>指令（<strong>绝大数情况下动态绑定</strong>）</li>
+<li>而<strong>接口方法调用</strong>都会被编译成<strong>invokeinterface</strong>指令</li>
+</ul>
+</li>
+<li>在绝大数情况下，JVM需要根据<strong>调用者的动态类型</strong>，来<strong>确定虚方法调用的目标方法</strong>，这个过程称之为<strong>动态绑定</strong><ul>
+<li>相对于静态绑定的非虚方法调用来说，<strong>虚方法调用更加耗时</strong></li>
+</ul>
+</li>
+<li>静态绑定<ul>
+<li>调用静态方法的<strong>invokestatic</strong>指令</li>
+<li>调用构造器、私有实例方法和父类非私有实例方法（可继承）的<strong>invokespecial</strong>指令<ul>
+<li>父类非私有实例方法：本意是要调用父类的特定方法，而非根据具体类型决定目标方法</li>
+</ul>
+</li>
+<li>如果<strong>虚方法调用</strong>指向一个<strong>标记为final</strong>的方法，那么JVM也可以<strong>静态绑定</strong>该虚方法调用的目标方法</li>
+</ul>
+</li>
+</ol>
+<h2 id="虚方法表（链接-准备阶段）"><a href="#虚方法表（链接-准备阶段）" class="headerlink" title="虚方法表（链接-准备阶段）"></a>虚方法表（链接-准备阶段）</h2><ol>
+<li>虚方法表：JVM采取了一种用<strong>空间换时间</strong>的策略来实现<strong>动态绑定</strong></li>
+<li>invokevirtual的虚方法表与invokeinterface的虚方法表类似</li>
+<li>虚方法表本质上是一个<strong>数组</strong>，每个数组元素指向<strong>当前类及其父类中非私有、非final的实例方法</strong></li>
+<li>虚方法表的特性<ul>
+<li><strong>子类虚方法表中包含父类虚方法表中的所有方法</strong></li>
+<li>子类方法在虚方法表中的<strong>索引值</strong>，与它<strong>所重写的父类方法的索引值相同</strong></li>
+</ul>
+</li>
+<li>方法调用指令中的<strong>符号引用</strong>会在<strong>执行之前</strong>解析成<strong>实际引用</strong><ul>
+<li>对于<strong>静态绑定</strong>的方法调用而言，实际引用将指向<strong>具体的目标方法</strong></li>
+<li>对于<strong>动态绑定</strong>的方法调用而言，实际引用则是<strong>虚方法表的索引</strong>（不仅仅是索引值）</li>
+</ul>
+</li>
+<li>动态绑定：JVM将<strong>获取调用者的实际类型</strong>，并在<strong>实际类型的虚方法表</strong>中，根据<strong>索引值</strong>获得<strong>目标方法</strong></li>
+<li>使用虚方法表的动态绑定与静态绑定相比，<strong>仅仅多出几个内存解引用操作</strong>（相对于创建和初始化栈帧来说，开销很小）<ul>
+<li>访问<strong>栈</strong>上的调用者</li>
+<li>读取调用者的<strong>动态类型</strong></li>
+<li>读取该类型的<strong>虚方法表</strong></li>
+<li>读取虚方法表某个<strong>索引值</strong>所对应的<strong>目标方法</strong></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -XX:CompileCommand=dontinline,*.outBound</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InvokeVirtual</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Passenger a = <span class="keyword">new</span> Foreigner();</span><br><span class="line">        Passenger b = <span class="keyword">new</span> Chinese();</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">2_000_000_000</span>;</span><br><span class="line">        <span class="keyword">int</span> half_count = count / <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= count; i++) &#123;</span><br><span class="line">            Passenger c = (i &lt; half_count) ? a : b;</span><br><span class="line">            c.outBound();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">// 超多态内存缓存（方法表）：6700ms</span></span><br><span class="line">        <span class="comment">// 单态内联缓存：2315ms</span></span><br><span class="line">        log.info(<span class="string">"&#123;&#125;ms"</span>, end - start);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Passenger</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">outBound</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">super</span>.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foreigner</span> <span class="keyword">extends</span> <span class="title">Passenger</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">outBound</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Chinese</span> <span class="keyword">extends</span> <span class="title">Passenger</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">outBound</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">shopping</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Passenger的方法表</p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>方法</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Passenger.toString()</td>
+<td>重写Object.toString()</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Passenger.outBound()</td>
+<td>抽象方法，不可执行</td>
+</tr>
+</tbody></table>
+<p>Foreigner的方法表</p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>方法</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Passenger.toString()</td>
+<td>重写Object.toString()</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Foreigner.outBound()</td>
+<td>重写Passenger.outBound()</td>
+</tr>
+</tbody></table>
+<p>Chinese的方法表</p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>方法</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Passenger.toString()</td>
+<td>重写Object.toString()</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Chinese.outBound()</td>
+<td>重写Passenger.outBound()</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Chinese.shopping()</td>
+<td>购物</td>
+</tr>
+</tbody></table>
+<h2 id="即时编译优化"><a href="#即时编译优化" class="headerlink" title="即时编译优化"></a>即时编译优化</h2><h3 id="内联缓存"><a href="#内联缓存" class="headerlink" title="内联缓存"></a>内联缓存</h3><ol>
+<li><strong>加快动态绑定</strong>的优化技术：<strong>缓存虚方法调用中调用者的动态类型，以及该类型所对应的目标方法</strong></li>
+<li>在之后的执行过程中，如果碰到已缓存的类型，内联缓存便会直接调用该类型所对应的目标方法<ul>
+<li>如果没有碰到已缓存的类型，内联缓存则会退化至使用<strong>基于虚方法表的动态绑定</strong></li>
+</ul>
+</li>
+<li>内联缓存实际上并<strong>没有内联目标方法</strong><ul>
+<li><strong>任何方法调用除非被内联，否则都会有固定开销</strong></li>
+<li>开销<ul>
+<li>保存程序在该方法中的<strong>执行位置</strong></li>
+<li>新建、压入和弹出新方法所使用的<strong>栈帧</strong></li>
+</ul>
+</li>
+<li>getter/setter方法的固定开销所占据的CPU时间甚至超过了方法本身</li>
+<li>在<strong>即时编译</strong>中，<strong>方法内联可以消除方法调用的固定开销</strong></li>
+</ul>
+</li>
+</ol>
+<h4 id="针对多态的优化"><a href="#针对多态的优化" class="headerlink" title="针对多态的优化"></a>针对多态的优化</h4><ol>
+<li>术语<ul>
+<li>单态：仅有一种状态的情况</li>
+<li>多态：有限数量状态的情况</li>
+<li>超多态：在某个具体数值之下，称之为多态，否则，称之为超多态</li>
+</ul>
+</li>
+<li>对于内联缓存，我们也有对应的单态内联缓存、多态内联缓存和超多态内联缓存<ul>
+<li>单态内联缓存<ul>
+<li>只缓存了一种动态类型以及它所对应的目标方法；比较所缓存的动态类型，如果命中，则调用对应的目标方法</li>
+<li>大部分的虚方法调用均是单态的（只有一种动态类型），为了节省内存空间，<strong>JVM只采用单态内联缓存</strong></li>
+</ul>
+</li>
+<li>多态内联缓存（HotSpot中不存在）<ul>
+<li>缓存了多个动态类型以及目标方法；逐个将所缓存的动态类型与当前动态类型进行比较，如果命中，则调用相应的目标方法</li>
+<li>一般来说，我们会将更热门的动态类型放在前面</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当内联缓存没有命中的情况下，JVM需要重新使用<strong>虚方法表</strong>进行动态绑定，有两种选择<ul>
+<li>替换单态内联缓存中的记录（<strong>数据局部性原理</strong>）<ul>
+<li>最坏情况：每次进行方法调用都轮流替换内联缓存，导致<strong>只有写缓存的额外开销，但没有读缓存对性能提升</strong></li>
+<li>可以劣化为超多态内联缓存</li>
+</ul>
+</li>
+<li><strong>超多态内联缓存（JVM的具体实现方式）</strong><ul>
+<li>实际上已经<strong>放弃了优化的机会，直接访问虚方法表来动态绑定目标方法</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>单态内联缓存 -&gt; (无法命中，劣化) -&gt; 超多态内联缓存（直接使用虚方法表来进行动态绑定）<ul>
+<li><strong>HotSpot只存在单态内联缓存和超多态内联缓存</strong>，不存在多态内联缓存</li>
+</ul>
+</li>
+</ol>
+<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -XX:CompileCommand=dontinline,*.outBound</span></span><br><span class="line">Passenger a = <span class="keyword">new</span> Foreigner();</span><br><span class="line">Passenger b = <span class="keyword">new</span> Chinese();</span><br><span class="line"><span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line"><span class="keyword">int</span> count = <span class="number">2_000_000_000</span>;</span><br><span class="line"><span class="keyword">int</span> half_count = count / <span class="number">2</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= count; i++) &#123;</span><br><span class="line">    Passenger c = (i &lt; half_count) ? a : b;</span><br><span class="line">    c.outBound();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line"><span class="comment">// 超多态内存缓存（方法表）：6700ms</span></span><br><span class="line"><span class="comment">// 单态内联缓存：2315ms</span></span><br><span class="line">log.info(<span class="string">"&#123;&#125;ms"</span>, end - start);</span><br></pre></td></tr></table></figure>
+
+<h3 id="方法内联（跳过，后续介绍）"><a href="#方法内联（跳过，后续介绍）" class="headerlink" title="方法内联（跳过，后续介绍）"></a>方法内联（跳过，后续介绍）</h3><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100010301" target="_blank" rel="noopener">深入拆解Java虚拟机</a></p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/11/java-performance-gc/" rel="bookmark">Java性能 -- GC</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/09/java-performance-jit/" rel="bookmark">Java性能 -- JIT</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/13/java-performance-jvm-heap-allocation/" rel="bookmark">Java性能 -- JVM堆内存分配</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/07/java-performance-jvm-memory-model/" rel="bookmark">Java性能 -- JVM内存模型</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/01/12/jvm-advanced-agent/" rel="bookmark">JVM进阶 -- 浅谈Java Agent</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2018/12/17/jvm-basic-invoke/" title="JVM基础 -- 方法调用">http://zhongmingmao.me/2018/12/17/jvm-basic-invoke/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/jvm/" rel="tag"><i class="fa fa-tag"></i> JVM</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/12/16/jvm-basic-load-class/" rel="next" title="JVM基础 -- 类加载">
+                <i class="fa fa-chevron-left"></i> JVM基础 -- 类加载
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/12/18/jvm-basic-bridge-method/" rel="prev" title="JVM基础 -- 桥接方法">
+                JVM基础 -- 桥接方法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#重载-重写"><span class="nav-number">1.</span> <span class="nav-text">重载+重写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#重载"><span class="nav-number">1.1.</span> <span class="nav-text">重载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重写"><span class="nav-number">1.2.</span> <span class="nav-text">重写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#静态绑定与-动态绑定"><span class="nav-number">2.</span> <span class="nav-text">静态绑定与+动态绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#重载不一定是静态绑定"><span class="nav-number">2.1.</span> <span class="nav-text">重载不一定是静态绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java代码"><span class="nav-number">2.1.1.</span> <span class="nav-text">Java代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#字节码"><span class="nav-number">2.1.2.</span> <span class="nav-text">字节码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重写不一定是动态绑定"><span class="nav-number">2.2.</span> <span class="nav-text">重写不一定是动态绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java代码-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">Java代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#字节码-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">字节码</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调用相关的指令"><span class="nav-number">3.</span> <span class="nav-text">调用相关的指令</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#具体指令"><span class="nav-number">3.1.</span> <span class="nav-text">具体指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#定位目标方法"><span class="nav-number">3.2.</span> <span class="nav-text">定位目标方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调用指令的符号引用"><span class="nav-number">3.3.</span> <span class="nav-text">调用指令的符号引用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#目标方法的查找步骤"><span class="nav-number">3.3.1.</span> <span class="nav-text">目标方法的查找步骤</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚方法调用"><span class="nav-number">4.</span> <span class="nav-text">虚方法调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚方法表（链接-准备阶段）"><span class="nav-number">5.</span> <span class="nav-text">虚方法表（链接-准备阶段）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#即时编译优化"><span class="nav-number">6.</span> <span class="nav-text">即时编译优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#内联缓存"><span class="nav-number">6.1.</span> <span class="nav-text">内联缓存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#针对多态的优化"><span class="nav-number">6.1.1.</span> <span class="nav-text">针对多态的优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#性能对比"><span class="nav-number">6.1.2.</span> <span class="nav-text">性能对比</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方法内联（跳过，后续介绍）"><span class="nav-number">6.2.</span> <span class="nav-text">方法内联（跳过，后续介绍）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

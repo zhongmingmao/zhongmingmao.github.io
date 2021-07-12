@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="控制器 控制器（Controller）是Kafka的核心组件，主要作用是在ZK的帮助下管理和协调整个Kafka集群 集群中任一Broker都能充当控制器的角色，但在运行过程中，只能有一个Broker成为控制器，行使管理和协调的职责  12345678910111213[zk: localhost:2181(CONNECTED) 1] get /controller&amp;#123;&amp;quot;versi">
+<meta name="keywords" content="Middleware,MQ,Kafka,Stream">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka --  控制器">
+<meta property="og:url" content="http://zhongmingmao.me/2019/09/18/kafka-controller/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="控制器 控制器（Controller）是Kafka的核心组件，主要作用是在ZK的帮助下管理和协调整个Kafka集群 集群中任一Broker都能充当控制器的角色，但在运行过程中，只能有一个Broker成为控制器，行使管理和协调的职责  12345678910111213[zk: localhost:2181(CONNECTED) 1] get /controller&amp;#123;&amp;quot;versi">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-znode.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-data.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-failover.jpg">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-design.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka --  控制器">
+<meta name="twitter:description" content="控制器 控制器（Controller）是Kafka的核心组件，主要作用是在ZK的帮助下管理和协调整个Kafka集群 集群中任一Broker都能充当控制器的角色，但在运行过程中，只能有一个Broker成为控制器，行使管理和协调的职责  12345678910111213[zk: localhost:2181(CONNECTED) 1] get /controller&amp;#123;&amp;quot;versi">
+<meta name="twitter:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-znode.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/09/18/kafka-controller/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka --  控制器 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/09/18/kafka-controller/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kafka --  控制器
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-18 18:22:52" itemprop="dateCreated datePublished" datetime="2019-09-18T18:22:52+08:00">2019-09-18</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/" itemprop="url" rel="index"><span itemprop="name">Middleware</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/" itemprop="url" rel="index"><span itemprop="name">MQ</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">2.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">5 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="控制器"><a href="#控制器" class="headerlink" title="控制器"></a>控制器</h2><ol>
+<li><strong>控制器</strong>（Controller）是Kafka的<strong>核心组件</strong>，主要作用是在<strong>ZK</strong>的帮助下<strong>管理和协调整个Kafka集群</strong></li>
+<li>集群中<strong>任一</strong>Broker都能充当控制器的角色，但在运行过程中，<strong>只能有一个Broker成为控制器</strong>，行使管理和协调的职责</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[zk: localhost:2181(CONNECTED) 1] get /controller</span><br><span class="line">&#123;&quot;version&quot;:1,&quot;brokerid&quot;:0,&quot;timestamp&quot;:&quot;1571311742367&quot;&#125;</span><br><span class="line">cZxid = 0xd68</span><br><span class="line">ctime = Thu Oct 17 19:29:02 CST 2019</span><br><span class="line">mZxid = 0xd68</span><br><span class="line">mtime = Thu Oct 17 19:29:02 CST 2019</span><br><span class="line">pZxid = 0xd68</span><br><span class="line">cversion = 0</span><br><span class="line">dataVersion = 0</span><br><span class="line">aclVersion = 0</span><br><span class="line">ephemeralOwner = 0x1000209974b0000</span><br><span class="line">dataLength = 54</span><br><span class="line">numChildren = 0</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h2 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h2><ol>
+<li>Kafka控制器<strong>重度依赖</strong>ZK</li>
+<li>ZK是一个提供<strong>高可靠性的分布式协调服务</strong>框架</li>
+<li>ZK使用类似于<strong>文件系统</strong>的树形结构，<strong>根目录</strong>以<code>/</code>开始，结构上的每个节点称为<strong>znode</strong>，用来保存一些<strong>元数据协调信息</strong></li>
+<li>如果以znode的<strong>持久性</strong>来划分，znode可以分为<strong>持久性znode</strong>和<strong>临时znode</strong><ul>
+<li>持久性znode不会因为ZK集群重启而消失</li>
+<li>临时znode则会<strong>与创建该znode的ZK会话绑定</strong>，一旦<strong>会话结束</strong>，该节点会被<strong>自动删除</strong></li>
+</ul>
+</li>
+<li>ZK赋予客户端<strong>监控znode变更</strong>的能力，即所谓的<strong>Watch通知</strong>功能<ul>
+<li>一旦znode节点被<strong>创建</strong>、<strong>删除</strong>、<strong>子节点数量发生变化</strong>，<strong>znode所存的数据本身发生变更</strong></li>
+<li>ZK会通过节点变更监听器（<strong>ChangeHandler</strong>）的方式<strong>显式通知</strong>客户端</li>
+</ul>
+</li>
+<li>ZK被用来实现<strong>集群成员管理</strong>、<strong>分布式锁</strong>、<strong>领导者选举</strong>等功能，<strong>Kafka控制器</strong>大量使用<strong>Watch</strong>功能实现<strong>对集群的协调管理</strong></li>
+</ol>
+<p>kafka在ZK中创建的znode<br><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-znode.png" width="1000/"></p>
+<h2 id="controller节点"><a href="#controller节点" class="headerlink" title="/controller节点"></a><code>/controller</code>节点</h2><ol>
+<li>Broker在启动时，会尝试去ZK创建<code>/controller</code>节点</li>
+<li><strong>第一个</strong>成功创建<code>/controller</code>节点的Broker会被指定为为<strong>控制器</strong></li>
+</ol>
+<h2 id="控制器的职责"><a href="#控制器的职责" class="headerlink" title="控制器的职责"></a>控制器的职责</h2><ol>
+<li><strong>主题管理</strong><ul>
+<li>完成对Kafka主题的<strong>创建</strong>、<strong>删除</strong>以及<strong>分区增加</strong>的操作</li>
+<li>执行<code>kafka-topics</code>时，大部分的后台工作都是由控制器完成的</li>
+</ul>
+</li>
+<li><strong>分区重分配</strong><ul>
+<li>分区重分配主要是指<code>kafka-reassign-partitions</code>脚本提供的<strong>对已有主题分区进行细粒度的分配功能</strong></li>
+</ul>
+</li>
+<li><strong>Preferred领导者选举</strong><ul>
+<li>Preferred领导者选举主要是Kafka为了<strong>避免部分Broker负载过重</strong>而提供的一种<strong>换Leader</strong>的方案</li>
+</ul>
+</li>
+<li><strong>集群成员管理</strong><ul>
+<li>自动检测<strong>新增Broker</strong>、<strong>Broker主动关闭</strong>、<strong>Broker宕机</strong></li>
+<li>自动检测依赖于<strong>Watch</strong>功能和<strong>ZK临时节点</strong>组合实现的<ul>
+<li>控制器会利用Watch机制检查ZK的<code>/brokers/ids</code>节点下的<strong>子节点数量变更</strong></li>
+<li>当有新Broker启动后，它会在<code>/brokers/ids/</code>下创建专属的<strong>临时znode节点</strong><ul>
+<li>一旦创建完毕，ZK会通过Watch机制将消息通知<strong>推送</strong>给<strong>控制器</strong>，控制器能够自动感知这个变化</li>
+</ul>
+</li>
+<li>当Broker<strong>宕机</strong>或者<strong>主动关闭</strong>后，该Broker与ZK的<strong>会话结束</strong>，这个znode会被<strong>自动删除</strong><ul>
+<li>ZK的Watch机制会将这一变更<strong>推送</strong>给<strong>控制器</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>数据服务</strong><ul>
+<li>向<strong>其它Broker</strong>提供数据服务，控制器上保存了<strong>最全的集群元数据信息</strong></li>
+<li>其它Broker会<strong>定期</strong>接收<strong>控制器</strong>发来的<strong>元数据更新请求</strong>，从而更新其<strong>内存</strong>中的缓存数据</li>
+</ul>
+</li>
+</ol>
+<h2 id="控制器保存的数据"><a href="#控制器保存的数据" class="headerlink" title="控制器保存的数据"></a>控制器保存的数据</h2><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-data.png" width="1000/">
+
+<ol>
+<li>所有<strong>主题信息</strong>，包括具体的分区信息、比如领导者副本是谁，ISR集合有哪些副本</li>
+<li>所有<strong>Broker信息</strong>，包括哪些运行中的Broker，哪些正在关闭的Broker</li>
+<li>所有<strong>涉及运维任务的分区</strong>，包括当前正在进行<strong>Preferred领导者选举</strong>以及<strong>分区重分配</strong>的分区列表</li>
+<li>上述这些数据在<strong>ZK</strong>中也保存了一份，每当控制器<strong>初始化</strong>时，都会从ZK上读取对应的元数据并填充到自己的<strong>缓存</strong>中<ul>
+<li>有了这些数据，控制器就能对<strong>其它Broker</strong>提供数据服务了</li>
+<li>控制器通过向其它Broker<strong>发送请求</strong>的方式将这些数据<strong>同步</strong>到其它Broker上</li>
+</ul>
+</li>
+</ol>
+<h2 id="控制器故障转移"><a href="#控制器故障转移" class="headerlink" title="控制器故障转移"></a>控制器故障转移</h2><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-failover.jpg" width="1000/">
+
+<ol>
+<li>故障转移<ul>
+<li>当运行中的控制器突然<strong>宕机</strong>或者<strong>意外终止</strong>时，Kafka能<strong>快速感知</strong>并立即启用备用控制器来<strong>代替</strong>之前失败的控制器</li>
+<li>该过程称为<strong>FailOver</strong>，该过程是<strong>自动完成</strong>的</li>
+</ul>
+</li>
+<li>一开始，Broker 0是控制器，当Broker 0宕机后，ZK通过Watch机制感知到并<strong>删除了<code>/controller</code>临时节点</strong></li>
+<li>然后，所有<strong>存活的Broker</strong>开始竞选新的控制器，Broker 3最终赢得了选举，成功地在ZK上重建了<code>/controller</code>临时节点</li>
+<li>之后，Broker 3会<strong>从ZK中读取集群元数据信息</strong>，并<strong>初始化到自己的缓存</strong>中，至此控制器的FailOver完成</li>
+</ol>
+<h2 id="控制器内部设计原理"><a href="#控制器内部设计原理" class="headerlink" title="控制器内部设计原理"></a>控制器内部设计原理</h2><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-controller-design.png" width="1000/">
+
+<ol>
+<li>在Kafka 0.11之前，控制器的设计是相当繁琐的，导致很多Bug无法修复</li>
+<li>控制器是<strong>多线程</strong>的设计，会在内部创建很多个线程<ul>
+<li>控制器需要为每个Broker都创建一个对应的<strong>Socket连接</strong>，然后再创建一个<strong>专属的线程</strong>，用于向这些Broker发送请求</li>
+<li>控制器连接ZK的会话，也会创建<strong>单独的线程</strong>来处理<strong>Watch机制的通知回调</strong></li>
+<li>控制器还会为<strong>主题删除</strong>创建额外的<strong>IO线程</strong></li>
+</ul>
+</li>
+<li>这些线程还会访问<strong>共享</strong>的控制器缓存数据，<strong>多线程</strong>访问<strong>共享可变数据</strong>是维持线程安全的最大难题<ul>
+<li>为了保护<strong>数据安全性</strong>，控制器在代码中大量使用<strong>ReentrantLock</strong>同步机制，进一步<strong>拖慢</strong>整个控制器的<strong>处理速度</strong></li>
+</ul>
+</li>
+<li>社区在0.11版本<strong>重构了控制器的底层设计</strong>，把多线程的方案改成了<strong>单线程+事件队列</strong>的方案<ul>
+<li>引进了<strong>事件处理器</strong>，统一处理各种<strong>控制器事件</strong></li>
+<li>控制器将原来执行的操作全部建模成<strong>独立的事件</strong>，发送到专属的<strong>事件队列</strong>中，供事件处理器消费</li>
+<li>单线程：控制器只是把<strong>缓存状态变更方面的工作</strong>委托给了这个线程而已</li>
+<li>优点：控制器缓存中保存的状态只被一个线程处理，因此不需要<strong>重量级的线程同步机制</strong>来维护线程安全</li>
+</ul>
+</li>
+<li>针对控制器的第二个改进：将之前同步操作ZK全部换成<strong>异步操作</strong><ul>
+<li>ZK本身的API提供了<strong>同步写</strong>和<strong>异步写</strong>两种方式</li>
+<li>之前控制器操作ZK时使用的是<strong>同步API</strong>，<strong>性能很差</strong><ul>
+<li><strong>当有大量主题分区发生变更时，ZK容易成为系统的瓶颈</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Kafka从2.2开始，将<strong>控制器发送的请求</strong>和<strong>普通数据类的请求</strong>分开，实现控制器请求<strong>单独处理</strong>的逻辑<ul>
+<li>之前Broker对接收到的所有请求都<strong>一视同仁</strong>，不会区别对待</li>
+<li>如果删除了某个主题，那么控制器会给主题的所有副本所在的Broker发送StopReplica请求</li>
+<li>如果此时Broker上有大量Produce请求堆积，那么StopReplica请求只能<strong>排队</strong></li>
+<li>既然主题都要被删除了，继续处理Produce请求就显得很没有意义</li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100029201" target="_blank" rel="noopener">Kafka核心技术与实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/28/kafka-admin-client/" rel="bookmark">Kafka -- KafkaAdminClient</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/01/kafka-avoid-rebalance/" rel="bookmark">Kafka -- 避免重平衡</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-bijection/" rel="bookmark">Kafka -- Avro + Twitter Bijection</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/15/kafka-avro-introduction/" rel="bookmark">Kafka -- Avro入门</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-native/" rel="bookmark">Kafka -- Avro + Kafka Native API</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/09/18/kafka-controller/" title="Kafka --  控制器">http://zhongmingmao.me/2019/09/18/kafka-controller/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/middleware/" rel="tag"><i class="fa fa-tag"></i> Middleware</a>
+          
+            <a href="/tags/mq/" rel="tag"><i class="fa fa-tag"></i> MQ</a>
+          
+            <a href="/tags/kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a>
+          
+            <a href="/tags/stream/" rel="tag"><i class="fa fa-tag"></i> Stream</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/09/17/java-performance-singleton/" rel="next" title="Java性能 -- 单例模式">
+                <i class="fa fa-chevron-left"></i> Java性能 -- 单例模式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/09/19/java-performance-prototype-flyweight/" rel="prev" title="Java性能 -- 原型模式 + 享元模式">
+                Java性能 -- 原型模式 + 享元模式 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#控制器"><span class="nav-number">1.</span> <span class="nav-text">控制器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper"><span class="nav-number">2.</span> <span class="nav-text">Zookeeper</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#controller节点"><span class="nav-number">3.</span> <span class="nav-text">/controller节点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制器的职责"><span class="nav-number">4.</span> <span class="nav-text">控制器的职责</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制器保存的数据"><span class="nav-number">5.</span> <span class="nav-text">控制器保存的数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制器故障转移"><span class="nav-number">6.</span> <span class="nav-text">控制器故障转移</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制器内部设计原理"><span class="nav-number">7.</span> <span class="nav-text">控制器内部设计原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

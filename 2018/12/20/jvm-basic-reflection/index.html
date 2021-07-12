@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="反射API获取Class对象 Class.forName() object.getClass() 类名.class Integer.TYPE指向int.class   数组类型：类名[].class  1public static final Class&amp;lt;Integer&amp;gt;  TYPE = (Class&amp;lt;Integer&amp;gt;) Class.getPrimitiveClass(&quot;i">
+<meta name="keywords" content="Java,JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM基础 -- 浅谈反射">
+<meta property="og:url" content="http://zhongmingmao.me/2018/12/20/jvm-basic-reflection/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="反射API获取Class对象 Class.forName() object.getClass() 类名.class Integer.TYPE指向int.class   数组类型：类名[].class  1public static final Class&amp;lt;Integer&amp;gt;  TYPE = (Class&amp;lt;Integer&amp;gt;) Class.getPrimitiveClass(&quot;i">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-reflect-method-accessor.png">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-reflect-method-invoke.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM基础 -- 浅谈反射">
+<meta name="twitter:description" content="反射API获取Class对象 Class.forName() object.getClass() 类名.class Integer.TYPE指向int.class   数组类型：类名[].class  1public static final Class&amp;lt;Integer&amp;gt;  TYPE = (Class&amp;lt;Integer&amp;gt;) Class.getPrimitiveClass(&quot;i">
+<meta name="twitter:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-reflect-method-accessor.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2018/12/20/jvm-basic-reflection/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JVM基础 -- 浅谈反射 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2018/12/20/jvm-basic-reflection/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">JVM基础 -- 浅谈反射
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2018-12-20 22:37:41" itemprop="dateCreated datePublished" datetime="2018-12-20T22:37:41+08:00">2018-12-20</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/baisc/" itemprop="url" rel="index"><span itemprop="name">Baisc</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">11k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">20 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="反射API"><a href="#反射API" class="headerlink" title="反射API"></a>反射API</h2><h3 id="获取Class对象"><a href="#获取Class对象" class="headerlink" title="获取Class对象"></a>获取Class对象</h3><ol>
+<li>Class.forName()</li>
+<li>object.getClass()</li>
+<li>类名.class<ul>
+<li>Integer.TYPE指向int.class</li>
+</ul>
+</li>
+<li>数组类型：<strong>类名[].class</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> Class&lt;Integer&gt;  TYPE = (Class&lt;Integer&gt;) Class.getPrimitiveClass(<span class="string">"int"</span>);</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h3 id="常规用法"><a href="#常规用法" class="headerlink" title="常规用法"></a>常规用法</h3><ol>
+<li>newInstance()<ul>
+<li>生成该类实例</li>
+<li>需要<strong>无参构造器</strong></li>
+</ul>
+</li>
+<li>isInstance(Object)<ul>
+<li>判断一个对象是否为该类的实例</li>
+<li><strong>语法上等同于instanceOf，在JIT优化时会有所差别</strong></li>
+</ul>
+</li>
+<li>Array.newInstance(Class&lt;?&gt;, int)<ul>
+<li>构造该类型的数组</li>
+</ul>
+</li>
+<li>getFields()/getConstructors()/ getMethods()<ul>
+<li>访问类成员</li>
+<li>带<strong>Declared</strong>的方法<strong>不会返回父类成员，但会返回私有成员</strong>；不带<strong>Declared</strong>的方法恰好相反</li>
+</ul>
+</li>
+</ol>
+<h3 id="获取类成员后"><a href="#获取类成员后" class="headerlink" title="获取类成员后"></a>获取类成员后</h3><ol>
+<li>Field/Constructor/Method setAccessible(true)<ul>
+<li>绕开Java语言的限制</li>
+</ul>
+</li>
+<li>Field.get/set(Object)<ul>
+<li>访问字段的值</li>
+</ul>
+</li>
+<li>Constructor.newInstance(Object[])<ul>
+<li>生成该类实例</li>
+</ul>
+</li>
+<li>Method.invoke(Object, Object[])<ul>
+<li>调用方法</li>
+</ul>
+</li>
+</ol>
+<h2 id="方法的反射调用"><a href="#方法的反射调用" class="headerlink" title="方法的反射调用"></a>方法的反射调用</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Method</span> <span class="keyword">extends</span> <span class="title">Executable</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object obj, Object... args)</span> <span class="keyword">throws</span> ... </span>&#123;</span><br><span class="line">        ... <span class="comment">// 权限检查</span></span><br><span class="line">        MethodAccessor ma = methodAccessor;</span><br><span class="line">        <span class="keyword">if</span> (ma == <span class="keyword">null</span>) &#123;</span><br><span class="line">            ma = acquireMethodAccessor();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 委派给MethodAccessor来处理</span></span><br><span class="line">        <span class="keyword">return</span> ma.invoke(obj, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MethodAccessor</span> </span>&#123;</span><br><span class="line">    <span class="function">Object <span class="title">invoke</span><span class="params">(Object var1, Object[] var2)</span> <span class="keyword">throws</span> IllegalArgumentException, InvocationTargetException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-reflect-method-accessor.png">
+
+<p>每个Method实例的<strong>第一次反射调用</strong>都会生成一个<strong>委派实现</strong>，它<strong>所委派的具体实现</strong>便是一个<strong>本地实现</strong></p>
+<ul>
+<li><strong>本地实现</strong>：进入JVM内部后，便拥有了Method实例所指向方法的<strong>具体地址</strong></li>
+<li>此时，反射调用无非就是准备好入参，然后调用进入目标方法</li>
+</ul>
+<h3 id="本地实现"><a href="#本地实现" class="headerlink" title="本地实现"></a>本地实现</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V0</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Exception(<span class="string">"#"</span> + i).printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(V0.class.getName());</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        method.invoke(<span class="keyword">null</span>, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 本地实现</span><br><span class="line">// Method.invoke -&gt; DelegatingMethodAccessorImpl.invoke</span><br><span class="line">// -&gt; NativeMethodAccessorImpl.invoke -&gt; NativeMethodAccessorImpl.invoke0</span><br><span class="line">java.lang.Exception: #0</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V0.target(V0.java:7) -- Java</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) -- C++</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)</span><br><span class="line">	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)</span><br><span class="line">	at java.lang.reflect.Method.invoke(Method.java:498) -- Java</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V0.main(V0.java:13)</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>反射调用的顺序<ul>
+<li>Method.invoke（反射调用）</li>
+<li>DelegatingMethodAccessorImpl.invoke（委派实现）</li>
+<li>NativeMethodAccessorImpl.invoke（本地实现）</li>
+<li>NativeMethodAccessorImpl.invoke0（目标方法）</li>
+</ul>
+</li>
+<li>采用<strong>委派实现</strong>作为<strong>中间层</strong>的原因<ul>
+<li>因为Java的反射调用机制还设立了另一种<strong>动态生成字节码</strong>的实现（<strong>动态实现</strong>），直接使用invoke指令来调用目标方法</li>
+<li><strong>Method.invoke -&gt; DelegatingMethodAccessorImpl.invoke -&gt; GeneratedMethodAccessor1.invoke</strong></li>
+<li>因此采用委派实现，是为了能够在<strong>本地实现</strong>以及<strong>动态实现</strong>之间切换</li>
+</ul>
+</li>
+<li><strong>动态实现与本地实现相比，动态实现的运行效率能快上20倍</strong><ul>
+<li>这是因为动态实现无需经过Java到C++再到Java的切换</li>
+</ul>
+</li>
+<li><strong>但生成字节码十分耗时，仅调用一次的话，反而本地实现要快上3~4倍</strong><ul>
+<li>许多反射调用仅会执行一次，阈值：<strong>sun.reflect.inflationThreshold=15</strong></li>
+<li>&lt; 15，采用本地实现</li>
+<li>&gt;= 15，采用动态实现，将委派实现的委派对象切换至动态实现，该过程称之为<strong>Inflation</strong></li>
+<li><strong>-Dsun.reflect.noInflation=true</strong>，关闭<strong>Inflation</strong>机制，反射调用在<strong>一开始便会直接使用动态实现</strong>，而不会使用委派实现或者本地实现</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 动态实现的伪代码</span></span><br><span class="line"><span class="keyword">package</span> jdk.internal.reflect;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GeneratedMethodAccessor1</span> <span class="keyword">extends</span> ... </span>&#123;</span><br><span class="line">    <span class="meta">@Overrides</span>    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object obj, Object[] args)</span> <span class="keyword">throws</span> ... </span>&#123;</span><br><span class="line">        V0.target((<span class="keyword">int</span>) args[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="动态实现"><a href="#动态实现" class="headerlink" title="动态实现"></a>动态实现</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -verbose:class</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Exception(<span class="string">"#"</span> + i).printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(V1.class.getName());</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123;</span><br><span class="line">            method.invoke(<span class="keyword">null</span>, i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">// 第15次反射调用时，触发了动态实现的生成，JVM额外加载其他类</span><br><span class="line">java.lang.Exception: #14</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.target(V1.java:7)</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)</span><br><span class="line">	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)</span><br><span class="line">	at java.lang.reflect.Method.invoke(Method.java:498)</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.main(V1.java:14)</span><br><span class="line">...</span><br><span class="line">// 加载自动生成的字节码</span><br><span class="line">[Loaded sun.reflect.GeneratedMethodAccessor1 from __JVM_DefineClass__]</span><br><span class="line">java.lang.Exception: #15</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.target(V1.java:7)</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)</span><br><span class="line">	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)</span><br><span class="line">	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)</span><br><span class="line">	at java.lang.reflect.Method.invoke(Method.java:498)</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.main(V1.java:14)</span><br><span class="line">// 切换至刚刚生成的动态实现</span><br><span class="line">java.lang.Exception: #16</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.target(V1.java:7)</span><br><span class="line">	at sun.reflect.GeneratedMethodAccessor1.invoke(Unknown Source)</span><br><span class="line">	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)</span><br><span class="line">	at java.lang.reflect.Method.invoke(Method.java:498)</span><br><span class="line">	at me.zhongmingmao.basic.reflect.V1.main(V1.java:14)</span><br></pre></td></tr></table></figure>
+
+<h2 id="反射调用的开销"><a href="#反射调用的开销" class="headerlink" title="反射调用的开销"></a>反射调用的开销</h2><h3 id="Class-forName-Class-getMethod"><a href="#Class-forName-Class-getMethod" class="headerlink" title="Class.forName + Class.getMethod"></a>Class.forName + Class.getMethod</h3><ol>
+<li>Class.forName会调用本地方法</li>
+<li>Class.getMethod则会遍历<strong>该类的公有方法</strong>，如果没有匹配到，还将匹配<strong>父类的公有方法</strong><ul>
+<li>返回查找得到结果的一份<strong>拷贝</strong></li>
+<li>避免在热点代码中使用返回<strong>Method数组</strong>的Class.getMethods()方法和Class.getDeclaredMethods()方法，减少不必要的堆空间消耗</li>
+</ul>
+</li>
+<li>尽量在应用程序中缓存Class.forName和Class.getMethod的结果</li>
+</ol>
+<h3 id="Method-invoke"><a href="#Method-invoke" class="headerlink" title="Method.invoke"></a>Method.invoke</h3><h4 id="直接调用"><a href="#直接调用" class="headerlink" title="直接调用"></a>直接调用</h4><h5 id="Java代码"><a href="#Java代码" class="headerlink" title="Java代码"></a>Java代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">directCall</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">                System.out.println(temp - current);</span><br><span class="line">                current = temp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            V2.target(<span class="number">128</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        directCall();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>取最后5个值，作为预热后的峰值性能，大约为111.6ms；<strong>与不调用的时间基本一致</strong><ul>
+<li>因为这是<strong>热循环</strong>，触发<strong>JIT</strong>，将V2.target的调用<strong>内联</strong>进来，从而<strong>消除了调用的开销</strong></li>
+</ul>
+</li>
+<li><strong>性能基准：111.6ms</strong></li>
+</ol>
+<h4 id="反射调用"><a href="#反射调用" class="headerlink" title="反射调用"></a>反射调用</h4><h5 id="Java代码-1"><a href="#Java代码-1" class="headerlink" title="Java代码"></a>Java代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -XX:+PrintGC</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V3</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">reflectCall</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(<span class="string">"me.zhongmingmao.basic.reflect.V3"</span>);</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">                System.out.println(temp - current);</span><br><span class="line">                current = temp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            method.invoke(<span class="keyword">null</span>, <span class="number">128</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        reflectCall();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>峰值性能：457.4ms，为基准耗时的4.1倍</p>
+<h5 id="字节码"><a href="#字节码" class="headerlink" title="字节码"></a>字节码</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">63: aload_1                         // 加载Method对象</span><br><span class="line">64: aconst_null                     // 静态方法，反射调用的第一个参数为null</span><br><span class="line">65: iconst_1</span><br><span class="line">66: anewarray                       // 生成一个长度为1的Object数组</span><br><span class="line">69: dup</span><br><span class="line">70: iconst_0</span><br><span class="line">71: sipush        128</span><br><span class="line">74: invokestatic Integer.valueOf    // 将128自动装箱成Integer</span><br><span class="line">77: aastore                         // 存入Object数组</span><br><span class="line">78: invokevirtual Method.invoke     // 反射调用</span><br></pre></td></tr></table></figure>
+
+<p>反射调用前的两个动作</p>
+<ul>
+<li>Method.invoke是一个<strong>变长参数</strong>方法，<strong>最后一个参数</strong>在<strong>字节码层面</strong>会是<strong>Object数组</strong><ul>
+<li>Java编译器会在方法调用处生成一个<strong>长度为入参数量的Object数组</strong>，并将入参一一存储进该数组</li>
+</ul>
+</li>
+<li>Object数组不能存储基本类型，Java编译器会对传入的基本类型进行<strong>自动装箱</strong></li>
+<li>上述两个步骤会带来<strong>性能开销</strong>和<strong>GC</strong></li>
+</ul>
+<h4 id="减少装箱"><a href="#减少装箱" class="headerlink" title="减少装箱"></a>减少装箱</h4><ol>
+<li>V3的代码增加启动JVM参数：<strong>-Djava.lang.Integer.IntegerCache.high=128</strong></li>
+<li>峰值性能：280.4ms，为基准耗时的2.5倍</li>
+</ol>
+<h4 id="减少自动生成Object数组"><a href="#减少自动生成Object数组" class="headerlink" title="减少自动生成Object数组"></a>减少自动生成Object数组</h4><h5 id="Java代码-2"><a href="#Java代码-2" class="headerlink" title="Java代码"></a>Java代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -XX:+PrintGC</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V4</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(<span class="string">"me.zhongmingmao.basic.reflect.V4"</span>);</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在循环外构造参数数组</span></span><br><span class="line">        Object[] arg = <span class="keyword">new</span> Object[<span class="number">1</span>];</span><br><span class="line">        arg[<span class="number">0</span>] = <span class="number">128</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">                System.out.println(temp - current);</span><br><span class="line">                current = temp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            method.invoke(<span class="keyword">null</span>, arg);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">80: aload_2                         // 加载Method对象</span><br><span class="line">81: aconst_null                     // 静态方法，反射调用的第一个参数为null</span><br><span class="line">82: aload_3</span><br><span class="line">83: invokevirtual Method.invoke     // 反射调用，无anewarray指令</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>峰值性能：312.4ms，为基准耗时的2.8倍</li>
+<li>V4<strong>不会触发GC</strong>，因为<strong>反射调用被内联</strong>了<ul>
+<li>即时编译器中的<strong>逃逸分析</strong>会<strong>将原本新建的Object数组判定为不逃逸的对象</strong></li>
+<li>如果一个对象被判定为<strong>不逃逸</strong>，那么即时编译器会选择<strong>栈分配</strong>或者<strong>虚拟分配</strong>，<strong>不占用堆空间</strong></li>
+<li>在循环外新建数组，即时编译器无法确定这个数组会不会被中途修改，从而无法优化掉访问数组的操作</li>
+</ul>
+</li>
+</ol>
+<h4 id="关闭Inflation机制"><a href="#关闭Inflation机制" class="headerlink" title="关闭Inflation机制"></a>关闭Inflation机制</h4><ol>
+<li>关闭Inflation机制，取消委派实现，并且<strong>直接使用动态实现</strong></li>
+<li>关闭权限校验：每次反射调用都会<strong>检查目标方法的权限</strong></li>
+</ol>
+<h5 id="Java代码-3"><a href="#Java代码-3" class="headerlink" title="Java代码"></a>Java代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -Djava.lang.Integer.IntegerCache.high=128</span></span><br><span class="line"><span class="comment">// -Dsun.reflect.noInflation=true</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V5</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(<span class="string">"me.zhongmingmao.basic.reflect.V5"</span>);</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        <span class="comment">// 关闭权限检查</span></span><br><span class="line">        method.setAccessible(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">                System.out.println(temp - current);</span><br><span class="line">                current = temp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            method.invoke(<span class="keyword">null</span>, <span class="number">128</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>峰值性能：186.2ms，为基准耗时的1.7倍</p>
+<h4 id="方法内联的瓶颈"><a href="#方法内联的瓶颈" class="headerlink" title="方法内联的瓶颈"></a>方法内联的瓶颈</h4><ol>
+<li>V5的反射调用能如此快，主要是<strong>即时编译器中的方法内联</strong></li>
+<li>在关闭了Inflation机制后，方法内联的瓶颈在于Method.invoke方法中对MethodAccessor.invoke方法的调用</li>
+<li>在生成环境中，通常有多个不同的反射调用，对应多个GeneratedMethodAccessor，也就是动态实现</li>
+<li>JVM关于上述调用点的类型profile无法同时记录多个类，造成所测试的<strong>反射调用没有被内联</strong>的情况<ul>
+<li>类型profile：对于invokevirtual或invokeinterface，JVM会记录下<strong>调用者的具体类型</strong></li>
+</ul>
+</li>
+</ol>
+<img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/basic/jvm-basic-reflect-method-invoke.png">
+
+<h5 id="Java代码-4"><a href="#Java代码-4" class="headerlink" title="Java代码"></a>Java代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">V6</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target1</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target2</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">polluteProfile</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 误扰Method.invoke()的类型profile</span></span><br><span class="line">        Method method1 = V6.class.getMethod(<span class="string">"target1"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        Method method2 = V6.class.getMethod(<span class="string">"target2"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">2000</span>; i++) &#123;</span><br><span class="line">            method1.invoke(<span class="keyword">null</span>, <span class="number">0</span>);</span><br><span class="line">            method2.invoke(<span class="keyword">null</span>, <span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Class&lt;?&gt; klass = Class.forName(<span class="string">"me.zhongmingmao.basic.reflect.V6"</span>);</span><br><span class="line">        Method method = klass.getMethod(<span class="string">"target"</span>, <span class="keyword">int</span>.class);</span><br><span class="line">        <span class="comment">// 关闭权限检查</span></span><br><span class="line">        method.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        polluteProfile();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> current = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">2_000_000_000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i % <span class="number">100_000_000</span> == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> temp = System.currentTimeMillis();</span><br><span class="line">                System.out.println(temp - current);</span><br><span class="line">                current = temp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            method.invoke(<span class="keyword">null</span>, <span class="number">128</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>峰值性能：1565.6ms，为基准耗时的14倍</li>
+<li>原因<ul>
+<li>方法没有内联</li>
+<li>逃逸分析不再起效（解决方案：循环外构造数组，峰值性能：892.4ms，为基准耗时的8倍）</li>
+<li>每个调用能够记录的类型数目太少，默认2（-XX:TypeProfileWidth=5，峰值性能：1456.2ms，为基准耗时的13倍）</li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100010301" target="_blank" rel="noopener">深入拆解Java虚拟机</a></p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/11/java-performance-gc/" rel="bookmark">Java性能 -- GC</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/09/java-performance-jit/" rel="bookmark">Java性能 -- JIT</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/13/java-performance-jvm-heap-allocation/" rel="bookmark">Java性能 -- JVM堆内存分配</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/07/java-performance-jvm-memory-model/" rel="bookmark">Java性能 -- JVM内存模型</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/01/12/jvm-advanced-agent/" rel="bookmark">JVM进阶 -- 浅谈Java Agent</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2018/12/20/jvm-basic-reflection/" title="JVM基础 -- 浅谈反射">http://zhongmingmao.me/2018/12/20/jvm-basic-reflection/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/jvm/" rel="tag"><i class="fa fa-tag"></i> JVM</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/12/19/jvm-basic-exception/" rel="next" title="JVM基础 -- 异常处理">
+                <i class="fa fa-chevron-left"></i> JVM基础 -- 异常处理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/12/22/jvm-basic-jol/" rel="prev" title="JVM基础 -- Java对象的内存布局">
+                JVM基础 -- Java对象的内存布局 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#反射API"><span class="nav-number">1.</span> <span class="nav-text">反射API</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#获取Class对象"><span class="nav-number">1.1.</span> <span class="nav-text">获取Class对象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常规用法"><span class="nav-number">1.2.</span> <span class="nav-text">常规用法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取类成员后"><span class="nav-number">1.3.</span> <span class="nav-text">获取类成员后</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#方法的反射调用"><span class="nav-number">2.</span> <span class="nav-text">方法的反射调用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本地实现"><span class="nav-number">2.1.</span> <span class="nav-text">本地实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#动态实现"><span class="nav-number">2.2.</span> <span class="nav-text">动态实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#反射调用的开销"><span class="nav-number">3.</span> <span class="nav-text">反射调用的开销</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Class-forName-Class-getMethod"><span class="nav-number">3.1.</span> <span class="nav-text">Class.forName + Class.getMethod</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Method-invoke"><span class="nav-number">3.2.</span> <span class="nav-text">Method.invoke</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#直接调用"><span class="nav-number">3.2.1.</span> <span class="nav-text">直接调用</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Java代码"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">Java代码</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#反射调用"><span class="nav-number">3.2.2.</span> <span class="nav-text">反射调用</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Java代码-1"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">Java代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#字节码"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">字节码</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减少装箱"><span class="nav-number">3.2.3.</span> <span class="nav-text">减少装箱</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#减少自动生成Object数组"><span class="nav-number">3.2.4.</span> <span class="nav-text">减少自动生成Object数组</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Java代码-2"><span class="nav-number">3.2.4.1.</span> <span class="nav-text">Java代码</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关闭Inflation机制"><span class="nav-number">3.2.5.</span> <span class="nav-text">关闭Inflation机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Java代码-3"><span class="nav-number">3.2.5.1.</span> <span class="nav-text">Java代码</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#方法内联的瓶颈"><span class="nav-number">3.2.6.</span> <span class="nav-text">方法内联的瓶颈</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Java代码-4"><span class="nav-number">3.2.6.1.</span> <span class="nav-text">Java代码</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

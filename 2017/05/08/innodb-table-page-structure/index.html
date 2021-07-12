@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文主要介绍InnoDB存储引擎的数据页结构">
+<meta name="keywords" content="Storage,MySQL,InnoDB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB -- 数据页结构">
+<meta property="og:url" content="http://zhongmingmao.me/2017/05/08/innodb-table-page-structure/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文主要介绍InnoDB存储引擎的数据页结构">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.140Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="InnoDB -- 数据页结构">
+<meta name="twitter:description" content="本文主要介绍InnoDB存储引擎的数据页结构">
+<meta name="twitter:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/05/08/innodb-table-page-structure/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>InnoDB -- 数据页结构 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/05/08/innodb-table-page-structure/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">InnoDB -- 数据页结构
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-05-09 00:28:37" itemprop="dateCreated datePublished" datetime="2017-05-09T00:28:37+08:00">2017-05-09</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">InnoDB</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">9.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">18 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文主要介绍<code>InnoDB</code>存储引擎的<code>数据页结构</code></p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="数据页结构"><a href="#数据页结构" class="headerlink" title="数据页结构"></a>数据页结构</h1><img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png" width="500">
+
+<h2 id="File-Header"><a href="#File-Header" class="headerlink" title="File Header"></a>File Header</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-fil-header.html" target="_blank" rel="noopener">Fil Header</a></p>
+<ol>
+<li>总共<code>38 Bytes</code>，记录页的<code>头信息</code></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>大小（Bytes）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FIL_PAGE_SPACE</td>
+<td>4</td>
+<td>该页的<code>checksum</code>值</td>
+</tr>
+<tr>
+<td>FIL_PAGE_OFFSET</td>
+<td>4</td>
+<td>该页在表空间中的<code>页偏移量</code></td>
+</tr>
+<tr>
+<td>FIL_PAGE_PREV</td>
+<td>4</td>
+<td>该页的上一个页</td>
+</tr>
+<tr>
+<td>FIL_PAGE_NEXT</td>
+<td>4</td>
+<td>该页的下一个页</td>
+</tr>
+<tr>
+<td>FIL_PAGE_LSN</td>
+<td>8</td>
+<td>该页最后被修改的LSN</td>
+</tr>
+<tr>
+<td>FIL_PAGE_TYPE</td>
+<td>2</td>
+<td>该页的类型，<code>0x45BF为数据页</code></td>
+</tr>
+<tr>
+<td>FIL_PAGE_FILE_FLUSH_LSN</td>
+<td>8</td>
+<td>独立表空间中为<code>0</code></td>
+</tr>
+<tr>
+<td>FIL_PAGE_ARCH_LOG_NO</td>
+<td>4</td>
+<td>该页属于哪一个表空间</td>
+</tr>
+</tbody></table>
+<h2 id="Page-Header"><a href="#Page-Header" class="headerlink" title="Page Header"></a>Page Header</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-page-header.html" target="_blank" rel="noopener">Page Header</a></p>
+<ol>
+<li>总共<code>56 Bytes</code>，记录页的<code>状态信息</code></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>大小（Bytes）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PAGE_N_DIR_SLOTS</td>
+<td>2</td>
+<td>在<code>Page Directory</code>中<code>Slot</code>的数量，初始值为<code>2</code></td>
+</tr>
+<tr>
+<td>PAGE_HEAP_TOP</td>
+<td>2</td>
+<td>堆中第一个记录的指针</td>
+</tr>
+<tr>
+<td>PAGE_N_HEAP</td>
+<td>2</td>
+<td>堆中的记录数，初始值为<code>2</code></td>
+</tr>
+<tr>
+<td>PAGE_FREE</td>
+<td>2</td>
+<td>指向<code>可重用空间</code>的首指针</td>
+</tr>
+<tr>
+<td>PAGE_GARBAGE</td>
+<td>2</td>
+<td>已标记为删除（<code>deleted_flag</code>）的记录的字节数</td>
+</tr>
+<tr>
+<td>PAGE_LAST_INSERT</td>
+<td>2</td>
+<td>最后插入记录的位置</td>
+</tr>
+<tr>
+<td>PAGE_DIRECTION</td>
+<td>2</td>
+<td>最后插入的方向，<code>PAGE_LEFT(0x01)</code>，<code>PAGE_RIGHT(0x02)</code>，<code>PAGE_NO_DIRECTION(0x05)</code></td>
+</tr>
+<tr>
+<td>PAGE_N_DIRECTION</td>
+<td>2</td>
+<td>一个方向上连续插入记录的数量</td>
+</tr>
+<tr>
+<td>PAGE_N_RECS</td>
+<td>2</td>
+<td>该页中记录（<code>User Record</code>）的数量</td>
+</tr>
+<tr>
+<td>PAGE_MAX_TRX_ID</td>
+<td>8</td>
+<td>修改该页的最大事务ID（仅在<code>辅助索引</code>中定义）</td>
+</tr>
+<tr>
+<td>PAGE_LEVEL</td>
+<td>2</td>
+<td>该页在索引树中位置，<code>0000代表叶子节点</code></td>
+</tr>
+<tr>
+<td>PAGE_INDEX_ID</td>
+<td>8</td>
+<td>索引ID，表示<code>该页属于哪个索引</code></td>
+</tr>
+<tr>
+<td>PAGE_BTR_SEG_LEAF</td>
+<td>10</td>
+<td>B+Tree叶子节点所在<code>Leaf Node Segment</code>的Segment Header（无关紧要）</td>
+</tr>
+<tr>
+<td>PAGE_BTR_SEG_TOP</td>
+<td>10</td>
+<td>B+Tree非叶子节点所在<code>Non-Leaf Node Segment</code>的Segment Header（无关紧要）</td>
+</tr>
+</tbody></table>
+<h2 id="Infimum-Supremum-Records"><a href="#Infimum-Supremum-Records" class="headerlink" title="Infimum + Supremum Records"></a>Infimum + Supremum Records</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-infimum-and-supremum-records.html" target="_blank" rel="noopener">The Infimum and Supremum Records</a></p>
+<ol>
+<li>每个数据页中都有两个<code>虚拟的行记录</code>，用来限定记录（<code>User Record</code>）的边界（<code>Infimum为下界</code>，<code>Supremum为上界</code>）</li>
+<li><code>Infimum</code>和<code>Supremum</code>在<code>页被创建</code>是自动创建，<code>不会被删除</code></li>
+<li>在<code>Compact</code>和<code>Redundant</code>行记录格式下，<code>Infimum</code>和<code>Supremum</code>占用的<code>字节数是不一样</code>的</li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/page_structure.png" width="500">
+
+<h2 id="User-Records"><a href="#User-Records" class="headerlink" title="User Records"></a>User Records</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-user-records.html" target="_blank" rel="noopener">User Records</a></p>
+<ol>
+<li>存储<code>实际插入的行记录</code></li>
+<li>在<code>Page Header</code>中<code>PAGE_HEAP_TOP</code>、<code>PAGE_N_HEAP</code>的<code>HEAP</code>，实际上指的是<code>Unordered User Record List</code><ul>
+<li>InnoDB不想每次都<code>依据B+Tree键的顺序</code>来<code>插入新行</code>，因为这可能需要<code>移动大量的数据</code></li>
+<li>因此InnoDB插入新行时，通常是插入到当前行的后面（<code>Free Space的顶部</code>）或者是<code>已删除行留下来的空间</code></li>
+</ul>
+</li>
+<li>为了保证访问B+Tree记录的<code>顺序性</code>，在每个记录中都有一个指向<code>下一条记录的指针</code>，以此构成了一条<strong><code>单向有序链表</code></strong></li>
+</ol>
+<h2 id="Free-Space"><a href="#Free-Space" class="headerlink" title="Free Space"></a>Free Space</h2><ol>
+<li>空闲空间，数据结构是<code>链表</code>，在一个记录<code>被删除</code>后，该空间会被加入到空闲链表中</li>
+</ol>
+<h2 id="Page-Directory"><a href="#Page-Directory" class="headerlink" title="Page Directory"></a>Page Directory</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-page-directory.html" target="_blank" rel="noopener">Page Directory</a></p>
+<ol>
+<li>存放着<code>行记录</code>（<code>User Record</code>）的<code>相对位置</code>（不是偏移量）</li>
+<li>这里的<code>行记录指针称</code>为<code>Slot</code>或<code>Directory Slot</code>，每个<code>Slot</code>占用<code>2Byte</code></li>
+<li><code>并不是每一个行记录都有一个Slot</code>，一个Slot中可能包含多条行记录，通过行记录中<code>n_owned</code>字段标识</li>
+<li><code>Infimum</code>的n_owned总是<code>1</code>，<code>Supremum</code>的n_owned为<code>[1,8]</code>，<code>User Record</code>的n_owned为<code>[4,8]</code></li>
+<li><code>Slot</code>是按照<code>索引键值的顺序</code>进行<code>逆序</code>存放（<code>Infimum是下界，Supremum是上界</code>），可以利用<code>二分查找</code>快速地定位一个<code>粗略的结果</code>，然后再通过<code>next_record</code>进行<code>精确查找</code></li>
+<li><code>B+Tree索引</code>本身并<code>不能直接找到具体的一行记录</code>，只能找到该<code>行记录所在的页</code><ul>
+<li>数据库把页载入到<code>内存</code>中，然后通过<code>Page Directory</code>再进行<code>二分查找</code></li>
+<li>二分查找时间复杂度很低，又在内存中进行查找，这部分的时间基本开销可以忽略</li>
+</ul>
+</li>
+</ol>
+<h2 id="File-Trailer"><a href="#File-Trailer" class="headerlink" title="File Trailer"></a>File Trailer</h2><p>参考链接：<a href="https://dev.mysql.com/doc/internals/en/innodb-fil-trailer.html" target="_blank" rel="noopener">Fil Trailer</a></p>
+<ol>
+<li>总共<code>8 Bytes</code>，为了<code>检测页是否已经完整地写入磁盘</code></li>
+<li>变量<code>innodb_checksums</code>，InnoDB<code>从磁盘读取一个页</code>时是否会<code>检测页的完整性</code></li>
+<li>变量<code>innodb_checksum_algorithm</code>，<code>检验和算法</code></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>大小（Bytes）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FIL_PAGE_END_LSN</td>
+<td>8</td>
+<td>前4Bytes与File Header中的FIL_PAGE_SPACE一致，后4Bytes与File Header中的FIL_PAGE_LSN的后4Bytes一致</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW VARIABLES LIKE 'innodb_checksums';</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">| Variable_name    | Value |</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">| innodb_checksums | ON    |</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.01</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SHOW</span> <span class="keyword">VARIABLES</span> <span class="keyword">LIKE</span> <span class="string">'innodb_checksum_algorithm'</span>;</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">| Variable_name             | Value |</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">| innodb_checksum_algorithm | crc32 |</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><h2 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT UNSIGNED NOT NULL AUTO_INCREMENT,</span><br><span class="line">    -&gt; b CHAR(10),</span><br><span class="line">    -&gt; PRIMARY KEY(a)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.89 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; DELIMITER //</span><br><span class="line">mysql&gt; CREATE PROCEDURE load_t (count INT UNSIGNED)</span><br><span class="line">    -&gt; BEGIN</span><br><span class="line">    -&gt; SET @c=0;</span><br><span class="line">    -&gt; WHILE @c &lt; count DO</span><br><span class="line">    -&gt; INSERT INTO t SELECT NULL,REPEAT(CHAR(97+RAND()*26),10);</span><br><span class="line">    -&gt; SET @c=@c+1;</span><br><span class="line">    -&gt; END WHILE;</span><br><span class="line">    -&gt; END;</span><br><span class="line">    -&gt; //</span><br><span class="line">Query OK, 0 rows affected (0.06 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; DELIMITER ;</span><br><span class="line">mysql&gt; CALL load_t(100);</span><br><span class="line">Query OK, 0 rows affected (0.22 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t LIMIT 5;</span><br><span class="line">+<span class="comment">---+------------+</span></span><br><span class="line">| a | b          |</span><br><span class="line">+<span class="comment">---+------------+</span></span><br><span class="line">| 1 | uuuuuuuuuu |</span><br><span class="line">| 2 | qqqqqqqqqq |</span><br><span class="line">| 3 | xxxxxxxxxx |</span><br><span class="line">| 4 | oooooooooo |</span><br><span class="line">| 5 | cccccccccc |</span><br><span class="line">+<span class="comment">---+------------+</span></span><br><span class="line">5 rows in <span class="keyword">set</span> (<span class="number">0.02</span> sec)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>CHARSET=LATIN1 ROW_FORMAT=COMPACT</code>下调用存储过程<code>load_t</code>，插入的每个行记录大小为<code>33 Bytes</code>(行记录格式的相关内容请参「InnoDB备忘录 - 行记录格式」)，因此<code>CALL load_t(100)</code>将插入<code>3300 Bytes</code>，这<code>远小于页大小16KB</code>，一个数据页内完全容纳这些数据，即完全在<code>page offset=3</code>的<code>B+Tree叶子节点</code>中</li>
+</ol>
+<h2 id="File-Header-1"><a href="#File-Header-1" class="headerlink" title="File Header"></a>File Header</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000c000: d42f 4c48 0000 0003 ffff ffff ffff ffff  ./LH............</span><br><span class="line">0000c010: 0000 0000 4091 c84f 45bf 0000 0000 0000  ....@..OE.......</span><br><span class="line">0000c020: 0000 0000 0120 001a 0d5c 8066 0000 0000  ..... ...\.f....</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>d4 2f 4c 48</td>
+<td>FIL_PAGE_SPACE</td>
+<td>该页的<code>checksum</code>值</td>
+</tr>
+<tr>
+<td>00 00 00 03</td>
+<td>FIL_PAGE_OFFSET</td>
+<td>该页<code>page 0ffset=3</code></td>
+</tr>
+<tr>
+<td>ff ff ff ff</td>
+<td>FIL_PAGE_PREV</td>
+<td>目前只有一个数据页，无上一页</td>
+</tr>
+<tr>
+<td>ff ff ff ff</td>
+<td>FIL_PAGE_NEXT</td>
+<td>目前只有一个数据页，无下一页</td>
+</tr>
+<tr>
+<td>00 00 00 00 40 91 c8 4f</td>
+<td>FIL_PAGE_LSN</td>
+<td>该页最后被修改的LSN</td>
+</tr>
+<tr>
+<td>45 bf</td>
+<td>FIL_PAGE_TYPE</td>
+<td>数据页</td>
+</tr>
+<tr>
+<td>00 00 00 00 00 00 00 00</td>
+<td>FIL_PAGE_FILE_FLUSH_LSN</td>
+<td>独立表空间中为<code>0</code></td>
+</tr>
+<tr>
+<td>00 00 01 20</td>
+<td>FIL_PAGE_ARCH_LOG_NO</td>
+<td>该页属于哪一个表空间</td>
+</tr>
+</tbody></table>
+<h2 id="File-Trailer-1"><a href="#File-Trailer-1" class="headerlink" title="File Trailer"></a>File Trailer</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000fff0: 01e9 0165 00e1 0063 d42f 4c48 4091 c84f  ...e...c./LH@..O</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>d4 2f 4c 48 40 91 c8 4f</td>
+<td>FIL_PAGE_END_LSN</td>
+<td>前4Bytes与File Header中的FIL_PAGE_SPACE一致，后4Bytes与File Header中的FIL_PAGE_LSN的后4Bytes一致</td>
+</tr>
+</tbody></table>
+<h2 id="Page-Header-1"><a href="#Page-Header-1" class="headerlink" title="Page Header"></a>Page Header</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000c020: 0000 0000 0120 001a 0d5c 8066 0000 0000  ..... ...\.f....</span><br><span class="line">0000c030: 0d41 0002 0063 0064 0000 0000 0000 0000  .A...c.d........</span><br><span class="line">0000c040: 0000 0000 0000 0000 0164 0000 0120 0000  .........d... ..</span><br><span class="line">0000c050: 0002 00f2 0000 0120 0000 0002 0032 0100  ....... .....2..</span><br><span class="line">......</span><br><span class="line">0000cd40: 2f00 0000 6400 0000 1409 e6a3 0000 01f9  /...d...........</span><br><span class="line">0000cd50: 0110 6d6d 6d6d 6d6d 6d6d 6d6d 0000 0000  ..mmmmmmmmmm....</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00 1a</td>
+<td>PAGE_N_DIR_SLOTS</td>
+<td>Page Directory有<code>26个Slot</code>，每个Slot占用<code>2Byte</code>，因此范围为<code>0xffc4~0xfff7</code></td>
+</tr>
+<tr>
+<td>0d 5c</td>
+<td>PAGE_HEAP_TOP</td>
+<td><code>Free Space</code>开始位置的偏移量，<code>0xc000+0x0d5c=0xcd5c</code></td>
+</tr>
+<tr>
+<td>80 66</td>
+<td>PAGE_N_HEAP</td>
+<td><code>Compact</code>时，初始值为<code>0x8002</code>（<code>Redundant</code>时，初始值为<code>2</code>），行记录数为<code>0x8066-0x8002=0x64=100</code></td>
+</tr>
+<tr>
+<td>00 00</td>
+<td>PAGE_FREE</td>
+<td><code>未执行删除操作</code>，无可重用空间，该值为<code>0</code></td>
+</tr>
+<tr>
+<td>00 00</td>
+<td>PAGE_GARBAGE</td>
+<td><code>未执行删除操作</code>，标记为删除的记录的字节数为<code>0</code></td>
+</tr>
+<tr>
+<td>0d 41</td>
+<td>PAGE_LAST_INSERT</td>
+<td><code>0xc000+0x0d41=0xcd41</code>，直接指向<code>ROWID</code></td>
+</tr>
+<tr>
+<td>00 02</td>
+<td>PAGE_DIRECTION</td>
+<td><code>PAGE_RIGHT</code>，通过<code>自增主键</code>的方式插入行记录</td>
+</tr>
+<tr>
+<td>00 63</td>
+<td>PAGE_N_DIRECTION</td>
+<td><code>0x63=99</code>，通过<code>自增主键</code>的方式插入行记录</td>
+</tr>
+<tr>
+<td>00 64</td>
+<td>PAGE_N_RECS</td>
+<td><code>0x64=100</code>，与<code>PAGE_N_HEAP</code>中计算一致</td>
+</tr>
+<tr>
+<td>00 00 00 00 00 00 00 00</td>
+<td>PAGE_MAX_TRX_ID</td>
+<td>？？</td>
+</tr>
+<tr>
+<td>00 00</td>
+<td>PAGE_LEVEL</td>
+<td>叶子节点</td>
+</tr>
+<tr>
+<td>00 00 00 00 00 00 01 64</td>
+<td>PAGE_INDEX_ID</td>
+<td>索引ID</td>
+</tr>
+<tr>
+<td>00 00 01 20 00 00 00 02 00 f2</td>
+<td>PAGE_BTR_SEG_LEAF</td>
+<td>无关紧要</td>
+</tr>
+<tr>
+<td>00 00 01 20 00 00 00 02 00 32</td>
+<td>PAGE_BTR_SEG_TOP</td>
+<td>无关紧要</td>
+</tr>
+</tbody></table>
+<ol>
+<li><code>PAGE_HEAP_TOP</code>的计算过程：<code>38(File Header)+56(Page Header)+13(Infimum)+13(Supremum)+33*100(User Record)=3420=0xd5c</code></li>
+<li><code>User Record</code>是<code>向下生长</code>，<code>Page Directory</code>是<code>向上生长</code></li>
+</ol>
+<h2 id="Infimum-Supremum-Records-1"><a href="#Infimum-Supremum-Records-1" class="headerlink" title="Infimum + Supremum Records"></a>Infimum + Supremum Records</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000c050: 0002 00f2 0000 0120 0000 0002 0032 0100  ....... .....2..</span><br><span class="line">0000c060: 0200 1b69 6e66 696d 756d 0005 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0000 0010 0021 0000  supremum.....!..</span><br><span class="line">0000c080: 0001 0000 0014 097f be00 0002 0401 1075  ...............u</span><br></pre></td></tr></table></figure>
+
+<h3 id="Infimum-Records"><a href="#Infimum-Records" class="headerlink" title="Infimum Records"></a>Infimum Records</h3><table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>01 00 02 00 1b</td>
+<td>记录头信息</td>
+<td><code>0xc05e+0x1b=0xc079</code>，指向<code>第1个行记录的记录头</code>；<code>n_owned=1</code></td>
+</tr>
+<tr>
+<td>69 6e 66 69 6d 75 6d 00</td>
+<td><code>伪列</code></td>
+<td><code>CHAR(8)，infimum</code></td>
+</tr>
+</tbody></table>
+<h3 id="Supremum-Records"><a href="#Supremum-Records" class="headerlink" title="Supremum Records"></a>Supremum Records</h3><table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>05 00 0b 00 00</td>
+<td>记录头信息</td>
+<td><code>00</code>，无下一个行记录；<code>n_owned=5</code></td>
+</tr>
+<tr>
+<td>73 75 70 72 65 6d 75 6d</td>
+<td><code>伪列</code></td>
+<td><code>CHAR(8)，supremum</code></td>
+</tr>
+</tbody></table>
+<h2 id="User-Records-1"><a href="#User-Records-1" class="headerlink" title="User Records"></a>User Records</h2><p>行记录格式的相关内容请参「InnoDB备忘录 - 行记录格式」，这里仅给出第1个行记录的解析</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000c070: 7375 7072 656d 756d 0000 0010 0021 0000  supremum.....!..</span><br><span class="line">0000c080: 0001 0000 0014 097f be00 0002 0401 1075  ...............u</span><br><span class="line">0000c090: 7575 7575 7575 7575 7500 0000 1800 2100  uuuuuuuuu.....!.</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>16进制</th>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td></td>
+<td>变长字段列表</td>
+<td>表中没有变长字段</td>
+</tr>
+<tr>
+<td>00</td>
+<td>NULL标志位</td>
+<td>该行记录没有列为NULL</td>
+</tr>
+<tr>
+<td>00 00 10 00 21</td>
+<td>记录头信息</td>
+<td><code>0xc078+0x21=0xc099</code>，指向第<code>2</code>个行记录</td>
+</tr>
+<tr>
+<td>00 00 00 01</td>
+<td>ROWID</td>
+<td>表显式定义主键<code>a</code></td>
+</tr>
+<tr>
+<td>00 00 00 14 09 7f</td>
+<td>Transaction ID</td>
+<td>事务ID</td>
+</tr>
+<tr>
+<td>be 00 00 02 04 01 10</td>
+<td>Roll Pointer</td>
+<td>回滚指针</td>
+</tr>
+<tr>
+<td>75 75 75 75 75 75 75 75 75 75</td>
+<td>列<code>b</code></td>
+<td>字符串<code>uuuuuuuuuu</code></td>
+</tr>
+</tbody></table>
+<h2 id="Page-Directory-1"><a href="#Page-Directory-1" class="headerlink" title="Page Directory"></a>Page Directory</h2><p><code>Page Header</code>中的<code>PAGE_N_DIR_SLOTS</code>为<code>26</code>，能推断出<code>Page Directory</code>的范围为<code>0xffc4~0xfff7</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line">0000ffc0: 0000 0000 0070 0cbd 0c39 0bb5 0b31 0aad  .....p...9...1..</span><br><span class="line">0000ffd0: 0a29 09a5 0921 089d 0819 0795 0711 068d  .)...!..........</span><br><span class="line">0000ffe0: 0609 0585 0501 047d 03f9 0375 02f1 026d  .......&#125;...u...m</span><br><span class="line">0000fff0: 01e9 0165 00e1 0063 d42f 4c48 4091 c84f  ...e...c./LH@..O</span><br></pre></td></tr></table></figure>
+
+<h3 id="逆序放置"><a href="#逆序放置" class="headerlink" title="逆序放置"></a>逆序放置</h3><ol>
+<li><p><code>0xfff6~0xfff7</code>为<code>0x0063</code>，<code>0xc000+0x0063=0xc063</code>，指向的是<strong><code>Infimum Record</code></strong>（逻辑下界）的<code>伪列</code>（CHAR(8),’infimum’）</p>
+</li>
+<li><p><code>0xffc4~0xffc5</code>为<code>0x0070</code>，<code>0xc000+0x0070=0xc070</code>，指向的是<strong><code>Supremum Record</code></strong>（逻辑上界）的<code>伪列</code>（CHAR(8),’supremum’）</p>
+</li>
+</ol>
+<h3 id="二分查找"><a href="#二分查找" class="headerlink" title="二分查找"></a>二分查找</h3><p>下面以查找<code>主键a=25</code>为例，展示利用<code>Page Directory</code>进行<code>二分查找</code>的过程</p>
+<h4 id="0xfff7-0xffc4-2-0xffdd"><a href="#0xfff7-0xffc4-2-0xffdd" class="headerlink" title="(0xfff7+0xffc4)/2 = 0xffdd"></a>(0xfff7+0xffc4)/2 = 0xffdd</h4><p><code>0xffdc~0xffdd</code>为<code>0x0711</code>，<code>0xc000+0x0711=0xc711</code><br><code>0xc711~0xc714</code>为<code>0x34</code>，由于<code>0x34=52&gt;25</code>，选择<code>0xfff7</code>作为下一轮查找的逻辑下界</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0000c710: 2100 0000 3400 0000 1409 b6d3 0000 0212  !...4...........</span><br></pre></td></tr></table></figure>
+
+<h4 id="0xfff7-0xffdd-2-0xffea"><a href="#0xfff7-0xffdd-2-0xffea" class="headerlink" title="(0xfff7+0xffdd)/2 = 0xffea"></a>(0xfff7+0xffdd)/2 = 0xffea</h4><p><code>0xffea~0xffeb</code>为<code>0x0375</code>，<code>0xc000+0x0375=0xc375</code><br><code>0xc375~0xc378</code>为<code>0x18</code>，由于<code>0x18=24&lt;25</code>，选择<code>0xffdd</code>作为下一轮查找的逻辑上界</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0000c370: 0400 c800 2100 0000 1800 0000 1409 9ab7  ....!...........</span><br></pre></td></tr></table></figure>
+
+<h4 id="0xffea-0xffdd-2-0xffe3"><a href="#0xffea-0xffdd-2-0xffe3" class="headerlink" title="(0xffea+0xffdd)/2 = 0xffe3"></a>(0xffea+0xffdd)/2 = 0xffe3</h4><p><code>0xffe2~0xffe3</code>为<code>0x0585</code>，<code>0xc000+0x0585=0xc585</code><br><code>0xc585~0xc588</code>为<code>0x18</code>，由于<code>0x28=40&gt;25</code>，选择<code>0xffea</code>作为下一轮查找的逻辑下界</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0000c580: 0401 4800 2100 0000 2800 0000 1409 aac7  ..H.!...(.......</span><br></pre></td></tr></table></figure>
+
+<h4 id="0xffea-0xffe3-2-0xffe6"><a href="#0xffea-0xffe3-2-0xffe6" class="headerlink" title="(0xffea+0xffe3)/2 = 0xffe6"></a>(0xffea+0xffe3)/2 = 0xffe6</h4><p><code>0xffe6~0xffe7</code>为<code>0x047d</code>，<code>0xc000+0x047d=0xc47d</code><br><code>0xc47d~0xc480</code>为<code>0x20</code>，由于<code>0x20=32&gt;25</code>，选择<code>0xffea</code>作为下一轮查找的逻辑下界</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0000c470: 7272 7272 7272 7200 0401 0800 2100 0000  rrrrrrr.....!...</span><br><span class="line">0000c480: 2000 0000 1409 a2bf 0000 019c 0110 6565   .............ee</span><br></pre></td></tr></table></figure>
+
+<h4 id="0xffea-0xffe6-2-0xffe8"><a href="#0xffea-0xffe6-2-0xffe8" class="headerlink" title="(0xffea+0xffe6)/2 = 0xffe8"></a>(0xffea+0xffe6)/2 = 0xffe8</h4><p><code>0xffe8~0xffe9</code>为<code>0x03f9</code>，<code>0xc000+0x03f9=0xc3f9</code><br><code>0xc3f9~0xc3fc</code>为<code>0x1c</code>，由于<code>0x1c=28&gt;25</code>，选择<code>0xffea</code>作为下一轮查找的逻辑下界</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0000c3f0: 6666 6600 0400 e800 2100 0000 1c00 0000  fff.....!.......</span><br></pre></td></tr></table></figure>
+
+<h4 id="0xffea-0xffe8-2-0xffe9"><a href="#0xffea-0xffe8-2-0xffe9" class="headerlink" title="(0xffea+0xffe8)/2 = 0xffe9"></a>(0xffea+0xffe8)/2 = 0xffe9</h4><p><code>0xffe8~0xffe9</code>跟上一步得到的<code>Slot</code>一致，目前只得到了<code>粗略的结果</code>，下面需要从逻辑上界<code>0xffea</code>开始通过<code>next_record</code>进行精确查找（<code>单向链表遍历</code>）</p>
+<h3 id="next-record"><a href="#next-record" class="headerlink" title="next_record"></a>next_record</h3><p>上面二分查找的结果是<code>0xffea</code>，<code>0xffea~0xffeb</code>为<code>0x0375</code>，<code>0xc000+0x0375=0xc375</code><br><code>0xc375~0xc378</code>为<code>0x18=24</code>，下一个行记录的偏移为<code>0x21</code>(记录头信息)，<code>0xc375+0x21=0xc396</code><br><code>0xc396~0xc399</code>为<code>0x19=25</code>，终于找到了主键<code>a=25</code>的行记录!!</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0000c370: 0400 c800 2100 0000 1800 0000 1409 9ab7  ....!...........</span><br><span class="line">0000c380: 0000 0194 0110 6666 6666 6666 6666 6666  ......ffffffffff</span><br><span class="line">0000c390: 0000 00d0 0021 0000 0019 0000 0014 099b  .....!..........</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://book.douban.com/subject/24708143/" target="_blank" rel="noopener">MySQL技术内幕 - InnoDB存储引擎 V2</a></li>
+<li><a href="https://dev.mysql.com/doc/internals/en/innodb-page-structure.html" target="_blank" rel="noopener">InnoDB Page Structure</a><!-- indicate-the-source -->
+</li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/18/innodb-next-key-lock/" rel="bookmark">InnoDB -- Next-Key Lock</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/05/08/innodb-table-page-structure/" title="InnoDB -- 数据页结构">http://zhongmingmao.me/2017/05/08/innodb-table-page-structure/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+            <a href="/tags/innodb/" rel="tag"><i class="fa fa-tag"></i> InnoDB</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/07/innodb-table-row-format/" rel="next" title="InnoDB -- 行记录格式">
+                <i class="fa fa-chevron-left"></i> InnoDB -- 行记录格式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/12/innodb-btree-index/" rel="prev" title="InnoDB -- B+Tree索引">
+                InnoDB -- B+Tree索引 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#数据页结构"><span class="nav-number">1.</span> <span class="nav-text">数据页结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#File-Header"><span class="nav-number">1.1.</span> <span class="nav-text">File Header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Page-Header"><span class="nav-number">1.2.</span> <span class="nav-text">Page Header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Infimum-Supremum-Records"><span class="nav-number">1.3.</span> <span class="nav-text">Infimum + Supremum Records</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#User-Records"><span class="nav-number">1.4.</span> <span class="nav-text">User Records</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Free-Space"><span class="nav-number">1.5.</span> <span class="nav-text">Free Space</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Page-Directory"><span class="nav-number">1.6.</span> <span class="nav-text">Page Directory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#File-Trailer"><span class="nav-number">1.7.</span> <span class="nav-text">File Trailer</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实例"><span class="nav-number">2.</span> <span class="nav-text">实例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#表初始化"><span class="nav-number">2.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#File-Header-1"><span class="nav-number">2.2.</span> <span class="nav-text">File Header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#File-Trailer-1"><span class="nav-number">2.3.</span> <span class="nav-text">File Trailer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Page-Header-1"><span class="nav-number">2.4.</span> <span class="nav-text">Page Header</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Infimum-Supremum-Records-1"><span class="nav-number">2.5.</span> <span class="nav-text">Infimum + Supremum Records</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Infimum-Records"><span class="nav-number">2.5.1.</span> <span class="nav-text">Infimum Records</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Supremum-Records"><span class="nav-number">2.5.2.</span> <span class="nav-text">Supremum Records</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#User-Records-1"><span class="nav-number">2.6.</span> <span class="nav-text">User Records</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Page-Directory-1"><span class="nav-number">2.7.</span> <span class="nav-text">Page Directory</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#逆序放置"><span class="nav-number">2.7.1.</span> <span class="nav-text">逆序放置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二分查找"><span class="nav-number">2.7.2.</span> <span class="nav-text">二分查找</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#0xfff7-0xffc4-2-0xffdd"><span class="nav-number">2.7.2.1.</span> <span class="nav-text">(0xfff7+0xffc4)/2 = 0xffdd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0xfff7-0xffdd-2-0xffea"><span class="nav-number">2.7.2.2.</span> <span class="nav-text">(0xfff7+0xffdd)/2 = 0xffea</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0xffea-0xffdd-2-0xffe3"><span class="nav-number">2.7.2.3.</span> <span class="nav-text">(0xffea+0xffdd)/2 = 0xffe3</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0xffea-0xffe3-2-0xffe6"><span class="nav-number">2.7.2.4.</span> <span class="nav-text">(0xffea+0xffe3)/2 = 0xffe6</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0xffea-0xffe6-2-0xffe8"><span class="nav-number">2.7.2.5.</span> <span class="nav-text">(0xffea+0xffe6)/2 = 0xffe8</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#0xffea-0xffe8-2-0xffe9"><span class="nav-number">2.7.2.6.</span> <span class="nav-text">(0xffea+0xffe8)/2 = 0xffe9</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#next-record"><span class="nav-number">2.7.3.</span> <span class="nav-text">next_record</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">3.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

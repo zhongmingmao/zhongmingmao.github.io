@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="高水位水位的定义">
+<meta name="keywords" content="Middleware,MQ,Kafka,Stream">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka -- 高水位 + Leader Epoch">
+<meta property="og:url" content="http://zhongmingmao.me/2019/09/20/kafka-high-watermark-leader-epoch/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="高水位水位的定义">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-watermark.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-update.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-1.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-2.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-3.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-4.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-leader-epoch-example-1.png">
+<meta property="og:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-leader-epoch-example-2.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka -- 高水位 + Leader Epoch">
+<meta name="twitter:description" content="高水位水位的定义">
+<meta name="twitter:image" content="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-watermark.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/09/20/kafka-high-watermark-leader-epoch/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka -- 高水位 + Leader Epoch | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/09/20/kafka-high-watermark-leader-epoch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kafka -- 高水位 + Leader Epoch
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-20 10:22:43" itemprop="dateCreated datePublished" datetime="2019-09-20T10:22:43+08:00">2019-09-20</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/" itemprop="url" rel="index"><span itemprop="name">Middleware</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/" itemprop="url" rel="index"><span itemprop="name">MQ</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">4.3k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">8 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="高水位"><a href="#高水位" class="headerlink" title="高水位"></a>高水位</h2><h3 id="水位的定义"><a href="#水位的定义" class="headerlink" title="水位的定义"></a>水位的定义</h3><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-watermark.png" width="1000/">
+
+<a id="more"></a>
+
+<ol>
+<li>经典教科书<ul>
+<li>在时刻T，任意创建时间（<strong>Event Time</strong>）为<code>T&#39;</code>，且<code>T&#39;&lt;=T</code>的所有事件都已经到达，那么T就被定义为水位</li>
+</ul>
+</li>
+<li>《Streaming System》<ul>
+<li>水位是一个<strong>单调增加</strong>且表征<strong>最早未完成工作的时间戳</strong></li>
+</ul>
+</li>
+<li>上图中标注为<code>Completed</code>的蓝色部分代表<strong>已经完成</strong>的工作，标注为<code>In-Flight</code>的红色部分代表<strong>正在进行中</strong>的工作<ul>
+<li>两者的<strong>边界</strong>就是水位线</li>
+</ul>
+</li>
+<li>在<strong>Kafka</strong>中，水位不是时间戳，而是与位置信息绑定的，即用<strong>消息位移</strong>来表征水位<ul>
+<li>Kafka中也有<strong>低水位</strong>（Low Watermark），是与Kafka<strong>删除消息</strong>相关联的概念</li>
+</ul>
+</li>
+</ol>
+<h3 id="高水位的作用"><a href="#高水位的作用" class="headerlink" title="高水位的作用"></a>高水位的作用</h3><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark.png" width="800/">
+
+<ol>
+<li>两个作用<ul>
+<li>定义<strong>消息可见性</strong>，即用来标识分区下的哪些消息可以被消费者消费的</li>
+<li>帮助Kafka完成<strong>副本同步</strong></li>
+</ul>
+</li>
+<li>上图是某个分区<strong>Leader副本</strong>的高水位图，在<strong>分区高水位以下</strong>的消息被认为是<strong>已提交消息</strong>，反之为未提交消息<ul>
+<li><strong>消费者只能消费已提交消息</strong>，即位移小于8的所有消息</li>
+<li>暂不讨论Kafka事务，Kafka的<strong>事务</strong>机制会影响消费者所能看到的消息的范围，不只是简单依赖高水位来判断<ul>
+<li>而是依靠<strong>LSO</strong>（Log <strong>Stable</strong> Offset）的位移值来判断事务型消费者的可见性</li>
+</ul>
+</li>
+<li><strong>位移值等于高水位的消息也属于未提交消息</strong>，即高水位上的消息是不能被消费者消费的</li>
+<li>图中还有一个<strong>日志末端位移</strong>（Log <strong>End</strong> Offset，<strong>LEO</strong>）的概念，表示<strong>副本写入下一条消息的位移值</strong><ul>
+<li>LEO为15，方框是虚线，表示当前副本只有15条消息，位移从0到14，下一条新消息的位移为15</li>
+</ul>
+</li>
+<li><code>[高水位,LEO)</code>的消息属于<strong>未提交消息</strong>，在同一个副本对象，<strong>高水位值不会大于LEO值</strong></li>
+<li><strong>高水位</strong>和<strong>LEO</strong>是副本对象的两个重要属性<ul>
+<li>Kafka<strong>所有副本对象</strong>都有对应的高水位和LEO，而Kafka使用<strong>Leader副本的高水位</strong>来定义<strong>所在分区的高水位</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="高水位的更新机制"><a href="#高水位的更新机制" class="headerlink" title="高水位的更新机制"></a>高水位的更新机制</h3><h4 id="远程副本"><a href="#远程副本" class="headerlink" title="远程副本"></a>远程副本</h4><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-update.png" width="600/">
+
+<ol>
+<li>每个副本对象都保存了一组高水位和LEO值，<strong>Leader副本所在的Broker</strong>还保存了<em><strong>其它Follower副本的LEO值</strong></em></li>
+<li>Kafka把Broker 0上保存的Follower副本又称为<strong>远程副本</strong>（<strong>Remote</strong> Replica）</li>
+<li>Kafka<strong>副本机制</strong>在运行过程中<ul>
+<li>会更新<ul>
+<li>Broker 1上Follower副本的高水位和LEO值</li>
+<li>Broker 0上Leader副本的高水位和LEO以及<strong>所有远程副本的LEO</strong></li>
+</ul>
+</li>
+<li>不会更新<ul>
+<li>Broker 0<strong>所有远程副本的高水位值</strong>，即图中标记为<strong>灰色</strong>的部分</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Broker 0保存远程副本的作用<ul>
+<li><strong>帮助</strong>Leader副本<strong>确定</strong>其<strong>高水位</strong>，即<strong>分区高水位</strong></li>
+</ul>
+</li>
+</ol>
+<h4 id="更新时机"><a href="#更新时机" class="headerlink" title="更新时机"></a>更新时机</h4><table>
+<thead>
+<tr>
+<th>更新对象</th>
+<th>更新时机</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Broker 0上Leader副本的LEO</td>
+<td>Leader副本<strong>接收</strong>到生产者发送的消息，<strong>写入到本地磁盘</strong>后，会更新其LEO值</td>
+</tr>
+<tr>
+<td>Broker 1上Follower副本的LEO</td>
+<td>Follower副本从Leader副本<strong>拉取</strong>消息，<strong>写入本地磁盘</strong>后，会更新其LEO值</td>
+</tr>
+<tr>
+<td>Broker 0上远程副本的LEO</td>
+<td>Follower副本从Leader副本<strong>拉取</strong>消息时，会告诉Leader副本<strong>从哪个位移开始拉取</strong>，<br>Leader副本会使用这个位移值来更新远程副本的LEO</td>
+</tr>
+<tr>
+<td>Broker 0上Leader副本的高水位</td>
+<td>两个更新时机：一个是Leader副本更新其LEO之后，一个是更新完远程副本LEO之后<br>具体算法：取Leader副本和所有与Leader<strong>同步</strong>的远程副本LEO中的<strong>最小值</strong></td>
+</tr>
+<tr>
+<td>Broker 1上Follower副本的高水位</td>
+<td>Follower副本成功更新完LEO后，会比较其LEO与<strong>Leader副本发来的高水位值</strong>，<br>并用两者的<strong>较小值</strong>去更新自己的高水位</td>
+</tr>
+</tbody></table>
+<ol>
+<li>与Leader副本保持同步，需要满足两个条件<ul>
+<li>该远程Follower副本在<strong>ISR</strong>中</li>
+<li>该远程Follower副本LEO值<strong>落后</strong>Leader副本LEO值的时间<strong>不超过</strong>参数<code>replica.lag.time.max.ms</code>（<strong>10秒</strong>）</li>
+</ul>
+</li>
+<li>某个副本能否进入ISR是由第二个条件判断的<ul>
+<li>2个条件判断是为了应对意外情况：<strong>Follower副本已经追上Leader，却不在ISR中</strong></li>
+<li>假设Kafka只判断第1个条件，副本F刚刚重启，并且已经具备进入ISR的资格，但此时尚未进入到ISR<ul>
+<li>由于缺少了副本F的判断，<strong>分区高水位有可能超过真正ISR中的副本LEO</strong>，而<strong>高水位&gt;LEO</strong>是<strong>不允许</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="Leader副本"><a href="#Leader副本" class="headerlink" title="Leader副本"></a>Leader副本</h4><ol>
+<li><strong>处理生产者请求</strong><ul>
+<li>写入消息到本地磁盘，更新<strong>LEO</strong></li>
+<li>更新<strong>分区高水位</strong>值<ul>
+<li>获取Leader副本所在Broker端保存的所有远程副本LEO值<code>{LEO-1, LEO-2,... LEO-n}</code></li>
+<li>获取Leader副本的LEO值：<code>currentLEO</code></li>
+<li>更新<strong><code>currentHW = min(currentLEO, LEO-1, LEO-2,... LEO-n)</code></strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>处理Follower副本拉取消息</strong><ul>
+<li>读取<strong>磁盘</strong>（或<strong>页缓存</strong>）中的消息数据</li>
+<li>使用Follower副本发送请求中的位移值来更新远程副本的<strong>LEO</strong>值</li>
+<li>更新<strong>分区高水位</strong>值（与上面一致）</li>
+</ul>
+</li>
+</ol>
+<h4 id="Follower副本"><a href="#Follower副本" class="headerlink" title="Follower副本"></a>Follower副本</h4><ol>
+<li><strong>从Leader拉取消息</strong><ul>
+<li>写入消息到本地磁盘</li>
+<li>更新<strong>LEO</strong></li>
+<li>更新<strong>高水位</strong>值<ul>
+<li>获取<strong>Leader发送</strong>的高水位值：<code>currentHW</code></li>
+<li>获取步骤2中更新的LEO值：<code>currentLEO</code></li>
+<li>更新高水位<strong><code>min(currentHW, currentLEO)</code></strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="副本同步样例"><a href="#副本同步样例" class="headerlink" title="副本同步样例"></a>副本同步样例</h3><p>主题是<strong>单分区两副本</strong>，首先是初始状态，所有值都是0<br><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-1.png" width="1000/"></p>
+<p>当生产者向主题分区发送一条消息后，状态变更为<br><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-2.png" width="1000/"></p>
+<p>此时，Leader副本成功将消息写入到<strong>本地磁盘</strong>，将<strong>LEO</strong>值更新为1（更新高水位值为0，并把结果发送给Follower副本）<br>Follower再次尝试从Leader拉取消息，此时有消息可以拉取，Follower副本也成功更新<strong>LEO</strong>为1（并将高水位更新为0）<br>此时，Leader副本和Follower副本的<strong>LEO</strong>都是1，但各自的<strong>高水位依然是0</strong>，需要等到<strong>下一轮</strong>的拉取中被更新<br><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-3.png" width="1000/"></p>
+<p>在新一轮的拉取请求中，由于位移值为0的消息已经拉取成功，因此Follower副本这次拉取请求的位移值为<strong>1</strong><br>Leader副本接收到此请求后，更新<strong>远程副本LEO</strong>为<strong>1</strong>，然后更新<strong>Leader高水位</strong>值为<strong>1</strong><br>最后，<strong>Leader副本</strong>会将<strong>当前更新过的高水位</strong>值1发送给<strong>Follower副本</strong>，Follower副本接收到后，也会将自己的高水位值更新为<strong>1</strong><br><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-high-watermark-example-4.png" width="1000/"></p>
+<h2 id="Leader-Epoch"><a href="#Leader-Epoch" class="headerlink" title="Leader Epoch"></a>Leader Epoch</h2><h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><ol>
+<li>上面的副本同步过程中，Follower副本的<strong>高水位更新</strong>需要<strong>一轮额外的拉取请求</strong>才能实现<ul>
+<li>如果扩展到<strong>多个Follower副本</strong>，可能需要<strong>多轮拉取请求</strong></li>
+<li>即<strong>Leader副本高水位更新</strong>和<strong>Follower副本高水位更新</strong>在<strong>时间</strong>上存在<strong>错配</strong><ul>
+<li>这种错配是很多<strong>数据丢失</strong>或<strong>数据不一致</strong>问题的根源</li>
+<li>因此，社区在<strong>0.11</strong>版本正式引入了<code>Leader Epoch</code>概念，来规避<strong>高水位更新错配</strong>导致的各种<strong>不一致</strong>问题</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Leader Epoch可以大致认为是<strong>Leader版本</strong>，由两部分数据组成<ul>
+<li><strong>Epoch</strong><ul>
+<li>一个<strong>单调递增</strong>的版本号</li>
+<li>每当<strong>副本领导权发生变更</strong>时，都会增加该版本号</li>
+<li>小版本号的Leader被认为是<strong>过期Leader</strong>，不能再行使Leader权利</li>
+</ul>
+</li>
+<li><strong>起始位移</strong>（Start Offset）<ul>
+<li><strong>Leader副本</strong>在该Epoch值上写入的<strong>首条消息</strong>的位移</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>两个Leader Epoch，<code>&lt;0,0&gt;</code>和<code>&lt;1,120&gt;</code><ul>
+<li><code>&lt;0,0&gt;</code>表示版本号为0，该版本的Leader从位移0开始保存消息，一共保存了120条消息</li>
+<li>之后Leader发生了<strong>变更</strong>，版本号增加到1，新版本的起始位移是120</li>
+</ul>
+</li>
+<li>Broker在<strong>内存</strong>中为每个<strong>分区</strong>都缓存<code>Leader Epoch</code>数据，同时还会<strong>定期</strong>地将这些数据<strong>持久化</strong>到一个<code>checkpoint</code>文件中<ul>
+<li>当<strong>Leader副本写入消息到磁盘</strong>时，Broker会尝试更新这部分缓存</li>
+<li>如果Leader是<strong>首次</strong>写入消息，那么Broker会向缓存中<strong>增加Leader Epoch条目</strong>，否则不做更新</li>
+<li>这样每次有Leader变更时，新的Leader副本会查询这部分缓存，取出对应的Leader Epoch的起始位移<ul>
+<li>然后进行相关的逻辑判断，避免<strong>数据丢失</strong>和<strong>数据不一致</strong>的情况</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="数据丢失"><a href="#数据丢失" class="headerlink" title="数据丢失"></a>数据丢失</h3><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-leader-epoch-example-1.png" width="1000/">
+
+<ol>
+<li>开始时，副本A和副本B都处于正常状态，A是Leader副本</li>
+<li>某个的生产者（<strong>默认acks设置</strong>）向A发送了两条消息，A全部写入成功，Kafka会通知生产者说两条消息全部发送成功</li>
+<li>假设Leader和Follower都写入了这两条消息，而且Leader副本的高水位也更新了，但<em><strong>Follower副本的高水位还未更新</strong></em></li>
+<li>此时副本B所在的Broker<strong>宕机</strong>，当它<strong>重启</strong>回来后，副本B会执行<em><strong>日志截断!!</strong></em><ul>
+<li><strong>将LEO值调整为之前的高水位值!!</strong>，也就是1</li>
+<li>位移值为1的那条消息被副本B<strong>从磁盘中删除</strong>，此时副本B的<strong>底层磁盘文件</strong>中只保留1条消息，即位移为0的消息</li>
+</ul>
+</li>
+<li>副本B执行完日志截断操作后，开始从A拉取消息，此时恰好副本A所在的Broker也宕机了，副本B自然成为新的Leader<ul>
+<li>当A回来后，需要执行相同的<strong>日志截断</strong>操作，但<strong>不能超过新Leader</strong>，即<strong>将高水位调整与B相同的值</strong>，也就是1</li>
+<li>操作完成后，位移值为1的那条消息就从两个副本中被<strong>永远抹掉</strong>，造成了<strong>数据丢失</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="Leader-Epoch规避数据丢失"><a href="#Leader-Epoch规避数据丢失" class="headerlink" title="Leader Epoch规避数据丢失"></a>Leader Epoch规避数据丢失</h3><img src="https://kafka-1253868755.cos.ap-guangzhou.myqcloud.com/geek-time/kafka-leader-epoch-example-2.png" width="1000/">
+
+<ol>
+<li>Follower副本B重启后，需要向A发送一个特殊的请求去获取<strong>Leader的LEO值</strong>，该值为2</li>
+<li>当获知Leader LEO后，B发现该LEO值<strong>大于等于</strong>自己的LEO，而且缓存中也<strong>没有保存任何起始位移值&gt;2的Epoch条目</strong><ul>
+<li><strong>B无需执行任何日志截断操作</strong></li>
+<li>明显改进：<em><strong>副本是否执行日志截断不再依赖于高水位进行判断</strong></em></li>
+</ul>
+</li>
+<li>A宕机，B成为Leader，当A重启回来后，执行与B相同的逻辑判断，发现同样<strong>不需要执行日志截断</strong><ul>
+<li>至此位移值为1的那条消息在两个副本中<strong>均得到保留</strong></li>
+<li>后面生产者向B<strong>写入新消息</strong>后，副本B所在的Broker缓存中会生成新的Leader Epoch条目：<strong><code>[Epoch=1, Offset=2]</code></strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ol>
+<li><strong>高水位</strong>在界定<strong>Kafka消息对外可见性</strong>以及实现<strong>副本机制</strong>方面起到非常重要的作用<ul>
+<li>但设计上的缺陷给Kafka留下了很多<strong>数据丢失</strong>或<strong>数据不一致</strong>的潜在风险</li>
+</ul>
+</li>
+<li>为此，社区引入了<strong><code>Leader Epoch</code></strong>机制，尝试规避这类风险，并且效果不错</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100029201" target="_blank" rel="noopener">Kafka核心技术与实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/28/kafka-admin-client/" rel="bookmark">Kafka -- KafkaAdminClient</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/01/kafka-avoid-rebalance/" rel="bookmark">Kafka -- 避免重平衡</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-bijection/" rel="bookmark">Kafka -- Avro + Twitter Bijection</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/15/kafka-avro-introduction/" rel="bookmark">Kafka -- Avro入门</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-native/" rel="bookmark">Kafka -- Avro + Kafka Native API</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/09/20/kafka-high-watermark-leader-epoch/" title="Kafka -- 高水位 + Leader Epoch">http://zhongmingmao.me/2019/09/20/kafka-high-watermark-leader-epoch/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/middleware/" rel="tag"><i class="fa fa-tag"></i> Middleware</a>
+          
+            <a href="/tags/mq/" rel="tag"><i class="fa fa-tag"></i> MQ</a>
+          
+            <a href="/tags/kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a>
+          
+            <a href="/tags/stream/" rel="tag"><i class="fa fa-tag"></i> Stream</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/09/19/java-performance-prototype-flyweight/" rel="next" title="Java性能 -- 原型模式 + 享元模式">
+                <i class="fa fa-chevron-left"></i> Java性能 -- 原型模式 + 享元模式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/09/21/java-performance-concurrent-design-pattern/" rel="prev" title="Java性能 -- 并发设计模式">
+                Java性能 -- 并发设计模式 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#高水位"><span class="nav-number">1.</span> <span class="nav-text">高水位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#水位的定义"><span class="nav-number">1.1.</span> <span class="nav-text">水位的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#高水位的作用"><span class="nav-number">1.2.</span> <span class="nav-text">高水位的作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#高水位的更新机制"><span class="nav-number">1.3.</span> <span class="nav-text">高水位的更新机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#远程副本"><span class="nav-number">1.3.1.</span> <span class="nav-text">远程副本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#更新时机"><span class="nav-number">1.3.2.</span> <span class="nav-text">更新时机</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Leader副本"><span class="nav-number">1.3.3.</span> <span class="nav-text">Leader副本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Follower副本"><span class="nav-number">1.3.4.</span> <span class="nav-text">Follower副本</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#副本同步样例"><span class="nav-number">1.4.</span> <span class="nav-text">副本同步样例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Leader-Epoch"><span class="nav-number">2.</span> <span class="nav-text">Leader Epoch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#基本概念"><span class="nav-number">2.1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据丢失"><span class="nav-number">2.2.</span> <span class="nav-text">数据丢失</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-Epoch规避数据丢失"><span class="nav-number">2.3.</span> <span class="nav-text">Leader Epoch规避数据丢失</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

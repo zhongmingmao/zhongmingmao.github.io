@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Pod 配置管理    Key Value    独立资源 ConfigMap    Secret    ServiceAccount   Pod.spec Resources    SecurityContext    InitContainers">
+<meta name="keywords" content="Cloud Native,Kubernetes,Alibaba">
+<meta property="og:type" content="article">
+<meta property="og:title" content="应用配置管理">
+<meta property="og:url" content="http://zhongmingmao.me/2021/07/12/cloud-native-k8s-config/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="Pod 配置管理    Key Value    独立资源 ConfigMap    Secret    ServiceAccount   Pod.spec Resources    SecurityContext    InitContainers">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://cloud-native-alibaba-1253868755.cos.ap-guangzhou.myqcloud.com/kubernetes/image-20210712145623420.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.132Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="应用配置管理">
+<meta name="twitter:description" content="Pod 配置管理    Key Value    独立资源 ConfigMap    Secret    ServiceAccount   Pod.spec Resources    SecurityContext    InitContainers">
+<meta name="twitter:image" content="https://cloud-native-alibaba-1253868755.cos.ap-guangzhou.myqcloud.com/kubernetes/image-20210712145623420.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2021/07/12/cloud-native-k8s-config/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>应用配置管理 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2021/07/12/cloud-native-k8s-config/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">应用配置管理
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-07-12 14:07:26" itemprop="dateCreated datePublished" datetime="2021-07-12T14:07:26+08:00">2021-07-12</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/" itemprop="url" rel="index"><span itemprop="name">Cloud Native</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/kubernetes/alibaba/" itemprop="url" rel="index"><span itemprop="name">Alibaba</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">13k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">24 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="Pod-配置管理"><a href="#Pod-配置管理" class="headerlink" title="Pod 配置管理"></a>Pod 配置管理</h1><p><img src="https://cloud-native-alibaba-1253868755.cos.ap-guangzhou.myqcloud.com/kubernetes/image-20210712145623420.png" alt="image-20210712145623420"></p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>独立资源</strong></td>
+<td>ConfigMap</td>
+</tr>
+<tr>
+<td></td>
+<td>Secret</td>
+</tr>
+<tr>
+<td></td>
+<td>ServiceAccount</td>
+</tr>
+<tr>
+<td><strong>Pod.spec</strong></td>
+<td>Resources</td>
+</tr>
+<tr>
+<td></td>
+<td>SecurityContext</td>
+</tr>
+<tr>
+<td></td>
+<td>InitContainers</td>
+</tr>
+</tbody></table>
+<a id="more"></a>
+
+<h1 id="ConfigMap"><a href="#ConfigMap" class="headerlink" title="ConfigMap"></a>ConfigMap</h1><h2 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h2><ol>
+<li>管理容器<strong>运行时</strong>所需要的配置文件、环境变量、命令行参数等可变配置</li>
+<li>用于<strong>解耦容器镜像和可变配置</strong>，从而保证<strong>工作负载（Pod）</strong>的<strong>可移植性</strong></li>
+</ol>
+<h2 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h2><h3 id="指定键值对"><a href="#指定键值对" class="headerlink" title="指定键值对"></a>指定键值对</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl create configmap special-config --from-literal=special.how=very --from-literal=special.type=charm</span><br><span class="line">configmap/special-config created</span><br><span class="line"></span><br><span class="line">$ kubectl get configmaps special-config -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">data:</span><br><span class="line">  special.how: very</span><br><span class="line">  special.type: charm</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2021-07-12T07:37:10Z&quot;</span><br><span class="line">  name: special-config</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;15441&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/configmaps/special-config</span><br><span class="line">  uid: 03b63c92-9103-4eac-8d93-5cf69adfd594</span><br></pre></td></tr></table></figure>
+
+<h3 id="指定文件"><a href="#指定文件" class="headerlink" title="指定文件"></a>指定文件</h3><figure class="highlight json"><figcaption><span>info.json</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"name"</span>: <span class="string">"zhongmingmao"</span>,</span><br><span class="line">    <span class="attr">"other"</span>: &#123;</span><br><span class="line">        <span class="attr">"location"</span>: <span class="string">"Guang Zhou"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl create configmap info-config --from-file=info.json</span><br><span class="line">configmap/info-config created</span><br><span class="line"></span><br><span class="line">$ kubectl get configmaps info-config -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">data:</span><br><span class="line">  info.json: |-</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;name&quot;: &quot;zhongmingmao&quot;,</span><br><span class="line">        &quot;other&quot;: &#123;</span><br><span class="line">            &quot;location&quot;: &quot;Guang Zhou&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2021-07-12T07:40:54Z&quot;</span><br><span class="line">  name: info-config</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;15602&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/configmaps/info-config</span><br><span class="line">  uid: 5d0ac44b-69fb-4dbf-9c61-d26024f3c12b</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><figure class="highlight yaml"><figcaption><span>cm-env-test.yml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">cm-env-test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">test-container</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">env</span></span><br><span class="line"><span class="attr">      env:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">SPECIAL_LEVEL_KEY</span></span><br><span class="line"><span class="attr">          valueFrom:</span></span><br><span class="line"><span class="attr">            configMapKeyRef:</span></span><br><span class="line"><span class="attr">              name:</span> <span class="string">special-config</span></span><br><span class="line"><span class="attr">              key:</span> <span class="string">special.how</span></span><br><span class="line"><span class="attr">  restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f cm-env-test.yaml</span><br><span class="line">pod/cm-env-test created</span><br><span class="line"></span><br><span class="line">$ kubectl get pods</span><br><span class="line">NAME          READY   STATUS      RESTARTS   AGE</span><br><span class="line">cm-env-test   0/1     Completed   0          16s</span><br><span class="line"></span><br><span class="line">$ kubectl logs cm-env-test</span><br><span class="line">KUBERNETES_SERVICE_PORT=443</span><br><span class="line">KUBERNETES_PORT=tcp://10.96.0.1:443</span><br><span class="line">HOSTNAME=cm-env-test</span><br><span class="line">SHLVL=1</span><br><span class="line">HOME=/root</span><br><span class="line">KUBERNETES_PORT_443_TCP_ADDR=10.96.0.1</span><br><span class="line">PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</span><br><span class="line">KUBERNETES_PORT_443_TCP_PORT=443</span><br><span class="line">KUBERNETES_PORT_443_TCP_PROTO=tcp</span><br><span class="line">SPECIAL_LEVEL_KEY=very</span><br><span class="line">KUBERNETES_SERVICE_PORT_HTTPS=443</span><br><span class="line">KUBERNETES_PORT_443_TCP=tcp://10.96.0.1:443</span><br><span class="line">KUBERNETES_SERVICE_HOST=10.96.0.1</span><br><span class="line">PWD=/</span><br></pre></td></tr></table></figure>
+
+<h3 id="命令行参数"><a href="#命令行参数" class="headerlink" title="命令行参数"></a>命令行参数</h3><figure class="highlight yaml"><figcaption><span>cm-cmd-test.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">cm-cmd-test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">test-container</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">echo</span> <span class="string">$(SPECIAL_LEVEL_KEY)</span></span><br><span class="line"><span class="attr">      env:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">SPECIAL_LEVEL_KEY</span></span><br><span class="line"><span class="attr">          valueFrom:</span></span><br><span class="line"><span class="attr">            configMapKeyRef:</span></span><br><span class="line"><span class="attr">              name:</span> <span class="string">special-config</span></span><br><span class="line"><span class="attr">              key:</span> <span class="string">special.how</span></span><br><span class="line"><span class="attr">  restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f cm-cmd-test.yaml</span><br><span class="line">pod/cm-cmd-test created</span><br><span class="line"></span><br><span class="line">$ kubectl get pods</span><br><span class="line">NAME          READY   STATUS      RESTARTS   AGE</span><br><span class="line">cm-cmd-test   0/1     Completed   0          6s</span><br><span class="line"></span><br><span class="line">$ kubectl logs cm-cmd-test</span><br><span class="line">very</span><br></pre></td></tr></table></figure>
+
+<h3 id="挂载-Volume"><a href="#挂载-Volume" class="headerlink" title="挂载 Volume"></a>挂载 Volume</h3><figure class="highlight yaml"><figcaption><span>cm-volume-test.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">cm-volume-test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">test-container</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">ls</span> <span class="string">/etc/config</span></span><br><span class="line"><span class="attr">      volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">config-volume</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/etc/config</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">config-volume</span></span><br><span class="line"><span class="attr">      configMap:</span></span><br><span class="line"><span class="attr">        name:</span> <span class="string">special-config</span></span><br><span class="line"><span class="attr">  restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+
+<p>ConfigMap中指定的内容以<strong>文件的形式</strong>挂载到容器中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f cm-volume-test.yaml</span><br><span class="line">pod/cm-volume-test created</span><br><span class="line"></span><br><span class="line">$ kubectl get pods</span><br><span class="line">NAME             READY   STATUS      RESTARTS   AGE</span><br><span class="line">cm-volume-test   0/1     Completed   0          6s</span><br><span class="line"></span><br><span class="line">$  kubectl logs cm-volume-test</span><br><span class="line">special.how</span><br><span class="line">special.type</span><br></pre></td></tr></table></figure>
+
+<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ol>
+<li>ConfigMap 文件大小的限制：<strong>1MB</strong>（Etcd）</li>
+<li>Pod 只能引用<strong>相同 Namespce</strong> 中的 ConfigMap</li>
+<li>Pod 引用的 ConfigMap 不存在时，Pod 无法创建成功</li>
+<li>使用 valueFrom 从 ConfigMap 来配置环境变量时<ul>
+<li>ConfigMap 中某些 Key 被认为无效，该环境变量不会被注入容器，但 Pod 可以正常创建</li>
+</ul>
+</li>
+<li>只有通过 Kubernetes API 创建的 Pod 才能使用 ConfigMap</li>
+</ol>
+<h1 id="Secret"><a href="#Secret" class="headerlink" title="Secret"></a>Secret</h1><h2 id="用途-1"><a href="#用途-1" class="headerlink" title="用途"></a>用途</h2><ol>
+<li>在集群中，用于存储<strong>密码</strong>、<strong>Token</strong> 等敏感信息</li>
+<li>敏感数据采用 <strong>Base64</strong> 编码（编码 != 加密）</li>
+<li>类型<ul>
+<li>Opaque：普通的 <strong>Secret</strong> 文件</li>
+<li>service-account-token：用于 <strong>Service Account 身份认证</strong>的 Secret</li>
+<li>dockerconfigjson：用于<strong>拉取私有仓库镜像</strong>的 Secret</li>
+<li>bootstrap.token：用于<strong>节点接入集群</strong>校验用的 Secret</li>
+</ul>
+</li>
+</ol>
+<h2 id="创建-1"><a href="#创建-1" class="headerlink" title="创建"></a>创建</h2><p>Secret 可以<strong>用户自己创建</strong>，或者<strong>系统自动创建</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl create secret generic my-secret --from-literal=username=zhongmingmao --from-literal=password=123</span><br><span class="line">secret/my-secret created</span><br><span class="line"></span><br><span class="line">$ kubectl get secrets</span><br><span class="line">NAME                  TYPE                                  DATA   AGE</span><br><span class="line">default-token-c9smw   kubernetes.io/service-account-token   3      16h</span><br><span class="line">my-secret             Opaque                                2      12s</span><br><span class="line"></span><br><span class="line">$ kubectl get secrets my-secret -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">data:</span><br><span class="line">  password: MTIz</span><br><span class="line">  username: emhvbmdtaW5nbWFv</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2021-07-12T08:27:51Z&quot;</span><br><span class="line">  name: my-secret</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;17716&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/secrets/my-secret</span><br><span class="line">  uid: b99400ef-5375-4ca2-9e73-183afb7e732b</span><br><span class="line">type: Opaque</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用-1"><a href="#使用-1" class="headerlink" title="使用"></a>使用</h2><p>Secret 主要被 <strong>Pod</strong> 使用，一般是通过<strong>挂载 Volume</strong> 的方式</p>
+<h3 id="用户定义-Secret"><a href="#用户定义-Secret" class="headerlink" title="用户定义 Secret"></a>用户定义 Secret</h3><figure class="highlight yaml"><figcaption><span>my-pod.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">my-pod</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">my-pod</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">ls</span> <span class="string">/etc/secret/</span> <span class="string">&amp;&amp;</span> <span class="string">cat</span> <span class="string">/etc/secret/*</span></span><br><span class="line"><span class="attr">      volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">secret-volume</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/etc/secret</span></span><br><span class="line"><span class="attr">          readOnly:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">secret-volume</span></span><br><span class="line"><span class="attr">      secret:</span></span><br><span class="line"><span class="attr">        secretName:</span> <span class="string">my-secret</span></span><br><span class="line"><span class="attr">  restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f my-pod.yaml</span><br><span class="line">pod/my-pod created</span><br><span class="line"></span><br><span class="line">$ kubectl get pods</span><br><span class="line">NAME     READY   STATUS      RESTARTS   AGE</span><br><span class="line">my-pod   0/1     Completed   0          31s</span><br><span class="line"></span><br><span class="line">$ kubectl logs my-pod</span><br><span class="line">password</span><br><span class="line">username</span><br><span class="line">123zhongmingmao</span><br></pre></td></tr></table></figure>
+
+<h3 id="系统定义-Secret"><a href="#系统定义-Secret" class="headerlink" title="系统定义 Secret"></a>系统定义 Secret</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get secrets</span><br><span class="line">NAME                  TYPE                                  DATA   AGE</span><br><span class="line">default-token-c9smw   kubernetes.io/service-account-token   3      16h</span><br><span class="line">my-secret             Opaque                                2      25m</span><br><span class="line"></span><br><span class="line">$ kubectl describe secrets default-token-c9smw</span><br><span class="line">Name:         default-token-c9smw</span><br><span class="line">Namespace:    default</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  kubernetes.io/service-account.name: default</span><br><span class="line">              kubernetes.io/service-account.uid: 17de15bb-32c1-48be-9daf-0277d1a1fc05</span><br><span class="line"></span><br><span class="line">Type:  kubernetes.io/service-account-token</span><br><span class="line"></span><br><span class="line">Data</span><br><span class="line">====</span><br><span class="line">ca.crt:     1111 bytes</span><br><span class="line">namespace:  7 bytes</span><br><span class="line">token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tYzlzbXciLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjE3ZGUxNWJiLTMyYzEtNDhiZS05ZGFmLTAyNzdkMWExZmMwNSIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.fw6HUYI6GAjd7P_uuSQZxa3cAOsxoAtdjExMOM_OWtXZu7sFqDd2jUsEJdY41eFhA19Zl9ASlsby_pE-3brVV-TceMknZhriF1XgWDVLozyJSoOO_ias04ed8XFNYB5MsxpcyKEmkgeOAXlJwSE73sPF-YNUKvMfhK55qDMzIylDD0KIH2LGaIpuH5TdbcHwDlMZmUCe0JtSUlYurltcb5ZJSZ-36Vuquy9oc_5xivdpi8505uXRb7Y00ieBiYgQ0O18aIOM8w-WV7ppS83vjo5GciOsGSssEzvix9Fh2W5BOZGXsq1I1zoHxtUefJ3B8aUq9wTRmy1BLRIKVYPTwg</span><br><span class="line"></span><br><span class="line">$ kubectl get serviceaccounts</span><br><span class="line">NAME      SECRETS   AGE</span><br><span class="line">default   1         16h</span><br><span class="line"></span><br><span class="line">$ kubectl get serviceaccounts default -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2021-07-11T16:02:40Z&quot;</span><br><span class="line">  name: default</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;359&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/serviceaccounts/default</span><br><span class="line">  uid: 17de15bb-32c1-48be-9daf-0277d1a1fc05</span><br><span class="line">secrets:</span><br><span class="line">- name: default-token-c9smw</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight yaml"><figcaption><span>my-pod-for-service-account-token.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">my-pod-for-service-account-token</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">my-pod-for-service-account-token</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">ls</span> <span class="string">/etc/secret/</span></span><br><span class="line"><span class="attr">      volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">default-token-c9smw</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/etc/secret</span></span><br><span class="line"><span class="attr">          readOnly:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">default-token-c9smw</span></span><br><span class="line"><span class="attr">      secret:</span></span><br><span class="line"><span class="attr">        secretName:</span> <span class="string">default-token-c9smw</span></span><br><span class="line"><span class="attr">  restartPolicy:</span> <span class="string">Never</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f my-pod-for-service-account-token.yaml</span><br><span class="line">pod/my-pod-for-service-account-token created</span><br><span class="line"></span><br><span class="line">$ kubectl logs my-pod-for-service-account-token</span><br><span class="line">ca.crt</span><br><span class="line">namespace</span><br><span class="line">token</span><br></pre></td></tr></table></figure>
+
+<h2 id="注意事项-1"><a href="#注意事项-1" class="headerlink" title="注意事项"></a>注意事项</h2><ol>
+<li>Secret 文件大小限制：<strong>1MB</strong></li>
+<li>Secret 采用 <strong>Base64</strong> 编码（编码 != 加密，可选方案：Kubernetes + Vault）</li>
+<li>由于 List/Watch 会获取 Namespace 下所有的 Secret，建议使用 <strong>Get</strong></li>
+</ol>
+<h1 id="ServiceAccount"><a href="#ServiceAccount" class="headerlink" title="ServiceAccount"></a>ServiceAccount</h1><h2 id="用途-2"><a href="#用途-2" class="headerlink" title="用途"></a>用途</h2><ol>
+<li>用于解决 Pod 在集群中的<strong>身份认证</strong>问题</li>
+<li>认证使用的授权信息，通过Secret（kubernetes.io/service-account-token）进行管理</li>
+</ol>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><ol>
+<li>ServiceAccount.secrets：指定 ServiceAccount 使用哪个 Secret，由 Kubernetes <strong>自动添加</strong></li>
+<li>ca.crt：用于<strong>校验服务端</strong>的证书信息</li>
+<li>token：用于 <strong>Pod 的身份认证</strong></li>
+<li>service-account.uid：Secret 关联的 ServiceAccount</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get serviceaccounts</span><br><span class="line">NAME      SECRETS   AGE</span><br><span class="line">default   1         16h</span><br><span class="line"></span><br><span class="line">$ kubectl get serviceaccounts default -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2021-07-11T16:02:40Z&quot;</span><br><span class="line">  name: default</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;359&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/serviceaccounts/default</span><br><span class="line">  uid: 17de15bb-32c1-48be-9daf-0277d1a1fc05</span><br><span class="line">secrets:</span><br><span class="line">- name: default-token-c9smw</span><br><span class="line"></span><br><span class="line">$ kubectl get secrets default-token-c9smw -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">data:</span><br><span class="line">  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCakNDQWU2Z0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwdGFXNXAKYTNWaVpVTkJNQjRYRFRJeE1EY3dOakUwTWpnd05Wb1hEVE14TURjd05URTBNamd3TlZvd0ZURVRNQkVHQTFVRQpBeE1LYldsdWFXdDFZbVZEUVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBUHpDCjR1eWpiV3FLa2UyaDVuQVZlYlV0cjFLT2Frd1ZPamRDS3NUeFlwemduYWpXT3JNaVhOdkZWakVzT2pDa0pLeHMKSGkveHlicURvMEFaK0NZTW9LTFN2Nkk1amF0NnlPUTU1OW9MUEpKcVlobThySUtnVndVK1d0WHNSM0lMeU13Vgp4bDdjaVFqMFRIV01NSGNLS3lLZlI0SDltTzdsY2hNS3FkRUhNelBUOExZUkllTlpuaTN1RHYvSlVrVmdtSnlSClNRYllhUFdodWNkbkpVWW53UVR6d1Rtamd0ZEtQd2JkV05hOXFkY2t1blEzV0NJeHRPMHhuM3Jld3RLMkNqekwKaXc0dWhLWmg3TWJCSGhXNzJDdU1MbEkwYlVEaHRLd1pHdTRUN0ttWDc1L0hVVmNnUUM4dWp4WnBpa0JYdXJBRwpUNGw4a0VGVXpjQlJzYkZaajdjQ0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trTUIwR0ExVWRKUVFXCk1CUUdDQ3NHQVFVRkJ3TUNCZ2dyQmdFRkJRY0RBVEFQQmdOVkhSTUJBZjhFQlRBREFRSC9NQjBHQTFVZERnUVcKQkJSQm9RdytFVWNxc3l6VXFVbXRvZENpTnBHOUFEQU5CZ2txaGtpRzl3MEJBUXNGQUFPQ0FRRUFqR2E5R2xDQwpWRVFpc2lpajdicHY1VmxCb2Z2QW00U0lTNXlPOFVlTENJTDN2MVg4cHdKWDN6S1hNY2hYSTNiMTlrOExHdStiCjUwWWR3cEhjNUg5VmplTkhWcTVOdGZRZzlNcE5zclB6OC9Cb1BOV08wRE1yTXhUN1JmVXBQMDViZWFjOVZZRDAKTzA3TnowRDRWK0t1cUdXaXdjam53Qld6b0I1cmE5VS9Cb2g4L1FHdEplb3BxdjJWb1pQYmlXM3RBTGdwb0hKawpoL1NrYXo2OU9ERS9iZmRNeWlTc0xYUDZpSlZoOFdTdHlxelZXMFhWVlVBRjdGR2p0ek11SlZZQ2t0RVhxNURPCkIra3Y0N0V1VmFHZHpnQ2VPRG5xNkF3WFlMUTYwQ2J4NjBDRW9EeE40TmRTWjRuYmpxV0xWL1d0cG9sc2ZlQ0EKWXNLRFJmWWd1TDhnd1E9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  namespace: ZGVmYXVsdA==</span><br><span class="line">  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklpSjkuZXlKcGMzTWlPaUpyZFdKbGNtNWxkR1Z6TDNObGNuWnBZMlZoWTJOdmRXNTBJaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5dVlXMWxjM0JoWTJVaU9pSmtaV1poZFd4MElpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WldOeVpYUXVibUZ0WlNJNkltUmxabUYxYkhRdGRHOXJaVzR0WXpsemJYY2lMQ0pyZFdKbGNtNWxkR1Z6TG1sdkwzTmxjblpwWTJWaFkyTnZkVzUwTDNObGNuWnBZMlV0WVdOamIzVnVkQzV1WVcxbElqb2laR1ZtWVhWc2RDSXNJbXQxWW1WeWJtVjBaWE11YVc4dmMyVnlkbWxqWldGalkyOTFiblF2YzJWeWRtbGpaUzFoWTJOdmRXNTBMblZwWkNJNklqRTNaR1V4TldKaUxUTXlZekV0TkRoaVpTMDVaR0ZtTFRBeU56ZGtNV0V4Wm1Nd05TSXNJbk4xWWlJNkluTjVjM1JsYlRwelpYSjJhV05sWVdOamIzVnVkRHBrWldaaGRXeDBPbVJsWm1GMWJIUWlmUS5mdzZIVVlJNkdBamQ3UF91dVNRWnhhM2NBT3N4b0F0ZGpFeE1PTV9PV3RYWnU3c0ZxRGQyalVzRUpkWTQxZUZoQTE5Wmw5QVNsc2J5X3BFLTNiclZWLVRjZU1rblpocmlGMVhnV0RWTG96eUpTb09PX2lhczA0ZWQ4WEZOWUI1TXN4cGN5S0Vta2dlT0FYbEp3U0U3M3NQRi1ZTlVLdk1maEs1NXFETXpJeWxERDBLSUgyTEdhSXB1SDVUZGJjSHdEbE1abVVDZTBKdFNVbFl1cmx0Y2I1WkpTWi0zNlZ1cXV5OW9jXzV4aXZkcGk4NTA1dVhSYjdZMDBpZUJpWWdRME8xOGFJT004dy1XVjdwcFM4M3ZqbzVHY2lPc0dTc3NFenZpeDlGaDJXNUJPWkdYc3ExSTF6b0h4dFVlZkozQjhhVXE5d1RSbXkxQkxSSUtWWVBUd2c=</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    kubernetes.io/service-account.name: default</span><br><span class="line">    kubernetes.io/service-account.uid: 17de15bb-32c1-48be-9daf-0277d1a1fc05</span><br><span class="line">  creationTimestamp: &quot;2021-07-11T16:02:40Z&quot;</span><br><span class="line">  name: default-token-c9smw</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;355&quot;</span><br><span class="line">  selfLink: /api/v1/namespaces/default/secrets/default-token-c9smw</span><br><span class="line">  uid: a467ae46-fa55-405e-b836-e383f98e103b</span><br><span class="line">type: kubernetes.io/service-account-token</span><br></pre></td></tr></table></figure>
+
+<h2 id="Pod-访问-Kubernetes-集群"><a href="#Pod-访问-Kubernetes-集群" class="headerlink" title="Pod 访问 Kubernetes 集群"></a>Pod 访问 Kubernetes 集群</h2><ol>
+<li>Pod 创建时 Admission Controller 会根据<strong>指定的 ServiceAccount</strong>（默认是 <strong>default</strong>） 把<strong>对应的 Secret</strong> 挂载到容器中的<strong>固定目录</strong>（<strong>/var/run/secrets/kubernetes.io/serviceaccount</strong>）</li>
+<li>当 Pod 访问集群时，默认利用 Secret 中的 <strong>token</strong> 来认证 Pod 身份（ca.art 用于校验服务端）</li>
+<li>Pod 通过身份认证后，其权限需要通过 <strong>RBAC</strong> 来配置，默认是 <strong>GET</strong> 权限</li>
+</ol>
+<h1 id="Resource"><a href="#Resource" class="headerlink" title="Resource"></a>Resource</h1><h2 id="spec-containers-resources"><a href="#spec-containers-resources" class="headerlink" title="spec.containers[].resources"></a>spec.containers[].resources</h2><ol>
+<li>内部支持的资源类型（配置时，指定的数量必须是<strong>整数</strong>）<ul>
+<li>CPU：单位 <strong>millicore</strong>（1 core = <strong>1000</strong> millicore）</li>
+<li>内存：单位 <strong>Byte</strong></li>
+<li>临时存储：单位 <strong>Byte</strong></li>
+</ul>
+</li>
+<li>requests：申明<strong>需要</strong>的资源</li>
+<li>limits： 申明需要资源的<strong>边界</strong></li>
+</ol>
+<h2 id="Qos"><a href="#Qos" class="headerlink" title="Qos"></a>Qos</h2><ol>
+<li>分类<ul>
+<li>Guaranteed<ul>
+<li>Pod 里的<strong>每个容器</strong>都必须有<strong>内存和 CPU 的 requests 和 limits</strong>，且<strong>必须一样</strong></li>
+</ul>
+</li>
+<li>Burstable（可爆）<ul>
+<li>Pod 里<strong>至少有一个容器</strong>有<strong>内存或 CPU 的 requests</strong></li>
+</ul>
+</li>
+<li>BestEffort<ul>
+<li><strong>!Guaranteed &amp;&amp; !BestEffort</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>当节点上资源不足时，驱逐 Pod 的优先级顺序：<strong>BestEffort、Burstable、Guaranteed</strong></li>
+</ol>
+<h1 id="SecurityContext"><a href="#SecurityContext" class="headerlink" title="SecurityContext"></a>SecurityContext</h1><ol>
+<li>主要用于<strong>限制容器行为</strong>，从而保障系统和其他容器的安全<ul>
+<li>不是 Kubernetes 或者 Container Runtime 本身的能力，而是依赖于<strong>内核机制</strong></li>
+</ul>
+</li>
+<li>级别<ul>
+<li><strong>容器级别</strong>的SecurityContext：仅对指定容器生效</li>
+<li><strong>Pod 级别</strong>的SecurityContext：对指定 Pod 中的所有容器生效</li>
+<li><strong>Pod Security Policies</strong>：对集群内所有 Pod 生效</li>
+</ul>
+</li>
+</ol>
+<h1 id="InitContainer"><a href="#InitContainer" class="headerlink" title="InitContainer"></a>InitContainer</h1><ol>
+<li>InitContainer vs 普通 Container<ul>
+<li>InitContainer 会先于普通 Container 启动执行，直到所有 InitContainer 执行成功后，普通 Container 才会被启动</li>
+<li>Pod 中多个 InitContainer 之间按<strong>顺序</strong>启动，而 Pod 中多个普通 Container 是<strong>并行</strong>启动</li>
+<li>InitContainer 执行成功后就结束退出，而普通 Container 会一直执行或者重启（restartPolicy != Never）</li>
+</ul>
+</li>
+<li>用途<ul>
+<li>一般用于普通 Container启动前的<strong>初始化</strong>或者<strong>前置条件检验</strong></li>
+</ul>
+</li>
+</ol>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://edu.aliyun.com/course/1651" target="_blank" rel="noopener">CNCF × Alibaba 云原生技术公开课</a></li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-container/" rel="bookmark">Kubernetes -- 容器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-core-concept/" rel="bookmark">Kubernetes -- 核心概念</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/11/cloud-native-k8s-orchestration-core-principle/" rel="bookmark">应用编排与管理 -- 核心原理</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/12/cloud-native-k8s-orchestration-daemonset/" rel="bookmark">应用编排与管理 -- DaemonSet</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/11/cloud-native-k8s-orchestration-deployment/" rel="bookmark">应用编排与管理 -- Deployment</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2021/07/12/cloud-native-k8s-config/" title="应用配置管理">http://zhongmingmao.me/2021/07/12/cloud-native-k8s-config/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/cloud-native/" rel="tag"><i class="fa fa-tag"></i> Cloud Native</a>
+          
+            <a href="/tags/kubernetes/" rel="tag"><i class="fa fa-tag"></i> Kubernetes</a>
+          
+            <a href="/tags/alibaba/" rel="tag"><i class="fa fa-tag"></i> Alibaba</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/07/12/cloud-native-k8s-orchestration-daemonset/" rel="next" title="应用编排与管理 -- DaemonSet">
+                <i class="fa fa-chevron-left"></i> 应用编排与管理 -- DaemonSet
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Pod-配置管理"><span class="nav-number">1.</span> <span class="nav-text">Pod 配置管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ConfigMap"><span class="nav-number">2.</span> <span class="nav-text">ConfigMap</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#用途"><span class="nav-number">2.1.</span> <span class="nav-text">用途</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建"><span class="nav-number">2.2.</span> <span class="nav-text">创建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#指定键值对"><span class="nav-number">2.2.1.</span> <span class="nav-text">指定键值对</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#指定文件"><span class="nav-number">2.2.2.</span> <span class="nav-text">指定文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用"><span class="nav-number">2.3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#环境变量"><span class="nav-number">2.3.1.</span> <span class="nav-text">环境变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令行参数"><span class="nav-number">2.3.2.</span> <span class="nav-text">命令行参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#挂载-Volume"><span class="nav-number">2.3.3.</span> <span class="nav-text">挂载 Volume</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注意事项"><span class="nav-number">2.4.</span> <span class="nav-text">注意事项</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Secret"><span class="nav-number">3.</span> <span class="nav-text">Secret</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#用途-1"><span class="nav-number">3.1.</span> <span class="nav-text">用途</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建-1"><span class="nav-number">3.2.</span> <span class="nav-text">创建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用-1"><span class="nav-number">3.3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用户定义-Secret"><span class="nav-number">3.3.1.</span> <span class="nav-text">用户定义 Secret</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#系统定义-Secret"><span class="nav-number">3.3.2.</span> <span class="nav-text">系统定义 Secret</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注意事项-1"><span class="nav-number">3.4.</span> <span class="nav-text">注意事项</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ServiceAccount"><span class="nav-number">4.</span> <span class="nav-text">ServiceAccount</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#用途-2"><span class="nav-number">4.1.</span> <span class="nav-text">用途</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实践"><span class="nav-number">4.2.</span> <span class="nav-text">实践</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pod-访问-Kubernetes-集群"><span class="nav-number">4.3.</span> <span class="nav-text">Pod 访问 Kubernetes 集群</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Resource"><span class="nav-number">5.</span> <span class="nav-text">Resource</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#spec-containers-resources"><span class="nav-number">5.1.</span> <span class="nav-text">spec.containers[].resources</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Qos"><span class="nav-number">5.2.</span> <span class="nav-text">Qos</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SecurityContext"><span class="nav-number">6.</span> <span class="nav-text">SecurityContext</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#InitContainer"><span class="nav-number">7.</span> <span class="nav-text">InitContainer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

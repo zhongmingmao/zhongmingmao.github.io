@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文主要介绍两种减少.git仓库磁盘大小的两种方式：git gc和git prune">
+<meta name="keywords" content="Tool,Git">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git -- 仓库瘦身">
+<meta property="og:url" content="http://zhongmingmao.me/2017/04/19/git-reduce/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文主要介绍两种减少.git仓库磁盘大小的两种方式：git gc和git prune">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.136Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Git -- 仓库瘦身">
+<meta name="twitter:description" content="本文主要介绍两种减少.git仓库磁盘大小的两种方式：git gc和git prune">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/04/19/git-reduce/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Git -- 仓库瘦身 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/04/19/git-reduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Git -- 仓库瘦身
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-04-19 16:22:50" itemprop="dateCreated datePublished" datetime="2017-04-19T16:22:50+08:00">2017-04-19</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/" itemprop="url" rel="index"><span itemprop="name">Tool</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/git/" itemprop="url" rel="index"><span itemprop="name">Git</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">7.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">14 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文主要介绍两种<code>减少.git仓库磁盘大小</code>的两种方式：<code>git gc</code>和<code>git prune</code></p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="git-gc"><a href="#git-gc" class="headerlink" title="git gc"></a>git gc</h1><div class="note info">
+            <p>适用于<code>存在大文件</code>，且<code>多次提交都只是轻微改动该大文件</code>的场景，因为这些提交都会生成大小相近的大文件<code>blob对象</code>，非常占用磁盘空间</p>
+          </div>
+
+<ol>
+<li>Git最初向磁盘中存储对象使用<code>松散</code>的格式，后续会将多个对象打包为一个二进制的<code>包文件</code>（<code>packfile</code>），以<code>节省磁盘空间</code></li>
+<li><code>.pack</code>文件存储了<code>对象的内容</code></li>
+<li><code>.idx</code>文件存储了<code>包文件</code>的<code>偏移信息</code>，用于<code>索引具体的对象</code></li>
+<li>打包对象时，查找命名和大小相近的文件，保留文件<code>不同版本之间的差异</code>（<code>最新一版保存完整内容</code>，访问频率最高）</li>
+<li><code>verify-pack -v *.idx</code>：查看压缩包内容</li>
+</ol>
+<p>添加随机(压缩率低)字符大文件<code>bigfile</code>并提交</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">$ git init</span><br><span class="line">Initialized empty Git repository in /home/zhongmingmao/demo/.git/</span><br><span class="line"></span><br><span class="line">$ dd if=/dev/urandom of=./bigfile bs=1k count=10240 # use urandom , hard to be compressed</span><br><span class="line">10240+0 records in</span><br><span class="line">10240+0 records out</span><br><span class="line">10485760 bytes (10 MB, 10 MiB) copied, 0.84948 s, 12.3 MB/s</span><br><span class="line"></span><br><span class="line">$ du -sh bigfile</span><br><span class="line">10M bigfile</span><br><span class="line"></span><br><span class="line">$ du -sh .git</span><br><span class="line">96K .git</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects</span><br><span class="line">12K	.git/objects</span><br><span class="line"></span><br><span class="line">$ git add bigfile</span><br><span class="line"></span><br><span class="line">$ du -sh .git</span><br><span class="line">11M .git</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects</span><br><span class="line">11M	.git/objects</span><br><span class="line"></span><br><span class="line">$ git commit -m &apos;add bigfile&apos;</span><br><span class="line">[master (root-commit) 6091c0e] add bigfile</span><br><span class="line"> 1 file changed, 0 insertions(+), 0 deletions(-)</span><br><span class="line"> create mode 100644 bigfile</span><br><span class="line"></span><br><span class="line">$ git cat-file -p master^&#123;tree&#125;</span><br><span class="line">100644 blob 41b939bb0968e9a0ff69fcc50007107d94d9d3c8 bigfile</span><br><span class="line"></span><br><span class="line">$ git cat-file -s 41b939bb0968e9a0ff69fcc50007107d94d9d3c8</span><br><span class="line">10485760 # 10MBytes</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects/41/b939bb0968e9a0ff69fcc50007107d94d9d3c8</span><br><span class="line">11M .git/objects/41/b939bb0968e9a0ff69fcc50007107d94d9d3c8</span><br></pre></td></tr></table></figure>
+
+<p>轻微改动<code>bigfile</code>后提交</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ echo &apos;zhongmingmao&apos; &gt;&gt; bigfile</span><br><span class="line"></span><br><span class="line">$ git commit -am &apos;echo zhongmingmao &gt;&gt; bigfile&apos;</span><br><span class="line">[master 5834cad] echo zhongmingmao &gt;&gt; bigfile</span><br><span class="line"> 1 file changed, 0 insertions(+), 0 deletions(-)</span><br><span class="line"></span><br><span class="line">$ du -sh .git # double size!!</span><br><span class="line">21M .git</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects</span><br><span class="line">21M .git</span><br><span class="line"></span><br><span class="line">$ git cat-file -p master^&#123;tree&#125;</span><br><span class="line">100644 blob ce4134c5eecf2b379d2eac3f812409f1b602cd85 bigfile</span><br><span class="line"></span><br><span class="line">$ git cat-file -s ce4134c5eecf2b379d2eac3f812409f1b602cd8</span><br><span class="line">10485773</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects/ce/4134c5eecf2b379d2eac3f812409f1b602cd85</span><br><span class="line">11M .git/objects/ce/4134c5eecf2b379d2eac3f812409f1b602cd85</span><br></pre></td></tr></table></figure>
+
+<p><code>git gc</code>压缩，<code>41b939</code>参照<code>ce4134</code>（旧版本参照新版本，<code>最新版本保存完整内容</code>）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">$ git gc</span><br><span class="line">Counting objects: 6, done.</span><br><span class="line">Compressing objects: 100% (4/4), done.</span><br><span class="line">Writing objects: 100% (6/6), done.</span><br><span class="line">Total 6 (delta 1), reused 0 (delta 0)</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f</span><br><span class="line">.git/objects/info/packs</span><br><span class="line">.git/objects/pack/pack-73a2d8537fba854db8f9f413799b0d5274a52135.pack</span><br><span class="line">.git/objects/pack/pack-73a2d8537fba854db8f9f413799b0d5274a52135.idx</span><br><span class="line"></span><br><span class="line">$ du -sh .git</span><br><span class="line">11M .git</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects/*</span><br><span class="line">8.0K  .git/objects/info</span><br><span class="line">11M   .git/objects/pack</span><br><span class="line"></span><br><span class="line">$ git verify-pack -v .git/objects/pack/pack-73a2d8537fba854db8f9f413799b0d5274a52135.idx</span><br><span class="line">5834cadac71e81cbcba954f49611feeaaa92cd3a commit 249 153 12</span><br><span class="line">6091c0e06a518c510e70d09a6892b122672ab837 commit 184 121 165</span><br><span class="line">ce4134c5eecf2b379d2eac3f812409f1b602cd85 blob   10485773 10488983 286</span><br><span class="line">70f4ea5a7ec96577205e4f8a9e1daba81f4ed6f7 tree   35 46 10489269</span><br><span class="line">59c311f2a94eb4936ccc39fc1dae89fb3660ffe7 tree   35 46 10489315</span><br><span class="line">41b939bb0968e9a0ff69fcc50007107d94d9d3c8 blob   327 249 10489361 1 ce4134c5eecf2b379d2eac3f812409f1b602cd85</span><br><span class="line">non delta: 5 objects</span><br><span class="line">chain length = 1: 1 object</span><br><span class="line">.git/objects/pack/pack-73a2d8537fba854db8f9f413799b0d5274a52135.pack: ok</span><br><span class="line"></span><br><span class="line">$ git cat-file -p master^&#123;tree&#125;</span><br><span class="line">100644 blob ce4134c5eecf2b379d2eac3f812409f1b602cd85 bigfile</span><br><span class="line"></span><br><span class="line">$ git cat-file -s ce4134c5eecf2b379d2eac3f812409f1b602cd85</span><br><span class="line">10485773</span><br></pre></td></tr></table></figure>
+
+<h1 id="git-prune"><a href="#git-prune" class="headerlink" title="git prune"></a>git prune</h1><div class="note warning">
+            <p><code>git clone</code>会下载<code>整个</code>项目提交历史，如果<code>曾经</code>添加过<code>大文件</code>，后续<code>git rm</code>了，每次<code>git clone</code>依旧会下载那个大文件对应的<code>blob对象</code>，将要介绍的方法会<code>重写提交历史</code>，请<code>谨慎使用</code></p>
+          </div>
+
+<ol>
+<li><code>git count-objects -v</code>：快速查看<code>object databse</code>的概要情况</li>
+<li><code>git rev-list --all --objects</code>：显示<code>所有commit及其所关联的所有对象</code></li>
+<li><code>git log --branches -- $filename</code>：查看哪些对<code>$filename</code>做出了修改的<code>commit</code></li>
+<li><code>git filter-branch --index-filter &#39;git rm --ignore-unmatch --cached $filename&#39; -- $sha1</code><ul>
+<li><code>--index-filter</code>：不<code>checkout</code>到<code>working directory</code>，只修改<code>index</code>的文件，<code>速度快很多</code></li>
+<li><code>--ignore-unmatch</code>：尝试<code>删除的模式无法匹配</code>时，<code>不提示错误</code></li>
+<li><code>--cached</code>：从<code>index</code>删除</li>
+</ul>
+</li>
+<li><code>git prune --expire now</code>：立马删除<code>object database</code>中<code>不可达的对象</code></li>
+</ol>
+<p><code>dd02204</code>引入了大文件<code>bigfile</code>，后续在<code>f161ef0</code>删除了<code>bigfile</code>，但<code>object database</code>大小没有减少，<code>git gc</code>也无法减少磁盘占用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* cc12440 (HEAD -&gt; master) C4</span><br><span class="line">* db72b36 C3</span><br><span class="line">* 5eebbac C2</span><br><span class="line">* d49df27 C1</span><br><span class="line">* 19460ce C0</span><br><span class="line"></span><br><span class="line">$ dd if=/dev/urandom of=./bigfile bs=1k count=10240</span><br><span class="line">10240+0 records in</span><br><span class="line">10240+0 records out</span><br><span class="line">10485760 bytes (10 MB, 10 MiB) copied, 0.876271 s, 12.0 MB/s</span><br><span class="line"></span><br><span class="line">$ git add bigfile &amp;&amp; git commit -m &apos;add bigfile&apos;</span><br><span class="line">[master dd02204] add bigfile</span><br><span class="line"> 1 file changed, 0 insertions(+), 0 deletions(-)</span><br><span class="line"> create mode 100644 bigfile</span><br><span class="line"></span><br><span class="line">$ du -s .git/objects</span><br><span class="line">10364	.git/objects</span><br><span class="line"></span><br><span class="line">$ git rm bigfile</span><br><span class="line">rm &apos;bigfile&apos;</span><br><span class="line"></span><br><span class="line">$ git commit -m &apos;git rm bigfile&apos;</span><br><span class="line">[master f161ef0] git rm bigfile</span><br><span class="line"> 1 file changed, 0 insertions(+), 0 deletions(-)</span><br><span class="line"> delete mode 100644 bigfile</span><br><span class="line"></span><br><span class="line">$ du -s .git/objects</span><br><span class="line">10372	.git/objects</span><br><span class="line"></span><br><span class="line">$ git gc</span><br><span class="line">Counting objects: 15, done.</span><br><span class="line">Compressing objects: 100% (13/13), done.</span><br><span class="line">Writing objects: 100% (15/15), done.</span><br><span class="line">Total 15 (delta 5), reused 0 (delta 0)</span><br><span class="line"></span><br><span class="line">$ git count-objects -v</span><br><span class="line">count: 0</span><br><span class="line">size: 0</span><br><span class="line">in-pack: 15</span><br><span class="line">packs: 1</span><br><span class="line">size-pack: 10245 # 10M</span><br><span class="line">prune-packable: 0</span><br><span class="line">garbage: 0</span><br><span class="line">size-garbage: 0</span><br></pre></td></tr></table></figure>
+
+<p>查找<code>object database</code>中的大文件<code>bigfile</code>对应的<code>blob对象</code>的<code>ID</code><br>如果非常清除大文件<code>bigfile</code>是从哪一个<code>commit</code>引入的，可以直接跳到<code>filter-branch</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">$ git verify-pack -v .git/objects/pack/pack-695de68a1a8a850a46c18f5619bd51e5efbd8cdc.idx</span><br><span class="line">f161ef0b13c784cefca1316578e671d4bdc375ec commit 235 152 12</span><br><span class="line">dd02204bdd017cee28cf1fa156f161cf844951a3 commit 232 150 164</span><br><span class="line">cc1244046a2534b2097819439ab705c579396937 commit 71 82 314 1 f161ef0b13c784cefca1316578e671d4bdc375ec</span><br><span class="line">db72b3604bad5a3f76083f4140517e588e6032cf commit 223 145 396</span><br><span class="line">5eebbac0f01a8c179f7fd4ca3b800f1cef6d28cd commit 223 145 541</span><br><span class="line">d49df27f3df12877e347d78b6441254bcc718296 commit 223 144 686</span><br><span class="line">19460cee4babe9a801cd96148aac236121a3a2cb commit 175 115 830</span><br><span class="line">e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 blob   0 9 945</span><br><span class="line">814058ae67e19720f67c9a0cc7ee5550ca1fa4a0 tree   185 85 954</span><br><span class="line">7b3dc4c67a91b8d838b3ca02421de3a50dcb68d2 tree   6 16 1039 1 814058ae67e19720f67c9a0cc7ee5550ca1fa4a0</span><br><span class="line">27323e81a35521d9fd8705885b1593cf7f3a953b blob   10485760 10488970 1055</span><br><span class="line">d8b75f412dd1563d651c6f6e222ddde31b1befda tree   5 18 10490025 1 814058ae67e19720f67c9a0cc7ee5550ca1fa4a0</span><br><span class="line">8cc551af62c753b24e3f2710b9316b0c02e321ef tree   4 14 10490043 2 d8b75f412dd1563d651c6f6e222ddde31b1befda</span><br><span class="line">fdfe0e3dc93fa9340d58cd0c0a406e07769c42d9 tree   4 14 10490057 2 d8b75f412dd1563d651c6f6e222ddde31b1befda</span><br><span class="line">ecac4a6cf836d86ef14a942fe00287a26534261c tree   30 41 10490071</span><br><span class="line">non delta: 10 objects</span><br><span class="line">chain length = 1: 3 objects</span><br><span class="line">chain length = 2: 2 objects</span><br><span class="line">.git/objects/pack/pack-de5573c64f095927d05eaad6c39cd98e53ee4c93.pack: ok</span><br><span class="line"></span><br><span class="line">$ git cat-file -s 27323e81a35521d9fd8705885b1593cf7f3a953b</span><br><span class="line">10485760</span><br></pre></td></tr></table></figure>
+
+<p>显示<code>27323e</code>对应的<code>文件名</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git rev-list --all --objects | grep 27323e</span><br><span class="line">27323e81a35521d9fd8705885b1593cf7f3a953b bigfile</span><br></pre></td></tr></table></figure>
+
+<p>显示对<code>bigfile</code>做出过修改的<code>commit</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --branches -- bigfile</span><br><span class="line">f161ef0 git rm bigfile</span><br><span class="line">dd02204 add bigfile</span><br></pre></td></tr></table></figure>
+
+<p>重建提交历史</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">$ git filter-branch --index-filter &apos;git rm --ignore-unmatch --cached bigfile&apos; -- dd02204^..</span><br><span class="line">Rewrite dd02204bdd017cee28cf1fa156f161cf844951a3 (1/2) (0 seconds passed, remaining 0 predicted)    rm &apos;bigfile&apos;</span><br><span class="line">Rewrite f161ef0b13c784cefca1316578e671d4bdc375ec (2/2) (0 seconds passed, remaining 0 predicted)</span><br><span class="line">Ref &apos;refs/heads/master&apos; was rewritten</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 7c504c6 (HEAD -&gt; master) git rm bigfile</span><br><span class="line">* 98c862a add bigfile</span><br><span class="line">| * f161ef0 (refs/original/refs/heads/master) git rm bigfile</span><br><span class="line">| * dd02204 add bigfile</span><br><span class="line">|/</span><br><span class="line">* cc12440 C4</span><br><span class="line">* db72b36 C3</span><br><span class="line">* 5eebbac C2</span><br><span class="line">* d49df27 C1</span><br><span class="line">* 19460ce C0</span><br><span class="line"></span><br><span class="line">$ git count-objects -v</span><br><span class="line">count: 2</span><br><span class="line">size: 8</span><br><span class="line">in-pack: 15</span><br><span class="line">packs: 1</span><br><span class="line">size-pack: 10245 # 10M</span><br><span class="line">prune-packable: 0</span><br><span class="line">garbage: 0</span><br><span class="line">size-garbage: 0</span><br></pre></td></tr></table></figure>
+
+<p>删除<code>.git/refs/original</code>和<code>.git/logs</code>（使得<code>bigfile的blob对象</code>成为<code>不可达</code>）然后再清除<code>不可达对象</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">$ rm -rf .git/refs/original</span><br><span class="line"></span><br><span class="line">$ rm -rf .git/logs</span><br><span class="line"></span><br><span class="line">$ git gc</span><br><span class="line">Counting objects: 13, done.</span><br><span class="line">Compressing objects: 100% (9/9), done.</span><br><span class="line">Writing objects: 100% (13/13), done.</span><br><span class="line">Total 13 (delta 5), reused 8 (delta 2)</span><br><span class="line"></span><br><span class="line">$ git count-objects -v</span><br><span class="line">count: 4</span><br><span class="line">size: 10256 # 10M</span><br><span class="line">in-pack: 13</span><br><span class="line">packs: 1</span><br><span class="line">size-pack: 2</span><br><span class="line">prune-packable: 0</span><br><span class="line">garbage: 0</span><br><span class="line">size-garbage: 0</span><br><span class="line"></span><br><span class="line">$ git prune --expire now</span><br><span class="line"></span><br><span class="line">$ git count-objects -v</span><br><span class="line">count: 0</span><br><span class="line">size: 0</span><br><span class="line">in-pack: 13</span><br><span class="line">packs: 1</span><br><span class="line">size-pack: 2</span><br><span class="line">prune-packable: 0</span><br><span class="line">garbage: 0</span><br><span class="line">size-garbage: 0</span><br><span class="line"></span><br><span class="line">$ du -sh .git/objects</span><br><span class="line">24K	.git/objects # 10M -&gt; 24K</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 7c504c6 (HEAD -&gt; master) git rm bigfile</span><br><span class="line">* 98c862a add bigfile</span><br><span class="line">* cc12440 C4</span><br><span class="line">* db72b36 C3</span><br><span class="line">* 5eebbac C2</span><br><span class="line">* d49df27 C1</span><br><span class="line">* 19460ce C0</span><br></pre></td></tr></table></figure>
+
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/14/git-basic/" rel="bookmark">Git -- 有趣的命令</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/15/git-branch/" rel="bookmark">Git -- 分支</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-flow/" rel="bookmark">Git -- Git Flow</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/17/git-merge/" rel="bookmark">Git -- 合并</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-object/" rel="bookmark">Git -- 对象</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/04/19/git-reduce/" title="Git -- 仓库瘦身">http://zhongmingmao.me/2017/04/19/git-reduce/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/tool/" rel="tag"><i class="fa fa-tag"></i> Tool</a>
+          
+            <a href="/tags/git/" rel="tag"><i class="fa fa-tag"></i> Git</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/04/19/git-object/" rel="next" title="Git -- 对象">
+                <i class="fa fa-chevron-left"></i> Git -- 对象
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/19/git-flow/" rel="prev" title="Git -- Git Flow">
+                Git -- Git Flow <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#git-gc"><span class="nav-number">1.</span> <span class="nav-text">git gc</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#git-prune"><span class="nav-number">2.</span> <span class="nav-text">git prune</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

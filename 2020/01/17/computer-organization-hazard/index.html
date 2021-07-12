@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="冒险 流水线架构的CPU，是主动进行的冒险选择，期望通过冒险带来更高的回报 对于各种冒险可能造成的问题，都准备好了应对方案   分类 结构冒险（Structural Hazard） 数据冒险（Data Hazard） 控制冒险（Control Hazard）">
+<meta name="keywords" content="Computer Basics,Computer Organization">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机组成 -- 冒险">
+<meta property="og:url" content="http://zhongmingmao.me/2020/01/17/computer-organization-hazard/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="冒险 流水线架构的CPU，是主动进行的冒险选择，期望通过冒险带来更高的回报 对于各种冒险可能造成的问题，都准备好了应对方案   分类 结构冒险（Structural Hazard） 数据冒险（Data Hazard） 控制冒险（Control Hazard）">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-mem-access.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-solution.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-pipeline-stall.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-5-stage.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-store-r.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-add.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop-2-add.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-2-add.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-load-add.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-3-command.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-oooe.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-if.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-static-prediction.jpg">
+<meta property="og:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-loop.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.136Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="计算机组成 -- 冒险">
+<meta name="twitter:description" content="冒险 流水线架构的CPU，是主动进行的冒险选择，期望通过冒险带来更高的回报 对于各种冒险可能造成的问题，都准备好了应对方案   分类 结构冒险（Structural Hazard） 数据冒险（Data Hazard） 控制冒险（Control Hazard）">
+<meta name="twitter:image" content="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-mem-access.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2020/01/17/computer-organization-hazard/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>计算机组成 -- 冒险 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2020/01/17/computer-organization-hazard/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">计算机组成 -- 冒险
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-01-18 00:55:09" itemprop="dateCreated datePublished" datetime="2020-01-18T00:55:09+08:00">2020-01-18</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/computer-basics/" itemprop="url" rel="index"><span itemprop="name">Computer Basics</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/computer-basics/computer-organization/" itemprop="url" rel="index"><span itemprop="name">Computer Organization</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">16 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="冒险"><a href="#冒险" class="headerlink" title="冒险"></a>冒险</h2><ol>
+<li>流水线架构的CPU，是<strong>主动</strong>进行的冒险选择，期望通过冒险带来<strong>更高的回报</strong><ul>
+<li>对于各种冒险可能造成的问题，都准备好了<strong>应对方案</strong></li>
+</ul>
+</li>
+<li>分类<ul>
+<li><strong>结构冒险</strong>（<strong>Structural</strong> Hazard）</li>
+<li><strong>数据冒险</strong>（<strong>Data</strong> Hazard）</li>
+<li><strong>控制冒险</strong>（<strong>Control</strong> Hazard）</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="结构冒险"><a href="#结构冒险" class="headerlink" title="结构冒险"></a>结构冒险</h2><ol>
+<li>结构冒险，本质上是一个<strong>硬件层面的资源竞争问题</strong></li>
+<li>CPU在<strong>同一个时钟周期</strong>，同时在运行<strong>两条计算机指令的不同阶段</strong>，但这两个不同的阶段可能会用到<strong>同样的硬件电路</strong></li>
+</ol>
+<h3 id="内存的数据访问"><a href="#内存的数据访问" class="headerlink" title="内存的数据访问"></a>内存的数据访问</h3><img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-mem-access.jpg" width="1000/">
+
+<ol>
+<li>第1条指令执行到<strong>访存</strong>（MEM）阶段的时候，流水线的第4条指令，在执行<strong>取指令</strong>（Fetch）操作</li>
+<li><strong>访存</strong>和<strong>取指令</strong>，都是要进行内存数据的读取，而<strong>内存只有一个地址译码器</strong>，只能在一个时钟周期内读取一条数据<ul>
+<li><strong>无法同时执行</strong>第1条指令的<strong>读取内存数据</strong>和第4条指令的<strong>读取指令代码</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
+<li>解决方案：<strong>增加资源</strong></li>
+<li><strong>哈佛架构</strong><ul>
+<li>把内存分成两部分，它们<strong>有各自的地址译码器</strong>，这两部分分别是<strong>存放指令的程序内存</strong>和<strong>存放数据的数据内存</strong></li>
+<li>缺点：<strong>无法</strong>根据实际情况去<strong>动态调整</strong></li>
+</ul>
+</li>
+<li><strong>普林斯顿架构 – 冯.诺依曼体系架构</strong><ul>
+<li>今天使用的CPU，仍然是冯.诺依曼体系架构，并没有把内存拆成程序内存和数据内存两部分</li>
+</ul>
+</li>
+<li><strong>混合架构</strong><ul>
+<li>现代CPU没有在内存层面进行对应的拆分，但在<strong>CPU内部的高速缓存</strong>部分进行了区分，分成了<strong>指令缓存</strong>和<strong>数据缓存</strong></li>
+<li>内存的访问速度远比CPU的速度慢，<strong>现代CPU并不会直接读取主内存</strong><ul>
+<li>会从主内存把<strong>指令</strong>和<strong>数据</strong>加载到<strong>高速缓存</strong>中，后续的访问都是访问高速缓存</li>
+</ul>
+</li>
+<li>指令缓存和数据缓存的拆分，使得CPU在进行<strong>数据访问</strong>和<strong>取指令</strong>的时候，不会再发生资源冲突的情况</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-solution.jpg" width="600/">
+
+<h2 id="数据冒险"><a href="#数据冒险" class="headerlink" title="数据冒险"></a>数据冒险</h2><ol>
+<li><strong>结构冒险</strong>是<strong>硬件层面</strong>的问题，可以通过<strong>增加硬件资源</strong>的方式来解决；但还有很多冒险问题属于<strong>程序逻辑</strong>层面，最常见是<strong>数据冒险</strong></li>
+<li>数据冒险：<strong>同时在执行多个指令之间，有数据依赖的情况</strong></li>
+<li>依赖分类<ul>
+<li><strong>先写后读</strong>（Read After Write，<strong>RAW</strong>）</li>
+<li><strong>先读后写</strong>（Write After Read，<strong>WAR</strong>）</li>
+<li><strong>写后再写</strong>（Write After Write，<strong>WAW</strong>）</li>
+</ul>
+</li>
+</ol>
+<h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><h4 id="写-gt-读"><a href="#写-gt-读" class="headerlink" title="写 -&gt; 读"></a>写 -&gt; 读</h4><figure class="highlight c"><figcaption><span>raw.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> b = <span class="number">2</span>;</span><br><span class="line">    a = a + <span class="number">2</span>;</span><br><span class="line">    b = a + <span class="number">3</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c raw.c</span><br><span class="line">$ objdump -d -M intel -S raw.o</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:	55                   	push   rbp</span><br><span class="line">   1:	48 89 e5             	mov    rbp,rsp</span><br><span class="line">	int a = 1;</span><br><span class="line">   4:	c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">	int b = 2;</span><br><span class="line">   b:	c7 45 f8 02 00 00 00 	mov    DWORD PTR [rbp-0x8],0x2</span><br><span class="line">	a = a + 2;</span><br><span class="line">  12:	83 45 fc 02          	add    DWORD PTR [rbp-0x4],0x2</span><br><span class="line">	b = a + 3;</span><br><span class="line">  16:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]</span><br><span class="line">  19:	83 c0 03             	add    eax,0x3</span><br><span class="line">  1c:	89 45 f8             	mov    DWORD PTR [rbp-0x8],eax</span><br><span class="line">&#125;</span><br><span class="line">  1f:	5d                   	pop    rbp</span><br><span class="line">  20:	c3                   	ret</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>内存地址12的机器码，把0x2添加到<code>rbp-0x4</code>对应的<strong>内存地址</strong></li>
+<li>内存地址16的机器码，从<code>rbp-0x4</code>这个<strong>内存地址</strong>里面读取，把值把写入到<code>eax</code>这个<strong>寄存器</strong>里面</li>
+<li>必须保证：在内存地址16的指令读取<code>rbp-0x4</code>里面的值之前，内存地址12的指令写入到<code>rbp-0x4</code>的操作已经完成</li>
+<li><strong>写 -&gt; 读</strong>的依赖关系，一般称为<strong>数据依赖</strong>，即Data Dependency</li>
+<li>简单理解：<strong>先写入，才能读</strong></li>
+</ol>
+<h4 id="读-gt-写"><a href="#读-gt-写" class="headerlink" title="读 -&gt; 写"></a>读 -&gt; 写</h4><figure class="highlight c"><figcaption><span>war.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">int</span> b = <span class="number">2</span>;</span><br><span class="line">  a = b + a;</span><br><span class="line">  b = a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c war.c</span><br><span class="line">$ objdump -d -M intel -S war.o</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:	55                   	push   rbp</span><br><span class="line">   1:	48 89 e5             	mov    rbp,rsp</span><br><span class="line">	int a = 1;</span><br><span class="line">   4:	c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">	int b = 2;</span><br><span class="line">   b:	c7 45 f8 02 00 00 00 	mov    DWORD PTR [rbp-0x8],0x2</span><br><span class="line">	a = b + a;</span><br><span class="line">  12:	8b 45 f8             	mov    eax,DWORD PTR [rbp-0x8]</span><br><span class="line">  15:	01 45 fc             	add    DWORD PTR [rbp-0x4],eax</span><br><span class="line">	b = a + b;</span><br><span class="line">  18:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]</span><br><span class="line">  1b:	01 45 f8             	add    DWORD PTR [rbp-0x8],eax</span><br><span class="line">&#125;</span><br><span class="line">  1e:	5d                   	pop    rbp</span><br><span class="line">  1f:	c3                   	ret</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>内存地址15的指令，要把<code>eax</code>寄存器里面的值读出来，再加到<code>rbp-0x4</code>的内存地址</li>
+<li>内存地址18的指令，要更新<code>eax</code>寄存器</li>
+<li>如果内存地址18的<code>eax</code>的写入先完成，在内存地址为15的代码里面取出<code>eax</code>才发生，程序就会出错<ul>
+<li>同样要保证对于<code>eax</code>的<strong>先读后写</strong>的操作顺序</li>
+</ul>
+</li>
+<li><strong>读 -&gt; 写</strong>的依赖关系，一般称为<strong>反依赖</strong>，即Anti Dependency</li>
+<li>简单理解：<strong>前一个读操作取出来的数据用于其它运算，后一个写操作就不能先执行完成</strong></li>
+</ol>
+<h4 id="写-gt-写"><a href="#写-gt-写" class="headerlink" title="写 -&gt; 写"></a>写 -&gt; 写</h4><figure class="highlight c"><figcaption><span>waw.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">  a = <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c waw.c</span><br><span class="line">$ objdump -d -M intel -S waw.o</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:	55                   	push   rbp</span><br><span class="line">   1:	48 89 e5             	mov    rbp,rsp</span><br><span class="line">	int a = 1;</span><br><span class="line">   4:	c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">	a = 2;</span><br><span class="line">   b:	c7 45 fc 02 00 00 00 	mov    DWORD PTR [rbp-0x4],0x2</span><br><span class="line">&#125;</span><br><span class="line">  12:	5d                   	pop    rbp</span><br><span class="line">  13:	c3                   	ret</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>内存地址4的指令和内存地址b的指令，都是将对应的数据写入到<code>rbp-0x4</code>  的内存地址里面</li>
+<li>必须保证：内存地址4的指令的写入，在内存地址b的指令的写入之前完成</li>
+<li><strong>写 -&gt; 写</strong>的依赖关系，一般称为<strong>输出依赖</strong>，即Output Dependency</li>
+<li>简单理解：<strong>覆盖写</strong></li>
+</ol>
+<h3 id="解决方案-–-流水线停顿"><a href="#解决方案-–-流水线停顿" class="headerlink" title="解决方案 – 流水线停顿"></a>解决方案 – 流水线停顿</h3><ol>
+<li>除了<strong>读 -&gt; 读</strong>，对于<strong>同一个</strong>寄存器或者内存地址的操作，都有<strong>明确强制的顺序要求</strong></li>
+<li>解决数据冒险的简单方案：<strong>流水线停顿</strong>（Pipeline Stall）、别称：<strong>流水线冒泡</strong>（Pipeline Bubbling）<ul>
+<li>这是一种<strong>以牺牲CPU性能为代价</strong>的方案，在最坏的情况下，<strong>流水线架构的CPU会退化成单指令周期的CPU！！</strong></li>
+</ul>
+</li>
+<li>在进行<strong>指令译码</strong>的时候，会拿到对应指令<strong>所需要访问的寄存器和内存地址</strong><ul>
+<li>此时能判断这个指令是否会触发数据冒险，如果会触发数据冒险，可以决定让整个流水线<strong>停顿一个或多个周期</strong></li>
+</ul>
+</li>
+<li>时钟信号会<strong>不停地</strong>在0和1之间<strong>自动切换</strong>，并<strong>没有办法真的停顿下来</strong><ul>
+<li>在实践过程中，并不是让流水线停下来，而是在执行后面的操作步骤前<strong>插入</strong>一个<strong>NOP</strong>（No Option）操作</li>
+<li>好像在一个水管里面，进了一个<strong>空气泡</strong>，因此也叫<strong>流水线冒泡</strong></li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-pipeline-stall.jpg" width="1000/">
+
+<h2 id="操作数前推"><a href="#操作数前推" class="headerlink" title="操作数前推"></a>操作数前推</h2><h3 id="流水线对齐"><a href="#流水线对齐" class="headerlink" title="流水线对齐"></a>流水线对齐</h3><h4 id="五级流水线"><a href="#五级流水线" class="headerlink" title="五级流水线"></a>五级流水线</h4><p><strong>取指令（IF） -&gt; 指令译码（ID） -&gt; 指令执行（EX） -&gt; 内存访问（MEM） -&gt; 数据写回（WB）</strong><br><img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-5-stage.jpg" width="1000/"></p>
+<h4 id="MIPS指令"><a href="#MIPS指令" class="headerlink" title="MIPS指令"></a>MIPS指令</h4><img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips.jpg" width="1000/">
+
+<ol>
+<li>在MIPS的体系结构下，<strong>不同类型的指令，会在流水线的不同阶段进行不同的操作</strong></li>
+<li><strong>LOAD</strong>：从<strong>内存</strong>里<strong>读取</strong>数据到<strong>寄存器</strong><ul>
+<li>需要经历5个完整的流水线</li>
+</ul>
+</li>
+<li><strong>STORE</strong>：从<strong>寄存器</strong>往<strong>内存</strong>里<strong>写入</strong>数据<ul>
+<li>不需要有<strong>写回寄存器</strong>的操作，即没有<strong>数据写回</strong>（WB）的流水线阶段</li>
+</ul>
+</li>
+<li><strong>ADD</strong>、<strong>SUB</strong><ul>
+<li>加减法指令，<strong>所有操作</strong>都在<strong>寄存器</strong>完成，没有实际的<strong>内存访问</strong>（MEM）操作</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-store-r.jpg" width="1000/">
+
+<ol>
+<li>有些指令没有对应的流水线阶段，但<strong>不能跳过对应的阶段</strong>直接执行下一阶段</li>
+<li>如果先后执行一条LOAD指令和一条ADD指令，LOAD指令的WB阶段和ADD指令的WB阶段，在<strong>同一个时钟周期</strong>发生<ul>
+<li>相当于触发了一个<strong>结构冒险</strong>事件，产生了<strong>资源竞争</strong></li>
+</ul>
+</li>
+<li>在实践中，各个指令不需要的阶段，<strong>不会直接跳过</strong>，而是会运行一次<strong>NOP</strong>操作</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-add.jpg" width="800/">
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop.jpg" width="1000/">
+
+<h3 id="操作数前推-1"><a href="#操作数前推-1" class="headerlink" title="操作数前推"></a>操作数前推</h3><ol>
+<li>通过<strong>NOP</strong>操作进行对齐，在流水线里，就不会遇到<strong>资源竞争</strong>产生的<strong>结构冒险</strong>问题<ul>
+<li>NOP操作，即<strong>流水线停顿</strong>插入的对应操作</li>
+</ul>
+</li>
+<li>插入过多的<strong>NOP</strong>操作，意味着CPU<strong>空转</strong>增多</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// s1 s2 t0都是寄存器</span></span><br><span class="line">add $t0, $s2,$s1 <span class="comment">// s1 + s2 -&gt; t0</span></span><br><span class="line">add $s2, $s1,$t0 <span class="comment">// s1 + t0 -&gt; s2</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>后一条add指令，依赖寄存器t0的值，而t0里面的值，又来自于前一条add指令的计算结果<ul>
+<li>因此后一条add指令，需要等待前一条add指令的<strong>数据写回</strong>（WB）阶段完成之后才能执行</li>
+</ul>
+</li>
+<li>这是一个<strong>数据冒险</strong>：<strong>数据依赖</strong>类型（<strong>写 -&gt; 读</strong>），上面的方案是通过<strong>流水线停顿</strong>来解决这个问题</li>
+<li>要在第二条指令的<strong>译码</strong>阶段之后，插入对应的NOP指令，直到前一条指令的数据写回完成之后，才能继续执行</li>
+<li>这虽然解决了数据冒险的问题，但也<strong>浪费了两个时钟周期</strong></li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop-2-add.jpg" width="1000/">
+
+<ol>
+<li>第二条指令的执行，未必需要等待第一条指令写回完成才能进行</li>
+<li>如果能够把第一条指令的执行结果<strong>作为输入直接传输</strong>到第二条指令的执行阶段<ul>
+<li>那第二条指令就不用再从<strong>寄存器</strong>里面，把数据再单独读取出来才能执行代码</li>
+<li>可以在第一条指令的<strong>执行（EX）阶段完成</strong>之后，直接将结果数据传输到下一条指令的<strong>ALU</strong><ul>
+<li>这样，下一条指令不再需要再插入两个NOP阶段，就可以正常走到执行阶段</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>上面的方案就是<strong>操作数前推</strong>（Operand <strong>Forwarding</strong>）、<strong>操作数旁路</strong>（Operand <strong>Bypassing</strong>）<ul>
+<li>Forwarding：<strong>逻辑</strong>含义，第一条指令的执行结果<strong>作为输入直接转发</strong>给第二条指令的ALU</li>
+<li>Bypassing：<strong>硬件</strong>含义，为了实现Forwarding，在CPU的硬件层面，需要<strong>单独</strong>拉出一根信号传输的线路<ul>
+<li>使得ALU的计算结果能够<strong>重新回到</strong>ALU的输入</li>
+<li>越过了<strong>写入寄存器</strong>，再<strong>从寄存器读出来</strong>的过程，可以<strong>节省两个时钟周期</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-2-add.jpg" width="1000/">
+
+<ol>
+<li><strong>操作数前推</strong>的解决方案可以和<strong>流水线停顿</strong>一起使用<ul>
+<li>虽然可以把操作数转发到下一条指令，但下一条指令仍然需要停顿一个时钟周期</li>
+</ul>
+</li>
+<li>先执行一条LOAD指令，再执行ADD指令<ul>
+<li>LOAD指令在访存阶段才能把数据读取出来，下一条指令的执行阶段，需要等上一阶段的访存阶段完成之后，才能进行</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-load-add.jpg" width="1000/">
+
+<p><strong>操作数前推并不能减少所有冒泡</strong>，只能去掉其中一部分，仍然需要通过插入一些<strong>NOP</strong>来解决<strong>数据冒险</strong>问题</p>
+<h2 id="乱序执行"><a href="#乱序执行" class="headerlink" title="乱序执行"></a>乱序执行</h2><ol>
+<li><strong>结构冒险</strong><ul>
+<li>限制来源：<strong>在同一时钟周期内，不同的指令的不同流水线阶段，要访问相同的硬件资源</strong></li>
+<li>解决方案：<em><strong>增加资源</strong></em></li>
+</ul>
+</li>
+<li><strong>数据冒险</strong><ul>
+<li>限制来源：<strong>数据之间的各种依赖</strong></li>
+<li>解决方案：<em><strong>流水线停顿</strong>、<strong>操作数前推</strong></em></li>
+</ul>
+</li>
+<li>即便综合运用这三个技术，仍然会遇到<strong>不得不停下整个流水线</strong>，等待前面的指令完成的情况</li>
+</ol>
+<h3 id="填补空闲的NOP"><a href="#填补空闲的NOP" class="headerlink" title="填补空闲的NOP"></a>填补空闲的NOP</h3><ol>
+<li>无论是<strong>流水线停顿</strong>，还是<strong>操作数前推</strong>，只要前面指令的特定阶段还没有执行完成，后面的指令就会被<strong>阻塞</strong></li>
+<li>虽然<strong>代码生成</strong>的指令是<strong>顺序</strong>的，如果后面的指令<strong>不需要依赖</strong>前面指令的执行结果，完全可以<strong>不必等待</strong>前面的指令执行完成<ul>
+<li>这样的解决方案，在计算机组成里面，被称为<strong>乱序执行</strong>（<strong>Out-of-Order</strong> Execution，OoOE）</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a = b + c</span><br><span class="line">d = a * e</span><br><span class="line">x = y * z</span><br></pre></td></tr></table></figure>
+
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-3-command.jpg" width="1000/">
+
+<h3 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h3><img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-oooe.jpg" width="1000/">
+
+<ol>
+<li><strong>取指令</strong>和<strong>指令译码</strong>阶段，乱序执行的CPU和使用流水线架构的CPU是一样的，会<strong>一级一级顺序进行</strong></li>
+<li>指令译码完成后，CPU<strong>不会直接进行指令执行</strong>，而是进行一次<strong>指令分发</strong><ul>
+<li>指令分发：把指令分发到<strong>保留站</strong>（Reservation Stations，RS）<ul>
+<li>类比：<strong>保留站 -&gt; 火车站</strong>，<strong>指令 -&gt; 火车</strong></li>
+</ul>
+</li>
+<li>这些<strong>指令不会立即执行</strong>，而是等待它们<strong>所依赖的数据</strong>，传递给它们之后才会执行<ul>
+<li>类比：<strong>数据 -&gt; 乘客</strong>，火车需要等乘客</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>一旦指令依赖的数据到齐了，指令就可以交到后面的<strong>功能单元</strong>（Function Unit，FU，本质是<strong>ALU</strong>）去执行了<ul>
+<li>很多功能单元是可以<strong>并行运行</strong>的，但<strong>不同的功能单元能够支持执行的指令是不相同的</strong></li>
+</ul>
+</li>
+<li>指令执行阶段完成后，我们并<strong>不能立即把结果写回到寄存器</strong>里面，而是把结果先存放到<strong>重排序缓冲区</strong>（ReOrder Buffer，ROB）</li>
+<li>在<strong>重排序缓冲区</strong>里，我们的CPU会按照<strong>取指令的顺序</strong>，对指令的计算结果重新排序<ul>
+<li>只有<strong>排在前面的指令</strong>都已经<strong>完成</strong>了，才会<strong>提交指令</strong>，完成整个指令的运算结果</li>
+</ul>
+</li>
+<li>实际的指令计算结果数据，并<strong>不是直接写到内存或者高速缓存</strong>，而是先写入<strong>存储缓冲区</strong>（Store Buffer）<ul>
+<li><strong>最终才会写入内存和高速缓存</strong></li>
+</ul>
+</li>
+<li>在乱序执行的情况下，只有<strong>CPU内部指令的执行层面</strong>，可能是<strong>乱序</strong>的<ul>
+<li>只要能在<strong>指令译码</strong>阶段<strong>正确地分析出指令之间的数据依赖关系</strong>，『乱序』就只会在<strong>相互没有影响</strong>的指令之间发生<ul>
+<li>相互没有影响 ≈ <strong>不破坏数据依赖</strong></li>
+</ul>
+</li>
+<li>即便指令的执行过程是乱序的，在指令的计算结果<strong>最终写入到寄存器和内存之前</strong>，依然会进行一次<strong>排序</strong><ul>
+<li>以确保<strong>所有指令</strong>在<strong>外部看来</strong>仍然是<strong>有序完成</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="回到样例"><a href="#回到样例" class="headerlink" title="回到样例"></a>回到样例</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a = b + c</span><br><span class="line">d = a * e</span><br><span class="line">x = y * z</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>d依赖于a的计算结果，不会在a的计算完成之前执行</li>
+<li><code>x = y * z</code>的指令同样会被分发到<strong>保留站</strong>，x所依赖的y和z的数据是准备好的，这里的乘法运算不会等待d的计算结果</li>
+<li>如果只有一个FU能够计算乘法，那么这个FU并不会因为d要等待a的计算结果而被限制，会先被拿来计算x</li>
+<li>x计算完成后，d也等来了a的计算结果，此时，唯一的乘法FU会去计算d的结果</li>
+<li>在<strong>重排序缓冲区</strong>里，把对应的计算结果的提交顺序，仍然设置为<strong>a-&gt;d-&gt;x</strong>，但实际计算完成的顺序是<strong>x-&gt;a-&gt;d</strong></li>
+<li>整个过程中，计算乘法的FU<strong>没有被闲置</strong>，意味着<strong>CPU的吞吐率最大化</strong></li>
+</ol>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><ol>
+<li>整个乱序执行技术，类似于在<strong>指令的执行阶段</strong>提供了一个<strong>线程池</strong>，<strong>FU</strong>就是<strong>线程</strong><ul>
+<li>指令不再是顺序执行的，而是根据线程池所<strong>拥有的资源</strong>，各个任务<strong>是否可以进行执行</strong>，进行<strong>动态调度</strong></li>
+<li>在执行完成之后，又重新把结果放在一个<strong>队列</strong>里面，<strong>按照指令的分发顺序重新排序</strong></li>
+<li>即使内部是『乱序』的，但<strong>外部看来</strong>，仍然是<strong>顺序执行</strong>的</li>
+</ul>
+</li>
+<li>乱序执行，<strong>极大地提高了CPU的运行效率</strong><ul>
+<li>核心原因：<strong>CPU的运行速度比访问主内存的速度快很多</strong></li>
+<li>如果采用<strong>顺序执行</strong>的方式，很多时间会被浪费在前面指令<strong>等待获取内存数据</strong><ul>
+<li>为此，CPU不得不加入<strong>NOP</strong>操作进行<strong>空转</strong></li>
+</ul>
+</li>
+<li>乱序执行充分利用了<strong>较深流水线</strong>带来的<strong>并发性</strong>，可以充分利用CPU的性能</li>
+</ul>
+</li>
+</ol>
+<h2 id="控制冒险"><a href="#控制冒险" class="headerlink" title="控制冒险"></a>控制冒险</h2><ol>
+<li>在<strong>结构冒险</strong>和<strong>数据冒险</strong>中，所有的<strong>流水线停顿</strong>都要从<strong>指令执行</strong>（EX）阶段开始<ul>
+<li>流水线的前两个阶段，即<strong>取指令</strong>（IF）和<strong>指令译码</strong>（ID），是不需要停顿的</li>
+<li>基于一个基本假设：所有的指令代码都是<strong>顺序加载执行</strong>的<ul>
+<li>不成立的情况：在执行的代码中，遇到<strong>if/else</strong>条件分支，或者<strong>for/while</strong>循环</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>jne指令发生的时候，CPU可能会跳转去执行其它指令<ul>
+<li>jne后的那一条指令是否应该顺序加载执行，在流水线里进行<strong>取指令</strong>的时候，是<strong>无法知道</strong>的</li>
+<li>要等到<strong>jne指令执行完成</strong>，更新了<strong>PC寄存器</strong>后，才能知道是否执行下一条指令，还是跳转到另一个内存地址，去取别的指令</li>
+</ul>
+</li>
+<li>为了确保能<strong>取到正确的指令</strong>，不得不进行<strong>等待延迟</strong>的情况，这就是<strong>控制冒险</strong></li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-if.jpg" width="1000/">
+
+<h3 id="缩短分支延迟"><a href="#缩短分支延迟" class="headerlink" title="缩短分支延迟"></a>缩短分支延迟</h3><ol>
+<li><strong>条件跳转指令</strong>实际上进行了两种电路操作：<strong>条件比较</strong> + <strong>实际跳转</strong></li>
+<li><strong>条件跳转</strong><ul>
+<li>根据<strong>指令的opcode</strong>，就能确认<strong>对应的条件码寄存器</strong></li>
+</ul>
+</li>
+<li><strong>实际跳转</strong><ul>
+<li>把要<strong>跳转的地址</strong>写入到<strong>PC寄存器</strong></li>
+</ul>
+</li>
+<li>无论是<strong>指令的opcode</strong>，还是<strong>对应的条件码寄存器</strong>，还是<strong>跳转的地址</strong>，都是在<strong>指令译码</strong>阶段就能获得的<ul>
+<li>对应的<strong>条件码比较电路</strong>，只需要<strong>简单的逻辑门电路</strong>即可，并不需要一个完整而复杂的ALU</li>
+<li>可以将<strong>条件判断</strong>、<strong>地址跳转</strong>，都提前到<strong>指令译码</strong>阶段进行，而不需要放在<strong>指令执行</strong>阶段</li>
+<li>在CPU里面设计对应的<strong>旁路</strong>，在<strong>指令译码</strong>阶段，就提供对应的<strong>判断比较的电路</strong></li>
+</ul>
+</li>
+<li>这种方式，本质上和前面<strong>数据冒险</strong>的<strong>操作数前推</strong>的解决方案类似，就是在<strong>硬件电路层面</strong>，把一些计算结果<strong>更早地反馈</strong>到流水线中<ul>
+<li>这样反馈会变得更快，后面的指令需要<strong>等待的时间</strong>就会<strong>变短</strong></li>
+</ul>
+</li>
+<li>只是<strong>改造硬件</strong>，并<strong>不能彻底解决问题</strong><ul>
+<li>跳转指令的比较结果，仍然要在<strong>指令执行</strong>完成后才能知道</li>
+<li>在流水线里，第一条指令进行<strong>指令译码</strong>的时钟周期里，其实就要<strong>取下一条指令</strong>了<ul>
+<li>但由于第一条指令还没开始指令执行阶段，此时并不知道比较的结果，自然也就无法准确知道要取哪一条指令了</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="分支预测"><a href="#分支预测" class="headerlink" title="分支预测"></a>分支预测</h3><h4 id="静态预测"><a href="#静态预测" class="headerlink" title="静态预测"></a>静态预测</h4><ol>
+<li>CPU预测：条件跳转<strong>一定不发生</strong></li>
+<li>如果<strong>预测成功</strong>，可以<strong>节省</strong>本来需要停顿下来<strong>等待的时间</strong></li>
+<li>如果<strong>预测失败</strong>，需要<strong>丢弃</strong>后面已经取出指令且已经执行的部分<ul>
+<li>这个丢弃的操作，在流水线里面叫作<strong>Zap</strong>或者<strong>Flush</strong></li>
+<li>CPU不仅要执行后面的指令，对于已经在流水线里面<strong>执行到一半</strong>的指令，还需要做对应的<strong>清除</strong>操作<ul>
+<li>例如清空已经使用的<strong>寄存器</strong>里面的数据，而这些清除操作，有一定的<strong>开销</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-static-prediction.jpg" width="1000/">
+
+<h4 id="动态预测"><a href="#动态预测" class="headerlink" title="动态预测"></a>动态预测</h4><ol>
+<li><strong>一级分支预测</strong>（One Level Branch Prediction）、<strong>1比特饱和计数</strong>（1-bit saturating counter）<ul>
+<li>用<strong>1Bit</strong>，记录当前分支的比较情况，<strong>直接用当前分支的比较情况来预测下一次分支的比较情况</strong></li>
+</ul>
+</li>
+<li><strong>状态机</strong>（State Machine）<ul>
+<li>如果状态机总共有<strong>4个状态</strong>，需要2个比特来记录对应的状态，这样的策略叫作<strong>2比特饱和计数</strong>或者<strong>双模态预测器</strong></li>
+</ul>
+</li>
+</ol>
+<h4 id="循环嵌套"><a href="#循环嵌套" class="headerlink" title="循环嵌套"></a>循环嵌套</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BranchPrediction</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1000</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; <span class="number">10000</span>; k++) &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"Time spent is "</span> + (end - start));</span><br><span class="line"></span><br><span class="line">        start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1000</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; <span class="number">100</span>; k++) &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"Time spent is "</span> + (end - start) + <span class="string">"ms"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Time spent is 4</span><br><span class="line">Time spent is 19ms</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>循环其实也是利用<strong>cmp</strong>和<strong>jle</strong>指令来实现的</li>
+<li>每一次循环都有一个<strong>cmp</strong>和<strong>jle</strong>指令<ul>
+<li>每一个<strong>jle</strong>都意味着要<strong>比较条件码寄存器的状态</strong>，来决定是<strong>顺序执行</strong>代码，还是要<strong>跳转</strong>到另外的地址</li>
+<li>每一次<strong>循环发生</strong>的时候，都会有一次『<strong>分支</strong>』</li>
+</ul>
+</li>
+<li>分支预测策略最简单的方式：假设分支<strong>不发生</strong><ul>
+<li>对应循环，就是<strong>循环始终进行下去</strong></li>
+</ul>
+</li>
+<li>上面第一段代码<strong>分支预测错误</strong>的情况<strong>比较少</strong><ul>
+<li>更多的计算机指令，在流水线里顺序运行下去了，而不是把运行到一半的指令丢弃掉，再去重新加载新的指令执行</li>
+</ul>
+</li>
+</ol>
+<img src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-loop.jpg" width="800/">
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100026001" target="_blank" rel="noopener">深入浅出计算机组成原理</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/13/computer-organization-adder/" rel="bookmark">计算机组成 -- 加法器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/11/computer-organization-binary/" rel="bookmark">计算机组成 -- 二进制编码</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/16/computer-organization-build-data-path/" rel="bookmark">计算机组成 -- 建立数据通路</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/28/computer-organization-bus/" rel="bookmark">计算机组成 -- 总线</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/01/26/computer-organization-cache/" rel="bookmark">计算机组成 -- 高速缓存</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2020/01/17/computer-organization-hazard/" title="计算机组成 -- 冒险">http://zhongmingmao.me/2020/01/17/computer-organization-hazard/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/computer-basics/" rel="tag"><i class="fa fa-tag"></i> Computer Basics</a>
+          
+            <a href="/tags/computer-organization/" rel="tag"><i class="fa fa-tag"></i> Computer Organization</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/01/17/computer-organization-instruction-pipeline/" rel="next" title="计算机组成 -- 指令流水线">
+                <i class="fa fa-chevron-left"></i> 计算机组成 -- 指令流水线
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/01/19/computer-organization-superscalar-vliw/" rel="prev" title="计算机组成 -- Superscalar + VLIW">
+                计算机组成 -- Superscalar + VLIW <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#冒险"><span class="nav-number">1.</span> <span class="nav-text">冒险</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结构冒险"><span class="nav-number">2.</span> <span class="nav-text">结构冒险</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#内存的数据访问"><span class="nav-number">2.1.</span> <span class="nav-text">内存的数据访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方案"><span class="nav-number">2.2.</span> <span class="nav-text">解决方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据冒险"><span class="nav-number">3.</span> <span class="nav-text">数据冒险</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#依赖"><span class="nav-number">3.1.</span> <span class="nav-text">依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#写-gt-读"><span class="nav-number">3.1.1.</span> <span class="nav-text">写 -&gt; 读</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#读-gt-写"><span class="nav-number">3.1.2.</span> <span class="nav-text">读 -&gt; 写</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#写-gt-写"><span class="nav-number">3.1.3.</span> <span class="nav-text">写 -&gt; 写</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方案-–-流水线停顿"><span class="nav-number">3.2.</span> <span class="nav-text">解决方案 – 流水线停顿</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#操作数前推"><span class="nav-number">4.</span> <span class="nav-text">操作数前推</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#流水线对齐"><span class="nav-number">4.1.</span> <span class="nav-text">流水线对齐</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#五级流水线"><span class="nav-number">4.1.1.</span> <span class="nav-text">五级流水线</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MIPS指令"><span class="nav-number">4.1.2.</span> <span class="nav-text">MIPS指令</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#操作数前推-1"><span class="nav-number">4.2.</span> <span class="nav-text">操作数前推</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#乱序执行"><span class="nav-number">5.</span> <span class="nav-text">乱序执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#填补空闲的NOP"><span class="nav-number">5.1.</span> <span class="nav-text">填补空闲的NOP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现过程"><span class="nav-number">5.2.</span> <span class="nav-text">实现过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#回到样例"><span class="nav-number">5.3.</span> <span class="nav-text">回到样例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">5.4.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制冒险"><span class="nav-number">6.</span> <span class="nav-text">控制冒险</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缩短分支延迟"><span class="nav-number">6.1.</span> <span class="nav-text">缩短分支延迟</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分支预测"><span class="nav-number">6.2.</span> <span class="nav-text">分支预测</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#静态预测"><span class="nav-number">6.2.1.</span> <span class="nav-text">静态预测</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#动态预测"><span class="nav-number">6.2.2.</span> <span class="nav-text">动态预测</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#循环嵌套"><span class="nav-number">6.2.3.</span> <span class="nav-text">循环嵌套</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

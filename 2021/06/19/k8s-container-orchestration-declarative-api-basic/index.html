@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="命令式 vs 声明式命令式12# kubectl create -f nginx.yaml# kubectl replace -f nginx.yaml  声明式1# kubectl apply -f nginx.yaml   所谓声明式，即只需要提交一个定义好的API对象来声明所期待的状态即可 声明式API允许多个API写端，以PATCH的方式对API对象进行修改，而无需关心本地原始YAML文件">
+<meta name="keywords" content="Cloud Native,Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="声明式API -- 基本概念">
+<meta property="og:url" content="http://zhongmingmao.me/2021/06/19/k8s-container-orchestration-declarative-api-basic/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="命令式 vs 声明式命令式12# kubectl create -f nginx.yaml# kubectl replace -f nginx.yaml  声明式1# kubectl apply -f nginx.yaml   所谓声明式，即只需要提交一个定义好的API对象来声明所期待的状态即可 声明式API允许多个API写端，以PATCH的方式对API对象进行修改，而无需关心本地原始YAML文件">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/geek/image-20210619184705818.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="声明式API -- 基本概念">
+<meta name="twitter:description" content="命令式 vs 声明式命令式12# kubectl create -f nginx.yaml# kubectl replace -f nginx.yaml  声明式1# kubectl apply -f nginx.yaml   所谓声明式，即只需要提交一个定义好的API对象来声明所期待的状态即可 声明式API允许多个API写端，以PATCH的方式对API对象进行修改，而无需关心本地原始YAML文件">
+<meta name="twitter:image" content="https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/geek/image-20210619184705818.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2021/06/19/k8s-container-orchestration-declarative-api-basic/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>声明式API -- 基本概念 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2021/06/19/k8s-container-orchestration-declarative-api-basic/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">声明式API -- 基本概念
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-06-19 16:47:42" itemprop="dateCreated datePublished" datetime="2021-06-19T16:47:42+08:00">2021-06-19</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/" itemprop="url" rel="index"><span itemprop="name">Cloud Native</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/cloud-native/kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">4.6k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">8 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="命令式-vs-声明式"><a href="#命令式-vs-声明式" class="headerlink" title="命令式 vs 声明式"></a>命令式 vs 声明式</h1><h2 id="命令式"><a href="#命令式" class="headerlink" title="命令式"></a>命令式</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># kubectl create -f nginx.yaml</span><br><span class="line"># kubectl replace -f nginx.yaml</span><br></pre></td></tr></table></figure>
+
+<h2 id="声明式"><a href="#声明式" class="headerlink" title="声明式"></a>声明式</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># kubectl apply -f nginx.yaml</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>所谓声明式，即只需要提交一个<strong>定义好的API对象</strong>来<strong>声明所期待的状态</strong>即可</li>
+<li>声明式API允许<strong>多个API写端</strong>，以<strong>PATCH</strong>的方式对API对象进行修改，而无需关心<strong>本地原始YAML文件</strong>的内容<ul>
+<li>声明式API最主要的能力：<em><strong>PATCH API</strong></em></li>
+</ul>
+</li>
+<li>声明式API是<strong>Kubernetes编排能力赖以生存的核心</strong>所在</li>
+</ol>
+<h2 id="本质区别"><a href="#本质区别" class="headerlink" title="本质区别"></a>本质区别</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>kubectl replace</th>
+<th>kubectl apply</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>执行过程</td>
+<td>使用<strong>新API对象</strong>替换旧API对象</td>
+<td>执行对旧API对象的<strong>PATCH</strong>操作<br>类似：kubectl <strong>set image</strong>、kubectl <strong>edit</strong></td>
+</tr>
+<tr>
+<td>kube-apiserver</td>
+<td><strong>一次只能处理一个写请求</strong>，否则可能产生<strong>冲突</strong></td>
+<td><strong>一次能处理多个写请求</strong>，具备<strong>Merge</strong>能力</td>
+</tr>
+</tbody></table>
+<h1 id="Kubernetes编程范式"><a href="#Kubernetes编程范式" class="headerlink" title="Kubernetes编程范式"></a>Kubernetes编程范式</h1><blockquote>
+<p>使用<strong>控制器模式</strong>，与Kubernetes里<strong>API对象</strong>的『增、删、改、查』进行<strong>协作</strong>，进而<strong>完成用户业务逻辑</strong>的编写</p>
+</blockquote>
+<a id="more"></a>
+
+<h1 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h1><blockquote>
+<p>Istio是基于<strong>Kubernetes</strong>的<strong>微服务治理框架</strong></p>
+</blockquote>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><ol>
+<li><strong>Envoy</strong>是一个<strong>高性能的C++网络代理</strong>，以<strong>Sidecar容器</strong>的方式运行在每个被治理的应用Pod中</li>
+<li>Pod里<strong>所有的容器都共享同一个Network Namespace</strong><ul>
+<li><strong>Envoy容器</strong>可以通过配置Pod里的<strong>iptables</strong>规则，<strong>接管整个Pod的进出流量</strong></li>
+</ul>
+</li>
+<li>Control Plane里的<strong>Pilot</strong>组件，能够通过<strong>调用每个Envoy容器的API</strong>来对<strong>Envoy代理</strong>进行配置，从而实现<strong>微服务治理</strong></li>
+<li><strong>对Envoy容器的部署</strong>和<strong>对Envoy代理的配置</strong>，对用户和应用来说是<strong>透明</strong>的 – 借助于Kubernetes的<strong>Dynamic Admission Control</strong></li>
+</ol>
+<p><img src="https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/geek/image-20210619184705818.png" alt></p>
+<h2 id="Initializer-–-Dynamic-Admission-Control"><a href="#Initializer-–-Dynamic-Admission-Control" class="headerlink" title="Initializer – Dynamic Admission Control"></a>Initializer – Dynamic Admission Control</h2><blockquote>
+<p><strong>Admission</strong>（<strong>编译</strong>进APIServer）：当一个API对象被<strong>提交给APIServer后</strong>，被<strong>Kubernetes正式处理前</strong>的一些<strong>初始化</strong>工作</p>
+</blockquote>
+<h3 id="myapp-pod-yaml"><a href="#myapp-pod-yaml" class="headerlink" title="myapp-pod.yaml"></a>myapp-pod.yaml</h3><p>Pod里目前只有一个用户容器（<strong>myapp-container</strong>）</p>
+<figure class="highlight yaml"><figcaption><span>myapp-pod.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">myapp-pod</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    app:</span> <span class="string">myapp</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">myapp-container</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">echo</span> <span class="string">Hello</span> <span class="string">Kubernetes!</span> <span class="string">&amp;&amp;</span> <span class="string">sleep</span> <span class="number">3600</span></span><br></pre></td></tr></table></figure>
+
+<p>Istio的任务：myapp-pod.yaml被提交给Kubernetes后，对应的API对象里会<strong>自动加上Envoy容器的配置</strong></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">myapp-pod</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    app:</span> <span class="string">myapp</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">myapp-container</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">sh</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">'-c'</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">echo</span> <span class="string">Hello</span> <span class="string">Kubernetes!</span> <span class="string">&amp;&amp;</span> <span class="string">sleep</span> <span class="number">3600</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">envoy</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">'lyft/envoy:845747b88f102c0fd262ab234308e9e22f693a1'</span></span><br><span class="line"><span class="attr">      command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/usr/local/bin/envoy</span></span><br><span class="line">      <span class="string">...</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="envoy-initializer-–-容器定义"><a href="#envoy-initializer-–-容器定义" class="headerlink" title="envoy-initializer – 容器定义"></a>envoy-initializer – 容器定义</h3><ol>
+<li>首先，将<strong>Envoy容器本身的定义</strong>，以<strong>ConfigMap</strong>的方式保存在Kubernetes中</li>
+<li>ConfigMap的<strong>data</strong>字段是<strong>一个Pod对象的一部分定义</strong></li>
+<li>Initializer控制器的任务<ul>
+<li>把Envoy相关的字段<strong>自动添加</strong>到用户提交的Pod的API对象里</li>
+<li>但用户提交的Pod里本来就有<strong>containers</strong>字段和<strong>volumes</strong>字段 – <strong>PATCH API</strong>（<strong>声明式API最主要的能力</strong>）</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight yaml"><figcaption><span>envoy-initializer.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ConfigMap</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">envoy-initializer</span></span><br><span class="line"><span class="attr">data:</span></span><br><span class="line"><span class="attr">  config:</span> <span class="string">|</span></span><br><span class="line"><span class="string"></span><span class="attr">    containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">envoy</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">lyft/envoy:845747db88f102c0fd262ab234308e9e22f693a1</span></span><br><span class="line"><span class="attr">        command:</span> <span class="string">["/usr/local/bin/envoy"]</span></span><br><span class="line"><span class="attr">        args:</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">"--concurrency 4"</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">"--config-path /etc/envoy/envoy.json"</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">"--mode serve"</span></span><br><span class="line"><span class="attr">        ports:</span></span><br><span class="line"><span class="attr">          - containerPort:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">            protocol:</span> <span class="string">TCP</span></span><br><span class="line"><span class="attr">        resources:</span></span><br><span class="line"><span class="attr">          limits:</span></span><br><span class="line"><span class="attr">            cpu:</span> <span class="string">"1000m"</span></span><br><span class="line"><span class="attr">            memory:</span> <span class="string">"512Mi"</span></span><br><span class="line"><span class="attr">          requests:</span></span><br><span class="line"><span class="attr">            cpu:</span> <span class="string">"100m"</span></span><br><span class="line"><span class="attr">            memory:</span> <span class="string">"64Mi"</span></span><br><span class="line"><span class="attr">        volumeMounts:</span></span><br><span class="line"><span class="attr">          - name:</span> <span class="string">envoy-conf</span></span><br><span class="line"><span class="attr">            mountPath:</span> <span class="string">/etc/envoy</span></span><br><span class="line"><span class="attr">    volumes:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">envoy-conf</span></span><br><span class="line"><span class="attr">        configMap:</span></span><br><span class="line"><span class="attr">          name:</span> <span class="string">envoy</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="envoy-initializer-0-0-1-–-控制器"><a href="#envoy-initializer-0-0-1-–-控制器" class="headerlink" title="envoy-initializer:0.0.1 – 控制器"></a>envoy-initializer:0.0.1 – 控制器</h3><ol>
+<li><strong>envoy-initializer:0.0.1</strong>为<strong>自定义控制器</strong></li>
+<li><strong>控制循环</strong>：不断获取<strong>实际状态</strong>，然后与<strong>期望状态</strong>对比，以此作为依据来决定下一步的操作</li>
+<li>Initializer控制器：实际状态（<strong>用户新创建的Pod</strong>），期望状态（<strong>该Pod里被添加了Envoy容器的定义</strong>）</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> &#123;</span><br><span class="line">  <span class="comment">// 获取新创建的Pod</span></span><br><span class="line">  pod := client.GetLatestPod()</span><br><span class="line">  <span class="comment">// 该Pod里是否已经添加过Envoy容器</span></span><br><span class="line">  <span class="keyword">if</span> !isInitialized(pod) &#123;</span><br><span class="line">    <span class="comment">// 还没添加Envoy容器，则修改该Pod的API对象，往Pod里合并envoy-initializer这个ConfigMap的data字段</span></span><br><span class="line">    doSomething(pod)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">doSomething</span><span class="params">(pod)</span></span> &#123;</span><br><span class="line">  cm := client.Get(ConfigMap, <span class="string">"envoy-initializer"</span>)</span><br><span class="line"></span><br><span class="line">  newPod := Pod&#123;&#125;</span><br><span class="line">  newPod.Spec.Containers = cm.Containers</span><br><span class="line">  newPod.Spec.Volumes = cm.Volumes</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 生成patch数据</span></span><br><span class="line">  patchBytes := strategicpatch.CreateTwoWayMergePatch(pod, newPod)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 发起PATCH请求，修改这个pod对象</span></span><br><span class="line">  client.Patch(pod.Name, patchBytes)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="将Initializer作为Pod部署"><a href="#将Initializer作为Pod部署" class="headerlink" title="将Initializer作为Pod部署"></a>将Initializer作为Pod部署</h3><figure class="highlight yaml"><figcaption><span>envoy-initializer-pod.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    app:</span> <span class="string">envoy-initializer</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">envoy-initializer</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">envoy-initializer</span></span><br><span class="line"><span class="attr">      image:</span> <span class="string">'envoy-initializer:0.0.1'</span></span><br><span class="line"><span class="attr">      imagePullPolicy:</span> <span class="string">Always</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="配置需要进行Initialize的资源"><a href="#配置需要进行Initialize的资源" class="headerlink" title="配置需要进行Initialize的资源"></a>配置需要进行Initialize的资源</h3><h4 id="envoy-config"><a href="#envoy-config" class="headerlink" title="envoy-config"></a>envoy-config</h4><p>Kubernetes要对所有的Pod进行Initialize操作，名称为<strong>envoy</strong>-initializer（<strong>envoy</strong>.initializer.kubernetes.io）</p>
+<figure class="highlight yaml"><figcaption><span>envoy-config.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">admissionregistration.k8s.io/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">InitializerConfiguration</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">envoy-config</span></span><br><span class="line"><span class="attr">initializers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">envoy.initializer.kubernetes.io</span> <span class="comment"># name必须至少包含2个'.'</span></span><br><span class="line"><span class="attr">    rules:</span></span><br><span class="line"><span class="attr">      - apiGroups:</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">''</span> <span class="comment"># Core Api Group</span></span><br><span class="line"><span class="attr">        apiVersions:</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">        resources:</span></span><br><span class="line"><span class="bullet">          -</span> <span class="string">pods</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="metadata-initializers"><a href="#metadata-initializers" class="headerlink" title="metadata.initializers"></a>metadata.initializers</h4><ol>
+<li>一旦该<strong>InitializerConfiguration</strong>被创建，所有<strong>新创建的Pod</strong>的<strong>metadata.initializers.pending</strong>上会出现该<strong>Initializer</strong>的名字</li>
+<li>该Initializer会借助Pod的<strong>metadata.initializers.pending</strong>来判断该Pod有没有执行过自己所负责的初始化操作（<code>isInitialized()</code>）</li>
+<li>当Initializer完成了初始化操作后，要<strong>负责清除</strong>掉<strong>metadata.initializers.pending</strong>标志</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  initializers:</span></span><br><span class="line"><span class="attr">    pending:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">envoy.initializer.kubernetes.io</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">myapp-pod</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    app:</span> <span class="string">myapp</span></span><br><span class="line"><span class="string">...</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="metadata-annotations"><a href="#metadata-annotations" class="headerlink" title="metadata.annotations"></a>metadata.annotations</h4><p>在Pod的Annotation<strong>声明使用了某个Initializer</strong>，如使用了<strong>envoy-initializer</strong></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="string">metadata</span></span><br><span class="line"><span class="attr">  annotations:</span></span><br><span class="line">    <span class="string">"initializer.kubernetes.io/envoy"</span><span class="string">:</span> <span class="string">"true"</span></span><br><span class="line">    <span class="string">...</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://time.geekbang.org/column/intro/100015201" target="_blank" rel="noopener">深入剖析Kubernetes</a></li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/12/cloud-native-k8s-config/" rel="bookmark">应用配置管理</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-container/" rel="bookmark">Kubernetes -- 容器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/07/cloud-native-k8s-core-concept/" rel="bookmark">Kubernetes -- 核心概念</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/11/cloud-native-k8s-orchestration-core-principle/" rel="bookmark">应用编排与管理 -- 核心原理</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2021/07/12/cloud-native-k8s-orchestration-daemonset/" rel="bookmark">应用编排与管理 -- DaemonSet</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2021/06/19/k8s-container-orchestration-declarative-api-basic/" title="声明式API -- 基本概念">http://zhongmingmao.me/2021/06/19/k8s-container-orchestration-declarative-api-basic/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/cloud-native/" rel="tag"><i class="fa fa-tag"></i> Cloud Native</a>
+          
+            <a href="/tags/kubernetes/" rel="tag"><i class="fa fa-tag"></i> Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/06/18/cloud-native-java/" rel="next" title="Graal VM:云原生时代的Java（转载）">
+                <i class="fa fa-chevron-left"></i> Graal VM:云原生时代的Java（转载）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/06/22/k8s-app-dev-view/" rel="prev" title="Kubernetes -- 应用开发视角">
+                Kubernetes -- 应用开发视角 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#命令式-vs-声明式"><span class="nav-number">1.</span> <span class="nav-text">命令式 vs 声明式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#命令式"><span class="nav-number">1.1.</span> <span class="nav-text">命令式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#声明式"><span class="nav-number">1.2.</span> <span class="nav-text">声明式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#本质区别"><span class="nav-number">1.3.</span> <span class="nav-text">本质区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Kubernetes编程范式"><span class="nav-number">2.</span> <span class="nav-text">Kubernetes编程范式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Istio"><span class="nav-number">3.</span> <span class="nav-text">Istio</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#架构"><span class="nav-number">3.1.</span> <span class="nav-text">架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Initializer-–-Dynamic-Admission-Control"><span class="nav-number">3.2.</span> <span class="nav-text">Initializer – Dynamic Admission Control</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#myapp-pod-yaml"><span class="nav-number">3.2.1.</span> <span class="nav-text">myapp-pod.yaml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#envoy-initializer-–-容器定义"><span class="nav-number">3.2.2.</span> <span class="nav-text">envoy-initializer – 容器定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#envoy-initializer-0-0-1-–-控制器"><span class="nav-number">3.2.3.</span> <span class="nav-text">envoy-initializer:0.0.1 – 控制器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将Initializer作为Pod部署"><span class="nav-number">3.2.4.</span> <span class="nav-text">将Initializer作为Pod部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置需要进行Initialize的资源"><span class="nav-number">3.2.5.</span> <span class="nav-text">配置需要进行Initialize的资源</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#envoy-config"><span class="nav-number">3.2.5.1.</span> <span class="nav-text">envoy-config</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#metadata-initializers"><span class="nav-number">3.2.5.2.</span> <span class="nav-text">metadata.initializers</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#metadata-annotations"><span class="nav-number">3.2.5.3.</span> <span class="nav-text">metadata.annotations</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

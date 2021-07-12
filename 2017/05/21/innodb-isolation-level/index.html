@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文主要介绍InnoDB的事务隔离级别关于Next-Key Lock的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述">
+<meta name="keywords" content="Storage,MySQL,InnoDB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB -- 事务隔离级别">
+<meta property="og:url" content="http://zhongmingmao.me/2017/05/21/innodb-isolation-level/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文主要介绍InnoDB的事务隔离级别关于Next-Key Lock的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.140Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="InnoDB -- 事务隔离级别">
+<meta name="twitter:description" content="本文主要介绍InnoDB的事务隔离级别关于Next-Key Lock的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/05/21/innodb-isolation-level/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>InnoDB -- 事务隔离级别 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/05/21/innodb-isolation-level/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">InnoDB -- 事务隔离级别
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-05-22 00:06:25" itemprop="dateCreated datePublished" datetime="2017-05-22T00:06:25+08:00">2017-05-22</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">InnoDB</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">12k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">22 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文主要介绍<code>InnoDB</code>的<code>事务隔离级别</code><br>关于<code>Next-Key Lock</code>的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述</p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="脏读、不可重复读、幻读"><a href="#脏读、不可重复读、幻读" class="headerlink" title="脏读、不可重复读、幻读"></a>脏读、不可重复读、幻读</h1><h2 id="脏读"><a href="#脏读" class="headerlink" title="脏读"></a>脏读</h2><p>在不同的事务下，当前事务可以读到其它事务中<code>尚未提交</code>的数据，即可以读到<code>脏数据</code></p>
+<h2 id="不可重复读"><a href="#不可重复读" class="headerlink" title="不可重复读"></a>不可重复读</h2><p>在同一个事务中，同一个查询在T1时间读取某一行，在T2时间重新读取这一行时候，这一行的数据已经发生修改，不可重复读的重点是修改（<code>Update</code>）</p>
+<h2 id="幻读"><a href="#幻读" class="headerlink" title="幻读"></a>幻读</h2><p>在同一事务中，同一查询多次进行，由于包含插入或删除操作的其他事务提交，导致每次返回不同的结果集，幻读的重点在于插入（<code>Insert</code>）或者删除(<code>Delete</code>)</p>
+<h1 id="两类读操作"><a href="#两类读操作" class="headerlink" title="两类读操作"></a>两类读操作</h1><h2 id="一致性非锁定读"><a href="#一致性非锁定读" class="headerlink" title="一致性非锁定读"></a>一致性非锁定读</h2><ol>
+<li><code>InnoDB</code>通过行<code>多版本控制</code>的方式来读取当前执行时间数据中行的数据，如果读取的行正在执行<code>DELETE</code>或<code>UPDATE</code>操作，这时读操作<code>不会等待行上锁的释放</code>，而是读取行的一个<code>快照数据</code></li>
+<li><code>非锁定读机</code>制极大地提高了数据库的<code>并发性</code>，这是<code>InnoDB默认的读取方式</code></li>
+<li><code>READ COMMITED</code>和<code>REPEATABLE READ</code>支持<code>一致性非锁定读</code>：在<code>READ COMMITED</code>下，总是读取被锁定行的<code>最新的快照数据</code>，在<code>REPEATABLE READ</code>下，总是读取<code>事务开始时的快照数据</code></li>
+</ol>
+<h2 id="一致性锁定读"><a href="#一致性锁定读" class="headerlink" title="一致性锁定读"></a>一致性锁定读</h2><p>对数据库读操作进行<code>显式加锁</code>以保证数据逻辑的<code>一致性</code>，有两种方式：<code>SELECT…FOR UPDATE</code>对读取的行记录加一个<code>X Lock</code>；<code>SELECT…LOCK IN SHARE MODE</code>对读取的行记录加一个<code>S Lock</code></p>
+<h1 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h1><h2 id="级别与问题"><a href="#级别与问题" class="headerlink" title="级别与问题"></a>级别与问题</h2><p><code>✓</code>：可能出现   <code>✗</code>：不会出现</p>
+<table>
+<thead>
+<tr>
+<th>隔离级别</th>
+<th>脏读</th>
+<th>不可重复读</th>
+<th>幻读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>READ UNCOMMITTED</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>READ COMMITTED</td>
+<td>✗</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>REPEATABLE READ</td>
+<td>✗</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>SERIALIZABLE</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+</tbody></table>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><h3 id="RUC与脏读"><a href="#RUC与脏读" class="headerlink" title="RUC与脏读"></a>RUC与脏读</h3><p><code>READ-UNCOMMITTED</code>存在<code>脏读</code>问题</p>
+<h4 id="Session-A"><a href="#Session-A" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b INT NOT NULL</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.05 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 1,1;</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; SET SESSION TX_ISOLATION='READ-UNCOMMITTED';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.20 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t;</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| a | b |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| 1 | 1 |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-B"><a href="#Session-B" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET SESSION TX_ISOLATION='READ-UNCOMMITTED';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; UPDATE t SET b=2 WHERE a=1;</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Rows matched: 1  Changed: 1  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<p><code>Session B</code>将记录从<code>(1,1)</code>更新为<code>(1,2)</code>，因此持有了该记录的<code>X Lock</code></p>
+<h4 id="Session-A-1"><a href="#Session-A-1" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t;</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| a | b |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| 1 | 2 |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> a=<span class="number">1</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>; <span class="comment"># 一致性锁定，阻塞一段时间后超时</span></span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br></pre></td></tr></table></figure>
+
+<p><code>Session A</code>读到了<code>Session B</code>尚未提交的数据，属于<code>脏读</code><br><code>Session A</code>尝试持有记录的<code>X Lock</code>，此时该<code>X Lock</code>的持有者为<code>Session B</code>，<code>Session A</code>被阻塞</p>
+<h4 id="Session-B-1"><a href="#Session-B-1" class="headerlink" title="Session B"></a>Session B</h4><p>事务和锁的详细信息如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT trx_id,trx_state,trx_requested_lock_id,trx_isolation_level FROM INFORMATION_SCHEMA.INNODB_TRX;</span><br><span class="line">+<span class="comment">---------+-----------+-----------------------+---------------------+</span></span><br><span class="line">| trx_id  | trx_state | trx_requested_lock_id | trx_isolation_level |</span><br><span class="line">+<span class="comment">---------+-----------+-----------------------+---------------------+</span></span><br><span class="line">| 1328837 | <span class="keyword">LOCK</span> <span class="keyword">WAIT</span> | <span class="number">1328837</span>:<span class="number">463</span>:<span class="number">3</span>:<span class="number">2</span>       | <span class="keyword">READ</span> UNCOMMITTED    |</span><br><span class="line">| <span class="number">1328836</span> | RUNNING   | <span class="literal">NULL</span>                  | <span class="keyword">READ</span> UNCOMMITTED    |</span><br><span class="line">+<span class="comment">---------+-----------+-----------------------+---------------------+</span></span><br><span class="line"><span class="number">2</span> <span class="keyword">rows</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_LOCKS;</span><br><span class="line">+<span class="comment">-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+</span></span><br><span class="line">| lock_id         | lock_trx_id | lock_mode | lock_type | lock_table | lock_index | lock_space | lock_page | lock_rec | lock_data |</span><br><span class="line">+<span class="comment">-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+</span></span><br><span class="line">| 1328837:463:3:2 | 1328837     | X         | RECORD    | `test`.`t` | PRIMARY    |        463 |         3 |        2 | 1         |</span><br><span class="line">| 1328836:463:3:2 | 1328836     | X         | RECORD    | `test`.`t` | PRIMARY    |        463 |         3 |        2 | 1         |</span><br><span class="line">+<span class="comment">-----------------+-------------+-----------+-----------+------------+------------+------------+-----------+----------+-----------+</span></span><br><span class="line">2 rows in <span class="keyword">set</span>, <span class="number">1</span> <span class="keyword">warning</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> information_schema.INNODB_LOCK_WAITS;</span><br><span class="line">+<span class="comment">-------------------+-------------------+-----------------+------------------+</span></span><br><span class="line">| requesting_trx_id | requested_lock_id | blocking_trx_id | blocking_lock_id |</span><br><span class="line">+<span class="comment">-------------------+-------------------+-----------------+------------------+</span></span><br><span class="line">| 1328837           | 1328837:463:3:2   | 1328836         | 1328836:463:3:2  |</span><br><span class="line">+<span class="comment">-------------------+-------------------+-----------------+------------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span>, <span class="number">1</span> <span class="keyword">warning</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h3 id="RC与不可重复读"><a href="#RC与不可重复读" class="headerlink" title="RC与不可重复读"></a>RC与不可重复读</h3><p><code>READ-COMMITTED</code>解决了<code>READ-UNCOMMITTED</code>存在的<code>脏读</code>问题，解决方法是采用<code>一致性非锁定读</code>，读取<code>最新的快照版本</code>，但仍然存在<code>不可重复读</code>问题</p>
+<h4 id="Session-A-2"><a href="#Session-A-2" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b INT NOT NULL</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.05 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 1,1;</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; SET SESSION TX_ISOLATION='READ-COMMITTED';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.20 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t;</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| a | b |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| 1 | 1 |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-B-2"><a href="#Session-B-2" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET SESSION TX_ISOLATION='READ-COMMITTED';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; UPDATE t SET b=2 WHERE a=1;</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Rows matched: 1  Changed: 1  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<p><code>Session B</code>将记录从<code>(1,1)</code>更新为<code>(1,2)</code>，因此持有了该记录的<code>X Lock</code></p>
+<h4 id="Session-A-3"><a href="#Session-A-3" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t; # 一致性非锁定读</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| a | b |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| 1 | 1 |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>; <span class="comment"># 一致性锁定，阻塞一段时间后超时</span></span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br></pre></td></tr></table></figure>
+
+<p><code>Session A</code>采用<code>一致性非锁定读</code>，而<code>Session B</code>尚未提交，因此<code>Session A</code>能读取到的<code>最新快照版本</code>依然为<code>(1,1)</code>，解决了<code>READ-UNCOMMITTED</code>的<code>脏读</code>问题</p>
+<h4 id="Session-B-3"><a href="#Session-B-3" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; COMMIT; # 提交事务</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-A-4"><a href="#Session-A-4" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t;</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| a | b |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">| 1 | 2 |</span><br><span class="line">+<span class="comment">---+---+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p><code>Session B</code>提交事务后，<code>Session A</code>能读取到最新的快照版本<code>(1,2)</code>，而<code>Session A</code>尚未提交事务，初始快照版本为<code>(1,1)</code>，属于<code>不可重复读</code></p>
+<h3 id="RR与幻读"><a href="#RR与幻读" class="headerlink" title="RR与幻读"></a>RR与幻读</h3><ol>
+<li><code>REPEATABLE-READ</code>解决了<code>READ-COMMITTED</code>存在的<code>不可重复读</code>问题，解决方法是采用<code>一致性非锁定读</code>，读取<code>事务初始时的快照版本</code>，但这样仍然存在<code>幻读</code>问题</li>
+<li><strong><code>REPEATABLE-READ</code>结合<code>Next-Key Lock</code>，可以解决<code>幻读</code>问题</strong>。<code>幻读</code>问题关注的是<code>Insert</code>和<code>Delete</code>，而<code>Next-Key Locking = Record Lock + Gap Lock</code>，<code>Gap Lock</code>可以防止<code>Insert</code>，<code>Record Lock</code>可以防止<code>Delete</code>。（关于<code>Next-Key Locking</code>的详细内容，请参照博文「InnoDB备忘录 - Next-Key Lock」）</li>
+<li>在<code>REPEATABLE-READ</code>下，<code>MVCC</code>可以这样理解：<strong><code>MV(Multi Version)</code>用于解决<code>脏读</code>和<code>不可重复读</code></strong>，而<strong><code>CC(Concurrency Control)</code>则是利用<code>Next-Key Lock</code>解决<code>幻读</code>问题</strong></li>
+<li><code>REPEATABLE READ</code>为<code>InnoDB</code>的<code>默认事务隔离级别</code>，<code>REPEATABLE READ</code>已经完全保证事务的<code>隔离性</code>要求，即达到<code>SERIALIZABLE</code>隔离级别</li>
+<li>隔离级别越低，<code>事务请求的锁</code>越少或<code>保持锁的时间</code>就越短，因此大多数数据库系统（<code>Oracle</code>、<code>SQL Server</code>）的默认事务隔离级别是<code>READ COMMITTED</code></li>
+<li><code>InnoDB</code>中选择<code>REPEATABLE READ</code>的事务隔离级别<code>不会有任何性能的损失</code>，同样地，即使使用<code>READ COMMITTED</code>的隔离级别，用户也<code>不会得到性能上的大幅度提升</code></li>
+</ol>
+<h4 id="Session-A-5"><a href="#Session-A-5" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b INT NOT NULL</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.05 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t VALUES (10,10),(20,20),(30,30);</span><br><span class="line">Query OK, 3 row affected (0.02 sec)</span><br><span class="line">Records: 3  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; SET SESSION TX_ISOLATION='REPEATABLE-READ';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.20 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25; # 一致性非锁定读</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">| 20 | 20 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">2 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-B-4"><a href="#Session-B-4" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET SESSION TX_ISOLATION='REPEATABLE-READ';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.20 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; UPDATE t SET b=200 WHERE a=20;</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Rows matched: 1  Changed: 1  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; COMMIT;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-A-6"><a href="#Session-A-6" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25; # 可重复读</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">| 20 | 20 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">2 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p><code>Session A</code>采用的是<code>一致性非锁定读</code>，读取<code>事务初始时的快照版本</code>，解决了<code>READ-COMMITTED</code>的<code>不可重复读</code>问题</p>
+<h4 id="Session-B-5"><a href="#Session-B-5" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0,0;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; COMMIT;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-A-7"><a href="#Session-A-7" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25; # 可重复读</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">| 20 | 20 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">2 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> <span class="number">0</span>,<span class="number">0</span>;</span><br><span class="line">ERROR 1062 (23000): Duplicate entry '0' for key 'PRIMARY'</span><br></pre></td></tr></table></figure>
+
+<p><code>SELECT</code>筛选出来并没有<code>a=0</code>的记录，但在<code>DELETE</code>时却发生主键冲突，属于<code>幻读</code></p>
+<h4 id="Session-A-8"><a href="#Session-A-8" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25 FOR UPDATE; # 一致性锁定读，采用Next-Key Locking加锁</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">| a  | b   |</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">|  0 |   0 |</span><br><span class="line">| 10 |  10 |</span><br><span class="line">| 20 | 200 |</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">3 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p><code>SELECT...FOR UPDATE</code>属于<code>一致性锁定读</code>，获取<strong><code>最新的快照版本</code></strong>，然后利用<code>Next-Key Locking</code>进行加锁<br>加锁的情况：在<code>a = 0,10,20,30</code>上加<strong><code>X Lock</code></strong>，在<code>a ∈ (-∞,0)∪(0,10)∪(10,20)∪(20,30)</code>加<strong><code>Gap Lock</code></strong><br>（关于<code>Next-Key Locking</code>的详细内容，请参照博文「InnoDB备忘录 - Next-Key Lock」）</p>
+<h4 id="Session-B-6"><a href="#Session-B-6" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET SESSION innodb_lock_wait_timeout=1; # 默认超时时间为50秒</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Session A持有X Lock，Session B无法删除，避免因DELETE而导致的幻读问题</span></span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 0;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 10;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 20;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 30;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line"></span><br><span class="line"><span class="comment"># Session A持有Gap Lock，Session B无法插入，避免因INSERT而导致的幻读问题</span></span><br><span class="line">mysql&gt; INSERT INTO t SELECT -5,-5;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 5,5;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 15,15;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 22,22;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 25,25;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 28,28;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 35,35;</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; COMMIT;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-A-9"><a href="#Session-A-9" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25 FOR UPDATE; # 解决幻读问题</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">| a  | b   |</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">|  0 |   0 |</span><br><span class="line">| 10 |  10 |</span><br><span class="line">| 20 | 200 |</span><br><span class="line">+<span class="comment">----+-----+</span></span><br><span class="line">3 rows in <span class="keyword">set</span> (<span class="number">0.01</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h3 id="SERIALIZABLE"><a href="#SERIALIZABLE" class="headerlink" title="SERIALIZABLE"></a>SERIALIZABLE</h3><ol>
+<li><code>SERIALIZABLE</code>不存在<code>脏读</code>、<code>不可重复读</code>和<code>幻读</code></li>
+<li>在每个<code>SELECT</code>后自动加上<code>LOCK IN SHARE MODE</code>，即每个<code>读操作</code>加上一个<code>S Lock</code>，因此不支持<code>一致性非锁定读</code>（仅<code>RC</code>和<code>RR</code>支持）</li>
+<li><code>本地事务</code>不使用<code>SERIALIZABLE</code>，<code>SERIALIZABLE</code>主要用于<code>InnoDB</code>的<code>分布式事务</code></li>
+</ol>
+<h4 id="Session-A-10"><a href="#Session-A-10" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b INT NOT NULL</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.04 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t VALUES (10,10),(20,20),(30,30);</span><br><span class="line">Query OK, 3 rows affected (0.01 sec)</span><br><span class="line">Records: 3  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; SET SESSION TX_ISOLATION='SERIALIZABLE';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t WHERE a = 10; # 自动添加LOCK IN SHARE MODE，一致性锁定读</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p><code>Session A</code>持有<code>S Lock</code></p>
+<h4 id="Session-B-7"><a href="#Session-B-7" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET SESSION TX_ISOLATION='SERIALIZABLE';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; BEGIN;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT * FROM t WHERE a = 10; # S Lock与S Lock兼容</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> a = <span class="number">10</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>; <span class="comment"># S Lock与X Lock兼容，阻塞</span></span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-A-11"><a href="#Session-A-11" class="headerlink" title="Session A"></a>Session A</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SELECT * FROM t WHERE a &lt; 25;</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| a  | b  |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">| 10 | 10 |</span><br><span class="line">| 20 | 20 |</span><br><span class="line">+<span class="comment">----+----+</span></span><br><span class="line">2 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Session-B-8"><a href="#Session-B-8" class="headerlink" title="Session B"></a>Session B</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 与RR类似，不存在幻读问题</span></span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 10;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 20;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; DELETE FROM t WHERE a = 30;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 5,5;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 15,15;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 22,22;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 28,28;</span><br><span class="line">ERROR 1205 (HY000): <span class="keyword">Lock</span> <span class="keyword">wait</span> <span class="keyword">timeout</span> exceeded; try restarting transaction</span><br><span class="line">mysql&gt; INSERT INTO t SELECT 35,35;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/18/innodb-next-key-lock/" rel="bookmark">InnoDB -- Next-Key Lock</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/05/21/innodb-isolation-level/" title="InnoDB -- 事务隔离级别">http://zhongmingmao.me/2017/05/21/innodb-isolation-level/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+            <a href="/tags/innodb/" rel="tag"><i class="fa fa-tag"></i> InnoDB</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/18/innodb-next-key-lock/" rel="next" title="InnoDB -- Next-Key Lock">
+                <i class="fa fa-chevron-left"></i> InnoDB -- Next-Key Lock
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/28/java8-behavioral-parameterization/" rel="prev" title="Java 8 -- 行为参数化">
+                Java 8 -- 行为参数化 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#脏读、不可重复读、幻读"><span class="nav-number">1.</span> <span class="nav-text">脏读、不可重复读、幻读</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#脏读"><span class="nav-number">1.1.</span> <span class="nav-text">脏读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#不可重复读"><span class="nav-number">1.2.</span> <span class="nav-text">不可重复读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#幻读"><span class="nav-number">1.3.</span> <span class="nav-text">幻读</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#两类读操作"><span class="nav-number">2.</span> <span class="nav-text">两类读操作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一致性非锁定读"><span class="nav-number">2.1.</span> <span class="nav-text">一致性非锁定读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一致性锁定读"><span class="nav-number">2.2.</span> <span class="nav-text">一致性锁定读</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#隔离级别"><span class="nav-number">3.</span> <span class="nav-text">隔离级别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#级别与问题"><span class="nav-number">3.1.</span> <span class="nav-text">级别与问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实例"><span class="nav-number">3.2.</span> <span class="nav-text">实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RUC与脏读"><span class="nav-number">3.2.1.</span> <span class="nav-text">RUC与脏读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-1"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-1"><span class="nav-number">3.2.1.4.</span> <span class="nav-text">Session B</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RC与不可重复读"><span class="nav-number">3.2.2.</span> <span class="nav-text">RC与不可重复读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-2"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-2"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-3"><span class="nav-number">3.2.2.3.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-3"><span class="nav-number">3.2.2.4.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-4"><span class="nav-number">3.2.2.5.</span> <span class="nav-text">Session A</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RR与幻读"><span class="nav-number">3.2.3.</span> <span class="nav-text">RR与幻读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-5"><span class="nav-number">3.2.3.1.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-4"><span class="nav-number">3.2.3.2.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-6"><span class="nav-number">3.2.3.3.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-5"><span class="nav-number">3.2.3.4.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-7"><span class="nav-number">3.2.3.5.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-8"><span class="nav-number">3.2.3.6.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-6"><span class="nav-number">3.2.3.7.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-9"><span class="nav-number">3.2.3.8.</span> <span class="nav-text">Session A</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SERIALIZABLE"><span class="nav-number">3.2.4.</span> <span class="nav-text">SERIALIZABLE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-10"><span class="nav-number">3.2.4.1.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-7"><span class="nav-number">3.2.4.2.</span> <span class="nav-text">Session B</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-A-11"><span class="nav-number">3.2.4.3.</span> <span class="nav-text">Session A</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-B-8"><span class="nav-number">3.2.4.4.</span> <span class="nav-text">Session B</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

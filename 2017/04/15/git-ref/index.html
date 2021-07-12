@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文主要介绍常见的引用（commit对象及其祖先的的引用，branch引用，HEAD引用等）和提交区间commit对象，tag对象的内容请参照「Git++ - 对象」">
+<meta name="keywords" content="Tool,Git">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git -- 引用和提交区间">
+<meta property="og:url" content="http://zhongmingmao.me/2017/04/15/git-ref/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文主要介绍常见的引用（commit对象及其祖先的的引用，branch引用，HEAD引用等）和提交区间commit对象，tag对象的内容请参照「Git++ - 对象」">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.136Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Git -- 引用和提交区间">
+<meta name="twitter:description" content="本文主要介绍常见的引用（commit对象及其祖先的的引用，branch引用，HEAD引用等）和提交区间commit对象，tag对象的内容请参照「Git++ - 对象」">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/04/15/git-ref/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Git -- 引用和提交区间 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/04/15/git-ref/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Git -- 引用和提交区间
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-04-15 18:25:33" itemprop="dateCreated datePublished" datetime="2017-04-15T18:25:33+08:00">2017-04-15</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/" itemprop="url" rel="index"><span itemprop="name">Tool</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/git/" itemprop="url" rel="index"><span itemprop="name">Git</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">8.8k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">16 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文主要介绍<code>常见的引用</code>（commit对象及其祖先的的引用，branch引用，HEAD引用等）和<code>提交区间</code><br><code>commit对象</code>，<code>tag对象</code>的内容请参照「Git++ - 对象」</p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><h2 id="commit对象引用"><a href="#commit对象引用" class="headerlink" title="commit对象引用"></a>commit对象引用</h2><p><code>git show</code>：显示Git对象信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 4f6c14f (HEAD -&gt; master) add README.md</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s 4f6c14f</span><br><span class="line">4f6c14f add README.md</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD</span><br><span class="line">4f6c14f add README.md</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s master</span><br><span class="line">4f6c14f add README.md</span><br></pre></td></tr></table></figure>
+
+<h2 id="commit对象祖先的引用"><a href="#commit对象祖先的引用" class="headerlink" title="commit对象祖先的引用"></a>commit对象祖先的引用</h2><div class="note info">
+            <p>在<code>Fast Forward Merge</code>中，<code>只有一个</code>父提交对象，<code>第一父提交对象</code><br>在<code>Recursive Merge</code>中，合并操作发生时的当前分支所指向的提交对象是<code>第一父提交对象</code>，被合并的分支所指向的提交对象是<code>第二父提交对象</code></p>
+          </div>
+<p><code>HEAD^</code>：HEAD的第一父提交对象<br><code>HEAD^1</code>：HEAD的第一父提交对象<br><code>HEAD^2</code>：HEAD的第二父提交对象<br><code>HEAD^^</code>：HEAD的第一父提交对象的第一父提交对象<br><code>HEAD~</code>：HEAD的第一父提交对象<br><code>HEAD~2</code>：HEAD的第一父提交对象的第一父提交对象<br><code>HEAD^2~2</code>：HEAD的第二父提交对象的第一父提交对象的第一父提交对象（你懂的）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">*   85a939e (HEAD -&gt; master) M1</span><br><span class="line">|\</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">* | a13db3c C5</span><br><span class="line">* | ab4285a C4</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD^</span><br><span class="line">a13db3c C5</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD^1</span><br><span class="line">a13db3c C5</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD^2</span><br><span class="line">187060b C3</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD^^</span><br><span class="line">ab4285a C4</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD~</span><br><span class="line">a13db3c C5</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD~2</span><br><span class="line">ab4285a C4</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD^2~2</span><br><span class="line">4f543bb C1</span><br></pre></td></tr></table></figure>
+
+<h2 id="branch引用"><a href="#branch引用" class="headerlink" title="branch引用"></a>branch引用</h2><p><code>update-ref</code>：更新<code>引用</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master) C5</span><br><span class="line">* c532bf8 C4</span><br><span class="line">| * c8910d8 (dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ git update-ref refs/heads/master HEAD~ # update master(5a08236-&gt;c532bf8)</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* c532bf8 (HEAD -&gt; master) C4</span><br><span class="line">| * c8910d8 (dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/master</span><br><span class="line">c532bf878fe12373239698279c8ec797d51235ad</span><br><span class="line"></span><br><span class="line">$ git update-ref refs/heads/test dev # create a new branch test on dev(c8910d8)</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* c532bf8 (HEAD -&gt; master) C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/dev</span><br><span class="line">c8910d8b249e4530edfe7c4fc410078da66a187d</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/test</span><br><span class="line">c8910d8b249e4530edfe7c4fc410078da66a187d</span><br></pre></td></tr></table></figure>
+
+<h2 id="HEAD引用"><a href="#HEAD引用" class="headerlink" title="HEAD引用"></a>HEAD引用</h2><p><code>symbolic-ref</code>：读取、修改或删除<code>symbolic引用</code>（<code>符号引用</code>）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master) C5</span><br><span class="line">* c532bf8 C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ git symbolic-ref HEA</span><br><span class="line">refs/heads/master</span><br><span class="line"></span><br><span class="line">$ cat .git/HEAD</span><br><span class="line">ref: refs/heads/master</span><br><span class="line"></span><br><span class="line">$ git symbolic-ref HEAD refs/heads/dev # switch to branch dev</span><br><span class="line"></span><br><span class="line">$ cat .git/HEAD</span><br><span class="line">ref: refs/heads/dev</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (master) C5</span><br><span class="line">* c532bf8 C4</span><br><span class="line">| * c8910d8 (HEAD -&gt; dev, test) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br></pre></td></tr></table></figure>
+
+<h2 id="HEAD引用历史"><a href="#HEAD引用历史" class="headerlink" title="HEAD引用历史"></a>HEAD引用历史</h2><div class="note warning">
+            <p><code>git reflog</code>只存在于本地仓库，记录本地仓库的操作历史</p>
+          </div>
+<p><code>reflog</code>记录<code>HEAD</code>的引用历史，常用于本地<code>reset --hard</code>（Reset的内容请参照「Git++ - Reset」）后的回滚操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --graph --decorate --all</span><br><span class="line">* a13db3c (HEAD -&gt; master) C5</span><br><span class="line">* ab4285a C4</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br><span class="line"></span><br><span class="line">$ git reset --hard HEAD^</span><br><span class="line">HEAD is now at ab4285a C4</span><br><span class="line"></span><br><span class="line">$ git log --oneline --graph --decorate --all</span><br><span class="line">* ab4285a (HEAD -&gt; master) C4 # can not find C5</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br><span class="line"></span><br><span class="line">$ git reflog # git log -g --oneline</span><br><span class="line">ab4285a HEAD@&#123;0&#125;: reset: moving to HEAD^</span><br><span class="line">a13db3c HEAD@&#123;1&#125;: reset: moving to HEAD^</span><br><span class="line">85a939e HEAD@&#123;2&#125;: merge dev: Merge made by the &apos;recursive&apos; strategy.</span><br><span class="line">a13db3c HEAD@&#123;3&#125;: reset: moving to HEAD@&#123;1&#125;</span><br><span class="line">ab4285a HEAD@&#123;4&#125;: reset: moving to HEAD^</span><br><span class="line">a13db3c HEAD@&#123;5&#125;: commit: C5</span><br><span class="line">ab4285a HEAD@&#123;6&#125;: commit: C4</span><br><span class="line">4f543bb HEAD@&#123;7&#125;: checkout: moving from dev to master</span><br><span class="line">187060b HEAD@&#123;8&#125;: commit: C3</span><br><span class="line">451ee07 HEAD@&#123;9&#125;: commit: C2</span><br><span class="line">4f543bb HEAD@&#123;10&#125;: checkout: moving from master to dev</span><br><span class="line">4f543bb HEAD@&#123;11&#125;: commit: C1</span><br><span class="line">f9d0737 HEAD@&#123;12&#125;: commit (initial): C0</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s HEAD@&#123;5&#125;</span><br><span class="line">a13db3c C5</span><br><span class="line"></span><br><span class="line">$ git reset --hard HEAD@&#123;5&#125;</span><br><span class="line">HEAD is now at a13db3c C5</span><br><span class="line"></span><br><span class="line">$ git log --oneline --graph --decorate --all</span><br><span class="line">* a13db3c (HEAD -&gt; master) C5</span><br><span class="line">* ab4285a C4</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br></pre></td></tr></table></figure>
+
+<h2 id="tag引用"><a href="#tag引用" class="headerlink" title="tag引用"></a>tag引用</h2><h3 id="lightweight-tag引用"><a href="#lightweight-tag引用" class="headerlink" title="lightweight tag引用"></a>lightweight tag引用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master) C5</span><br><span class="line">* c532bf8 C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ git update-ref refs/tags/v1.0 HEAD~ # create lightweight tag</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master) C5</span><br><span class="line">* c532bf8 (tag: v1.0) C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/tags/v1.0 # point to a commit object directly</span><br><span class="line">c532bf878fe12373239698279c8ec797d51235ad</span><br><span class="line"></span><br><span class="line">$ git cat-file -t c532bf878fe12373239698279c8ec797d51235ad</span><br><span class="line">commit</span><br></pre></td></tr></table></figure>
+
+<h3 id="annotated-tag引用"><a href="#annotated-tag引用" class="headerlink" title="annotated tag引用"></a>annotated tag引用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master) C5</span><br><span class="line">* c532bf8 (tag: v1.0) C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ git tag -a v2.0 -m &apos;tag v2.0&apos; # ceeate annotated tag</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5a08236 (HEAD -&gt; master, tag: v2.0) C5</span><br><span class="line">* c532bf8 (tag: v1.0) C4</span><br><span class="line">| * c8910d8 (test, dev) C3</span><br><span class="line">| * 0a95c28 C2</span><br><span class="line">|/</span><br><span class="line">* 8ce5c36 C1</span><br><span class="line">* 0b2693b C0</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/tags/v2.0 # point to a tag object</span><br><span class="line">9c335494f9fb322d93add8c274f0ef1a632920ea</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 9c335494f9fb322d93add8c274f0ef1a632920ea</span><br><span class="line">tag</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 9c335494f9fb322d93add8c274f0ef1a632920ea</span><br><span class="line">object 5a0823659a16f3e6aa7caa0a6fc1ee3bebf4112c</span><br><span class="line">type commit</span><br><span class="line">tag v2.0</span><br><span class="line">tagger zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492609041 +0800</span><br><span class="line">tag v2.0</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 5a0823659a16f3e6aa7caa0a6fc1ee3bebf4112c # point to a commit object</span><br><span class="line">commit</span><br></pre></td></tr></table></figure>
+
+<h2 id="remote引用"><a href="#remote引用" class="headerlink" title="remote引用"></a>remote引用</h2><p><code>remote引用</code>在本地仓库是只读的，<code>git commit</code>不会更新<code>remote引用</code>，更新发生在<code>git fetch</code>和<code>git pull</code>执行时</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">$ git remote add hzmajia https://github.com/hzmajia/hzmajia.github.io</span><br><span class="line"></span><br><span class="line">$ git remote -v</span><br><span class="line">hzmajia	https://github.com/hzmajia/hzmajia.github.io (fetch)</span><br><span class="line">hzmajia	https://github.com/hzmajia/hzmajia.github.io (push)</span><br><span class="line"></span><br><span class="line">$ git fetch hzmajia</span><br><span class="line">warning: no common commits</span><br><span class="line">remote: Counting objects: 145, done.</span><br><span class="line">remote: Compressing objects: 100% (119/119), done.</span><br><span class="line">remote: Total 145 (delta 15), reused 140 (delta 10), pack-reused 0</span><br><span class="line">Receiving objects: 100% (145/145), 531.53 KiB | 496.00 KiB/s, done.</span><br><span class="line">Resolving deltas: 100% (15/15), done.</span><br><span class="line">From https://github.com/hzmajia/hzmajia.github.io</span><br><span class="line"> * [new branch]      blog_source -&gt; hzmajia/blog_source</span><br><span class="line"> * [new branch]      master     -&gt; hzmajia/master</span><br><span class="line"></span><br><span class="line">$ git checkout -b hzmajia_master hzmajia/master</span><br><span class="line">Branch hzmajia_master set up to track remote branch master from hzmajia.</span><br><span class="line">Switched to a new branch &apos;hzmajia_master&apos;</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/remotes/hzmajia/master</span><br><span class="line">bce4632694ed70ae303ea2433930afa910f8e800</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/hzmajia_master</span><br><span class="line">bce4632694ed70ae303ea2433930afa910f8e800</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph hzmajia_master</span><br><span class="line">* bce4632 (HEAD -&gt; hzmajia_master, hzmajia/master) Update docs</span><br><span class="line"></span><br><span class="line">$ cn=C0 &amp;&amp; touch $cn &amp;&amp; git add . &amp;&amp; git commit -m $cn</span><br><span class="line">[hzmajia_master b6b0e1e] C0</span><br><span class="line"> 1 file changed, 0 insertions(+), 0 deletions(-)</span><br><span class="line"> create mode 100644 C0</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/remotes/hzmajia/master # change nothing</span><br><span class="line">bce4632694ed70ae303ea2433930afa910f8e800</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/hzmajia_master</span><br><span class="line">b6b0e1e7df4cd830cc399bc201911b632460f7b3</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph hzmajia_master</span><br><span class="line">* b6b0e1e (HEAD -&gt; hzmajia_master) C0</span><br><span class="line">* bce4632 (hzmajia/master) Update docs</span><br></pre></td></tr></table></figure>
+
+<h3 id="remote引用规格"><a href="#remote引用规格" class="headerlink" title="remote引用规格"></a>remote引用规格</h3><ol>
+<li><code>fetch = +&lt;src&gt;:&lt;dst&gt;</code><ul>
+<li><code>+</code>在不能<code>Fast-Forward Merge</code>的情况下也强制更新引用</li>
+<li><code>&lt;src&gt;</code>：<code>远程版本库中</code>的引用</li>
+<li><code>&lt;dst&gt;</code>：<code>远程引用在本地所对应的位置</code></li>
+</ul>
+</li>
+<li><code>push = +&lt;src&gt;:&lt;dst&gt;</code><ul>
+<li><code>+</code>在不能<code>Fast-Forward Merge</code>的情况下也强制更新引用</li>
+<li><code>&lt;src&gt;</code>：<code>本地版本库中</code>的引用</li>
+<li><code>&lt;dst&gt;</code>：<code>远程版本库中</code>的引用</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ git init</span><br><span class="line">Initialized empty Git repository in /home/zhongmingmao/demo/.git/</span><br><span class="line"></span><br><span class="line">$ git remote add remote_ref https://github.com/hzmajia/remote_ref.git</span><br><span class="line"></span><br><span class="line">$ git remote -v</span><br><span class="line">remote_ref	https://github.com/hzmajia/remote_ref.git (fetch)</span><br><span class="line">remote_ref	https://github.com/hzmajia/remote_ref.git (push)</span><br><span class="line"></span><br><span class="line">$ cat .git/config</span><br><span class="line">[core]</span><br><span class="line">	repositoryformatversion = 0</span><br><span class="line">	filemode = true</span><br><span class="line">	bare = false</span><br><span class="line">	logallrefupdates = true</span><br><span class="line">[remote &quot;remote_ref&quot;]</span><br><span class="line">	url = https://github.com/hzmajia/remote_ref.git</span><br><span class="line">	fetch = +refs/heads/*:refs/remotes/remote_ref/*</span><br></pre></td></tr></table></figure>
+
+<h1 id="提交区间"><a href="#提交区间" class="headerlink" title="提交区间"></a>提交区间</h1><h2 id="双点-（最常用）"><a href="#双点-（最常用）" class="headerlink" title="双点..（最常用）"></a>双点..（最常用）</h2><p><code>branchA..branchB</code>：在branchB中但不在branchA中提交历史<br>等效于：<code>^branchA branchB</code>或<code>branchB --not branchA</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --graph --decorate --all</span><br><span class="line">* a13db3c (HEAD -&gt; master) C5</span><br><span class="line">* ab4285a C4</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate master..dev</span><br><span class="line">187060b (dev) C3</span><br><span class="line">451ee07 C2</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate ^master dev</span><br><span class="line">187060b (dev) C3</span><br><span class="line">451ee07 C2</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate dev --not master</span><br><span class="line">187060b (dev) C3</span><br><span class="line">451ee07 C2</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate dev..master</span><br><span class="line">a13db3c (HEAD -&gt; master) C5</span><br><span class="line">ab4285a C4</span><br></pre></td></tr></table></figure>
+
+<h2 id="三点…"><a href="#三点…" class="headerlink" title="三点…"></a>三点…</h2><p><code>branchA...branchB</code>：branchA的branchB提交历史的<code>差集</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --graph --decorate --all</span><br><span class="line">* a13db3c (HEAD -&gt; master) C5</span><br><span class="line">* ab4285a C4</span><br><span class="line">| * 187060b (dev) C3</span><br><span class="line">| * 451ee07 C2</span><br><span class="line">|/</span><br><span class="line">* 4f543bb C1</span><br><span class="line">* f9d0737 C0</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --left-right master...dev</span><br><span class="line">&gt; a13db3c (HEAD -&gt; master) C5</span><br><span class="line">&gt; ab4285a C4</span><br><span class="line">&lt; 187060b (dev) C3</span><br><span class="line">&lt; 451ee07 C2</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --left-right dev...master</span><br><span class="line">&gt; a13db3c (HEAD -&gt; master) C5</span><br><span class="line">&gt; ab4285a C4</span><br><span class="line">&lt; 187060b (dev) C3</span><br><span class="line">&lt; 451ee07 C2</span><br></pre></td></tr></table></figure>
+
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/14/git-basic/" rel="bookmark">Git -- 有趣的命令</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/15/git-branch/" rel="bookmark">Git -- 分支</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-flow/" rel="bookmark">Git -- Git Flow</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/17/git-merge/" rel="bookmark">Git -- 合并</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-object/" rel="bookmark">Git -- 对象</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/04/15/git-ref/" title="Git -- 引用和提交区间">http://zhongmingmao.me/2017/04/15/git-ref/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/tool/" rel="tag"><i class="fa fa-tag"></i> Tool</a>
+          
+            <a href="/tags/git/" rel="tag"><i class="fa fa-tag"></i> Git</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/04/15/git-branch/" rel="next" title="Git -- 分支">
+                <i class="fa fa-chevron-left"></i> Git -- 分支
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/16/git-stash/" rel="prev" title="Git -- Stash">
+                Git -- Stash <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#引用"><span class="nav-number">1.</span> <span class="nav-text">引用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#commit对象引用"><span class="nav-number">1.1.</span> <span class="nav-text">commit对象引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#commit对象祖先的引用"><span class="nav-number">1.2.</span> <span class="nav-text">commit对象祖先的引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#branch引用"><span class="nav-number">1.3.</span> <span class="nav-text">branch引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HEAD引用"><span class="nav-number">1.4.</span> <span class="nav-text">HEAD引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HEAD引用历史"><span class="nav-number">1.5.</span> <span class="nav-text">HEAD引用历史</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tag引用"><span class="nav-number">1.6.</span> <span class="nav-text">tag引用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#lightweight-tag引用"><span class="nav-number">1.6.1.</span> <span class="nav-text">lightweight tag引用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#annotated-tag引用"><span class="nav-number">1.6.2.</span> <span class="nav-text">annotated tag引用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#remote引用"><span class="nav-number">1.7.</span> <span class="nav-text">remote引用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#remote引用规格"><span class="nav-number">1.7.1.</span> <span class="nav-text">remote引用规格</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#提交区间"><span class="nav-number">2.</span> <span class="nav-text">提交区间</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#双点-（最常用）"><span class="nav-number">2.1.</span> <span class="nav-text">双点..（最常用）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三点…"><span class="nav-number">2.2.</span> <span class="nav-text">三点…</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

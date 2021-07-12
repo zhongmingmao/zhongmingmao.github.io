@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="节拍率（HZ） 为了维护CPU时间，Linux 通过事先定义的节拍率（内核中表示为HZ） 触发时间中断，并使用全局变量Jiffies记录开机以来的节拍数   节拍率 HZ 是内核的可配选项，可设置为100、250、1000等 HZ=250，表示每秒触发250次时间中断，每发生一次时间中断，Jiffies值+1 节拍率 HZ 是内核选项，用户空间程序不能直接访问 为了方便用户空间程序，内核提供了一个">
+<meta name="keywords" content="Linux,Linux Performance">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux性能 -- CPU -- 使用率">
+<meta property="og:url" content="http://zhongmingmao.me/2020/03/03/linux-performance-cpu-usage/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="节拍率（HZ） 为了维护CPU时间，Linux 通过事先定义的节拍率（内核中表示为HZ） 触发时间中断，并使用全局变量Jiffies记录开机以来的节拍数   节拍率 HZ 是内核的可配选项，可设置为100、250、1000等 HZ=250，表示每秒触发250次时间中断，每发生一次时间中断，Jiffies值+1 节拍率 HZ 是内核选项，用户空间程序不能直接访问 为了方便用户空间程序，内核提供了一个">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-usage-1.png">
+<meta property="og:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-usage-2.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux性能 -- CPU -- 使用率">
+<meta name="twitter:description" content="节拍率（HZ） 为了维护CPU时间，Linux 通过事先定义的节拍率（内核中表示为HZ） 触发时间中断，并使用全局变量Jiffies记录开机以来的节拍数   节拍率 HZ 是内核的可配选项，可设置为100、250、1000等 HZ=250，表示每秒触发250次时间中断，每发生一次时间中断，Jiffies值+1 节拍率 HZ 是内核选项，用户空间程序不能直接访问 为了方便用户空间程序，内核提供了一个">
+<meta name="twitter:image" content="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-usage-1.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2020/03/03/linux-performance-cpu-usage/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Linux性能 -- CPU -- 使用率 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2020/03/03/linux-performance-cpu-usage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Linux性能 -- CPU -- 使用率
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-03-03 17:25:02" itemprop="dateCreated datePublished" datetime="2020-03-03T17:25:02+08:00">2020-03-03</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">6.7k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">12 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="节拍率（HZ）"><a href="#节拍率（HZ）" class="headerlink" title="节拍率（HZ）"></a>节拍率（HZ）</h1><ol>
+<li>为了维护CPU时间，Linux 通过事先定义的节拍率（内核中表示为HZ）<ul>
+<li>触发<strong>时间中断</strong>，并使用全局变量<code>Jiffies</code>记录开机以来的节拍数</li>
+</ul>
+</li>
+<li>节拍率 HZ 是内核的可配选项，可设置为100、250、1000等</li>
+<li>HZ=250，表示每秒触发250次时间中断，每发生一次时间中断，Jiffies值+1</li>
+<li>节拍率 HZ 是内核选项，用户空间程序不能直接访问<ul>
+<li>为了方便用户空间程序，内核提供了一个空户空间节拍率<code>USER_HZ</code>，固定为<strong>100</strong>，即<strong>10ms</strong></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# grep &apos;CONFIG_HZ=&apos; /boot/config-$(uname -r)</span><br><span class="line">CONFIG_HZ=250</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h1 id="proc-stat-amp-CPU使用率"><a href="#proc-stat-amp-CPU使用率" class="headerlink" title="/proc/stat &amp; CPU使用率"></a>/proc/stat &amp; CPU使用率</h1><ol>
+<li>Linux 通过 <code>/proc</code> 虚拟文件系统，向<strong>用户空间</strong>提供<strong>系统内部状态</strong>的信息</li>
+<li><code>/proc/stat</code> 提供的是系统的 CPU 和任务统计信息</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 后面10列表示不同场景下 CPU 的累计节拍数，单位是USER_HZ，即10ms，即不同场景下的 CPU 时间</span></span><br><span class="line">root@ubuntu:~<span class="comment"># cat /proc/stat | grep ^cpu</span></span><br><span class="line">cpu  268111 3860 260337 5877915 1346 0 3292 0 0 0</span><br><span class="line">cpu0 141550 1700 118958 2937433 738 0 2282 0 0 0</span><br><span class="line">cpu1 126560 2160 141378 2940481 607 0 1010 0 0 0</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>user(us)</strong><ul>
+<li>用户态 CPU 时间，<strong>不包括 nice 时间</strong>，但<strong>包括 guest 时间</strong></li>
+</ul>
+</li>
+<li><strong>nice(ni)</strong><ul>
+<li>低优先级用户态 CPU 时间，进程的 nice 值被调整为<code>1~19</code>之间的 CPU 时间</li>
+<li>nice 可取值范围为<code>-20~19</code>，<strong>数值越大，优先级反而越低</strong></li>
+</ul>
+</li>
+<li><strong>system(sys)</strong><ul>
+<li>内核态 CPU 时间</li>
+</ul>
+</li>
+<li><strong>idle(id)</strong><ul>
+<li>空闲时间，不<strong>包括 iowait 时间</strong></li>
+</ul>
+</li>
+<li><strong>iowait(wa)</strong><ul>
+<li>等待 IO 的 CPU 时间</li>
+</ul>
+</li>
+<li><strong>irq(hi)</strong><ul>
+<li>处理<strong>硬中断</strong>的 CPU 时间</li>
+</ul>
+</li>
+<li><strong>softirq(si)</strong><ul>
+<li>处理<strong>软中断</strong>的 CPU 时间</li>
+</ul>
+</li>
+<li><strong>steal(st)</strong><ul>
+<li>当系统运行在虚拟机中的时候，<strong>被其它虚拟机占用的 CPU 时间</strong></li>
+</ul>
+</li>
+<li><strong>guest(guest)</strong><ul>
+<li>通过虚拟化运行其它操作系统的时间，即<strong>运行虚拟机的 CPU 时间</strong></li>
+</ul>
+</li>
+<li><strong>guest_nice(gnice)</strong><ul>
+<li>以低优先级运行虚拟机的时间</li>
+</ul>
+</li>
+</ol>
+<p><img src="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-usage-1.png" alt="linux-performance-usage-1.png"></p>
+<p>但<code>/proc/stat</code>记录的是<strong>开机以来</strong>的节拍数累加器，需要取某段时间的差值</p>
+<p><img src="https://linux-performance-1253868755.cos.ap-guangzhou.myqcloud.com/linux-performance-usage-2.png" alt="linux-performance-usage-2.png"></p>
+<p><code>/proc/[pid]/stat</code>为每个进程的运行情况提供了统计数据</p>
+<p>性能分析工具给出的都是间隔一段时间的平均使用率，使用多个工具对比分析时，要保证使用<strong>相同的间隔时间</strong></p>
+<h1 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h1><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>top</td>
+<td>显示系统总体的 CPU 和内存使用情况，以及各个进程的资源使用情况</td>
+<td>刷新频率：3秒<br>无法区分用户态CPU和内核态CPU</td>
+</tr>
+<tr>
+<td>pidstat</td>
+<td>可以分析每个进程的CPU使用情况</td>
+<td></td>
+</tr>
+<tr>
+<td>ps</td>
+<td>显示每个进程的资源使用情况</td>
+<td></td>
+</tr>
+<tr>
+<td>gdb</td>
+<td>GDB调试会中断程序运行，不允许在线上执行，适用于在性能分析的后期</td>
+<td></td>
+</tr>
+<tr>
+<td>perf</td>
+<td>以<strong>性能事件采样</strong>为基础<br>不仅可以分析系统的各种事件和内核性能<br>还可以用来分析指定应用程序的性能问题</td>
+<td><a href="https://github.com/jvm-profiling-tools/async-profiler" target="_blank" rel="noopener">async-profiler</a></td>
+</tr>
+</tbody></table>
+<h2 id="top"><a href="#top" class="headerlink" title="top"></a>top</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# top 1</span><br><span class="line">top - 03:40:16 up  9:38,  5 users,  load average: 0.14, 0.10, 0.09</span><br><span class="line">Tasks: 229 total,   1 running, 228 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :  0.3 us,  0.3 sy,  0.0 ni, 99.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">MiB Mem :   3907.9 total,   1905.6 free,    328.2 used,   1674.2 buff/cache</span><br><span class="line">MiB Swap:   1906.0 total,   1906.0 free,      0.0 used.   3287.6 avail Mem</span><br><span class="line"></span><br><span class="line">    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND</span><br><span class="line">  60013 root      20   0       0      0      0 I   0.7   0.0   0:26.81 kworker/1:3-mm_percpu_wq</span><br><span class="line">  62553 root      20   0       0      0      0 I   0.7   0.0   0:28.21 kworker/0:1-events</span><br><span class="line">     11 root      20   0       0      0      0 I   0.3   0.0   0:23.42 rcu_sched</span><br><span class="line">    743 root      20   0  234988   7088   5948 S   0.3   0.2   1:39.64 vmtoolsd</span><br><span class="line">  64047 root      20   0    8168   3976   3212 R   0.3   0.1   0:00.03 top</span><br><span class="line">      1 root      20   0  103340  13092   8556 S   0.0   0.3   0:09.56 systemd</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>每个进程都有<code>%CPU</code>列，表示进程的 CPU 使用率，它是<strong>用户态和内核态CPU使用率的总和</strong><ul>
+<li>进程<strong>用户空间</strong>使用的CPU</li>
+<li>通过<strong>系统调用</strong>执行的<strong>内核空间</strong>CPU</li>
+<li>在<strong>就绪队列等待运行</strong>的CPU</li>
+<li>在虚拟化环境中，包括<strong>运行虚拟机</strong>占用的CPU</li>
+</ul>
+</li>
+<li><strong>top 并没有细分进程的用户态CPU和内核态CPU</strong>，可以借助 pidstat</li>
+</ol>
+<h2 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# pidstat 1 2</span><br><span class="line">Linux 5.4.0-62-generic (ubuntu) 	02/04/21 	_x86_64_	(2 CPU)</span><br><span class="line"></span><br><span class="line">03:48:10      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">03:48:11        0       491    0.00    0.99    0.00    0.00    0.99     0  systemd-journal</span><br><span class="line">03:48:11        0     64068    0.00    0.99    0.00    0.00    0.99     0  kworker/0:2-events</span><br><span class="line">03:48:11        0     64251    0.00    0.99    0.00    0.00    0.99     0  pidstat</span><br><span class="line"></span><br><span class="line">03:48:11      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">03:48:12        0        11    0.00    1.00    0.00    0.00    1.00     1  rcu_sched</span><br><span class="line">03:48:12        0       743    1.00    0.00    0.00    0.00    1.00     0  vmtoolsd</span><br><span class="line">03:48:12     1000      4381    0.00    1.00    0.00    0.00    1.00     0  sshd</span><br><span class="line">03:48:12        0     60013    0.00    1.00    0.00    0.00    1.00     1  kworker/1:3-events</span><br><span class="line">03:48:12        0     64068    0.00    1.00    0.00    0.00    1.00     0  kworker/0:2-events</span><br><span class="line">03:48:12        0     64251    0.00    1.00    0.00    0.00    1.00     0  pidstat</span><br><span class="line"></span><br><span class="line">Average:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">Average:        0        11    0.00    0.50    0.00    0.00    0.50     -  rcu_sched</span><br><span class="line">Average:        0       491    0.00    0.50    0.00    0.00    0.50     -  systemd-journal</span><br><span class="line">Average:        0       743    0.50    0.00    0.00    0.00    0.50     -  vmtoolsd</span><br><span class="line">Average:     1000      4381    0.00    0.50    0.00    0.00    0.50     -  sshd</span><br><span class="line">Average:        0     60013    0.00    0.50    0.00    0.00    0.50     -  kworker/1:3-events</span><br><span class="line">Average:        0     64068    0.00    1.00    0.00    0.00    1.00     -  kworker/0:2-events</span><br><span class="line">Average:        0     64251    0.00    1.00    0.00    0.00    1.00     -  pidstat</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>用户态CPU使用率（%usr）</li>
+<li>内核态CPU使用率（%system）</li>
+<li>运行虚拟机CPU使用率（%guest）</li>
+<li><strong>等待CPU使用率（%wait）</strong></li>
+<li>总的CPU使用率（%CPU）</li>
+</ol>
+<h2 id="ps"><a href="#ps" class="headerlink" title="ps"></a>ps</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# ps -aux | head -n 5</span><br><span class="line">USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</span><br><span class="line">root           1  0.0  0.3 103492 13092 ?        Ss   Feb03   0:09 /sbin/init maybe-ubiquity</span><br><span class="line">root           2  0.0  0.0      0     0 ?        S    Feb03   0:00 [kthreadd]</span><br><span class="line">root           3  0.0  0.0      0     0 ?        I&lt;   Feb03   0:00 [rcu_gp]</span><br><span class="line">root           4  0.0  0.0      0     0 ?        I&lt;   Feb03   0:00 [rcu_par_gp]</span><br></pre></td></tr></table></figure>
+
+<h2 id="perf"><a href="#perf" class="headerlink" title="perf"></a>perf</h2><h3 id="perf-top"><a href="#perf-top" class="headerlink" title="perf top"></a>perf top</h3><p>实时显示<strong>占用CPU时钟最多的函数或者指令</strong>，用于查找<strong>热点函数</strong>，但不能保存数据，因此不能用于离线分析</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# perf top</span><br><span class="line">Samples: 2K of event &apos;cpu-clock:pppH&apos;, 4000 Hz, Event count (approx.): 367790608 lost: 0/0 drop: 0/0</span><br><span class="line">Overhead  Shared Object             Symbol</span><br><span class="line">  14.08%  [kernel]                  [k] vmware_sched_clock</span><br><span class="line">   8.56%  [kernel]                  [k] finish_task_switch</span><br><span class="line">...</span><br><span class="line">   1.26%  perf                      [.] deliver_event</span><br><span class="line">   1.12%  libc-2.31.so              [.] getdelim</span><br><span class="line">   1.10%  perf                      [.] perf_evsel__parse_sample</span><br><span class="line">   1.08%  [kernel]                  [k] update_iter</span><br><span class="line">   0.96%  perf                      [.] __symbols__insert.constprop.0</span><br><span class="line">   0.92%  libc-2.31.so              [.] 0x000000000009af0f</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>2K个CPU时钟事件，总事件数为370655906</li>
+<li>指标<ul>
+<li>Overhead<ul>
+<li>该符号的性能事件在所有采样中的<strong>比例</strong></li>
+</ul>
+</li>
+<li>Shared<ul>
+<li>该函数或者指令所在的<strong>动态共享对象</strong>，如<strong>内核</strong>、<strong>进程名</strong>、<strong>动态链接库名</strong>，<strong>内核模块</strong>等</li>
+</ul>
+</li>
+<li>Object<ul>
+<li><strong>动态共享对象的类型</strong></li>
+<li><code>[.]</code>表示<strong>用户空间</strong>的可执行程序或者动态链接库</li>
+<li><code>[k]</code>表示<strong>内核空间</strong></li>
+</ul>
+</li>
+<li>Symbol<ul>
+<li>符号名，即<strong>函数名</strong>，当函数名未知时，用<strong>16进制的地址</strong>来表示</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>参数<code>-g</code>：可以开启<strong>调用关系</strong>采样</li>
+</ol>
+<h3 id="perf-record-amp-perf-report"><a href="#perf-record-amp-perf-report" class="headerlink" title="perf record &amp; perf report"></a>perf record &amp; perf report</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~# perf record</span><br><span class="line">^C[ perf record: Woken up 5 times to write data ]</span><br><span class="line">[ perf record: Captured and wrote 1.374 MB perf.data (24699 samples) ]</span><br><span class="line"></span><br><span class="line">root@ubuntu:~# du -sh perf.data</span><br><span class="line">1.4M	perf.data</span><br><span class="line"></span><br><span class="line">root@ubuntu:~# perf report</span><br><span class="line">Samples: 24K of event &apos;cpu-clock:pppH&apos;, Event count (approx.): 6174750000</span><br><span class="line">Overhead  Command          Shared Object            Symbol</span><br><span class="line">  98.79%  swapper          [kernel.kallsyms]        [k] native_safe_halt</span><br><span class="line">   0.20%  kworker/0:2-eve  [kernel.kallsyms]        [k] vmware_sched_clock</span><br><span class="line">   0.16%  swapper          [kernel.kallsyms]        [k] __softirqentry_text_start</span><br><span class="line">   0.15%  swapper          [kernel.kallsyms]        [k] __lock_text_start</span><br><span class="line">   0.14%  kworker/1:1-mm_  [kernel.kallsyms]        [k] vmware_sched_clock</span><br></pre></td></tr></table></figure>
+
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><ol>
+<li><strong>用户CPU和Nice CPU高</strong><ul>
+<li>说明<strong>用户态</strong>进程占用了较多的CPU，应该着重排查进程的性能问题</li>
+</ul>
+</li>
+<li><strong>系统CPU高</strong><ul>
+<li>说明<strong>内核态</strong>占用了较多的CPU，应该着重排查<strong>内核线程</strong>或者<strong>系统调用</strong>的性能问题</li>
+</ul>
+</li>
+<li><strong>IO等待CPU高</strong><ul>
+<li>说明等待IO的时间比较长，应该着重排查系统存储是不是出现了IO问题</li>
+</ul>
+</li>
+<li><strong>软中断</strong>和<strong>硬中断</strong>高<ul>
+<li>说明软中断和硬中断的处理程序占用较多的CPU，应该着重排查内核中的<strong>中断服务程序</strong></li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/03/02/linux-performance-cpu-context-switch/" rel="bookmark">Linux性能 -- CPU -- 上下文切换</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2020/03/01/linux-performance-cpu-load-average/" rel="bookmark">Linux性能 -- CPU -- 平均负载</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/23/linux-practice-awk/" rel="bookmark">Linux使用 -- awk</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/12/linux-practice-daemon-process/" rel="bookmark">Linux使用 -- 守护进程</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/10/14/linux-practice-ext4/" rel="bookmark">Linux使用 -- ext4（inode + datablock）</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2020/03/03/linux-performance-cpu-usage/" title="Linux性能 -- CPU -- 使用率">http://zhongmingmao.me/2020/03/03/linux-performance-cpu-usage/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          
+            <a href="/tags/linux-performance/" rel="tag"><i class="fa fa-tag"></i> Linux Performance</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/03/02/linux-performance-cpu-context-switch/" rel="next" title="Linux性能 -- CPU -- 上下文切换">
+                <i class="fa fa-chevron-left"></i> Linux性能 -- CPU -- 上下文切换
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/04/12/performance-tuning-task/" rel="prev" title="任务系统 - 性能调优">
+                任务系统 - 性能调优 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#节拍率（HZ）"><span class="nav-number">1.</span> <span class="nav-text">节拍率（HZ）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#proc-stat-amp-CPU使用率"><span class="nav-number">2.</span> <span class="nav-text">/proc/stat &amp; CPU使用率</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#工具"><span class="nav-number">3.</span> <span class="nav-text">工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#top"><span class="nav-number">3.1.</span> <span class="nav-text">top</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pidstat"><span class="nav-number">3.2.</span> <span class="nav-text">pidstat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ps"><span class="nav-number">3.3.</span> <span class="nav-text">ps</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#perf"><span class="nav-number">3.4.</span> <span class="nav-text">perf</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#perf-top"><span class="nav-number">3.4.1.</span> <span class="nav-text">perf top</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#perf-record-amp-perf-report"><span class="nav-number">3.4.2.</span> <span class="nav-text">perf record &amp; perf report</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

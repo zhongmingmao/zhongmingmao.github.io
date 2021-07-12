@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="count(*)实现 MyISAM：将表的总行数存放在磁盘上，针对无过滤条件的查询可以直接返回 如果有过滤条件的count(*)，MyISAM也不能很快返回   InnoDB：从存储引擎一行行地读出数据，然后累加计数 由于MVCC，在同一时刻，InnoDB应该返回多少行是不确定">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 无过滤条件的count">
+<meta property="og:url" content="http://zhongmingmao.me/2019/02/07/mysql-innodb-pure-count/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="count(*)实现 MyISAM：将表的总行数存放在磁盘上，针对无过滤条件的查询可以直接返回 如果有过滤条件的count(*)，MyISAM也不能很快返回   InnoDB：从存储引擎一行行地读出数据，然后累加计数 由于MVCC，在同一时刻，InnoDB应该返回多少行是不确定">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- 无过滤条件的count">
+<meta name="twitter:description" content="count(*)实现 MyISAM：将表的总行数存放在磁盘上，针对无过滤条件的查询可以直接返回 如果有过滤条件的count(*)，MyISAM也不能很快返回   InnoDB：从存储引擎一行行地读出数据，然后累加计数 由于MVCC，在同一时刻，InnoDB应该返回多少行是不确定">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/02/07/mysql-innodb-pure-count/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- 无过滤条件的count | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/02/07/mysql-innodb-pure-count/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- 无过滤条件的count
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-07 17:21:50" itemprop="dateCreated datePublished" datetime="2019-02-07T17:21:50+08:00">2019-02-07</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">8.2k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">15 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="count"><a href="#count" class="headerlink" title="count(*)"></a>count(*)</h2><h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><ol>
+<li><strong>MyISAM</strong>：将<strong>表的总行数</strong>存放在<strong>磁盘</strong>上，针对<strong>无过滤条件</strong>的查询可以<strong>直接返回</strong><ul>
+<li>如果有过滤条件的count(*)，MyISAM也不能很快返回</li>
+</ul>
+</li>
+<li><strong>InnoDB</strong>：从存储引擎<strong>一行行</strong>地读出数据，然后<strong>累加计数</strong><ul>
+<li>由于<strong>MVCC</strong>，在同一时刻，InnoDB应该返回多少行是<strong>不确定</strong></li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h4 id="样例"><a href="#样例" class="headerlink" title="样例"></a>样例</h4><p>假设表t有10000条记录</p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>SELECT COUNT(*) FROM t;（返回10000）</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>INSERT INTO t;（插入一行）</td>
+</tr>
+<tr>
+<td></td>
+<td>BEGIN;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t（插入一行）;</td>
+<td></td>
+</tr>
+<tr>
+<td>SELECT COUNT(*) FROM t;（返回10000）</td>
+<td>SELECT COUNT(*) FROM t;（返回10002）</td>
+<td>SELECT COUNT(*) FROM T;（返回10001）</td>
+</tr>
+</tbody></table>
+<ol>
+<li>最后时刻三个会话同时查询t的总行数，拿到的结果却是不同的</li>
+<li>InnoDB默认事务隔离级别是<strong>RR</strong>，通过<strong>MVCC</strong>实现<ul>
+<li>每个事务都需要判断<strong>每一行记录</strong>是否<strong>对自己可见</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h3><ol>
+<li>InnoDB是<strong>索引组织表</strong><ul>
+<li><strong>聚簇索引树</strong>：叶子节点是<strong>数据</strong></li>
+<li><strong>二级索引树</strong>：叶子节点是<strong>主键值</strong></li>
+</ul>
+</li>
+<li>二级索引树<strong>占用的空间</strong>比聚簇索引树<strong>小很多</strong></li>
+<li>优化器会在保证<strong>逻辑正确</strong>的前提下，遍历<strong>最小</strong>的索引树，尽量减少扫描的数据量<ul>
+<li>针对无过滤条件的count操作，无论遍历哪一颗索引树，效果都是一样的</li>
+<li>优化器会为count(*)选择<strong>最优</strong>的索引树</li>
+</ul>
+</li>
+</ol>
+<h3 id="show-table-status"><a href="#show-table-status" class="headerlink" title="show table status"></a>show table status</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW TABLE STATUS\G;</span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">           Name: t</span><br><span class="line">         Engine: InnoDB</span><br><span class="line">        Version: 10</span><br><span class="line">     Row_format: Dynamic</span><br><span class="line">           Rows: 100256</span><br><span class="line"> Avg_row_length: 47</span><br><span class="line">    Data_length: 4734976</span><br><span class="line">Max_data_length: 0</span><br><span class="line">   Index_length: 5275648</span><br><span class="line">      Data_free: 0</span><br><span class="line"> Auto_increment: NULL</span><br><span class="line">    Create_time: 2019-02-01 17:49:07</span><br><span class="line">    Update_time: NULL</span><br><span class="line">     Check_time: NULL</span><br><span class="line">      Collation: utf8_general_ci</span><br><span class="line">       <span class="keyword">Checksum</span>: <span class="literal">NULL</span></span><br><span class="line"> Create_options:</span><br><span class="line">        <span class="keyword">Comment</span>:</span><br></pre></td></tr></table></figure>
+
+<p><code>SHOW TABLE STATUS</code>同样通过<strong>采样</strong>来估算（非常不精确），误差能到<code>40%~50%</code></p>
+<h2 id="维护计数"><a href="#维护计数" class="headerlink" title="维护计数"></a>维护计数</h2><h3 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h3><h4 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h4><ol>
+<li>用<strong>Redis</strong>来保存表的总行数（无过滤条件）</li>
+<li>这个表每插入一行，Redis计数+1，每删除一行，Redis计数-1</li>
+</ol>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><h5 id="丢失更新"><a href="#丢失更新" class="headerlink" title="丢失更新"></a>丢失更新</h5><ol>
+<li>Redis可能会丢失更新</li>
+<li>解决方案：Redis异常重启后，到数据库执行一次count(*)<ul>
+<li>异常重启并不常见，这时全表扫描的成本是可以接受的</li>
+</ul>
+</li>
+</ol>
+<h5 id="逻辑不精确-–-致命"><a href="#逻辑不精确-–-致命" class="headerlink" title="逻辑不精确 – 致命"></a>逻辑不精确 – 致命</h5><ol>
+<li>场景：显示<strong>操作记录的总数</strong>和<strong>最近操作的100条记录</strong></li>
+<li>Redis和MySQL是两个不同的存储系统，_<strong>不支持分布式事务</strong>_，因此无法拿到精确的<strong>一致性视图</strong></li>
+</ol>
+<p><strong>时序A</strong><br>session B在T3时刻，查到的100行结果里面有最新插入的记录，但Redis还没有+1，<em><strong>逻辑不一致</strong></em></p>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td>插入一行数据R;</td>
+<td></td>
+</tr>
+<tr>
+<td>T3</td>
+<td></td>
+<td>读取Redis计数;<br>查询最近100条记录;</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>Redis计数+1;</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>时序B</strong><br>session B在T3时刻，查到的100行结果里面没有最新插入的记录，但Redis已经+1，<em><strong>逻辑不一致</strong></em></p>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td>Redis计数+1;</td>
+<td></td>
+</tr>
+<tr>
+<td>T3</td>
+<td></td>
+<td>读取Redis计数;<br>查询最近100条记录;</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>插入一行数据R;</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="数据库"><a href="#数据库" class="headerlink" title="数据库"></a>数据库</h3><ol>
+<li>把计数值放到数据库单独的一张计数表C中</li>
+<li>利用InnoDB的<strong>crash-safe</strong>的特性，解决了<strong>崩溃丢失</strong>的问题</li>
+<li>利用InnoDB的<strong>支持事务</strong>的特性，解决了<strong>一致性视图</strong>的问题</li>
+<li>session B在T3时刻，session A的事务还未提交，表C的计数值+1对自己不可见，<em><strong>逻辑一致</strong></em></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td>BEGIN;<br>表C中的计数值+1;</td>
+<td></td>
+</tr>
+<tr>
+<td>T3</td>
+<td></td>
+<td>BEGIN;<br>读表C计数值;<br>查询最新100条记录;<br>COMMIT;</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>插入一行数据R;<br>COMMIT;</td>
+<td></td>
+</tr>
+</tbody></table>
+<h2 id="count的性能"><a href="#count的性能" class="headerlink" title="count的性能"></a>count的性能</h2><h3 id="语义"><a href="#语义" class="headerlink" title="语义"></a>语义</h3><ol>
+<li>count()是一个<strong>聚合</strong>函数，对于返回的结果集，一行一行地进行判断<ul>
+<li>如果count函数的参数值不是<strong>NULL</strong>，累计值+1，否则不加，最后返回累计值</li>
+</ul>
+</li>
+<li><strong>count(字段F)</strong><ul>
+<li>字段F<strong>有可能为NULL</strong></li>
+<li>表示返回满足条件的结果集里字段F<strong>不为NULL</strong>的总数</li>
+</ul>
+</li>
+<li><strong>count(主键ID)</strong>、<strong>count(1)</strong>、<strong>count(*)</strong><ul>
+<li><em><strong>不可能为NULL</strong></em></li>
+<li>表示返回满足条件的结果集的总数</li>
+</ul>
+</li>
+<li>Server层要什么字段，InnoDB引擎就返回什么字段<ul>
+<li>count(*)例外，_<strong>不返回整行</strong>_，只返回<strong>空行</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h3><h4 id="count-字段F"><a href="#count-字段F" class="headerlink" title="count(字段F)"></a>count(字段F)</h4><ol>
+<li>如果字段F定义为<strong>不允许为NULL</strong>，一行行地从记录里读出这个字段，判断通过后按行累加<ul>
+<li>通过表结构判断该字段是<strong>不可能为NULL</strong></li>
+</ul>
+</li>
+<li>如果字段F定义为<strong>允许NULL</strong>，一行行地从记录里读出这个字段，判断通过后按行累加<ul>
+<li>通过表结构判断该字段是<strong>有可能为NULL</strong></li>
+<li>判断该字段值是否实际为NULL</li>
+</ul>
+</li>
+<li>如果字段F上<strong>没有二级索引</strong>，只能<strong>遍历整张表</strong>（聚簇索引）</li>
+<li><em><strong>由于InnoDB必须返回字段F，因此优化器能做出的优化决策将减少</strong></em><ul>
+<li>例如不能选择<strong>最优</strong>的索引来遍历</li>
+</ul>
+</li>
+</ol>
+<h4 id="count-主键ID"><a href="#count-主键ID" class="headerlink" title="count(主键ID)"></a>count(主键ID)</h4><ol>
+<li>InnoDB会<strong>遍历整张表</strong>（聚簇索引），把每一行的id值取出来，返回给Server层</li>
+<li>Server层拿到id后，判断为不可能为NULL，然后按行累加</li>
+<li>优化器可能会选择<strong>最优</strong>的索引来遍历</li>
+</ol>
+<h4 id="count-1"><a href="#count-1" class="headerlink" title="count(1)"></a>count(1)</h4><ol>
+<li>InnoDB引擎会<strong>遍历整张表</strong>（聚簇索引），但<strong>不取值</strong></li>
+<li>Server层对于返回的每一行，放一个数字1进去，判断是不可能为NULL，按行累加</li>
+<li>count(1)比count(主键ID)快，因为count(主键ID)会涉及到两部分操作<ul>
+<li><em><strong>解析数据行</strong></em></li>
+<li><em><strong>拷贝字段值</strong></em></li>
+</ul>
+</li>
+</ol>
+<h4 id="count-1"><a href="#count-1" class="headerlink" title="count(*)"></a>count(*)</h4><ol>
+<li>count(*)不会把所有值都取出来，而是专门做了优化，<strong>不取值</strong>，因为『*』肯定不为NULL，按行累加</li>
+<li>不取值：InnoDB返回一个<strong>空行</strong>，告诉Server层<strong>不是NULL，可以计数</strong></li>
+</ol>
+<h4 id="效率排序"><a href="#效率排序" class="headerlink" title="效率排序"></a>效率排序</h4><ol>
+<li><strong>count(字段F) &lt; count(主键ID) &lt; count(1) ≈ count(*)</strong></li>
+<li><strong>尽量使用count(*)</strong></li>
+</ol>
+<h3 id="样例-1"><a href="#样例-1" class="headerlink" title="样例"></a>样例</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW CREATE TABLE prop_action_batch_reward\G;</span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">       Table: prop_action_batch_reward</span><br><span class="line"><span class="keyword">Create</span> <span class="keyword">Table</span>: <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`prop_action_batch_reward`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">bigint</span>(<span class="number">20</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`source`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`serial_id`</span> <span class="built_in">bigint</span>(<span class="number">20</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`create_time`</span> datetime <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span>,</span><br><span class="line">  <span class="string">`user_ids`</span> mediumtext,</span><br><span class="line">  <span class="string">`serial_index`</span> <span class="built_in">tinyint</span>(<span class="number">4</span>) <span class="keyword">DEFAULT</span> <span class="string">'0'</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</span><br><span class="line">  <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> <span class="string">`uniq_serial_id_source_index`</span> (<span class="string">`serial_id`</span>,<span class="string">`source`</span>,<span class="string">`serial_index`</span>),</span><br><span class="line">  <span class="keyword">KEY</span> <span class="string">`idx_create_time`</span> (<span class="string">`create_time`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8</span><br></pre></td></tr></table></figure>
+
+<h4 id="count-字段F-1"><a href="#count-字段F-1" class="headerlink" title="count(字段F)"></a>count(字段F)</h4><h5 id="无索引"><a href="#无索引" class="headerlink" title="无索引"></a>无索引</h5><p>user_ids上无索引，而InnoDB又必须返回user_ids字段，只能<strong>遍历聚簇索引</strong></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; EXPLAIN SELECT COUNT(user_ids) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+------+---------------+------+---------+------+----------+-------+</span></span><br><span class="line">| id | select_type | table                    | type | possible_keys | key  | key_len | ref  | rows     | Extra |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+------+---------------+------+---------+------+----------+-------+</span></span><br><span class="line">|  1 | SIMPLE      | prop_action_batch_reward | ALL  | NULL          | NULL | NULL    | NULL | 16435876 | NULL  |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+------+---------------+------+---------+------+----------+-------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT COUNT(user_ids) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line">| count(user_ids) |</span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line">|        17689788 |</span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">10.93</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h5 id="有索引"><a href="#有索引" class="headerlink" title="有索引"></a>有索引</h5><ol>
+<li>serial_id上有索引，可以遍历<code>uniq_serial_id_source_index</code></li>
+<li>但由于InnoDB必须返回serial_id字段，因此不会遍历<strong>逻辑结果等价</strong>的更优选择<code>idx_create_time</code><ul>
+<li>如果选择<code>idx_create_time</code>，并且返回serial_id字段，这意味着必须<strong>回表</strong></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; EXPLAIN SELECT COUNT(serial_id) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------------------+---------+------+----------+-------------+</span></span><br><span class="line">| id | select_type | table                    | type  | possible_keys | key                         | key_len | ref  | rows     | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------------------+---------+------+----------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | prop_action_batch_reward | index | NULL          | uniq_serial_id_source_index | 15      | NULL | 16434890 | Using index |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------------------+---------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT COUNT(serial_id) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">------------------+</span></span><br><span class="line">| count(serial_id) |</span><br><span class="line">+<span class="comment">------------------+</span></span><br><span class="line">|         17705069 |</span><br><span class="line">+<span class="comment">------------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">5.04</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="count-主键ID-1"><a href="#count-主键ID-1" class="headerlink" title="count(主键ID)"></a>count(主键ID)</h4><p>优化器选择了<strong>最优</strong>的索引<code>idx_create_time</code>来遍历，而非聚簇索引</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; EXPLAIN SELECT COUNT(id) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">| id | select_type | table                    | type  | possible_keys | key             | key_len | ref  | rows     | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | prop_action_batch_reward | index | NULL          | idx_create_time | 5       | NULL | 16436797 | Using index |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT COUNT(id) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">-----------+</span></span><br><span class="line">| count(id) |</span><br><span class="line">+<span class="comment">-----------+</span></span><br><span class="line">|  17705383 |</span><br><span class="line">+<span class="comment">-----------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">4.54</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="count-1-1"><a href="#count-1-1" class="headerlink" title="count(1)"></a>count(1)</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; EXPLAIN SELECT COUNT(1) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">| id | select_type | table                    | type  | possible_keys | key             | key_len | ref  | rows     | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | prop_action_batch_reward | index | NULL          | idx_create_time | 5       | NULL | 16437220 | Using index |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT COUNT(1) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| count(1) |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| 17705808 |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">4.12</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="count-2"><a href="#count-2" class="headerlink" title="count(*)"></a>count(*)</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; EXPLAIN SELECT COUNT(*) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">| id | select_type | table                    | type  | possible_keys | key             | key_len | ref  | rows     | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | prop_action_batch_reward | index | NULL          | idx_create_time | 5       | NULL | 16437518 | Using index |</span><br><span class="line">+<span class="comment">----+-------------+--------------------------+-------+---------------+-----------------+---------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT COUNT(*) FROM prop_action_batch_reward;</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| count(*) |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| 17706074 |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">1 row in <span class="keyword">set</span> (<span class="number">4.06</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/02/07/mysql-innodb-pure-count/" title="MySQL -- 无过滤条件的count">http://zhongmingmao.me/2019/02/07/mysql-innodb-pure-count/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/01/mysql-reclaim-space/" rel="next" title="MySQL -- 空间回收">
+                <i class="fa fa-chevron-left"></i> MySQL -- 空间回收
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/09/mysql-order-by/" rel="prev" title="MySQL -- order by">
+                MySQL -- order by <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#count"><span class="nav-number">1.</span> <span class="nav-text">count(*)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#实现"><span class="nav-number">1.1.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#样例"><span class="nav-number">1.1.1.</span> <span class="nav-text">样例</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#优化"><span class="nav-number">1.2.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#show-table-status"><span class="nav-number">1.3.</span> <span class="nav-text">show table status</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#维护计数"><span class="nav-number">2.</span> <span class="nav-text">维护计数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存"><span class="nav-number">2.1.</span> <span class="nav-text">缓存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#方案"><span class="nav-number">2.1.1.</span> <span class="nav-text">方案</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#缺点"><span class="nav-number">2.1.2.</span> <span class="nav-text">缺点</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#丢失更新"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">丢失更新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#逻辑不精确-–-致命"><span class="nav-number">2.1.2.2.</span> <span class="nav-text">逻辑不精确 – 致命</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据库"><span class="nav-number">2.2.</span> <span class="nav-text">数据库</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#count的性能"><span class="nav-number">3.</span> <span class="nav-text">count的性能</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#语义"><span class="nav-number">3.1.</span> <span class="nav-text">语义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#性能对比"><span class="nav-number">3.2.</span> <span class="nav-text">性能对比</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#count-字段F"><span class="nav-number">3.2.1.</span> <span class="nav-text">count(字段F)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-主键ID"><span class="nav-number">3.2.2.</span> <span class="nav-text">count(主键ID)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-1"><span class="nav-number">3.2.3.</span> <span class="nav-text">count(1)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-1"><span class="nav-number">3.2.4.</span> <span class="nav-text">count(*)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#效率排序"><span class="nav-number">3.2.5.</span> <span class="nav-text">效率排序</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#样例-1"><span class="nav-number">3.3.</span> <span class="nav-text">样例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#count-字段F-1"><span class="nav-number">3.3.1.</span> <span class="nav-text">count(字段F)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#无索引"><span class="nav-number">3.3.1.1.</span> <span class="nav-text">无索引</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#有索引"><span class="nav-number">3.3.1.2.</span> <span class="nav-text">有索引</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-主键ID-1"><span class="nav-number">3.3.2.</span> <span class="nav-text">count(主键ID)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-1-1"><span class="nav-number">3.3.3.</span> <span class="nav-text">count(1)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count-2"><span class="nav-number">3.3.4.</span> <span class="nav-text">count(*)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

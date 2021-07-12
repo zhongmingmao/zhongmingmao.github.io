@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="KILL KILL QUERY THREAD_ID 终止这个线程中正在执行的语句   KILL [ CONNECTION ] THREAD_ID 断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- KILL + 客户端">
+<meta property="og:url" content="http://zhongmingmao.me/2019/03/06/mysql-kill-client/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="KILL KILL QUERY THREAD_ID 终止这个线程中正在执行的语句   KILL [ CONNECTION ] THREAD_ID 断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- KILL + 客户端">
+<meta name="twitter:description" content="KILL KILL QUERY THREAD_ID 终止这个线程中正在执行的语句   KILL [ CONNECTION ] THREAD_ID 断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/03/06/mysql-kill-client/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- KILL + 客户端 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/03/06/mysql-kill-client/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- KILL + 客户端
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-06 22:40:20" itemprop="dateCreated datePublished" datetime="2019-03-06T22:40:20+08:00">2019-03-06</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">6.4k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">12 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="KILL"><a href="#KILL" class="headerlink" title="KILL"></a>KILL</h2><ol>
+<li><code>KILL QUERY THREAD_ID</code><ul>
+<li>终止这个线程中正在执行的语句</li>
+</ul>
+</li>
+<li><code>KILL [ CONNECTION ] THREAD_ID</code><ul>
+<li>断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="锁等待"><a href="#锁等待" class="headerlink" title="锁等待"></a>锁等待</h2><h3 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">1</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="操作次序"><a href="#操作次序" class="headerlink" title="操作次序"></a>操作次序</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>UPDATE t SET c=c+1 WHERE id=1;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET c=c+2 WHERE id=1;<br>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>KILL QUERY 24;</td>
+</tr>
+<tr>
+<td></td>
+<td>ERROR 1317 (70100): Query execution was interrupted</td>
+<td></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SHOW PROCESSLIST;</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br><span class="line">| Id | User            | Host      | db   | Command | Time   | State                  | Info                          |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br><span class="line">|  4 | event_scheduler | localhost | NULL | Daemon  | 472733 | Waiting on empty queue | NULL                          |</span><br><span class="line">| 21 | root            | localhost | test | Sleep   |    130 |                        | NULL                          |</span><br><span class="line">| 23 | root            | localhost | test | Query   |      0 | starting               | <span class="keyword">show</span> <span class="keyword">processlist</span>              |</span><br><span class="line">| <span class="number">24</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |      <span class="number">5</span> | updating               | <span class="keyword">UPDATE</span> t <span class="keyword">SET</span> c=c+<span class="number">2</span> <span class="keyword">WHERE</span> <span class="keyword">id</span>=<span class="number">1</span> |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="KILL-QUERY"><a href="#KILL-QUERY" class="headerlink" title="KILL QUERY"></a>KILL QUERY</h3><ol>
+<li>对表进行<strong>增删改查</strong>操作时，会在表上加<strong>MDL读锁</strong></li>
+<li><code>KILL QUERY</code>并不是马上停止，而是告诉线程这条语句已经<strong>不需要再继续执行</strong>，可以开始执行停止的逻辑<ul>
+<li>类似于Linux的<code>kill -N pid</code>命令，并不是让进程直接停止</li>
+<li>而是给进程发一个信号，然后让进程处理这个信号，进入终止逻辑</li>
+</ul>
+</li>
+<li>MySQL的具体动作<ul>
+<li>把<code>session B</code>的线程状态改成<code>THD:KILL_QUERY</code>(将变量<code>killed</code>赋值为<code>THD:KILL_QUERY</code>)</li>
+<li>给<code>session B</code>的执行线程发一个<strong>信号</strong><ul>
+<li><code>session B</code>原本处于锁等待状态</li>
+<li>如果只是修改线程状态，线程B是<strong>不知道这个状态的变化</strong>的，还会继续等待</li>
+<li>发信号的目的：让<code>session B</code>退出等待，来处理<code>THD:KILL_QUERY</code>状态</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>隐含逻辑<ul>
+<li>一个语句在执行过程中会有多处<strong>埋点</strong>，在这些<strong>埋点</strong>的地方会判断线程状态<ul>
+<li>如果发现线程状态为<code>THD:KILL_QUERY</code>，才开始进入<strong>语句终止</strong>的逻辑</li>
+</ul>
+</li>
+<li>如果处于等待状态，必须是一个<strong>可以被唤醒的等待</strong>，否则根本不会执行到埋点处</li>
+<li>语句从<strong>开始进入</strong>终止逻辑，到<strong>完全完成</strong>终止逻辑，是有个过程的</li>
+</ul>
+</li>
+</ol>
+<h2 id="并发线程数"><a href="#并发线程数" class="headerlink" title="并发线程数"></a>并发线程数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> innodb_thread_concurrency=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="操作序列"><a href="#操作序列" class="headerlink" title="操作序列"></a>操作序列</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+<th>session D</th>
+<th>session E</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SELECT SLEEP(100) FROM t;</td>
+<td>SELECT SLEEP(100) FROM t;</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>SELECT * FROM t;<br>(Blocked)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;<br>(1st)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>KILL QUERY 28;<br>(无效)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>KILL 28;</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>ERROR 2013 (HY000): Lost connection to MySQL server during query</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;<br>(2nd)</td>
+<td></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 1st</span></span><br><span class="line">mysql&gt; SHOW PROCESSLIST;</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line">| Id | User            | Host      | db   | Command | Time   | State                  | Info                     |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line">|  4 | event_scheduler | localhost | NULL | Daemon  | 477650 | Waiting on empty queue | NULL                     |</span><br><span class="line">| 21 | root            | localhost | test | Query   |     12 | User sleep             | <span class="keyword">SELECT</span> <span class="keyword">SLEEP</span>(<span class="number">100</span>) <span class="keyword">FROM</span> t |</span><br><span class="line">| <span class="number">24</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |      <span class="number">8</span> | <span class="keyword">User</span> <span class="keyword">sleep</span>             | <span class="keyword">SELECT</span> <span class="keyword">SLEEP</span>(<span class="number">100</span>) <span class="keyword">FROM</span> t |</span><br><span class="line">| <span class="number">26</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Sleep</span>   |    <span class="number">291</span> |                        | <span class="literal">NULL</span>                     |</span><br><span class="line">| <span class="number">27</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |      <span class="number">0</span> | <span class="keyword">starting</span>               | <span class="keyword">SHOW</span> <span class="keyword">PROCESSLIST</span>         |</span><br><span class="line">| <span class="number">28</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |      <span class="number">5</span> | Sending <span class="keyword">data</span>           | <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t          |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2nd</span></span><br><span class="line">mysql&gt; <span class="keyword">SHOW</span> <span class="keyword">PROCESSLIST</span>;</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line">| Id | User            | Host      | db   | Command | Time   | State                  | Info                     |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line">|  4 | event_scheduler | localhost | NULL | Daemon  | 477667 | Waiting on empty queue | NULL                     |</span><br><span class="line">| 21 | root            | localhost | test | Query   |     29 | User sleep             | <span class="keyword">SELECT</span> <span class="keyword">SLEEP</span>(<span class="number">100</span>) <span class="keyword">FROM</span> t |</span><br><span class="line">| <span class="number">24</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |     <span class="number">25</span> | <span class="keyword">User</span> <span class="keyword">sleep</span>             | <span class="keyword">SELECT</span> <span class="keyword">SLEEP</span>(<span class="number">100</span>) <span class="keyword">FROM</span> t |</span><br><span class="line">| <span class="number">26</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Sleep</span>   |      <span class="number">4</span> |                        | <span class="literal">NULL</span>                     |</span><br><span class="line">| <span class="number">27</span> | root            | localhost | <span class="keyword">test</span> | <span class="keyword">Query</span>   |      <span class="number">0</span> | <span class="keyword">starting</span>               | <span class="keyword">SHOW</span> <span class="keyword">PROCESSLIST</span>         |</span><br><span class="line">| <span class="number">28</span> | root            | localhost | <span class="keyword">test</span> | Killed  |     <span class="number">22</span> | Sending <span class="keyword">data</span>           | <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t          |</span><br><span class="line">+<span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="KILL-QUERY-CONNECTION"><a href="#KILL-QUERY-CONNECTION" class="headerlink" title="KILL QUERY / CONNECTION"></a>KILL QUERY / CONNECTION</h3><ol>
+<li><code>session C</code>执行的时候被堵住了，<code>session D</code>执行<code>KILL QUERY</code>没啥效果<ul>
+<li>等行锁时，使用的是<code>pthread_cond_timedwait</code>函数，这个等待状态是<strong>可以被唤醒</strong>的</li>
+<li>本例中，28号线程的等待逻辑为<ul>
+<li>每<strong>10ms</strong>判断下能否进入InnoDB执行，如果不行，调用<code>nanosleep</code>函数进入<code>SLEEP</code>状态</li>
+</ul>
+</li>
+<li>虽然28号线程的状态被设置成了<code>THD:KILL_QUERY</code>，但在等待进入InnoDB的循环过程中<ul>
+<li>并<strong>没有去判断线程的状态</strong>，因此根本不会进入<strong>终止逻辑</strong>阶段</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>session E</code>执行<code>KILL CONNECTION</code>，断开<code>session C</code>的连接，<code>Command</code>列变成了<code>Killed</code><ul>
+<li>表示<strong>客户端</strong>虽然<strong>断开了连接</strong>，但实际上<strong>服务端</strong>上这条语句还是在<strong>执行中</strong></li>
+<li>把28号线程的状态设置为<code>THD:KILL_CONNECTION</code>，然后<strong>关闭</strong>12号线程的<strong>网络连接</strong><ul>
+<li><code>session C</code>会收到断开连接的提示</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SHOW PROCESSLIST<ul>
+<li>如果一个线程的状态为<code>THD:KILL_CONNECTION</code>，<code>Command</code>列会显示为<code>Killed</code></li>
+<li>28号线程只有满足进入InnoDB的条件后，<code>session C</code>的查询语句将继续执行<ul>
+<li>才有可能判断到线程状态是否已经变成了<code>KILL_QUERY</code>或者<code>KILL_CONNECTION</code></li>
+<li>再进入终止逻辑阶段</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="KILL无效的情况"><a href="#KILL无效的情况" class="headerlink" title="KILL无效的情况"></a>KILL无效的情况</h2><ol>
+<li>线程没有执行到<strong>判断线程状态</strong>的逻辑<ul>
+<li>innodb_thread_concurrency过小</li>
+<li>例如IO压力过大，读写IO的函数一直没有返回，导致不能及时判断线程的状态</li>
+</ul>
+</li>
+<li><strong>终止逻辑耗时较长</strong>，<code>SHOW PROCESSLIST</code>显示为<code>Command=Killed</code><ul>
+<li><strong>超大事务执行期间被KILL</strong><ul>
+<li>回滚操作需要<strong>对事务执行期间生成的所有新数据版本做回收操作</strong>，耗时很长</li>
+</ul>
+</li>
+<li><strong>大查询回滚</strong><ul>
+<li>查询过程中生成了<strong>较大的临时文件</strong>，恰好此时<strong>文件系统压力较大</strong></li>
+<li>删除临时文件需要等待IO资源，导致耗时较长</li>
+</ul>
+</li>
+<li><strong>DDL执行到最后阶段被KILL</strong><ul>
+<li>需要删除中间过程的<strong>临时文件</strong>，可能受<strong>IO资源</strong>影响，耗时比较久</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="CTRL-C"><a href="#CTRL-C" class="headerlink" title="CTRL + C"></a>CTRL + C</h2><ol>
+<li>在客户端的操作<strong>只能影响到客户端的线程</strong></li>
+<li>客户端与服务端只能通过<strong>网络交互</strong>，因此是<strong>不可能直接操作服务端线程</strong>的</li>
+<li>MySQL是<strong>停等协议</strong>，在这个线程执行的语句还没有返回的时候，再往该连接发命令是没有用的<ul>
+<li>实际上，执行<code>CTRL + C</code>，MySQL是<strong>另起一个连接</strong>，然后发送一个<code>KILL QUERY</code>命令</li>
+</ul>
+</li>
+</ol>
+<h2 id="mysql-A"><a href="#mysql-A" class="headerlink" title="mysql -A"></a>mysql -A</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -uroot -Dtest</span><br><span class="line">Reading table information for completion of table and column names</span><br><span class="line">You can turn off this feature to get a quicker startup <span class="keyword">with</span> -A</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>MySQL客户端默认会提供一个本地库名和表名<strong>补全</strong>的功能，在客户端连接成功后，会多执行以下操作<ul>
+<li><code>SHOW DATABASES;</code> -&gt; <code>USE test;</code> -&gt; <code>SHOW TABLES;</code></li>
+<li>目的：用于构建一个<strong>本地的哈希表</strong></li>
+</ul>
+</li>
+<li>当表很多的时候，会表现得慢，但这是<strong>客户端慢</strong>，而非<strong>连接慢</strong>或者<strong>服务端慢</strong></li>
+</ol>
+<h2 id="mysql-–quick"><a href="#mysql-–quick" class="headerlink" title="mysql –quick"></a>mysql –quick</h2><ol>
+<li>MySQL客户端发送请求后，接收服务端返回结果的两种方式<ul>
+<li><strong>使用本地缓存</strong>，在本地开辟一片内存，先把结果存起来，对应API为<code>mysql_store_result</code><ul>
+<li>MySQL客户端默认行为，即不加参数<code>--quick</code></li>
+</ul>
+</li>
+<li><strong>不使用本地缓存</strong>，读一个处理一个，对应API为<code>mysql_use_result</code><ul>
+<li>如果<strong>客户端本地处理得慢</strong>，会导致<strong>服务端发送结果被阻塞</strong>，导致服务端变慢</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>使用<code>--quick</code>的效果<ul>
+<li><code>-A</code>参数，<strong>跳过表名自动补全功能</strong></li>
+<li><code>mysql_store_result</code>需要申请<strong>本地内存</strong>来缓存结果<ul>
+<li>如果查询结果太大，可能会<strong>影响客户端本地机器的性能</strong></li>
+</ul>
+</li>
+<li>不会把执行命令记录到本地的<strong>命令历史文件</strong></li>
+</ul>
+</li>
+<li><code>--quick</code>的目的是为了让<strong>客户端更快</strong>，但有可能会<strong>降低服务端性能</strong></li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/03/06/mysql-kill-client/" title="MySQL -- KILL + 客户端">http://zhongmingmao.me/2019/03/06/mysql-kill-client/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/04/mysql-data-recovery/" rel="next" title="MySQL -- 数据恢复">
+                <i class="fa fa-chevron-left"></i> MySQL -- 数据恢复
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/08/mysql-full-table-scan/" rel="prev" title="MySQL -- 全表扫描">
+                MySQL -- 全表扫描 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#KILL"><span class="nav-number">1.</span> <span class="nav-text">KILL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#锁等待"><span class="nav-number">2.</span> <span class="nav-text">锁等待</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#表初始化"><span class="nav-number">2.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#操作次序"><span class="nav-number">2.2.</span> <span class="nav-text">操作次序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KILL-QUERY"><span class="nav-number">2.3.</span> <span class="nav-text">KILL QUERY</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#并发线程数"><span class="nav-number">3.</span> <span class="nav-text">并发线程数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#操作序列"><span class="nav-number">3.1.</span> <span class="nav-text">操作序列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KILL-QUERY-CONNECTION"><span class="nav-number">3.2.</span> <span class="nav-text">KILL QUERY / CONNECTION</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KILL无效的情况"><span class="nav-number">4.</span> <span class="nav-text">KILL无效的情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CTRL-C"><span class="nav-number">5.</span> <span class="nav-text">CTRL + C</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-A"><span class="nav-number">6.</span> <span class="nav-text">mysql -A</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-–quick"><span class="nav-number">7.</span> <span class="nav-text">mysql –quick</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

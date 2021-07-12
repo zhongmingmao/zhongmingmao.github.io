@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文将简要介绍Zookeeper的ZAB协议">
+<meta name="keywords" content="Zookeeper,ZAB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Zookeeper -- ZAB协议">
+<meta property="og:url" content="http://zhongmingmao.me/2017/07/08/zk-zab/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文将简要介绍Zookeeper的ZAB协议">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode.png">
+<meta property="og:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode_crash_recovery.png">
+<meta property="og:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_election.png">
+<meta property="og:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_3_phase_1.png">
+<meta property="og:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_state_switch.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.156Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Zookeeper -- ZAB协议">
+<meta name="twitter:description" content="本文将简要介绍Zookeeper的ZAB协议">
+<meta name="twitter:image" content="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/07/08/zk-zab/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Zookeeper -- ZAB协议 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/07/08/zk-zab/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Zookeeper -- ZAB协议
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-07-09 00:06:25" itemprop="dateCreated datePublished" datetime="2017-07-09T00:06:25+08:00">2017-07-09</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/zookeeper/" itemprop="url" rel="index"><span itemprop="name">Zookeeper</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">8.3k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">15 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文将简要介绍<code>Zookeeper</code>的<code>ZAB</code>协议</p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h1><h2 id="ZAB-VS-Base-Paxos"><a href="#ZAB-VS-Base-Paxos" class="headerlink" title="ZAB VS Base-Paxos"></a>ZAB VS Base-Paxos</h2><ul>
+<li><code>Base-Paxos</code>是<strong><code>通用的分布式一致性算法</code></strong></li>
+<li><code>ZAB协议</code>不是<code>Base-Paxos</code>的典型实现，而是特别为<code>Zookeeper</code>设计的一种<strong><code>支持崩溃恢复的原子广播协议</code></strong></li>
+<li>相对于<code>ZAB协议</code>，<code>Base-Paxos</code>主要存在2个问题：<strong><code>活锁问题</code></strong>+<strong><code>全序问题</code></strong><ul>
+<li><code>活锁问题</code>是指在<code>Base-Paxos</code>算法中，由于并不存在<code>Leader</code>角色，<strong><code>新轮次可以不断抢占旧轮次</code></strong>，如此循环往复，产生<code>活锁</code></li>
+<li><code>全序问题</code>是指如果消息a在消息b之前发送，则所有Server应该看到<code>相同的结果</code>，但<code>Base-Paxos</code>并不保证这一点</li>
+</ul>
+</li>
+<li><code>ZAB</code>的解决方案<ul>
+<li>为了解决<code>活锁问题</code>，<code>ZAB协议</code>引入了<code>Leader</code>角色，所有的<code>事务请求</code>只能由<code>Leader</code>处理，但是<code>单Leader</code>会存在<code>单点问题</code>，<code>ZAB协议</code>进而引入<code>崩溃恢复模式</code></li>
+<li>为了解决<code>全序问题</code>，<code>ZAB协议</code>引入了<code>ZXID</code>（全局单调递增的唯一ID）和利用<code>TCP的FIFO特性</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="服务器角色"><a href="#服务器角色" class="headerlink" title="服务器角色"></a>服务器角色</h2><p><code>Zookeeper</code>中服务器有三种角色：<strong><code>Leader</code></strong>、<strong><code>Follower</code></strong>和<strong><code>Observer</code></strong>，其中<code>Observer</code>与<code>ZAB</code>协议本身无关</p>
+<ul>
+<li><code>Leader</code>的工作职责<ul>
+<li><strong><code>事务请求</code></strong>的唯一调度者和处理者，保证集群事务处理的<code>顺序性</code></li>
+<li>调度集群内部其他服务器（<code>Follower</code>和<code>Observer</code>）</li>
+</ul>
+</li>
+<li><code>Follower</code>的工作职责<ul>
+<li>处理<strong><code>非事务请求</code></strong></li>
+<li>转发<code>事务请求</code>给<code>Leader</code>服务器</li>
+<li>参与<code>事务Proposal的投票</code></li>
+<li>参与<code>Leader选举投票</code></li>
+</ul>
+</li>
+<li><code>Observer</code>的工作职责<ul>
+<li>用于<code>观察并同步</code>集群的最新状态变化</li>
+<li><code>Observer</code>在工作原理上与<code>Follower</code>基本一致，与<code>Follower</code>的主要区别<ul>
+<li><code>Observer</code>只提供非事务服务</li>
+<li><code>Observer</code>不参与任何形式的投票</li>
+</ul>
+</li>
+<li>通常用于在<code>不影响集群事务处理能力</code>的前提下<code>提升集群的非事务处理能力</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="主备模式架构"><a href="#主备模式架构" class="headerlink" title="主备模式架构"></a>主备模式架构</h2><p>Zookeeper实现了一种<code>主备模式</code>的系统架构来保持集群中<code>各副本之间的数据一致性</code>，Zookeeper使用<code>单一的主进程</code>（<code>Leader</code>）来接收并处理客户端的所有<strong><code>事务请求</code></strong>，并采用<strong><code>ZAB协议</code></strong>，将服务器数据的状态变更以<code>事务Proposal</code>的形式<strong><code>广播</code></strong>到所有副本进程（<code>Follower</code>和<code>Observer</code>）</p>
+<h3 id="事务请求"><a href="#事务请求" class="headerlink" title="事务请求"></a>事务请求</h3><ul>
+<li>所有事务请求必须由一个<code>全局唯一</code>的服务器来协调处理，这样的服务器被称为<code>Leader</code>，而其他服务器则被称为<code>Follower</code>（<code>ZAB</code>协议不考虑<code>Observer</code>）</li>
+<li><code>Leader</code>负责将一个客户端的<strong><code>事务请求</code></strong>转换成为一个<strong><code>事务Proposal</code></strong>，并将该<code>事务Proposal</code>分发给集群中所有的<code>Follower</code></li>
+<li><code>Leader</code>等待所有的<code>Follower</code>关于<code>事务Proposal</code>的反馈，一旦_<strong><code>半数或以上</code></strong>_的<code>Follower</code>进行了正确地反馈，那么<code>Leader</code>会再次向所有的<code>Follower</code>分发<code>Commit</code>消息，要求其将<code>事务Proposal</code>进行<code>Commit</code>（类似于<code>2PC</code>，但移除了<code>事务回滚</code>，容易导致数据不一致，需要<code>崩溃恢复模式</code>的支持）</li>
+</ul>
+<h4 id="半数以上（Follower-Leader）"><a href="#半数以上（Follower-Leader）" class="headerlink" title="半数以上（Follower + Leader）"></a>半数以上（Follower + Leader）</h4><p>_<strong><code>半数以上</code></strong>_的服务器能够正常相互通信，保证了不会因网络分区等原因而导致同时出现两组集群服务，因为两个 _<strong><code>半数以上</code></strong>_必然有<code>交集</code>！！</p>
+<h4 id="半数或以上（Follower）"><a href="#半数或以上（Follower）" class="headerlink" title="半数或以上（Follower）"></a>半数或以上（Follower）</h4><p><code>半数或以上（Follower）</code>是为了保证<code>半数以上（Follower + Leader）</code><br>假若有<code>n-1</code>个<code>Follower</code>，S = sum(<code>半数或以上的Follower</code> + <code>Leader</code>) &gt;= <code>ceil[(n-1)/2]+1</code></p>
+<ul>
+<li>如果n为偶数，即<code>n=2k</code>，S &gt;= <code>ceil[(n-1)/2]+1</code> = <code>ceil[(2k-1)/2]+1</code> = <code>k+1</code> ，剩下<code>k-1 &lt; k+1</code></li>
+<li>如果n为奇数，即<code>n=2k+1</code>，S &gt;= <code>ceil[(n-1)/2]+1</code> = <code>ceil[(2k)/2]+1</code> = <code>k+1</code> ，剩下<code>k &lt; k+1</code></li>
+<li>假若有<code>2个Follower</code>，<code>半数或以上的Follower</code>为<code>1、2</code>；假若有<code>3个Follower</code>，<code>半数或以上的Follower</code>为<code>2、3</code></li>
+</ul>
+<h2 id="两种模式"><a href="#两种模式" class="headerlink" title="两种模式"></a>两种模式</h2><p>ZAB协议运行过程中，存在两种模式：<strong><code>崩溃恢复模式</code></strong>+<strong><code>消息广播模式</code></strong>，模式切换图如下<br><img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode.png" width="500"></p>
+<h3 id="消息广播模式"><a href="#消息广播模式" class="headerlink" title="消息广播模式"></a>消息广播模式</h3><h4 id="示意图"><a href="#示意图" class="headerlink" title="示意图"></a>示意图</h4><img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_mode_crash_recovery.png" width="500">
+
+<h4 id="具体过程（类2PC）"><a href="#具体过程（类2PC）" class="headerlink" title="具体过程（类2PC）"></a>具体过程（类2PC）</h4><ul>
+<li>针对客户端的<code>事务请求</code>，<code>Leader</code>会为其生成对应的<code>事务Proposal</code>，<code>Leader</code>会为每个<code>事务Proposal</code>分配一个<code>全局单调递增的唯一ID</code>，即<em><strong><code>ZXID</code></strong></em></li>
+<li>消息广播过程中，<code>Leader</code>会为每一个<code>Follower</code>都各自分配一个<strong><code>单独的队列</code></strong>，然后将需要广播的<code>事务Proposal</code>依次放入到这些队列中去，并根据<strong><code>FIFO</code></strong>策略进行消息发送</li>
+<li>每一个<code>Follower</code>在接收到<code>事务Proposal</code>之后，都会首先将其以_<strong><code>事务日志</code></strong>_的形式写入到<code>本地磁盘</code>中，并且在成功写入后向<code>Leader</code>反馈<code>ACK</code></li>
+<li>当<code>Leader</code>接收到_<strong><code>半数或以上</code></strong>_的<code>Follower</code>反馈的<code>ACK</code>后，就会广播一个<code>Commit</code>消息给所有的<code>Follower</code>以通知其进行<code>事务提交</code>，同时<code>Leader</code>自身也会完成<code>事务提交</code></li>
+<li>每一个<code>Follower</code>接收到<code>Commit</code>消息后，也会完成<code>事务提交</code></li>
+</ul>
+<h3 id="崩溃恢复模式"><a href="#崩溃恢复模式" class="headerlink" title="崩溃恢复模式"></a>崩溃恢复模式</h3><ul>
+<li>恢复过程结束后需要<code>选举新Leader</code>，<code>ZAB协议</code>需要一个高效且可靠的<code>Leader选举算法</code>，在选举出<code>准Leader</code>后，需要进行<code>数据同步</code>，同步完成后，<em><strong><code>准Leader</code></strong>_成为</em><strong><code>正式Leader</code></strong>_</li>
+<li>崩溃恢复阶段需要处理2种特殊情况<ul>
+<li>提交已被Leader Commit的事务</li>
+<li>丢弃只被Leader Propose的事务</li>
+</ul>
+</li>
+</ul>
+<h1 id="进阶理解"><a href="#进阶理解" class="headerlink" title="进阶理解"></a>进阶理解</h1><h2 id="分布式系统模型"><a href="#分布式系统模型" class="headerlink" title="分布式系统模型"></a>分布式系统模型</h2><h3 id="进程组-∏"><a href="#进程组-∏" class="headerlink" title="进程组 ∏"></a>进程组 ∏</h3><p>分布式系统由一组进程构成：<code>∏ = {P1,P2,...,Pn}</code>，各个进程之间通过相互通信来实现消息的传递</p>
+<h3 id="进程子集-Quorum"><a href="#进程子集-Quorum" class="headerlink" title="进程子集 Quorum"></a>进程子集 Quorum</h3><p>每个进程随时都可能崩溃退出，正常工作的进程处于<code>UP</code>状态，否则处于<code>DOWN</code>状态，_<strong><code>半数以上</code></strong>_处于<code>UP</code>状态的进程构成<code>进程子集Q</code>，<code>Q</code>满足两个条件：<code>∀Q，Q⊆∏</code>，<code>∀Q1和Q2，Q1∩Q2≠∅</code></p>
+<h3 id="网络通信-Cij"><a href="#网络通信-Cij" class="headerlink" title="网络通信 Cij"></a>网络通信 Cij</h3><p><code>Cij</code>表示进程<code>Pi</code>和<code>Pj</code>之间的网络通信，其中<code>Pi∈∏，Pj∈∏</code>，<code>Cij</code>满足<code>完整性</code>和<code>前置性</code></p>
+<h4 id="完整性"><a href="#完整性" class="headerlink" title="完整性"></a>完整性</h4><p>如果进程<code>Pj</code>收到来自进程<code>Pi</code>的<code>消息m</code>，那么进程<code>Pi</code>一定确实发送了<code>消息m</code></p>
+<h4 id="前置性"><a href="#前置性" class="headerlink" title="前置性"></a>前置性</h4><p>如果进程<code>Pj</code>收到了<code>消息m</code>，那么存在<code>消息m&#39;</code>：如果<code>消息m&#39;</code>是<code>消息m</code>的<strong><code>前置消息</code></strong>，那么<code>Pj</code>务必先接收<code>消息m&#39;</code>，然后再接收<code>消息m</code>，记为<code>m≺m&#39;</code></p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>使用<code>Zookeeper</code>的分布式系统，通常存在<code>大量的客户端进程</code>，依赖<code>Zookeeper</code>来完成类似配置存储等分布式协调工作，因此<code>Zookeeper</code>必须具备以下特性</p>
+<ul>
+<li><code>高吞吐</code>和<code>低延时</code></li>
+<li>在<code>高并发</code>的情况下完成<code>分布式数据的一致性处理</code></li>
+<li>同时能够<code>优雅地处理运行时故障</code>，具备快速从故障中恢复的能力</li>
+</ul>
+<h3 id="主进程周期"><a href="#主进程周期" class="headerlink" title="主进程周期"></a>主进程周期</h3><p><code>ZAB</code>协议是<code>Zookeeper</code>框架的核心，任何时候都需要保证只有一个主进程负责消息广播，如果主进程崩溃了，需要选举出新的主进程，随着时间的推移，形成主进程序列：<code>P1,P2...Pe，∀Pe∈∏</code>，<code>e</code>称为<strong><code>主进程周期</code></strong>，如果<code>e</code>小于<code>e&#39;</code>，那么<code>Pe</code>是<code>Pe&#39;</code>之前的主进程，表示为<code>Pe≺Pe&#39;</code>，进程可能会崩溃重启，因此<code>Pe</code>和<code>Pe&#39;</code>本质上可能是<code>同一个进程</code>，只是处于<code>不同的主进程周期</code>而已。为了保证主进程每次广播出来的<code>事务Proposal</code>都是一致的，只有在 _<strong><code>充分完成崩溃恢复阶段</code></strong>_之后，新的主进程才可以开始生成<code>新的事务Proposal</code>并进行<code>消息广播</code></p>
+<h3 id="广播事务Proposal"><a href="#广播事务Proposal" class="headerlink" title="广播事务Proposal"></a>广播事务Proposal</h3><p><code>transactions(v,z)</code>：实现事务Proposal的<code>广播</code></p>
+<ul>
+<li><code>v</code>为事务Proposal的<code>内容</code></li>
+<li><code>z</code>为事务Proposal的<code>标识</code>，<code>z=&lt;e,c&gt;</code><ul>
+<li><code>e</code>为<code>主进程周期</code>，<code>e=epoch(z)</code></li>
+<li><code>c</code>为<code>当前主进程周期内的事务计数</code>，<code>c=counter(z)</code></li>
+<li>如果<code>z&#39;</code>优先于<code>z</code>，记为<code>z≺z&#39;</code>，有2种情况<ul>
+<li><code>epoch(z)&lt;epoch(z&#39;)</code>：主进程周期不同</li>
+<li><code>epoch(z)==epoch(z&#39;) &amp;&amp; counter(z)&lt;counter(z&#39;)</code>：主进程周期相同</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="算法描述"><a href="#算法描述" class="headerlink" title="算法描述"></a>算法描述</h2><ul>
+<li>整个ZAB协议主要包括<code>消息广播</code>和<code>崩溃恢复</code>两个过程，进一步可以细分为<strong><code>发现（Discovery）</code></strong>、<strong><code>同步（Synchronization）</code></strong>和<strong><code>广播（Broadcast）</code></strong>三个阶段，每一个分布式进程会<code>循环执行</code>这三个阶段</li>
+<li><strong><code>崩溃恢复</code> = <code>发现</code>+ <code>同步</code> = （<code>选举准Leader</code> + <code>生成新主进程周期</code>） + <code>同步</code></strong></li>
+</ul>
+<h3 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h3><table>
+<thead>
+<tr>
+<th>术语</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F.p</td>
+<td>Follower f处理过的<code>最后一个</code>事务Proposal</td>
+</tr>
+<tr>
+<td>F.zxid</td>
+<td>Follower f处理过的历史事务Proposal中<code>最后一个</code>事务Proposal的事务标识ZXID</td>
+</tr>
+<tr>
+<td>hf</td>
+<td>Follower f<code>已经处理过的事务Proposal序列</code></td>
+</tr>
+<tr>
+<td>Ie</td>
+<td><code>准Leader</code>完成发现阶段后的初始化历史记录</td>
+</tr>
+</tbody></table>
+<h3 id="发现：选举准Leader-生成新主进程周期"><a href="#发现：选举准Leader-生成新主进程周期" class="headerlink" title="发现：选举准Leader + 生成新主进程周期"></a>发现：选举准Leader + 生成新主进程周期</h3><p>发现过程就是<code>Leader选举</code>过程，首先选举<code>准Leader</code>，然后完成<code>epoch</code>的更新（新的主进程周期）和<code>Ie</code>的初始化</p>
+<h4 id="选举准Leader"><a href="#选举准Leader" class="headerlink" title="选举准Leader"></a>选举准Leader</h4><p>进入<code>Leader选举</code>流程，即机器进入<code>LOOKING</code>状态，有3种情况</p>
+<ul>
+<li>机器初始化启动，机器进入<code>LOOKING</code>状态</li>
+<li><code>Follower</code>运行期间无法与<code>Leader</code>保持连接，<code>Follower</code>进入<code>LOOKING</code>状态</li>
+<li><code>Leader</code>无法收到<em><strong><code>半数或以上</code></strong></em> Follower的心跳检测，<code>Leader</code>进入<code>LOOKING</code>状态</li>
+</ul>
+<p>当一个机器进入<code>Leader选举</code>流程时，当前集群可能处在两个状态：<code>存在（准）Leader</code>+<code>不存在（准）Leader</code></p>
+<h5 id="术语-1"><a href="#术语-1" class="headerlink" title="术语"></a>术语</h5><table>
+<thead>
+<tr>
+<th>术语</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SID</td>
+<td>Server ID，用来唯一标识一台Zookeeper集群中的机器，全局唯一，与myid一致</td>
+</tr>
+<tr>
+<td>ZXID</td>
+<td>事务ID，用来唯一标识一次服务器状态的变更，在同一时刻，集群中每一台机器的ZXID不一定完全一致</td>
+</tr>
+<tr>
+<td>Vote</td>
+<td>当集群中的机器发现自己无法检测到Leader机器的时候，就会尝试开始投票</td>
+</tr>
+<tr>
+<td>Quorum</td>
+<td><code>半数以上</code>机器，<code>quorum &gt;= (n/2+1)</code></td>
+</tr>
+</tbody></table>
+<h5 id="集群存在（准）Leader"><a href="#集群存在（准）Leader" class="headerlink" title="集群存在（准）Leader"></a>集群存在（准）Leader</h5><p>当该机器试图去选举<code>准Leader</code>的时候，会被告知当前集群的<code>（准）Leader</code>信息，对于该机器来说，仅仅需要与<code>（准）Leader</code>机器建立连接，并完成<code>数据状态同步</code>既可</p>
+<h5 id="集群不存在（准）Leader"><a href="#集群不存在（准）Leader" class="headerlink" title="集群不存在（准）Leader"></a>集群不存在（准）Leader</h5><p>集群中的所有机器都处于一种试图选举出一个<code>准Leader</code>的状态，我们把这种状态称为<code>LOOKING</code>，处于<code>LOOKING</code>状态的机器会向集群中的所有其他机器发送消息，这个消息就是<strong><code>投票</code></strong>，投票消息组成：所推举的服务器<code>SID</code>和<code>ZXID</code>，<strong><code>(SID，ZXID)</code></strong></p>
+<h6 id="第1次投票"><a href="#第1次投票" class="headerlink" title="第1次投票"></a>第1次投票</h6><p>第1次投票，由于无法检测到集群中其他机器的状态信息，因此每台机器都<strong><code>将自己作为被推举的对象</code></strong>进行投票</p>
+<h6 id="变更投票"><a href="#变更投票" class="headerlink" title="变更投票"></a>变更投票</h6><p>集群中的每台机器发出自己的投票后，也会接收到来自集群中其他机器的投票，并依据一定的规则，来处理收到的其他机器的投票，并决定是否需要变更自己的投票</p>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>vote_sid</td>
+<td>接收到的投票中所推举Leader服务器的SID</td>
+</tr>
+<tr>
+<td>vote_zxid</td>
+<td>接收到的投票中所推举Leader服务器的ZXID</td>
+</tr>
+<tr>
+<td>self_sid</td>
+<td>当前服务器自己的SID</td>
+</tr>
+<tr>
+<td>self_zxid</td>
+<td>当前服务器自己的ZXID</td>
+</tr>
+</tbody></table>
+<p>变更规则：</p>
+<ul>
+<li><code>vote_zxid &gt; self_zxid</code> ：认可当前收到的选票，并再次将该投票发送出去</li>
+<li><code>vote_zxid &lt; self_zxid</code> ：坚持自己的投票，不做任何变更</li>
+<li><code>vote_zxid == self_zxid &amp;&amp; vote_sid &gt; self_sid</code> ：认可当前收到的选票，并再次将该投票发送出去</li>
+<li><code>vote_zxid == self_zxid &amp;&amp; vote_sid &lt; self_sid</code> ：坚持自己的投票，不做任何变更</li>
+</ul>
+<h6 id="统计投票"><a href="#统计投票" class="headerlink" title="统计投票"></a>统计投票</h6><p>如果一台机器收到_<strong><code>半数以上</code></strong>_的相同的投票（包括自身投票），那么这个投票对应的<code>SID</code>即为<strong><code>准Leader</code></strong></p>
+<h6 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h6><img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_election.png" width="500">
+
+<h4 id="生成新主进程周期"><a href="#生成新主进程周期" class="headerlink" title="生成新主进程周期"></a>生成新主进程周期</h4><p><code>e&#39;</code>：表示新的主进程周期，<code>Ie&#39;</code>：<code>e&#39;</code>对应的初始化历史记录，<code>准Leader L</code>与<code>Follower F</code>的工作流程</p>
+<ul>
+<li><code>Follower F</code>将自己最后接受的事务Proposal的epoch值<strong><code>CEPOCH(F.p)</code></strong>发送给<code>准Leader L</code></li>
+<li>当<code>准Leader L</code>接收来自<em><strong><code>半数或以上</code></strong></em> Follower的<code>CEPOCH(F.p)</code>消息后，从这些<code>CEPOCH(F.p)</code>消息中选取出<strong><code>最大的epoch</code></strong>值，然后<code>加1</code>，即为<code>e&#39;</code>，最后生成<strong><code>NEWEPOCH(e&#39;)</code></strong>消息并发送给这些<em><strong><code>半数或以上</code></strong></em> Follower</li>
+<li>当<code>Follower</code>接收到来自<code>准Leader L</code>的<code>NEWEPOCH(e&#39;)</code>消息后，检查当前的<code>CEPOCH(F.p)是否小于e&#39;</code>，如果是，则将<code>CEPOCH(F.p)</code>更新为<code>e&#39;</code>，同时向<code>准Leader L</code>发送<strong><code>ACK-E</code></strong>消息（包含当前<code>Follower</code>的epoch值<code>CEPOCH(F.p)</code>以及该<code>Follower</code>已经处理过的事务Proposal序列 _<strong><code>hf</code></strong>_）</li>
+<li>当<code>准Leader L</code>接收到来自<em><strong><code>半数或以上</code></strong>_的<code>Follower</code>的<code>ACK-E</code>消息后，<code>准Leader L</code>会从这</em><strong><code>半数或以上</code></strong>_的<code>Follower</code>中选取一个<code>Follower F</code>，并将其 _<strong><code>hf</code></strong>_作为初始化历史记录<code>Ie&#39;</code>，假若选取<code>F</code>，那么<code>∀F&#39;∈Q</code>，满足下面的其中1个条件<ul>
+<li><code>CEPOCH(F&#39;.p)&lt;CEPOCH(F.p)</code></li>
+<li><code>CEPOCH(F&#39;.p)==CEPOCH(F.p) &amp;&amp; (F&#39;.zxid≺F.zxid || F&#39;.zxid==F.zxid )</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="同步：准Leader-➔-正式Leader"><a href="#同步：准Leader-➔-正式Leader" class="headerlink" title="同步：准Leader ➔ 正式Leader"></a>同步：准Leader ➔ 正式Leader</h3><p><code>准Leader L</code>与与<code>Follower F</code>的工作流程</p>
+<ul>
+<li><code>准Leader L</code>向<code>Quorum</code>中的<code>Follower</code>发送<strong><code>NEWLEADER(e&#39;,Ie&#39;)</code></strong>消息</li>
+<li>当<code>Follower F</code>接收到<code>准Leader L</code>的<code>NEWLEADER(e&#39;,Ie&#39;)</code>消息后<ul>
+<li>如果<code>Follower F</code>的<code>CEPOCH(F.p)≠e&#39;</code>，不参与本轮的同步，直接进入<strong><code>发现阶段</code></strong></li>
+<li>如果<code>CEPOCH(F.p)=e&#39;</code>，那么<code>Follower</code>会执行<code>事务应用操作</code>，即<code>∀&lt;v,z&gt;∈Ie&#39;</code>，<code>Follower</code>都会接受<code>&lt;e&#39;,&lt;v,z&gt;&gt;</code>，最后<code>Followe</code>会向<code>准Leader L</code>发送<strong><code>ACK-LD</code></strong>消息，表示已经接受并处理<code>Ie&#39;</code>中所有的<code>事务Proposal</code></li>
+</ul>
+</li>
+<li>当<code>准Leader L</code>接收到<em><strong><code>半数或以上</code></strong>_的<code>Follower</code>的<code>ACK-LD</code>消息后，向<strong><code>所有</code></strong>的<code>Follower</code>发送<strong><code>Commit-LD</code></strong>消息，此时<code>准Leader L</code>完成<code>同步</code>阶段，成为 _<strong><code>正式Leader</code></strong></em></li>
+<li>当<code>Follower</code>接收到<code>Commit-LD</code>消息后，就会依次提交所有<code>Ie&#39;</code>中<strong><code>尚未处理</code></strong>的<code>事务Proposal</code></li>
+</ul>
+<h3 id="广播"><a href="#广播" class="headerlink" title="广播"></a>广播</h3><p>广播阶段类似于<code>2PC</code>，<code>ZAB协议</code>移除了2PC的<code>事务回滚</code>，因此<code>Follower</code>只能<code>回复ACK</code>或者<code>不回复</code>，<code>Leader</code>主要收到_<strong><code>半数或以上</code></strong>_的<code>ACK</code>，就可以发送<code>Commit</code>，这样的设计很容易带来<code>数据不一致性</code>，因此才需要<code>崩溃恢复模式</code>（Leader选举+数据同步）</p>
+<h4 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h4><ul>
+<li><code>Leader L</code>接收到客户端新的<code>事务请求</code>后，会生成对应的事务<code>Proposal&lt;e&#39;,&lt;v,z&gt;&gt;</code>，并根据<code>ZXID的顺序</code>向所有<code>Follower</code>发送<strong><code>Propose&lt;e&#39;,&lt;v,z&gt;&gt;</code></strong>，其中<code>epoch(z)=e&#39;</code></li>
+<li><code>Follower</code>根据消息接收的先后顺序来处理这些来自<code>Leader</code>的<code>事务Proposal</code>，并将它们<code>追加到hf</code>，之后给<code>Leader</code>反馈<strong><code>ACK</code></strong>消息</li>
+<li>当<code>Leader</code>接收到来自<em><strong><code>半数或以上</code></strong></em> Follower针对<code>Propose&lt;e&#39;,&lt;v,z&gt;&gt;</code>的<code>ACK</code>消息后，就会向所有<code>Follower</code>发送<strong><code>Commit&lt;e&#39;,&lt;v,z&gt;&gt;</code></strong>消息</li>
+<li>当<code>Follower</code>接收到来自<code>Leader</code>的<code>Commit&lt;e&#39;,&lt;v,z&gt;&gt;</code>消息后，就会开始提交事务<code>Proposal&lt;e&#39;,&lt;v,z&gt;&gt;</code>，此时必定已经提交了事务<code>Proposal&lt;e&#39;,&lt;v&#39;,z&#39;&gt;&gt;</code>，其中<code>&lt;v&#39;,z&#39;&gt; ∈ hf，z&#39;≺z</code></li>
+</ul>
+<h4 id="两种特殊情况"><a href="#两种特殊情况" class="headerlink" title="两种特殊情况"></a>两种特殊情况</h4><h5 id="提交已被Leader-Commit的事务"><a href="#提交已被Leader-Commit的事务" class="headerlink" title="提交已被Leader Commit的事务"></a>提交已被Leader Commit的事务</h5><h6 id="发生场景"><a href="#发生场景" class="headerlink" title="发生场景"></a>发生场景</h6><p><code>Leader</code>发送<code>Propose</code>请求，<code>Follower F1</code>和<code>Follower F2</code>都向<code>Leader</code>回复了<code>ACK</code>，<code>Leader</code>向所有的<code>Follower</code>发送<code>Commit</code>请求并<code>Commit自身</code>，此时<code>Leader</code>宕机，<strong><code>Leader已经Commit</code></strong>，但<strong><code>Follower尚未Commit</code></strong>，数据不一致</p>
+<h6 id="处理方式"><a href="#处理方式" class="headerlink" title="处理方式"></a>处理方式</h6><p>选举<code>F.zxid</code>最大的<code>Follower</code>成为<code>新的准Leader</code>，由于<code>旧Leader</code>宕机前，_<strong><code>半数或以上</code></strong>_的Follower曾经发送<code>ACK</code>消息，<code>新的准Leader</code>必然是这<code>半数或以上Follower</code>的一员；<code>新的准Leader</code>会发现自身存在<strong><code>已经Propose但尚未Commit的事务Proposal</code></strong>，<code>新的准Leader</code>会向所有的<code>Follower</code>先发送<code>Propose</code>请求，再发送<code>Commit</code>请求</p>
+<h5 id="丢弃只被Leader-Propose的事务"><a href="#丢弃只被Leader-Propose的事务" class="headerlink" title="丢弃只被Leader Propose的事务"></a>丢弃只被Leader Propose的事务</h5><h6 id="发生场景-1"><a href="#发生场景-1" class="headerlink" title="发生场景"></a>发生场景</h6><p><code>Leader</code>收到了<code>事务请求</code>，将其包装成了<code>事务Proposal</code>，此时<code>Leader</code>宕机，<code>Follower</code>并没有收到<code>Propose</code>请求，<code>Follower</code>进入选举阶段，选举产生<code>新Leader</code>，<code>旧的Leader重启</code>，以<code>Follower</code>的角色加入集群，此时<code>旧Leader</code>上有一个<code>多余的事务Proposal</code>，数据不一致</p>
+<h6 id="处理方式-1"><a href="#处理方式-1" class="headerlink" title="处理方式"></a>处理方式</h6><p><code>新的准Leader</code>会根据自己服务器上<code>最后被提交的事务Proposal</code>和<code>Follower的事务Proposal</code>进行对比，然后<code>新的准Leader</code>要求<code>Follower</code>执行一个<strong><code>回退操作</code></strong>，回退到一个<code>已经被集群半数以上机器提交的最新的事务Proposal</code></p>
+<h3 id="三阶段示意图"><a href="#三阶段示意图" class="headerlink" title="三阶段示意图"></a>三阶段示意图</h3><img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_3_phase_1.png" width="500">
+在正常运行时，ZAB协议一直运行在**`广播阶段`**，如果出现Leader宕机或其他原因导致的Leader缺失，此时ZAB协议会进入**`发现阶段`**
+
+<h2 id="运行分析"><a href="#运行分析" class="headerlink" title="运行分析"></a>运行分析</h2><p>运行状态切换<br><img src="https://zk-1253868755.cos.ap-guangzhou.myqcloud.com/paxos2zk/zk_zab_state_switch.png" width="500"></p>
+<ul>
+<li>组成<code>ZAB协议</code>的所有进程<code>启动</code>的时候，初始状态为<code>LOOKING</code></li>
+<li>如果进程发现<code>已经存在新的（准）Leader</code>，马上切换到<code>FOLLOWING</code>状态，并开始和（准）Leader保持同步</li>
+<li>处于<code>LOOKING</code>状态的进程称为<code>Follower</code>，处于<code>LEADING</code>状态的进程称为<code>Leader</code></li>
+<li>当检测到<code>Leader</code>崩溃或放弃领导地位，其余<code>Follower</code>会切换到<code>LOOKING</code>状态，并开始新一轮的选举</li>
+<li>在<code>ZAB协议</code>运行过程中，每个进程的状态都会在<code>LOOKING</code>、<code>FOLLOWING</code>和<code>LEADING</code>之间不断地转换</li>
+<li>完成<code>Leader选举</code>阶段，进程成为<code>准Leader</code>，完成<code>数据同步</code>阶段，<code>准Leader成为正式Leader</code><ul>
+<li><code>准Leader</code>接收来自<code>半数或以上</code>的Follower进程针对<code>Le&#39;</code>的<code>NEWLEADER(e&#39;,Ie&#39;)</code>的<code>ACK-LD</code>消息，那么<code>Le&#39;</code>正式成为了周期<code>e&#39;</code>的<code>Leader</code></li>
+<li>在<code>原子广播</code>阶段，<code>Leader</code>会为每一个与自己保持同步的<code>Follower</code>创建一个<code>操作队列</code>，<code>Leader</code>与所有的<code>Follower</code>之间需要通过<code>心跳检测</code>机制来感知彼此。如果在指定的超时时间内<code>Leader</code>无法从<code>半数或以上</code>的Follower那里接收到<code>心跳检测</code>或者<code>TCP连接断开</code>，<code>Leader</code>和所有的<code>Follower</code>都会切换到<code>LOOKING</code>状态</li>
+</ul>
+</li>
+</ul>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p><a href="https://book.douban.com/subject/26292004/" target="_blank" rel="noopener">从Paxos到Zookeeper</a></p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/07/13/zk-interprocessmutex/" rel="bookmark">Zookeeper -- 分布式锁InterProcessMutex</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/07/08/zk-zab/" title="Zookeeper -- ZAB协议">http://zhongmingmao.me/2017/07/08/zk-zab/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/zookeeper/" rel="tag"><i class="fa fa-tag"></i> Zookeeper</a>
+          
+            <a href="/tags/zab/" rel="tag"><i class="fa fa-tag"></i> ZAB</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/06/02/java8-optional/" rel="next" title="Java 8 -- Optional">
+                <i class="fa fa-chevron-left"></i> Java 8 -- Optional
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/07/13/zk-interprocessmutex/" rel="prev" title="Zookeeper -- 分布式锁InterProcessMutex">
+                Zookeeper -- 分布式锁InterProcessMutex <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基本概念"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ZAB-VS-Base-Paxos"><span class="nav-number">1.1.</span> <span class="nav-text">ZAB VS Base-Paxos</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#服务器角色"><span class="nav-number">1.2.</span> <span class="nav-text">服务器角色</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主备模式架构"><span class="nav-number">1.3.</span> <span class="nav-text">主备模式架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#事务请求"><span class="nav-number">1.3.1.</span> <span class="nav-text">事务请求</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#半数以上（Follower-Leader）"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">半数以上（Follower + Leader）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#半数或以上（Follower）"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">半数或以上（Follower）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#两种模式"><span class="nav-number">1.4.</span> <span class="nav-text">两种模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#消息广播模式"><span class="nav-number">1.4.1.</span> <span class="nav-text">消息广播模式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#示意图"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">示意图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#具体过程（类2PC）"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">具体过程（类2PC）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#崩溃恢复模式"><span class="nav-number">1.4.2.</span> <span class="nav-text">崩溃恢复模式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#进阶理解"><span class="nav-number">2.</span> <span class="nav-text">进阶理解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#分布式系统模型"><span class="nav-number">2.1.</span> <span class="nav-text">分布式系统模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#进程组-∏"><span class="nav-number">2.1.1.</span> <span class="nav-text">进程组 ∏</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#进程子集-Quorum"><span class="nav-number">2.1.2.</span> <span class="nav-text">进程子集 Quorum</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网络通信-Cij"><span class="nav-number">2.1.3.</span> <span class="nav-text">网络通信 Cij</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#完整性"><span class="nav-number">2.1.3.1.</span> <span class="nav-text">完整性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#前置性"><span class="nav-number">2.1.3.2.</span> <span class="nav-text">前置性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题描述"><span class="nav-number">2.2.</span> <span class="nav-text">问题描述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#主进程周期"><span class="nav-number">2.2.1.</span> <span class="nav-text">主进程周期</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#广播事务Proposal"><span class="nav-number">2.2.2.</span> <span class="nav-text">广播事务Proposal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#算法描述"><span class="nav-number">2.3.</span> <span class="nav-text">算法描述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#术语"><span class="nav-number">2.3.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发现：选举准Leader-生成新主进程周期"><span class="nav-number">2.3.2.</span> <span class="nav-text">发现：选举准Leader + 生成新主进程周期</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#选举准Leader"><span class="nav-number">2.3.2.1.</span> <span class="nav-text">选举准Leader</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#术语-1"><span class="nav-number">2.3.2.1.1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#集群存在（准）Leader"><span class="nav-number">2.3.2.1.2.</span> <span class="nav-text">集群存在（准）Leader</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#集群不存在（准）Leader"><span class="nav-number">2.3.2.1.3.</span> <span class="nav-text">集群不存在（准）Leader</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#第1次投票"><span class="nav-number">2.3.2.1.3.1.</span> <span class="nav-text">第1次投票</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#变更投票"><span class="nav-number">2.3.2.1.3.2.</span> <span class="nav-text">变更投票</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#统计投票"><span class="nav-number">2.3.2.1.3.3.</span> <span class="nav-text">统计投票</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#示例"><span class="nav-number">2.3.2.1.3.4.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#生成新主进程周期"><span class="nav-number">2.3.2.2.</span> <span class="nav-text">生成新主进程周期</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步：准Leader-➔-正式Leader"><span class="nav-number">2.3.3.</span> <span class="nav-text">同步：准Leader ➔ 正式Leader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#广播"><span class="nav-number">2.3.4.</span> <span class="nav-text">广播</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#工作流程"><span class="nav-number">2.3.4.1.</span> <span class="nav-text">工作流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#两种特殊情况"><span class="nav-number">2.3.4.2.</span> <span class="nav-text">两种特殊情况</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#提交已被Leader-Commit的事务"><span class="nav-number">2.3.4.2.1.</span> <span class="nav-text">提交已被Leader Commit的事务</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#发生场景"><span class="nav-number">2.3.4.2.1.1.</span> <span class="nav-text">发生场景</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#处理方式"><span class="nav-number">2.3.4.2.1.2.</span> <span class="nav-text">处理方式</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#丢弃只被Leader-Propose的事务"><span class="nav-number">2.3.4.2.2.</span> <span class="nav-text">丢弃只被Leader Propose的事务</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#发生场景-1"><span class="nav-number">2.3.4.2.2.1.</span> <span class="nav-text">发生场景</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#处理方式-1"><span class="nav-number">2.3.4.2.2.2.</span> <span class="nav-text">处理方式</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三阶段示意图"><span class="nav-number">2.3.5.</span> <span class="nav-text">三阶段示意图</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运行分析"><span class="nav-number">2.4.</span> <span class="nav-text">运行分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">3.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

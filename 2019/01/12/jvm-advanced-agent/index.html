@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Java Agent的运行方式 JVM并不会限制Java Agent的数量 可以在JVM参数中包含多个-javaagent参数 也可以远程attach多个Java Agent   JVM会按照参数的顺序或者attach的顺序，逐个执行Java Agent JRebal/Btrace/arthas等工具都是基于Java Agent实现的  premain以JVM参数（-javaagent）的方式启动">
+<meta name="keywords" content="Java,JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM进阶 -- 浅谈Java Agent">
+<meta property="og:url" content="http://zhongmingmao.me/2019/01/12/jvm-advanced-agent/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="Java Agent的运行方式 JVM并不会限制Java Agent的数量 可以在JVM参数中包含多个-javaagent参数 也可以远程attach多个Java Agent   JVM会按照参数的顺序或者attach的顺序，逐个执行Java Agent JRebal/Btrace/arthas等工具都是基于Java Agent实现的  premain以JVM参数（-javaagent）的方式启动">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM进阶 -- 浅谈Java Agent">
+<meta name="twitter:description" content="Java Agent的运行方式 JVM并不会限制Java Agent的数量 可以在JVM参数中包含多个-javaagent参数 也可以远程attach多个Java Agent   JVM会按照参数的顺序或者attach的顺序，逐个执行Java Agent JRebal/Btrace/arthas等工具都是基于Java Agent实现的  premain以JVM参数（-javaagent）的方式启动">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/01/12/jvm-advanced-agent/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JVM进阶 -- 浅谈Java Agent | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/01/12/jvm-advanced-agent/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">JVM进阶 -- 浅谈Java Agent
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-01-12 18:40:27" itemprop="dateCreated datePublished" datetime="2019-01-12T18:40:27+08:00">2019-01-12</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/advanced/" itemprop="url" rel="index"><span itemprop="name">Advanced</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">12k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">21 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Java-Agent的运行方式"><a href="#Java-Agent的运行方式" class="headerlink" title="Java Agent的运行方式"></a>Java Agent的运行方式</h2><ol>
+<li>JVM并<strong>不会限制Java Agent的数量</strong><ul>
+<li>可以在JVM参数中包含多个-javaagent参数</li>
+<li>也可以远程attach多个Java Agent</li>
+</ul>
+</li>
+<li>JVM会按照参数的顺序或者attach的顺序，逐个执行Java Agent</li>
+<li>JRebal/Btrace/arthas等工具都是基于Java Agent实现的</li>
+</ol>
+<h3 id="premain"><a href="#premain" class="headerlink" title="premain"></a>premain</h3><p>以<strong>JVM参数</strong>（-javaagent）的方式启动，在Java程序的main方法执行之前执行</p>
+<a id="more"></a>
+
+<h4 id="MyAgent"><a href="#MyAgent" class="headerlink" title="MyAgent"></a>MyAgent</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAgent</span> </span>&#123;</span><br><span class="line">    <span class="comment">// JVM能识别的premain方法接收的是字符串类型的参数，并非类似main方法的字符串数组</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">premain</span><span class="params">(String args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"premain"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="manifest-txt"><a href="#manifest-txt" class="headerlink" title="manifest.txt"></a>manifest.txt</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># 写入两行数据，最后一行为空行</span><br><span class="line">$ echo &apos;Premain-Class: me.zhongmingmao.MyAgent</span><br><span class="line">&apos; &gt; manifest.txt</span><br><span class="line"></span><br><span class="line">$ tree</span><br><span class="line">.</span><br><span class="line">├── manifest.txt</span><br><span class="line">└── me</span><br><span class="line">    └── zhongmingmao</span><br><span class="line">        └── MyAgent.java</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译打包"><a href="#编译打包" class="headerlink" title="编译打包"></a>编译打包</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ javac me/zhongmingmao/MyAgent.java</span><br><span class="line"></span><br><span class="line">$ jar cvmf manifest.txt myagent.jar me/</span><br><span class="line">已添加清单</span><br><span class="line">正在添加: me/(输入 = 0) (输出 = 0)(存储了 0%)</span><br><span class="line">正在添加: me/zhongmingmao/(输入 = 0) (输出 = 0)(存储了 0%)</span><br><span class="line">正在添加: me/zhongmingmao/MyAgent.class(输入 = 399) (输出 = 285)(压缩了 28%)</span><br><span class="line">正在添加: me/zhongmingmao/MyAgent.java(输入 = 142) (输出 = 114)(压缩了 19%)</span><br></pre></td></tr></table></figure>
+
+<h4 id="HelloWorld"><a href="#HelloWorld" class="headerlink" title="HelloWorld"></a>HelloWorld</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> helloworld;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Hello World"</span>);</span><br><span class="line">        TimeUnit.MINUTES.sleep(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译运行"><a href="#编译运行" class="headerlink" title="编译运行"></a>编译运行</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ javac helloworld/HelloWorld.java</span><br><span class="line"></span><br><span class="line">$ java -javaagent:myagent.jar helloworld.HelloWorld</span><br><span class="line">premain</span><br><span class="line">Hello World</span><br></pre></td></tr></table></figure>
+
+<h3 id="agentmain"><a href="#agentmain" class="headerlink" title="agentmain"></a>agentmain</h3><ol>
+<li>以<strong>Attach</strong>的方式启动，在Java程序启动后运行，利用VirtualMachine的<strong>Attach API</strong></li>
+<li>Attach API其实是<strong>Java进程之间</strong>的沟通桥梁，底层通过<strong>Socket</strong>进行通信</li>
+<li>jps/jmap/jinfo/jstack/jcmd均依赖于Attach API</li>
+</ol>
+<h4 id="MyAgent-1"><a href="#MyAgent-1" class="headerlink" title="MyAgent"></a>MyAgent</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAgent</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">agentmain</span><span class="params">(String args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"agentmain"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="manifest-txt-1"><a href="#manifest-txt-1" class="headerlink" title="manifest.txt"></a>manifest.txt</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># 改为Agent-Class</span><br><span class="line">$ echo &apos;Agent-Class: me.zhongmingmao.MyAgent</span><br><span class="line">&apos; &gt; manifest.txt</span><br><span class="line"></span><br><span class="line">$ tree</span><br><span class="line">.</span><br><span class="line">├── manifest.txt</span><br><span class="line">└── me</span><br><span class="line">    └── zhongmingmao</span><br><span class="line">        └── MyAgent.java</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译打包-1"><a href="#编译打包-1" class="headerlink" title="编译打包"></a>编译打包</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ javac me/zhongmingmao/MyAgent.java</span><br><span class="line"></span><br><span class="line">$ jar cvmf manifest.txt myagent.jar me/</span><br><span class="line">已添加清单</span><br><span class="line">正在添加: me/(输入 = 0) (输出 = 0)(存储了 0%)</span><br><span class="line">正在添加: me/zhongmingmao/(输入 = 0) (输出 = 0)(存储了 0%)</span><br><span class="line">正在添加: me/zhongmingmao/MyAgent.class(输入 = 401) (输出 = 285)(压缩了 28%)</span><br><span class="line">正在添加: me/zhongmingmao/MyAgent.java(输入 = 146) (输出 = 115)(压缩了 21%)</span><br></pre></td></tr></table></figure>
+
+<h4 id="AttachTest"><a href="#AttachTest" class="headerlink" title="AttachTest"></a>AttachTest</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.sun.tools.attach.VirtualMachine;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AttachTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (args.length &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">"Usage: java AttachTest &lt;PID&gt; /PATH/TO/AGENT.jar"</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        String pid = args[<span class="number">0</span>];</span><br><span class="line">        String agent = args[<span class="number">1</span>];</span><br><span class="line">        <span class="comment">// Attach API</span></span><br><span class="line">        VirtualMachine vm = VirtualMachine.attach(pid);</span><br><span class="line">        vm.loadAgent(agent);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译AttachTest</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 指定classpath</span><br><span class="line">$ javac -cp ~/.sdkman/candidates/java/current/lib/tools.jar AttachTest.java</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行HelloWorld"><a href="#运行HelloWorld" class="headerlink" title="运行HelloWorld"></a>运行HelloWorld</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ java helloworld.HelloWorld</span><br><span class="line"></span><br><span class="line">$ jps</span><br><span class="line">23386 HelloWorld</span><br><span class="line">23387 Jps</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行AttachTest"><a href="#运行AttachTest" class="headerlink" title="运行AttachTest"></a>运行AttachTest</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ java -cp ~/.sdkman/candidates/java/current/lib/tools.jar:. AttachTest 23386 PATH_TO_AGENT/myagent.jar</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># HelloWorld进程继续输出agentmain</span><br><span class="line">Hello World</span><br><span class="line">agentmain</span><br></pre></td></tr></table></figure>
+
+<h2 id="Java-Agent的功能"><a href="#Java-Agent的功能" class="headerlink" title="Java Agent的功能"></a>Java Agent的功能</h2><ol>
+<li>ClassFileTransformer用于拦截<strong>类加载</strong>事件，需要注册到Instrumentation</li>
+<li>Instrumentation.<strong>redefineClasses</strong><ul>
+<li>针对<strong>已加载</strong>的类，<strong>舍弃原本的字节码</strong>，替换为由用户提供的byte数组</li>
+<li>功能比较<strong>危险</strong>，一般用于修复出错的字节码</li>
+</ul>
+</li>
+<li>Instrumentation.<strong>retransformClasses</strong><ul>
+<li>针对<strong>已加载</strong>的类，重新调用<strong>所有已注册</strong>的ClassFileTransformer的transform方法，两个场景</li>
+<li>在执行premain和agentmain方法前，JVM<strong>已经加载了不少类</strong><ul>
+<li>而这些类的加载事件并没有被拦截并执行相关的注入逻辑</li>
+</ul>
+</li>
+<li>定义了多个Java Agent，多个注入的情况，可能需要<strong>移除其中的部分注入</strong><ul>
+<li>调用<strong>Instrumentation.removeTransformer</strong>去除某个注入类后，可以调用retransformClasses</li>
+<li>重新从<strong>原始byte</strong>数组开始进行注入</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Java Agent的功能是通过<strong>JVMTI</strong> Agent（C Agent），JVMTI是一个<strong>事件驱动</strong>的工具实现接口<ul>
+<li>通常会在C Agent加载后的方法入口Agent_OnLoad处注册各种事件的钩子方法</li>
+<li>当JVM触发这些事件时，便会调用对应的钩子方法</li>
+<li>例如可以为JVMTI中的<strong>ClassFileLoadHook</strong>事件设置钩子，从而在C层面<strong>拦截所有的类加载事件</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="获取魔数"><a href="#获取魔数" class="headerlink" title="获取魔数"></a>获取魔数</h3><h4 id="MyAgent-2"><a href="#MyAgent-2" class="headerlink" title="MyAgent"></a>MyAgent</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.ClassFileTransformer;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.IllegalClassFormatException;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.Instrumentation;</span><br><span class="line"><span class="keyword">import</span> java.security.ProtectionDomain;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAgent</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">premain</span><span class="params">(String args, Instrumentation instrumentation)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 通过instrumentation来注册类加载事件的拦截器（实现ClassFileTransformer.transform）</span></span><br><span class="line">        instrumentation.addTransformer(<span class="keyword">new</span> MyTransformer());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTransformer</span> <span class="keyword">implements</span> <span class="title">ClassFileTransformer</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">byte</span>[] transform(ClassLoader loader, String className, Class&lt;?&gt; classBeingRedefined,</span><br><span class="line">                                ProtectionDomain protectionDomain, <span class="keyword">byte</span>[] classfileBuffer) <span class="keyword">throws</span> IllegalClassFormatException &#123;</span><br><span class="line">            <span class="comment">// 返回的byte数组，代表更新后的字节码</span></span><br><span class="line">            <span class="comment">// 当transform方法返回时，JVM会使用返回的byte数组来完成接下来的类加载工作</span></span><br><span class="line">            <span class="comment">// 如果transform方法返回null或者抛出异常，JVM将使用原来的byte数组来完成类加载工作</span></span><br><span class="line">            <span class="comment">// 基于类加载事件的拦截功能，可以实现字节码注入（Bytecode instrumentation），往正在被加载的类插入额外的字节码</span></span><br><span class="line">            System.out.printf(<span class="string">"Loaded %s: 0x%X%X%X%X\n"</span>, className,</span><br><span class="line">                    classfileBuffer[<span class="number">0</span>], classfileBuffer[<span class="number">1</span>], classfileBuffer[<span class="number">2</span>], classfileBuffer[<span class="number">3</span>]);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译运行-1"><a href="#编译运行-1" class="headerlink" title="编译运行"></a>编译运行</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ java -javaagent:myagent.jar helloworld.HelloWorld</span><br><span class="line">...</span><br><span class="line">Loaded helloworld/HelloWorld: 0xCAFEBABE</span><br><span class="line">Hello World</span><br><span class="line">...</span><br><span class="line">Loaded java/lang/Shutdown: 0xCAFEBABE</span><br><span class="line">Loaded java/lang/Shutdown$Lock: 0xCAFEBABE</span><br></pre></td></tr></table></figure>
+
+<h3 id="ASM注入字节码"><a href="#ASM注入字节码" class="headerlink" title="ASM注入字节码"></a>ASM注入字节码</h3><p>通过ASM注入字节码可参考<a href="http://web.cs.ucla.edu/~msb/cs239-tutorial/" target="_blank" rel="noopener">Instrumenting Java Bytecode with ASM</a></p>
+<h4 id="MyAgent-3"><a href="#MyAgent-3" class="headerlink" title="MyAgent"></a>MyAgent</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.ClassReader;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.ClassWriter;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.Opcodes;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.tree.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.ClassFileTransformer;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.IllegalClassFormatException;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.Instrumentation;</span><br><span class="line"><span class="keyword">import</span> java.security.ProtectionDomain;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAgent</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">premain</span><span class="params">(String args, Instrumentation instrumentation)</span> </span>&#123;</span><br><span class="line">        instrumentation.addTransformer(<span class="keyword">new</span> MyTransformer());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTransformer</span> <span class="keyword">implements</span> <span class="title">ClassFileTransformer</span>, <span class="title">Opcodes</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">byte</span>[] transform(ClassLoader loader, String className, Class&lt;?&gt; classBeingRedefined,</span><br><span class="line">                                ProtectionDomain protectionDomain, <span class="keyword">byte</span>[] classfileBuffer) <span class="keyword">throws</span> IllegalClassFormatException &#123;</span><br><span class="line">            <span class="comment">// 将classfileBuffer转换为ClassNode</span></span><br><span class="line">            ClassReader classReader = <span class="keyword">new</span> ClassReader(classfileBuffer);</span><br><span class="line">            ClassNode classNode = <span class="keyword">new</span> ClassNode(ASM7);</span><br><span class="line">            classReader.accept(classNode, ClassReader.SKIP_FRAMES);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 遍历ClassNode的MethodNode节点，即构造器和方法</span></span><br><span class="line">            <span class="keyword">for</span> (MethodNode methodNode : classNode.methods) &#123;</span><br><span class="line">                <span class="comment">// 在main方法入口处注入System.out.println("Hello Instrumentation");</span></span><br><span class="line">                <span class="keyword">if</span> (<span class="string">"main"</span>.equals(methodNode.name)) &#123;</span><br><span class="line">                    InsnList instrumentation = <span class="keyword">new</span> InsnList();</span><br><span class="line">                    instrumentation.add(<span class="keyword">new</span> FieldInsnNode(GETSTATIC, <span class="string">"java/lang/System"</span>, <span class="string">"out"</span>, <span class="string">"Ljava/io/PrintStream;"</span>));</span><br><span class="line">                    instrumentation.add(<span class="keyword">new</span> LdcInsnNode(<span class="string">"Hello, Instrumentation!"</span>));</span><br><span class="line">                    instrumentation.add(<span class="keyword">new</span> MethodInsnNode(INVOKEVIRTUAL, <span class="string">"java/io/PrintStream"</span>, <span class="string">"println"</span>, <span class="string">"(Ljava/lang/String;)V"</span>, <span class="keyword">false</span>));</span><br><span class="line">                    methodNode.instructions.insert(instrumentation);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ClassWriter classWriter = <span class="keyword">new</span> ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);</span><br><span class="line">            classNode.accept(classWriter);</span><br><span class="line">            <span class="keyword">return</span> classWriter.toByteArray();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译MyAgent</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ javac -cp PATH_TO_ASM/asm-7.0.jar:PATH_TO_ASM_TREE/asm-tree-7.0.jar me/zhongmingmao/MyAgent.java</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ java -javaagent:myagent.jar -cp PATH_TO_ASM/asm-7.0.jar:PATH_TO_ASM_TREE/asm-tree-7.0.jar:. helloworld.HelloWorld</span><br><span class="line">Hello, Instrumentation!</span><br><span class="line">Hello World</span><br></pre></td></tr></table></figure>
+
+<h2 id="基于字节码注入的profiler"><a href="#基于字节码注入的profiler" class="headerlink" title="基于字节码注入的profiler"></a>基于字节码注入的profiler</h2><h3 id="统计新建实例数量"><a href="#统计新建实例数量" class="headerlink" title="统计新建实例数量"></a>统计新建实例数量</h3><h4 id="MyProfiler"><a href="#MyProfiler" class="headerlink" title="MyProfiler"></a>MyProfiler</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ConcurrentHashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.atomic.AtomicInteger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyProfiler</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 统计每个类所新建实例的数目</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ConcurrentHashMap&lt;Class&lt;?&gt;, AtomicInteger&gt; data = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fireAllocationEvent</span><span class="params">(Class&lt;?&gt; klass)</span> </span>&#123;</span><br><span class="line">        data.computeIfAbsent(klass, kls -&gt; <span class="keyword">new</span> AtomicInteger()).incrementAndGet();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">dump</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        data.forEach((kls, counter) -&gt; System.err.printf(<span class="string">"%s: %d\n"</span>, kls.getName(), counter.get()));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        Runtime.getRuntime().addShutdownHook(<span class="keyword">new</span> Thread(MyProfiler::dump));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="MyAgent-4"><a href="#MyAgent-4" class="headerlink" title="MyAgent"></a>MyAgent</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.ClassReader;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.ClassWriter;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.Opcodes;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.Type;</span><br><span class="line"><span class="keyword">import</span> org.objectweb.asm.tree.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.ClassFileTransformer;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.IllegalClassFormatException;</span><br><span class="line"><span class="keyword">import</span> java.lang.instrument.Instrumentation;</span><br><span class="line"><span class="keyword">import</span> java.security.ProtectionDomain;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAgent</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">premain</span><span class="params">(String args, Instrumentation instrumentation)</span> </span>&#123;</span><br><span class="line">        instrumentation.addTransformer(<span class="keyword">new</span> MyTransformer());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTransformer</span> <span class="keyword">implements</span> <span class="title">ClassFileTransformer</span>, <span class="title">Opcodes</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">byte</span>[] transform(ClassLoader loader, String className, Class&lt;?&gt; classBeingRedefined, ProtectionDomain protectionDomain, <span class="keyword">byte</span>[] classfileBuffer) <span class="keyword">throws</span> IllegalClassFormatException &#123;</span><br><span class="line">            <span class="keyword">if</span> (className.startsWith(<span class="string">"java"</span>) ||</span><br><span class="line">                    className.startsWith(<span class="string">"javax"</span>) ||</span><br><span class="line">                    className.startsWith(<span class="string">"jdk"</span>) ||</span><br><span class="line">                    className.startsWith(<span class="string">"sun"</span>) ||</span><br><span class="line">                    className.startsWith(<span class="string">"com/sun"</span>) ||</span><br><span class="line">                    className.startsWith(<span class="string">"me/zhongmingmao"</span>)) &#123;</span><br><span class="line">                <span class="comment">// Skip JDK classes and profiler classes</span></span><br><span class="line">                <span class="comment">// 避免循环引用，从而导致StackOverflowException</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ClassReader classReader = <span class="keyword">new</span> ClassReader(classfileBuffer);</span><br><span class="line">            ClassNode classNode = <span class="keyword">new</span> ClassNode(ASM7);</span><br><span class="line">            classReader.accept(classNode, ClassReader.SKIP_FRAMES);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (MethodNode methodNode : classNode.methods) &#123;</span><br><span class="line">                <span class="comment">// 遍历方法内的指令</span></span><br><span class="line">                <span class="keyword">for</span> (AbstractInsnNode node : methodNode.instructions.toArray()) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (node.getOpcode() == NEW) &#123;</span><br><span class="line">                        <span class="comment">// 在每条new指令后插入对fireAllocationEvent方法的调用</span></span><br><span class="line">                        TypeInsnNode typeInsnNode = (TypeInsnNode) node;</span><br><span class="line">                        InsnList instrumentation = <span class="keyword">new</span> InsnList();</span><br><span class="line">                        instrumentation.add(<span class="keyword">new</span> LdcInsnNode(Type.getObjectType(typeInsnNode.desc)));</span><br><span class="line">                        instrumentation.add(<span class="keyword">new</span> MethodInsnNode(INVOKESTATIC, <span class="string">"me/zhongmingmao/MyProfiler"</span>, <span class="string">"fireAllocationEvent"</span>, <span class="string">"(Ljava/lang/Class;)V"</span>, <span class="keyword">false</span>));</span><br><span class="line">                        methodNode.instructions.insert(node, instrumentation);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ClassWriter classWriter = <span class="keyword">new</span> ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);</span><br><span class="line">            classNode.accept(classWriter);</span><br><span class="line">            <span class="keyword">return</span> classWriter.toByteArray();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="ProfilerMain"><a href="#ProfilerMain" class="headerlink" title="ProfilerMain"></a>ProfilerMain</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProfilerMain</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        String s = <span class="string">""</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            s = <span class="keyword">new</span> String(<span class="string">""</span> + i);</span><br><span class="line">        &#125;</span><br><span class="line">        Integer i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">20</span>; j++) &#123;</span><br><span class="line">            i = <span class="keyword">new</span> Integer(j);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行-1"><a href="#运行-1" class="headerlink" title="运行"></a>运行</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ java -javaagent:myagent.jar -cp PATH_TO_ASM/asm-7.0.jar:PATH_TO_ASM_TREE/asm-tree-7.0.jar:. ProfilerMain</span><br><span class="line">java.lang.StringBuilder: 10</span><br><span class="line">java.lang.String: 10</span><br><span class="line">java.lang.Integer: 20</span><br></pre></td></tr></table></figure>
+
+<h3 id="命名空间"><a href="#命名空间" class="headerlink" title="命名空间"></a>命名空间</h3><ol>
+<li>不少应用程序都依赖于ASM工程，当注入逻辑依赖于ASM时<ul>
+<li>可能会出现注入使用最新版的ASM，而应用程序本身使用的是较低版本的ASM</li>
+</ul>
+</li>
+<li>JDK本身也使用了ASM库，例如用来生成Lambda表达式的适配器，JDK的做法是<strong>重命名</strong>整个ASM库<ul>
+<li>为所有类的包名添加<strong>jdk.internal</strong>前缀</li>
+</ul>
+</li>
+<li>还有另外一个方法是借助<strong>自定义类加载器</strong>来隔离命名空间</li>
+</ol>
+<h3 id="观察者效应"><a href="#观察者效应" class="headerlink" title="观察者效应"></a>观察者效应</h3><ol>
+<li>例如字节码注入收集每个方法的运行时间<ul>
+<li>假设某个方法调用了另一个方法，而这个两个方法都被注入了</li>
+<li>那么统计被调用者运行时间点注入代码所耗费的时间，将不可避免地被计入至调用者方法的运行时间之中</li>
+</ul>
+</li>
+<li>统计新建对象数量<ul>
+<li>即时编译器的逃逸分析可能会优化掉新建对象操作，但它并不会消除相关的统计操作</li>
+<li>因此会统计到<strong>实际没有发生</strong>的新建对象操作</li>
+</ul>
+</li>
+<li>因此当使用字节码注入开发profiler，<strong>仅能表示在被注入的情况下程序的执行状态</strong></li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100010301" target="_blank" rel="noopener">深入拆解Java虚拟机</a></p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/11/java-performance-gc/" rel="bookmark">Java性能 -- GC</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/09/java-performance-jit/" rel="bookmark">Java性能 -- JIT</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/13/java-performance-jvm-heap-allocation/" rel="bookmark">Java性能 -- JVM堆内存分配</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/07/java-performance-jvm-memory-model/" rel="bookmark">Java性能 -- JVM内存模型</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/01/07/jvm-advanced-annotation-processor/" rel="bookmark">JVM进阶 -- 浅谈注解处理器</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/01/12/jvm-advanced-agent/" title="JVM进阶 -- 浅谈Java Agent">http://zhongmingmao.me/2019/01/12/jvm-advanced-agent/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/jvm/" rel="tag"><i class="fa fa-tag"></i> JVM</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/12/jvm-advanced-jni/" rel="next" title="JVM进阶 -- 浅谈JNI">
+                <i class="fa fa-chevron-left"></i> JVM进阶 -- 浅谈JNI
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/14/mysql-architecture/" rel="prev" title="MySQL -- 基础架构">
+                MySQL -- 基础架构 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-Agent的运行方式"><span class="nav-number">1.</span> <span class="nav-text">Java Agent的运行方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#premain"><span class="nav-number">1.1.</span> <span class="nav-text">premain</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MyAgent"><span class="nav-number">1.1.1.</span> <span class="nav-text">MyAgent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#manifest-txt"><span class="nav-number">1.1.2.</span> <span class="nav-text">manifest.txt</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译打包"><span class="nav-number">1.1.3.</span> <span class="nav-text">编译打包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HelloWorld"><span class="nav-number">1.1.4.</span> <span class="nav-text">HelloWorld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译运行"><span class="nav-number">1.1.5.</span> <span class="nav-text">编译运行</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#agentmain"><span class="nav-number">1.2.</span> <span class="nav-text">agentmain</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MyAgent-1"><span class="nav-number">1.2.1.</span> <span class="nav-text">MyAgent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#manifest-txt-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">manifest.txt</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译打包-1"><span class="nav-number">1.2.3.</span> <span class="nav-text">编译打包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AttachTest"><span class="nav-number">1.2.4.</span> <span class="nav-text">AttachTest</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#运行HelloWorld"><span class="nav-number">1.2.5.</span> <span class="nav-text">运行HelloWorld</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#运行AttachTest"><span class="nav-number">1.2.6.</span> <span class="nav-text">运行AttachTest</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-Agent的功能"><span class="nav-number">2.</span> <span class="nav-text">Java Agent的功能</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#获取魔数"><span class="nav-number">2.1.</span> <span class="nav-text">获取魔数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MyAgent-2"><span class="nav-number">2.1.1.</span> <span class="nav-text">MyAgent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编译运行-1"><span class="nav-number">2.1.2.</span> <span class="nav-text">编译运行</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ASM注入字节码"><span class="nav-number">2.2.</span> <span class="nav-text">ASM注入字节码</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MyAgent-3"><span class="nav-number">2.2.1.</span> <span class="nav-text">MyAgent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#运行"><span class="nav-number">2.2.2.</span> <span class="nav-text">运行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于字节码注入的profiler"><span class="nav-number">3.</span> <span class="nav-text">基于字节码注入的profiler</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#统计新建实例数量"><span class="nav-number">3.1.</span> <span class="nav-text">统计新建实例数量</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MyProfiler"><span class="nav-number">3.1.1.</span> <span class="nav-text">MyProfiler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MyAgent-4"><span class="nav-number">3.1.2.</span> <span class="nav-text">MyAgent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ProfilerMain"><span class="nav-number">3.1.3.</span> <span class="nav-text">ProfilerMain</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#运行-1"><span class="nav-number">3.1.4.</span> <span class="nav-text">运行</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命名空间"><span class="nav-number">3.2.</span> <span class="nav-text">命名空间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#观察者效应"><span class="nav-number">3.3.</span> <span class="nav-text">观察者效应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

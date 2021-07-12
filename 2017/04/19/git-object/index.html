@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文将主要介绍blob对象，tree对象，commit对象，tag对象">
+<meta name="keywords" content="Tool,Git">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git -- 对象">
+<meta property="og:url" content="http://zhongmingmao.me/2017/04/19/git-object/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文将主要介绍blob对象，tree对象，commit对象，tag对象">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tree_object.png">
+<meta property="og:image" content="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/commit_object.png">
+<meta property="og:image" content="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tag_object.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.136Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Git -- 对象">
+<meta name="twitter:description" content="本文将主要介绍blob对象，tree对象，commit对象，tag对象">
+<meta name="twitter:image" content="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tree_object.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/04/19/git-object/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Git -- 对象 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/04/19/git-object/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Git -- 对象
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-04-19 15:12:31" itemprop="dateCreated datePublished" datetime="2017-04-19T15:12:31+08:00">2017-04-19</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/" itemprop="url" rel="index"><span itemprop="name">Tool</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/tool/git/" itemprop="url" rel="index"><span itemprop="name">Git</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">11k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">19 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文将主要介绍<code>blob</code>对象，<code>tree</code>对象，<code>commit</code>对象，<code>tag</code>对象</p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="git核心"><a href="#git核心" class="headerlink" title=".git核心"></a>.git核心</h1><ol>
+<li><code>.git/HEAD</code>：一般情况下，<code>指向分支引用</code>；如果<code>直接指向提交对象</code>，将处于<code>detached HEAD</code>状态</li>
+<li><code>.git/index</code>：<code>暂存区</code>信息</li>
+<li><code>.git/objects</code>：<code>Git对象</code>数据</li>
+<li><code>.git/refs</code>：<code>引用</code>信息，包括<code>分支引用</code>，<code>标签引用</code>等</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* ae432e4 (HEAD -&gt; master) echo master &gt; file</span><br><span class="line">* daa44e8 add file</span><br><span class="line"></span><br><span class="line">$ ls .git</span><br><span class="line">branches  COMMIT_EDITMSG  config  description  HEAD  hooks  index  info  logs  objects  ORIG_HEAD  refs  rr-cache</span><br><span class="line"></span><br><span class="line">$ cat .git/HEAD</span><br><span class="line">ref: refs/heads/master</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/heads/master</span><br><span class="line">ae432e46c21f45991f18eeac8586da367134bff7</span><br><span class="line"></span><br><span class="line">$ git checkout HEAD~</span><br><span class="line">Note: checking out &apos;HEAD~&apos;.</span><br><span class="line">You are in &apos;detached HEAD&apos; state. You can look around, make experimental</span><br><span class="line">changes and commit them, and you can discard any commits you make in this</span><br><span class="line">state without impacting any branches by performing another checkout.</span><br><span class="line">If you want to create a new branch to retain commits you create, you may</span><br><span class="line">do so (now or later) by using -b with the checkout command again. Example:</span><br><span class="line">  git checkout -b &lt;new-branch-name&gt;</span><br><span class="line">HEAD is now at daa44e8... add file</span><br><span class="line"></span><br><span class="line">$ ➦ daa44e8 cat .git/HEAD # ref a commit object , not a branch ref -&gt; &apos;detached HEAD&apos; state</span><br><span class="line">daa44e833989e82b1f41d12fea5dd391b163bce6</span><br><span class="line"></span><br><span class="line">$ ➦ daa44e8 cat .git/refs/heads/master</span><br><span class="line">ae432e46c21f45991f18eeac8586da367134bff7</span><br><span class="line"></span><br><span class="line">$ ➦ daa44e8 git checkout master</span><br><span class="line">Previous HEAD position was daa44e8... add file</span><br><span class="line">Switched to branch &apos;master&apos;</span><br><span class="line"></span><br><span class="line">$ $ cat .git/HEAD</span><br><span class="line">ref: refs/heads/master</span><br><span class="line"></span><br><span class="line">$ ls .git/objects</span><br><span class="line">08  1f  ae  da  df  e6  info  pack</span><br></pre></td></tr></table></figure>
+
+<h1 id="blob对象"><a href="#blob对象" class="headerlink" title="blob对象"></a>blob对象</h1><ol>
+<li><code>blob对象</code>：存储<strong><code>实际的文件内容</code></strong></li>
+<li><code>hash-object -w</code>：计算<code>object ID</code>，并写入<code>object database</code>（即<code>.git/objects</code>）</li>
+<li><code>cat-file -p</code>：显示<code>Git对象信息</code></li>
+<li><code>cat-file -t</code>：显示<code>Git对象类型</code></li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">$ git init</span><br><span class="line">Initialized empty Git repository in /home/zhongmingmao/demo/.git/</span><br><span class="line"></span><br><span class="line">$ find .git/objects</span><br><span class="line">.git/objects</span><br><span class="line">.git/objects/info</span><br><span class="line">.git/objects/pack</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f # no objects , stdout printed nothing</span><br><span class="line"></span><br><span class="line">$ echo &apos;zhongmingmao&apos; | git hash-object -w --stdin # write blob object to object database</span><br><span class="line">b98963d686f67040f88c58be271b1ef7541d5ec0</span><br><span class="line"></span><br><span class="line">$ git cat-file -p b98963d686f67040f88c58be271b1ef7541d5ec0</span><br><span class="line">zhongmingmao</span><br><span class="line"></span><br><span class="line">$ git cat-file -t b98963d686f67040f88c58be271b1ef7541d5ec0</span><br><span class="line">blob</span><br><span class="line"></span><br><span class="line">$ echo &apos;v1&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git hash-object -w zhongmingmao.txt</span><br><span class="line">626799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line"></span><br><span class="line">$ echo &apos;v2&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git hash-object -w zhongmingmao.txt</span><br><span class="line">8c1384d825dbbe41309b7dc18ee7991a9085c46e</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f</span><br><span class="line">.git/objects/b9/8963d686f67040f88c58be271b1ef7541d5ec0</span><br><span class="line">.git/objects/62/6799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line">.git/objects/8c/1384d825dbbe41309b7dc18ee7991a9085c46e</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 626799f0f85326a8c1fc522db584e86cdfccd51</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 8c1384d825dbbe41309b7dc18ee7991a9085c46e</span><br><span class="line">v2</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 8c1384d825dbbe41309b7dc18ee7991a9085c46e</span><br><span class="line">blob</span><br></pre></td></tr></table></figure>
+
+<h1 id="tree对象"><a href="#tree对象" class="headerlink" title="tree对象"></a>tree对象</h1><ol>
+<li><code>tree对象</code>：主要用于<strong><code>组织多个文件</code></strong>，类似于<code>目录的作用</code></li>
+<li><code>$branch^{tree}</code>：<code>分支引用的commit对象</code>所指向的<code>tree对象</code></li>
+<li><code>update-index</code>：将文件内容注册到<code>index</code><ul>
+<li><code>--add</code>：将不存在于<code>index</code>的文件添加到<code>index</code></li>
+<li><code>--cacheinfo</code>：将<code>object database</code>（<code>.git/objects</code>）的文件添加到<code>index</code></li>
+</ul>
+</li>
+<li><code>write-tree</code>：将<code>index</code>的当前内容创建一个<code>tree</code>对象，相当于<code>保存快照</code></li>
+<li><code>read-tree --prefix</code>：将一个已存在的<code>tree</code>对象写入<code>index</code>，指定<code>子目录前缀</code></li>
+</ol>
+<p>创建第1个tree对象<code>904970</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">$ git init</span><br><span class="line">Initialized empty Git repository in /home/zhongmingmao/demo/.git/</span><br><span class="line"></span><br><span class="line">$ echo &apos;v1&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git hash-object -w zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f</span><br><span class="line">.git/objects/62/6799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">?? zhongmingmao.txt</span><br><span class="line"></span><br><span class="line"># add zhongmingmao.txt(v1) to index from git object database</span><br><span class="line">$ git update-index --add --cacheinfo 100644 626799f0f85326a8c1fc522db584e86cdfccd51f zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f</span><br><span class="line">.git/objects/62/6799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line"></span><br><span class="line">$ git write-tree # create tree object from index</span><br><span class="line">904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line"></span><br><span class="line">$ find .git/objects -type f</span><br><span class="line">.git/objects/62/6799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line">.git/objects/90/4970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line">100644 blob 626799f0f85326a8c1fc522db584e86cdfccd51f zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line">tree</span><br></pre></td></tr></table></figure>
+
+<p>创建第2个tree对象<code>dec4f9</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">$ echo &apos;v2&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">AM zhongmingmao.txt</span><br><span class="line"></span><br><span class="line"># replace zhongmingmao.txt(v2) of zhongmingmao(v1) in index from working directory</span><br><span class="line">$ git update-index zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ touch README.md</span><br><span class="line"></span><br><span class="line">$ git update-index --add README.md # add README.md to index from working diectory</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  README.md</span><br><span class="line">A  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git write-tree</span><br><span class="line">dec4f9365e77576c0a95cd1938a50e71a9f7a6b6</span><br><span class="line"></span><br><span class="line">$ git cat-file -p dec4f9365e77576c0a95cd1938a50e71a9f7a6b6</span><br><span class="line">100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 README.md</span><br><span class="line">100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 8c1384d825dbbe41309b7dc18ee7991a9085c46e</span><br><span class="line">v2</span><br></pre></td></tr></table></figure>
+
+<p>创建第3个tree对象<code>aff674</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">$ git read-tree --prefix=v1 904970fc7917a1f77fff8280298cb54da4bd89c2 # read tree(904970) to index as subdir &apos;v1&apos;</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  README.md</span><br><span class="line">AD v1/zhongmingmao.txt</span><br><span class="line">A  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git write-tree</span><br><span class="line">aff6742443246bc0e9df32727ce0e5ee27de3b1c</span><br><span class="line"></span><br><span class="line">$ git cat-file -p aff6742443246bc0e9df32727ce0e5ee27de3b1c</span><br><span class="line">100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 README.md</span><br><span class="line">040000 tree 904970fc7917a1f77fff8280298cb54da4bd89c2 v1</span><br><span class="line">100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git checkout -- v1</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  README.md</span><br><span class="line">A  v1/zhongmingmao.txt</span><br><span class="line">A  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ ls *</span><br><span class="line">README.md  zhongmingmao.txt</span><br><span class="line">v1:</span><br><span class="line">zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ cat zhongmingmao.txt</span><br><span class="line">v2</span><br><span class="line"></span><br><span class="line">$ cat v1/zhongmingmao.txt</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ git commit -m &apos;init commit&apos;</span><br><span class="line">[master (root-commit) bd32670] init commit</span><br><span class="line"> 3 files changed, 2 insertions(+)</span><br><span class="line"> create mode 100644 README.md</span><br><span class="line"> create mode 100644 v1/zhongmingmao.txt</span><br><span class="line"> create mode 100644 zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git cat-file -p master^&#123;tree&#125;</span><br><span class="line">100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 README.md</span><br><span class="line">040000 tree 904970fc7917a1f77fff8280298cb54da4bd89c2 v1</span><br><span class="line">100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git cat-file -p HEAD^&#123;tree&#125;</span><br><span class="line">100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 README.md</span><br><span class="line">040000 tree 904970fc7917a1f77fff8280298cb54da4bd89c2 v1</span><br><span class="line">100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git cat-file -p bd32670^&#123;tree&#125;</span><br><span class="line">100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 README.md</span><br><span class="line">040000 tree 904970fc7917a1f77fff8280298cb54da4bd89c2 v1</span><br><span class="line">100644 blob 8c1384d825dbbe41309b7dc18ee7991a9085c46e zhongmingmao.txt</span><br></pre></td></tr></table></figure>
+
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tree_object.png" width="500">
+
+
+<h1 id="commit对象"><a href="#commit对象" class="headerlink" title="commit对象"></a>commit对象</h1><ol>
+<li><code>commit</code>对象，指向一个<code>tree</code>对象，相当于一个<code>快照</code></li>
+<li><code>commit-tree $tree_object -p $commit_object</code>：创建提交对象</li>
+</ol>
+<p>依次创建3个<code>tree</code>对象：<code>90497</code>，<code>dec4f9</code>，<code>aff674</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">$ git init</span><br><span class="line">Initialized empty Git repository in /home/zhongmingmao/demo/.git/</span><br><span class="line"></span><br><span class="line">$ echo &apos;v1&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git hash-object -w zhongmingmao.txt</span><br><span class="line">626799f0f85326a8c1fc522db584e86cdfccd51f</span><br><span class="line"></span><br><span class="line">$ git update-index --add --cacheinfo 100644 626799f0f85326a8c1fc522db584e86cdfccd51f zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git write-tree</span><br><span class="line">904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line"></span><br><span class="line">$ echo &apos;v2&apos; &gt; zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git update-index zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ touch README.md</span><br><span class="line"></span><br><span class="line">$ git update-index --add README.md</span><br><span class="line"></span><br><span class="line">$  git write-tree</span><br><span class="line">dec4f9365e77576c0a95cd1938a50e71a9f7a6b6</span><br><span class="line"></span><br><span class="line">$ git read-tree --prefix=v1 904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line"></span><br><span class="line">$ git checkout -- v1</span><br><span class="line"></span><br><span class="line">$ git write-tree</span><br><span class="line">aff6742443246bc0e9df32727ce0e5ee27de3b1c</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  README.md</span><br><span class="line">A  v1/zhongmingmao.txt</span><br><span class="line">A  zhongmingmao.txt</span><br></pre></td></tr></table></figure>
+
+<p>创建第1个<code>commit</code>对象<code>63dacd</code>，关于<code>.git/HEAD</code>和<code>.git/refs/heads/master</code>属于<code>Git引用</code>的内容，后续补充</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">$ git commit-tree 904970 -m &apos;1st commit&apos;</span><br><span class="line">63dacdf39138700e82649e7ead745e2a9322d926</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 63dacd</span><br><span class="line">tree 904970fc7917a1f77fff8280298cb54da4bd89c2</span><br><span class="line">author zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492596559 +0800</span><br><span class="line">committer zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492596559 +0800</span><br><span class="line">1st commit</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## Initial commit on master</span><br><span class="line">A  README.md</span><br><span class="line">A  v1/zhongmingmao.t</span><br><span class="line"></span><br><span class="line">$ cat .git/HEAD</span><br><span class="line">ref: refs/heads/master</span><br><span class="line"></span><br><span class="line">$ echo &apos;63dacdf39138700e82649e7ead745e2a9322d926&apos; &gt; .git/refs/heads/master</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## master</span><br><span class="line">A  README.md</span><br><span class="line">A  v1/zhongmingmao.txt</span><br><span class="line">M  zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git diff --cached zhongmingmao.txt</span><br><span class="line">diff --git a/zhongmingmao.txt b/zhongmingmao.txt</span><br><span class="line">index 626799f..8c1384d 100644</span><br><span class="line">--- a/zhongmingmao.txt</span><br><span class="line">+++ b/zhongmingmao.txt</span><br><span class="line">@@ -1 +1 @@</span><br><span class="line">-v1</span><br><span class="line">+v2</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 63dacdf (HEAD -&gt; master) 1st commit</span><br></pre></td></tr></table></figure>
+
+<p>创建第2个<code>commit</code>对象<code>1eb9faf</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ git commit-tree dec4f9 -p 63dacdf -m &apos;2nd commit&apos;</span><br><span class="line">1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523</span><br><span class="line"></span><br><span class="line">$ echo &apos;1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523&apos; &gt; .git/refs/heads/master</span><br><span class="line"></span><br><span class="line">$ gst -sb</span><br><span class="line">## master</span><br><span class="line">A  v1/zhongmingmao.txt</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 1eb9faf (HEAD -&gt; master) 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br></pre></td></tr></table></figure>
+
+<p>创建第3个<code>commit</code>对象<code>5fbdcc4</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ git commit-tree aff674 -p 1eb9faf -m &apos;3rd commit&apos;</span><br><span class="line">5fbdcc4c76301f9a1c80bdd44ba1c18c1410dc21</span><br><span class="line"></span><br><span class="line">$ echo &apos;5fbdcc4c76301f9a1c80bdd44ba1c18c1410dc21&apos; &gt; .git/refs/heads/master</span><br><span class="line"></span><br><span class="line">$ gst</span><br><span class="line">On branch master</span><br><span class="line">nothing to commit, working directory clean</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5fbdcc4 (HEAD -&gt; master) 3rd commit</span><br><span class="line">* 1eb9faf 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 5fbdcc4</span><br><span class="line">tree aff6742443246bc0e9df32727ce0e5ee27de3b1c</span><br><span class="line">parent 1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523</span><br><span class="line">author zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492597186 +0800</span><br><span class="line">committer zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492597186 +0800</span><br><span class="line">3rd commit</span><br></pre></td></tr></table></figure>
+
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/commit_object.png" width="500">
+
+<h1 id="tag对象"><a href="#tag对象" class="headerlink" title="tag对象"></a>tag对象</h1><div class="note info">
+            <p>只有<code>annotated tag</code>才会创建<code>tag</code>对象，<code>lightweight tag</code>直接指向<code>commit</code>对象</p>
+          </div>
+
+<h2 id="lightweight-tag"><a href="#lightweight-tag" class="headerlink" title="lightweight tag"></a>lightweight tag</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5fbdcc4 (HEAD -&gt; master) 3rd commit</span><br><span class="line">* 1eb9faf 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br><span class="line"></span><br><span class="line">$ git tag v1.0 1eb9faf # just point to a commit object directly , no tag object</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5fbdcc4 (HEAD -&gt; master) 3rd commit</span><br><span class="line">* 1eb9faf (tag: v1.0) 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s v1.0</span><br><span class="line">1eb9faf 2nd commit</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/tags/v1.0</span><br><span class="line">1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 1eb9faf3eff1ae9018a223a0a74b9e86ad7f5523</span><br><span class="line">commit</span><br></pre></td></tr></table></figure>
+
+<h2 id="annotated-tag"><a href="#annotated-tag" class="headerlink" title="annotated tag"></a>annotated tag</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5fbdcc4 (HEAD -&gt; master) 3rd commit</span><br><span class="line">* 1eb9faf (tag: v1.0) 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br><span class="line"></span><br><span class="line">$ git tag -a v2.0 -m &apos;tag 2.0&apos; # create a annotated tag object which point to a commit object</span><br><span class="line"></span><br><span class="line">$ git log --oneline --decorate --graph --all</span><br><span class="line">* 5fbdcc4 (HEAD -&gt; master, tag: v2.0) 3rd commit</span><br><span class="line">* 1eb9faf (tag: v1.0) 2nd commit</span><br><span class="line">* 63dacdf 1st commit</span><br><span class="line"></span><br><span class="line">$ git show --oneline -s v2.0</span><br><span class="line">tag v2.0</span><br><span class="line">tag 2.0</span><br><span class="line">5fbdcc4 3rd commit</span><br><span class="line"></span><br><span class="line">$ cat .git/refs/tags/v2.0</span><br><span class="line">8a4e71ed97d18b9ad3a83850eef09a2c651e0e01</span><br><span class="line"></span><br><span class="line">$ git cat-file -p 8a4e71ed97d18b9ad3a83850eef09a2c651e0e01</span><br><span class="line">object 5fbdcc4c76301f9a1c80bdd44ba1c18c1410dc21</span><br><span class="line">type commit</span><br><span class="line">tag v2.0</span><br><span class="line">tagger zhongmingmao &lt;zhongmingmao@yeah.net&gt; 1492599543 +0800</span><br><span class="line">tag 2.0</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 8a4e71ed97d18b9ad3a83850eef09a2c651e0e01</span><br><span class="line">tag</span><br><span class="line"></span><br><span class="line">$ git cat-file -t 5fbdcc4c76301f9a1c80bdd44ba1c18c1410dc21</span><br><span class="line">commit</span><br></pre></td></tr></table></figure>
+
+<img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/tag_object.png" width="500">
+
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/14/git-basic/" rel="bookmark">Git -- 有趣的命令</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/15/git-branch/" rel="bookmark">Git -- 分支</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-flow/" rel="bookmark">Git -- Git Flow</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/17/git-merge/" rel="bookmark">Git -- 合并</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/04/19/git-reduce/" rel="bookmark">Git -- 仓库瘦身</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/04/19/git-object/" title="Git -- 对象">http://zhongmingmao.me/2017/04/19/git-object/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/tool/" rel="tag"><i class="fa fa-tag"></i> Tool</a>
+          
+            <a href="/tags/git/" rel="tag"><i class="fa fa-tag"></i> Git</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/04/17/git-merge/" rel="next" title="Git -- 合并">
+                <i class="fa fa-chevron-left"></i> Git -- 合并
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/19/git-reduce/" rel="prev" title="Git -- 仓库瘦身">
+                Git -- 仓库瘦身 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#git核心"><span class="nav-number">1.</span> <span class="nav-text">.git核心</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#blob对象"><span class="nav-number">2.</span> <span class="nav-text">blob对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tree对象"><span class="nav-number">3.</span> <span class="nav-text">tree对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#commit对象"><span class="nav-number">4.</span> <span class="nav-text">commit对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tag对象"><span class="nav-number">5.</span> <span class="nav-text">tag对象</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#lightweight-tag"><span class="nav-number">5.1.</span> <span class="nav-text">lightweight tag</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#annotated-tag"><span class="nav-number">5.2.</span> <span class="nav-text">annotated tag</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

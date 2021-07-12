@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="线程数量 在并发程序中，并不是启动更多的线程就能让程序最大限度地并发执行 线程数量设置太小，会导致程序不能充分地利用系统资源 线程数量设置太大，可能带来资源的过度竞争，导致上下文切换，带来的额外的系统开销">
+<meta name="keywords" content="Java,Java Performance,Context Switch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java性能 -- 线程上下文切换">
+<meta property="og:url" content="http://zhongmingmao.me/2019/08/25/java-performance-thread-cs/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="线程数量 在并发程序中，并不是启动更多的线程就能让程序最大限度地并发执行 线程数量设置太小，会导致程序不能充分地利用系统资源 线程数量设置太大，可能带来资源的过度竞争，导致上下文切换，带来的额外的系统开销">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-cs-thread-life-cycle.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java性能 -- 线程上下文切换">
+<meta name="twitter:description" content="线程数量 在并发程序中，并不是启动更多的线程就能让程序最大限度地并发执行 线程数量设置太小，会导致程序不能充分地利用系统资源 线程数量设置太大，可能带来资源的过度竞争，导致上下文切换，带来的额外的系统开销">
+<meta name="twitter:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-cs-thread-life-cycle.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/08/25/java-performance-thread-cs/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Java性能 -- 线程上下文切换 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/08/25/java-performance-thread-cs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Java性能 -- 线程上下文切换
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-25 10:28:46" itemprop="dateCreated datePublished" datetime="2019-08-25T10:28:46+08:00">2019-08-25</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">8.4k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">15 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="线程数量"><a href="#线程数量" class="headerlink" title="线程数量"></a>线程数量</h2><ol>
+<li>在并发程序中，并不是启动更多的线程就能让程序最大限度地并发执行</li>
+<li>线程数量设置太小，会导致程序不能充分地利用系统资源</li>
+<li>线程数量设置<strong>太大</strong>，可能带来资源的<strong>过度竞争</strong>，导致<strong>上下文切换</strong>，带来的额外的<strong>系统开销</strong></li>
+</ol>
+<a id="more"></a>
+
+<h2 id="上下文切换"><a href="#上下文切换" class="headerlink" title="上下文切换"></a>上下文切换</h2><ol>
+<li>在单处理器时期，操作系统就能处理<strong>多线程并发</strong>任务，处理器给每个线程分配<strong>CPU时间片</strong>，线程在CPU时间片内执行任务<ul>
+<li>CPU时间片是CPU分配给每个线程执行的时间段，一般为<strong>几十毫秒</strong></li>
+</ul>
+</li>
+<li>时间片决定了一个线程可以<strong>连续占用</strong>处理器运行的时长<ul>
+<li>当一个线程的时间片用完，或者因自身原因被迫暂停运行，此时另一个线程会被操作系统选中来占用处理器</li>
+<li><strong>上下文切换</strong>（Context Switch）：一个线程被<strong>暂停剥夺</strong>使用权，另一个线程被<strong>选中开始</strong>或者<strong>继续运行</strong>的过程<ul>
+<li><strong>切出</strong>：一个线程被剥夺处理器的使用权而被暂停运行</li>
+<li><strong>切入</strong>：一个线程被选中占用处理器开始运行或者继续运行</li>
+<li>切出切入的过程中，操作系统需要保存和恢复相应的<strong>进度信息</strong>，这个进度信息就是<em><strong>上下文</strong></em></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>上下文的内容<ul>
+<li><strong>寄存器的存储内容</strong>：CPU寄存器负责存储已经、正在和将要执行的任务</li>
+<li><strong>程序计数器存储的指令内容</strong>：程序计数器负责存储CPU正在执行的指令位置、即将执行的下一条指令的位置</li>
+</ul>
+</li>
+<li>当CPU数量远远不止1个的情况下，操作系统将CPU轮流分配给线程任务，此时的上下文切换会变得更加<strong>频繁</strong><ul>
+<li>并且存在<strong>跨CPU的上下文切换</strong>，更加<strong>昂贵</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="切换诱因"><a href="#切换诱因" class="headerlink" title="切换诱因"></a>切换诱因</h2><ol>
+<li>在操作系统中，上下文切换的类型可以分为<strong>进程间</strong>的上下文切换和<strong>线程间</strong>的上下文切换</li>
+<li>线程状态：NEW、RUNNABLE、RUNNING、BLOCKED、DEAD<ul>
+<li>Java线程状态：NEW、RUNNABLE、BLOCKED、WAITING、TIMED_WAITING、TERMINATED</li>
+</ul>
+</li>
+<li>线程上下文切换：<strong>RUNNING -&gt; BLOCKED -&gt; RUNNABLE -&gt; 被调度器选中执行</strong><ul>
+<li>一个线程从RUNNING状态转为BLOCKED状态，称为一个线程的<strong>暂停</strong><ul>
+<li>线程暂停被切出后，操作系统会保存相应的上下文</li>
+<li>以便该线程再次进入RUNNABLE状态时能够在之前执行进度的基础上继续执行</li>
+</ul>
+</li>
+<li>一个线程从BLOCKED状态进入RUNNABLE状态，称为一个线程的<strong>唤醒</strong><ul>
+<li>此时线程将获取上次保存的上下文继续执行</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>诱因：程序本身触发的<strong>自发性上下文切换</strong>、系统或虚拟机触发的<strong>非自发性上下文切换</strong><ul>
+<li>自发性上下文切换<ul>
+<li><em><strong>sleep、wait、yield、join、park、synchronized、lock</strong></em></li>
+</ul>
+</li>
+<li>非自发性上下文切换<ul>
+<li>线程被分配的<strong>时间片用完</strong>、<strong>JVM垃圾回收</strong>（<strong>STW</strong>、线程暂停）、线程<strong>执行优先级</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-cs-thread-life-cycle.jpg" width="1000/">
+
+<h2 id="监控切换"><a href="#监控切换" class="headerlink" title="监控切换"></a>监控切换</h2><h3 id="样例代码"><a href="#样例代码" class="headerlink" title="样例代码"></a>样例代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">new</span> MultiThreadTesterAbstract().start();</span><br><span class="line">    <span class="keyword">new</span> SerialThreadTesterAbstract().start();</span><br><span class="line">    <span class="comment">// multi thread take 5401ms</span></span><br><span class="line">    <span class="comment">// serial take 692ms</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractTheadContextSwitchTester</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> COUNT = <span class="number">100_000_000</span>;</span><br><span class="line">    <span class="keyword">volatile</span> <span class="keyword">int</span> counter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">increaseCounter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        counter++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MultiThreadTesterAbstract</span> <span class="keyword">extends</span> <span class="title">AbstractTheadContextSwitchTester</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Stopwatch stopwatch = Stopwatch.createStarted();</span><br><span class="line">        Thread[] threads = <span class="keyword">new</span> Thread[<span class="number">4</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++) &#123;</span><br><span class="line">            threads[i] = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">while</span> (counter &lt; COUNT) &#123;</span><br><span class="line">                        <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                            <span class="keyword">if</span> (counter &lt; COUNT) &#123;</span><br><span class="line">                                increaseCounter();</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">            threads[i].start();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                threads[i].join();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">"multi thread take &#123;&#125;ms"</span>, stopwatch.elapsed(TimeUnit.MILLISECONDS));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">SerialThreadTesterAbstract</span> <span class="keyword">extends</span> <span class="title">AbstractTheadContextSwitchTester</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Stopwatch stopwatch = Stopwatch.createStarted();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; COUNT; i++) &#123;</span><br><span class="line">            increaseCounter();</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">"serial take &#123;&#125;ms"</span>, stopwatch.elapsed(TimeUnit.MILLISECONDS));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>串行的执行速度比并发执行的速度要快，因为线程的<strong>上下文切换</strong>导致了<strong>额外的开销</strong><ul>
+<li>使用synchronized关键字，导致了<strong>资源竞争</strong>，从而引起了上下文切换</li>
+<li>即使不使用synchronized关键字，并发的执行速度也无法超越串行的执行速度，因为多线程同样存在上下文切换</li>
+</ul>
+</li>
+<li><strong>Redis的设计很好地体现了单线程串行的优势</strong><ul>
+<li>从<strong>内存</strong>中快速读取值，不用考虑<strong>IO瓶颈</strong>带来的<strong>阻塞</strong>问题</li>
+</ul>
+</li>
+</ol>
+<h3 id="监控工具"><a href="#监控工具" class="headerlink" title="监控工具"></a>监控工具</h3><h4 id="vmstat"><a href="#vmstat" class="headerlink" title="vmstat"></a>vmstat</h4><p><strong>cs</strong>：系统的上下文切换频率</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@5d15480e8112:/# vmstat</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 3  0      0 693416  33588 951508    0    0    77   154  116  253  1  1 98  0  0</span><br></pre></td></tr></table></figure>
+
+<h4 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">-w  Report task switching activity (kernels 2.6.23 and later only).  The following values may be displayed:</span><br><span class="line">    UID</span><br><span class="line">         The real user identification number of the task being monitored.</span><br><span class="line">    USER</span><br><span class="line">         The name of the real user owning the task being monitored.</span><br><span class="line">    PID</span><br><span class="line">         The identification number of the task being monitored.</span><br><span class="line">    cswch/s</span><br><span class="line">         Total number of voluntary context switches the task made per second.  A voluntary context switch occurs when a task blocks because  it  requires  a</span><br><span class="line">         resource that is unavailable.</span><br><span class="line">    nvcswch/s</span><br><span class="line">         Total  number  of  non  voluntary context switches the task made per second.  A involuntary context switch takes place when a task executes for the</span><br><span class="line">         duration of its time slice and then is forced to relinquish the processor.</span><br><span class="line">    Command</span><br><span class="line">         The command name of the task.</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@5d15480e8112:/# pidstat -w -l -p 1 2 5</span><br><span class="line">Linux 4.9.184-linuxkit (5d15480e8112) 	09/16/2019 	_x86_64_	(2 CPU)</span><br><span class="line"></span><br><span class="line">07:28:03      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">07:28:05        0         1      0.00      0.00  /bin/bash</span><br><span class="line">07:28:07        0         1      0.00      0.00  /bin/bash</span><br><span class="line">07:28:09        0         1      0.00      0.00  /bin/bash</span><br><span class="line">07:28:11        0         1      0.00      0.00  /bin/bash</span><br><span class="line">07:28:13        0         1      0.00      0.00  /bin/bash</span><br><span class="line">Average:        0         1      0.00      0.00  /bin/bash</span><br></pre></td></tr></table></figure>
+
+<h2 id="切换的系统开销"><a href="#切换的系统开销" class="headerlink" title="切换的系统开销"></a>切换的系统开销</h2><ol>
+<li>操作系统<strong>保存和恢复上下文</strong></li>
+<li>调度器进行<strong>线程调度</strong></li>
+<li>处理器<strong>高速缓存重新加载</strong></li>
+<li>可能导致<strong>整个高速缓存区被冲刷</strong>，从而带来时间开销</li>
+</ol>
+<h2 id="竞争锁优化"><a href="#竞争锁优化" class="headerlink" title="竞争锁优化"></a>竞争锁优化</h2><ol>
+<li>多线程对锁资源的竞争会引起上下文切换，锁竞争导致的线程阻塞越多，上下文切换就越频繁，系统的性能开销就越大<ul>
+<li>在多线程编程中，锁本身不是性能开销的根源，<em><strong>锁竞争才是性能开销的根源</strong></em></li>
+</ul>
+</li>
+<li>锁优化归根到底是<strong>减少竞争</strong></li>
+</ol>
+<h3 id="减少锁的持有时间"><a href="#减少锁的持有时间" class="headerlink" title="减少锁的持有时间"></a>减少锁的持有时间</h3><ol>
+<li>锁的持有时间越长，意味着越多的线程在等待该竞争锁释放</li>
+<li>如果是<strong>synchronized</strong>同步锁资源，不仅带来了<strong>线程间</strong>的上下文切换，还有可能会带来<strong>进程间</strong>的上下文切换</li>
+<li>优化方法：将一些<strong>与锁无关的代码移出同步代码块</strong>，尤其是那些开销较大的操作以及可能被阻塞的操作</li>
+</ol>
+<h3 id="减少锁粒度"><a href="#减少锁粒度" class="headerlink" title="减少锁粒度"></a>减少锁粒度</h3><h4 id="锁分离"><a href="#锁分离" class="headerlink" title="锁分离"></a>锁分离</h4><ol>
+<li>读写锁实现了锁分离，由读锁和写锁两个锁实现，可以<strong>共享读</strong>，但<strong>只有一个写</strong><ul>
+<li>读写锁在多线程读写时，<strong>读读不互斥</strong>，读写互斥，写写互斥</li>
+<li>传统的独占锁在多线程读写时，<strong>读读互斥</strong>，读写互斥，写写互斥</li>
+</ul>
+</li>
+<li>在<strong>读远大于写</strong>的多线程场景中，锁分离避免了高并发读情况下的资源竞争，从而<strong>避免了上下文切换</strong></li>
+</ol>
+<h4 id="锁分段"><a href="#锁分段" class="headerlink" title="锁分段"></a>锁分段</h4><ol>
+<li>在使用锁来保证<strong>集合</strong>或者<strong>大对象</strong>的原子性时，可以将锁对象进一步分解</li>
+<li>Java 1.8之前的ConcurrentHashMap就是用了<strong>锁分段</strong></li>
+</ol>
+<h3 id="非阻塞乐观锁代替竞争锁"><a href="#非阻塞乐观锁代替竞争锁" class="headerlink" title="非阻塞乐观锁代替竞争锁"></a>非阻塞乐观锁代替竞争锁</h3><ol>
+<li><strong>volatile</strong><ul>
+<li>volatile关键字的作用是保证<strong>可见性</strong>和<strong>有序性</strong>，volatile的读写操作<strong>不会导致上下文切换</strong>，<strong>开销较小</strong></li>
+<li>由于volatile关键字<strong>没有锁的排它性</strong>，因此<strong>不能保证</strong>操作变量的<strong>原子性</strong></li>
+</ul>
+</li>
+<li>CAS<ul>
+<li>CAS是一个<strong>原子</strong>的<strong>if-then-act</strong>操作</li>
+<li>CAS是一个<strong>无锁算法</strong>实现，保障了对一个共享变量读写操作的<strong>一致性</strong></li>
+<li><strong>CAS不会导致上下文切换</strong>，Java的<strong>Atomic</strong>包就使用了CAS算法来更新数据，而不需要额外加锁</li>
+</ul>
+</li>
+</ol>
+<h3 id="synchronized锁优化"><a href="#synchronized锁优化" class="headerlink" title="synchronized锁优化"></a>synchronized锁优化</h3><ol>
+<li>在JDK 1.6中，JVM将synchronized同步锁分为<strong>偏向锁、轻量级锁、自旋锁、重量级锁</strong></li>
+<li>JIT编译器在动态编译同步代码块时，也会通过<strong>锁消除、锁粗化</strong>的方式来优化synchronized同步锁</li>
+</ol>
+<h2 id="wait-notify优化"><a href="#wait-notify优化" class="headerlink" title="wait/notify优化"></a>wait/notify优化</h2><p>可以通过Object对象的<strong>wait、notify、notifyAll</strong>来实现<strong>线程间的通信</strong>，例如生产者-消费者模型</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitNotifyTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Vector&lt;Integer&gt; pool = <span class="keyword">new</span> Vector&lt;&gt;();</span><br><span class="line">        Producer producer = <span class="keyword">new</span> Producer(pool, <span class="number">10</span>);</span><br><span class="line">        Consumer consumer = <span class="keyword">new</span> Consumer(pool);</span><br><span class="line">        <span class="keyword">new</span> Thread(producer).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(consumer).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Producer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Vector&lt;Integer&gt; pool;</span><br><span class="line">    <span class="keyword">private</span> Integer size;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (; ; ) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                produce((<span class="keyword">int</span>) System.currentTimeMillis());</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">produce</span><span class="params">(<span class="keyword">int</span> i)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">while</span> (pool.size() == size) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (pool) &#123;</span><br><span class="line">                pool.wait();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">synchronized</span> (pool) &#123;</span><br><span class="line">            pool.add(i);</span><br><span class="line">            pool.notifyAll();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Consumer</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Vector&lt;Integer&gt; pool;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (; ; ) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                consume();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">consume</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (pool) &#123;</span><br><span class="line">            <span class="keyword">while</span> (pool.isEmpty()) &#123;</span><br><span class="line">                pool.wait();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">synchronized</span> (pool) &#123;</span><br><span class="line">            pool.remove(<span class="number">0</span>);</span><br><span class="line">            pool.notifyAll();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>wait/notify的使用<em><strong>导致了较多的上下文切换</strong></em></li>
+<li>消费者第一次申请到锁，却发现没有内容可消费，执行<strong>wait</strong>，这会导致<strong>线程挂起</strong>，进入<strong>阻塞状态</strong>，这是一次上下文切换</li>
+<li>当生产者获得锁并执行<strong>notifyAll</strong>之后，会<strong>唤醒</strong>处于阻塞状态的消费者线程，又会发生一次上下文切换</li>
+<li>被唤醒的线程在继续运行时，需要再次申请相应对象的内部锁，此时可能需要与其他新来的活跃线程<strong>竞争</strong>，导致上下文切换</li>
+<li>如果多个消费者线程同时被阻塞，用notifyAll将唤醒所有阻塞线程，但此时依然没有内容可消费<ul>
+<li>因此<strong>过早地唤醒</strong>，也可能导致线程再次进入阻塞状态，从而引起不必要的上下文切换</li>
+</ul>
+</li>
+<li>优化方法<ul>
+<li>可以考虑使<strong>用notify代替notifyAll</strong>，减少上下文切换</li>
+<li>生产者执行完notify/notifyAll之后，<strong>尽快释放内部锁</strong>，避免被唤醒的线程再次等待该内部锁</li>
+<li>为了避免长时间等待，使用wait(long)，但线程<strong>无法区分</strong>其返回是由于<strong>等待超时</strong>还是<strong>被通知线程唤醒</strong>，增加上下文切换</li>
+<li>建议使用<strong>Lock+Condition</strong>代替synchronized+wait/notify/notifyAll，来实现等待通知</li>
+</ul>
+</li>
+</ol>
+<h2 id="合理的线程池大小"><a href="#合理的线程池大小" class="headerlink" title="合理的线程池大小"></a>合理的线程池大小</h2><ol>
+<li><em><strong>线程池的线程数量不宜过大</strong></em></li>
+<li>一旦线程池的工作线程总数超过系统所拥有的<strong>处理器数量</strong>，就会导致<strong>过多的上下文切换</strong></li>
+</ol>
+<h2 id="协程：非阻塞等待"><a href="#协程：非阻塞等待" class="headerlink" title="协程：非阻塞等待"></a>协程：非阻塞等待</h2><ol>
+<li>协程比线程更加<strong>轻量</strong>，相比于由<strong>操作系统内核</strong>管理的<strong>进程</strong>和<strong>线程</strong>，协程完全由程序本身所控制，即在<strong>用户态</strong>执行</li>
+<li><strong>协程避免了像线程切换那样产生的上下文切换</strong>，在<strong>性能</strong>方面得到了<strong>很大的提升</strong></li>
+</ol>
+<h2 id="减少GC频率"><a href="#减少GC频率" class="headerlink" title="减少GC频率"></a>减少GC频率</h2><ol>
+<li><strong>GC会导致上下文切换</strong></li>
+<li>很多垃圾回收器在回收旧对象时会产生内存碎片，从而需要进行内存整理，该过程需要移动存活的对象<ul>
+<li>而移动存活的对象意味着这些对象的内存地址会发生改变，因此在移动对象之前需要暂停线程，完成后再唤醒线程</li>
+</ul>
+</li>
+<li>因此减少GC的频率能够有效的减少上下文切换</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100028001" target="_blank" rel="noopener">Java性能调优实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/06/26/java-performance-arraylist-linkedlist/" rel="bookmark">Java性能 -- ArrayList + LinkedList</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/20/java-performance-cas/" rel="bookmark">Java性能 --  CAS乐观锁</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/04/java-performance-command-line-tool/" rel="bookmark">Java性能 -- 命令行工具</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/30/java-performance-concurrent-container/" rel="bookmark">Java性能 -- 并发容器</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/21/java-performance-concurrent-design-pattern/" rel="bookmark">Java性能 -- 并发设计模式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/08/25/java-performance-thread-cs/" title="Java性能 -- 线程上下文切换">http://zhongmingmao.me/2019/08/25/java-performance-thread-cs/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/java-performance/" rel="tag"><i class="fa fa-tag"></i> Java Performance</a>
+          
+            <a href="/tags/context-switch/" rel="tag"><i class="fa fa-tag"></i> Context Switch</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/22/kafka-consumer-group/" rel="next" title="Kafka -- 消费者组">
+                <i class="fa fa-chevron-left"></i> Kafka -- 消费者组
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/26/kafka-offset-topic/" rel="prev" title="Kafka -- 位移主题">
+                Kafka -- 位移主题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#线程数量"><span class="nav-number">1.</span> <span class="nav-text">线程数量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#上下文切换"><span class="nav-number">2.</span> <span class="nav-text">上下文切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#切换诱因"><span class="nav-number">3.</span> <span class="nav-text">切换诱因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#监控切换"><span class="nav-number">4.</span> <span class="nav-text">监控切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#样例代码"><span class="nav-number">4.1.</span> <span class="nav-text">样例代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#监控工具"><span class="nav-number">4.2.</span> <span class="nav-text">监控工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#vmstat"><span class="nav-number">4.2.1.</span> <span class="nav-text">vmstat</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pidstat"><span class="nav-number">4.2.2.</span> <span class="nav-text">pidstat</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#切换的系统开销"><span class="nav-number">5.</span> <span class="nav-text">切换的系统开销</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#竞争锁优化"><span class="nav-number">6.</span> <span class="nav-text">竞争锁优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#减少锁的持有时间"><span class="nav-number">6.1.</span> <span class="nav-text">减少锁的持有时间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#减少锁粒度"><span class="nav-number">6.2.</span> <span class="nav-text">减少锁粒度</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#锁分离"><span class="nav-number">6.2.1.</span> <span class="nav-text">锁分离</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#锁分段"><span class="nav-number">6.2.2.</span> <span class="nav-text">锁分段</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非阻塞乐观锁代替竞争锁"><span class="nav-number">6.3.</span> <span class="nav-text">非阻塞乐观锁代替竞争锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronized锁优化"><span class="nav-number">6.4.</span> <span class="nav-text">synchronized锁优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wait-notify优化"><span class="nav-number">7.</span> <span class="nav-text">wait/notify优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#合理的线程池大小"><span class="nav-number">8.</span> <span class="nav-text">合理的线程池大小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协程：非阻塞等待"><span class="nav-number">9.</span> <span class="nav-text">协程：非阻塞等待</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#减少GC频率"><span class="nav-number">10.</span> <span class="nav-text">减少GC频率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">11.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

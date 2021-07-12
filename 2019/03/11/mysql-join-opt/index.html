@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="表初始化1234567891011121314151617181920212223CREATE TABLE t1(id INT PRIMARY KEY, a INT, b INT, INDEX(a));CREATE TABLE t2 LIKE t1;DROP PROCEDURE idata;DELIMITER ;;CREATE PROCEDURE idata()BEGIN    DECLARE i">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- JOIN优化">
+<meta property="og:url" content="http://zhongmingmao.me/2019/03/11/mysql-join-opt/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="表初始化1234567891011121314151617181920212223CREATE TABLE t1(id INT PRIMARY KEY, a INT, b INT, INDEX(a));CREATE TABLE t2 LIKE t1;DROP PROCEDURE idata;DELIMITER ;;CREATE PROCEDURE idata()BEGIN    DECLARE i">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table.jpg">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table-mrr.jpg">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-nlj.jpg">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-bka.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.152Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- JOIN优化">
+<meta name="twitter:description" content="表初始化1234567891011121314151617181920212223CREATE TABLE t1(id INT PRIMARY KEY, a INT, b INT, INDEX(a));CREATE TABLE t2 LIKE t1;DROP PROCEDURE idata;DELIMITER ;;CREATE PROCEDURE idata()BEGIN    DECLARE i">
+<meta name="twitter:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/03/11/mysql-join-opt/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- JOIN优化 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/03/11/mysql-join-opt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- JOIN优化
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-11 09:43:14" itemprop="dateCreated datePublished" datetime="2019-03-11T09:43:14+08:00">2019-03-11</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">8.8k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">16 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t1(<span class="keyword">id</span> <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>, a <span class="built_in">INT</span>, b <span class="built_in">INT</span>, <span class="keyword">INDEX</span>(a));</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t2 <span class="keyword">LIKE</span> t1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> idata;</span><br><span class="line">DELIMITER ;;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> idata()</span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">    <span class="keyword">DECLARE</span> i <span class="built_in">INT</span>;</span><br><span class="line">    <span class="keyword">SET</span> i=<span class="number">1</span>;</span><br><span class="line">    WHILE (i &lt;= 1000) DO</span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t1 <span class="keyword">VALUES</span> (i,<span class="number">1001</span>-i,i);</span><br><span class="line">        <span class="keyword">SET</span> i=i+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">SET</span> i=<span class="number">1</span>;</span><br><span class="line">    WHILE (i &lt;= 1000000) DO</span><br><span class="line">        <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t2 <span class="keyword">VALUES</span> (i,i,i);</span><br><span class="line">        <span class="keyword">SET</span> i=i+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span>;</span><br><span class="line"><span class="keyword">END</span>;;</span><br><span class="line">DELIMITER ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CALL</span> idata();</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<h2 id="Multi-Range-Read"><a href="#Multi-Range-Read" class="headerlink" title="Multi-Range Read"></a>Multi-Range Read</h2><p>MRR的目的：尽量使用<strong>顺序读盘</strong></p>
+<h3 id="回表"><a href="#回表" class="headerlink" title="回表"></a>回表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t1 <span class="keyword">WHERE</span> a&gt;=<span class="number">1</span> <span class="keyword">AND</span> a&lt;=<span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+
+<p>如果随着a递增的顺序进行查询的话，id的值会变成随机的，就会出现<strong>随机访问</strong>，<strong>性能相对较差</strong><br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table.jpg" width="600/"></p>
+<h3 id="MRR"><a href="#MRR" class="headerlink" title="MRR"></a>MRR</h3><ol>
+<li>根据索引a，定位到满足条件的记录，将id的值放入<code>read_rnd_buffer</code>中</li>
+<li>将<code>read_rnd_buffer</code>中的id进行<strong>递增排序</strong></li>
+<li>排序后的id值，依次到主键索引中查找</li>
+<li>如果<code>read_rnd_buffer</code>满，先执行完第2步和第3步，然后清空<code>read_rnd_buffer</code>，继续遍历索引a</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 默认值为256KB</span></span><br><span class="line"><span class="comment">-- 8388608 Bytes = 8 MB</span></span><br><span class="line">mysql&gt; SHOW VARIABLES LIKE '%read_rnd_buffer_size%';</span><br><span class="line">+<span class="comment">----------------------+---------+</span></span><br><span class="line">| Variable_name        | Value   |</span><br><span class="line">+<span class="comment">----------------------+---------+</span></span><br><span class="line">| read_rnd_buffer_size | 8388608 |</span><br><span class="line">+<span class="comment">----------------------+---------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- mrr_cost_based=on：现在的优化器基于消耗的考虑，更倾向于不使用MRR</span></span><br><span class="line">mysql&gt; SHOW VARIABLES LIKE '%optimizer_switch%'\G;</span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">Variable_name: optimizer_switch</span><br><span class="line">        Value: index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,engine_condition_pushdown=on,index_condition_pushdown=on,mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=off,materialization=on,semijoin=on,loosescan=on,firstmatch=on,duplicateweedout=on,subquery_materialization_cost_based=on,use_index_extensions=on,condition_fanout_filter=on,derived_merge=on,use_invisible_indexes=off</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 稳定启动MRR优化</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_switch=<span class="string">'mrr_cost_based=off'</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="执行流程"><a href="#执行流程" class="headerlink" title="执行流程"></a>执行流程</h4><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-back-to-table-mrr.jpg" width="600/">
+
+
+<h4 id="EXPLAIN"><a href="#EXPLAIN" class="headerlink" title="EXPLAIN"></a>EXPLAIN</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; SET optimizer_switch='mrr_cost_based=on';</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 优化器没有选择MRR</span></span><br><span class="line">mysql&gt; EXPLAIN SELECT * FROM t1 WHERE a&gt;=1 AND a&lt;=100;</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                 |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | range | a             | a    | 5       | NULL |  100 |   100.00 | Using index condition |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------+</span></span><br><span class="line">1 row in <span class="keyword">set</span>, <span class="number">1</span> <span class="keyword">warning</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">SET</span> optimizer_switch=<span class="string">'mrr_cost_based=off'</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 优化器选择了MRR</span></span><br><span class="line">mysql&gt; EXPLAIN SELECT * FROM t1 WHERE a&gt;=1 AND a&lt;=100;</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                            |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | range | a             | a    | 5       | NULL |  100 |   100.00 | Using index condition; Using MRR |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>MRR提升性能的核心：能够在索引a上做<strong>范围查询</strong>，得到<strong>足够多的主键</strong>，完成<strong>排序</strong>后再回表，体现出<strong>顺序性</strong>的优势</p>
+<h2 id="NLJ优化"><a href="#NLJ优化" class="headerlink" title="NLJ优化"></a>NLJ优化</h2><h3 id="NLJ算法"><a href="#NLJ算法" class="headerlink" title="NLJ算法"></a>NLJ算法</h3><p>从驱动表t1，一行行地取出a的值，再到被驱动表t2去join，此时<strong>没有利用到MRR的优势</strong><br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-nlj.jpg" width="600/"></p>
+<h3 id="BKA优化"><a href="#BKA优化" class="headerlink" title="BKA优化"></a>BKA优化</h3><p><code>Batched Key Access</code>，是MySQL 5.6引入的对<code>Index Nested-Loop Join</code>（<code>NLJ</code>）的优化<br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-join-opt-bka.jpg" width="600/"></p>
+<ol>
+<li><code>BKA</code>优化的思路：<strong>复用<code>join_buffer</code></strong></li>
+<li>在<code>BNL</code>算法中，利用了<code>join_buffer</code>来暂存驱动表的数据，但在<code>NLJ</code>里面并没有利用到<code>join_buffer</code></li>
+<li>在<code>join_buffer</code>中放入的数据为P1~P100，表示只会取<strong>查询所需要的字段</strong><ul>
+<li>如果<code>join_buffer</code>放不下P1~P100，就会将这100行数据<strong>分成多段</strong>执行</li>
+</ul>
+</li>
+</ol>
+<h3 id="启用"><a href="#启用" class="headerlink" title="启用"></a>启用</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- BKA算法依赖于MRR</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_switch=<span class="string">'mrr=on,mrr_cost_based=off,batched_key_access=on'</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="BNL优化"><a href="#BNL优化" class="headerlink" title="BNL优化"></a>BNL优化</h2><h3 id="性能问题"><a href="#性能问题" class="headerlink" title="性能问题"></a>性能问题</h3><ol>
+<li>使用<code>BNL</code>算法，可能会<strong>对被驱动表做多次扫描</strong>，如果被驱动表是一个<strong>大的冷数据表</strong>，首先<strong>IO压力会增大</strong></li>
+<li>Buffer Pool的LRU算法<ul>
+<li>第一次从磁盘读入内存的数据页，会先放在<code>old</code>区</li>
+<li>如果1s后这个数据页不再被访问，就不会被移动到LRU链表头部，对Buffer Pool的命中率影响不大</li>
+</ul>
+</li>
+<li>如果一个使用了BNL算法的Join语句，多次扫描一个冷表<ul>
+<li>如果<strong>冷表不大</strong>，能够<strong>完全放入old区</strong><ul>
+<li>再次扫描冷表的时候，会把冷表的数据页移到LRU链表头部，<strong>不属于期望的晋升</strong></li>
+</ul>
+</li>
+<li>如果<strong>冷表很大</strong>，<em><strong>业务正常访问的数据页，可能没有机会进入young区</strong></em><ul>
+<li>一个正常访问的数据页，要进入young区，需要隔1S后再次被访问</li>
+<li>由于Join语句在循环读磁盘和淘汰内存页，进入old区的数据页，很有可能在1S内被淘汰</li>
+<li>正常业务访问的数据页也<strong>一并被冲掉</strong>，影响正常业务的内存命中率</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>大表Join虽然对IO有影响，但在语句执行结束后，对IO的影响也就结束了<ul>
+<li>但<strong>对Buffer Pool的影响是持续性的</strong>，需要依靠后续的查询请求慢慢恢复内存命中率</li>
+<li>为了减少这种影响，可以考虑适当地增大<code>join_buffer_size</code>，减少对被驱动表的扫描次数</li>
+</ul>
+</li>
+<li>小结<ul>
+<li>可能会多次扫描<strong>被驱动表</strong>，占用磁盘<strong>IO资源</strong></li>
+<li>判断Join条件需要执行$M*N$次对比，如果是大表会占用非常多的<strong>CPU资源</strong></li>
+<li>可能会导致Buffer Pool的<strong>热数据被淘汰</strong>和<strong>正常的业务数据无法成为热数据</strong>，进而影响<strong>内存命中率</strong></li>
+</ul>
+</li>
+<li>如果优化器选择了<code>BNL</code>算法，就需要做优化<ul>
+<li>给被驱动表<strong>Join字段</strong>加索引，把<code>BNL</code>算法转换成<code>BKA</code>算法</li>
+<li>临时表</li>
+</ul>
+</li>
+</ol>
+<h3 id="不适合建索引"><a href="#不适合建索引" class="headerlink" title="不适合建索引"></a>不适合建索引</h3><p>t2中需要参与Join的只有2000行，并且为一个<strong>低频语句</strong>，为此在t2.b上建索引是比较浪费的</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t1 <span class="keyword">JOIN</span> t2 <span class="keyword">ON</span> (t1.b=t2.b) <span class="keyword">WHERE</span> t2.b&gt;=<span class="number">1</span> <span class="keyword">AND</span> t2.b&lt;=<span class="number">2000</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="采用BNL"><a href="#采用BNL" class="headerlink" title="采用BNL"></a>采用BNL</h4><ol>
+<li>取出t1的所有字段，存入<code>join_buffer</code>（无序数组），完全放得下</li>
+<li>扫描t2，取出每一行数据跟<code>join_buffer</code>中的数据进行对比<ul>
+<li>如果不满足<code>t1.b=t2.b</code>，则跳过</li>
+<li>如果<strong>满足</strong><code>t1.b=t2.b</code>，_<strong>再判断是否满足其它条件</strong>_，如果满足就作为结果集的一部分返回，否则跳过</li>
+</ul>
+</li>
+<li>等值判断的次数为1000<em>100W=*</em>10亿**，计算量很大</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 使用BNL算法</span></span><br><span class="line">mysql&gt; EXPLAIN SELECT * FROM t1 JOIN t2 ON (t1.b=t2.b) WHERE t2.b&gt;=1 AND t2.b&lt;=2000;</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra                                              |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |   1000 |   100.00 | Using where                                        |</span><br><span class="line">|  1 | SIMPLE      | t2    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 998414 |     1.11 | Using where; Using join buffer (Block Nested Loop) |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 执行耗时为75S，非常久！</span></span><br><span class="line">mysql&gt; SELECT * FROM t1 JOIN t2 ON (t1.b=t2.b) WHERE t2.b&gt;=1 AND t2.b&lt;=2000;</span><br><span class="line">...</span><br><span class="line">|  999 |    2 |  999 |  999 |  999 |  999 |</span><br><span class="line">| 1000 |    1 | 1000 | 1000 | 1000 | 1000 |</span><br><span class="line">+<span class="comment">------+------+------+------+------+------+</span></span><br><span class="line">1000 rows in <span class="keyword">set</span> (<span class="number">1</span> <span class="keyword">min</span> <span class="number">15.29</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Time: 2019-03-11T12:04:49.066846Z</span></span><br><span class="line"><span class="comment"># User@Host: root[root] @ localhost []  Id:     8</span></span><br><span class="line"><span class="comment"># Query_time: 75.288703  Lock_time: 0.000174 Rows_sent: 1000  Rows_examined: 1001000</span></span><br><span class="line"><span class="keyword">SET</span> <span class="built_in">timestamp</span>=<span class="number">1552305889</span>;</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t1 <span class="keyword">JOIN</span> t2 <span class="keyword">ON</span> (t1.b=t2.b) <span class="keyword">WHERE</span> t2.b&gt;=<span class="number">1</span> <span class="keyword">AND</span> t2.b&lt;=<span class="number">2000</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="临时表"><a href="#临时表" class="headerlink" title="临时表"></a>临时表</h4><h5 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h5><ol>
+<li>把t2中满足条件的数据先放到临时表tmp_t中</li>
+<li>为了让join使用<code>BKA</code>算法，给临时表tmp_t的字段b加上索引</li>
+<li>让表t1和tmp_t做join操作</li>
+</ol>
+<h5 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TEMPORARY</span> <span class="keyword">TABLE</span> temp_t (<span class="keyword">id</span> <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>, a <span class="built_in">INT</span>, b <span class="built_in">INT</span>, <span class="keyword">INDEX</span>(b)) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> temp_t <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t2 <span class="keyword">WHERE</span> b&gt;=<span class="number">1</span> <span class="keyword">AND</span> b&lt;=<span class="number">2000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># Time: 2019-03-11T12:20:01.810030Z</span></span><br><span class="line"><span class="comment"># User@Host: root[root] @ localhost []  Id:     8</span></span><br><span class="line"><span class="comment"># Query_time: 0.624821  Lock_time: 0.002347 Rows_sent: 0  Rows_examined: 1000000</span></span><br><span class="line"><span class="keyword">SET</span> <span class="built_in">timestamp</span>=<span class="number">1552306801</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> temp_t <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t2 <span class="keyword">WHERE</span> b&gt;=<span class="number">1</span> <span class="keyword">AND</span> b&lt;=<span class="number">2000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 采用NLJ算法，如果batched_key_access=on，将采用BKA优化</span></span><br><span class="line">mysql&gt; EXPLAIN SELECT * FROM t1 JOIN temp_t ON (t1.b=temp_t.b);</span><br><span class="line">+<span class="comment">----+-------------+--------+------------+------+---------------+------+---------+-----------+------+----------+-------------+</span></span><br><span class="line">| id | select_type | table  | partitions | type | possible_keys | key  | key_len | ref       | rows | filtered | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+--------+------------+------+---------------+------+---------+-----------+------+----------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1     | NULL       | ALL  | NULL          | NULL | NULL    | NULL      | 1000 |   100.00 | Using where |</span><br><span class="line">|  1 | SIMPLE      | temp_t | NULL       | ref  | b             | b    | 5       | test.t1.b |    1 |   100.00 | NULL        |</span><br><span class="line">+<span class="comment">----+-------------+--------+------------+------+---------------+------+---------+-----------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 执行耗时为20ms，提升很大</span></span><br><span class="line">mysql&gt; SELECT * FROM t1 JOIN temp_t ON (t1.b=temp_t.b);</span><br><span class="line">...</span><br><span class="line">|  999 |    2 |  999 |  999 |  999 |  999 |</span><br><span class="line">| 1000 |    1 | 1000 | 1000 | 1000 | 1000 |</span><br><span class="line">+<span class="comment">------+------+------+------+------+------+</span></span><br><span class="line">1000 rows in <span class="keyword">set</span> (<span class="number">0.02</span> sec)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Time: 2019-03-11T12:20:11.041259Z</span></span><br><span class="line"><span class="comment"># User@Host: root[root] @ localhost []  Id:     8</span></span><br><span class="line"><span class="comment"># Query_time: 0.012139  Lock_time: 0.000187 Rows_sent: 1000  Rows_examined: 2000</span></span><br><span class="line"><span class="keyword">SET</span> <span class="built_in">timestamp</span>=<span class="number">1552306811</span>;</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t1 <span class="keyword">JOIN</span> temp_t <span class="keyword">ON</span> (t1.b=temp_t.b);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>执行<code>INSERT</code>语句构造tmp_t表并插入数据的过程中，对t2做了<strong>全表扫描</strong>，扫描行数为100W</li>
+<li>JOIN语句先扫描t1，扫描行数为1000，在JOIN的比较过程中，做了1000次<strong>带索引的查询</strong></li>
+</ol>
+<h4 id="Hash-Join"><a href="#Hash-Join" class="headerlink" title="Hash Join"></a>Hash Join</h4><ol>
+<li>如果<code>join_buffer</code>维护的不是一个无序数组，而是一个<strong>哈希表</strong>，那只需要100W次哈希查找即可</li>
+<li>MySQL目前不支持<code>Hash Join</code>，业务端可以自己实现<code>Hash Join</code><ul>
+<li><code>SELECT * FROM t1</code><ul>
+<li>取t1的全部1000行数据，在业务端存入一个hash结构（如<code>java.util.HashMap</code>）</li>
+</ul>
+</li>
+<li><code>SELECT * FROM t2 WHERE b&gt;=1 AND b&lt;=2000</code>，获取t2中满足条件的2000行数据</li>
+<li>把这2000行数据，一行行地到hash结构去匹配，将满足匹配条件的行数据，作为结果集的一行</li>
+</ul>
+</li>
+</ol>
+<h2 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h2><ol>
+<li><code>BKA</code>是MySQL<strong>内置支持</strong>的，<em><strong>推荐使用</strong></em></li>
+<li><code>BNL</code>算法<strong>效率低</strong>，建议都尽量换成<code>BKA</code>算法，优化的方向是<strong>给被驱动表的关联字段加上索引</strong></li>
+<li>基于<strong>临时表</strong>的改进方案，对于能够<strong>提前过滤出小数据的JOIN语句</strong>来说，效果还是很明显的</li>
+<li>MySQL目前还不支持<code>Hash Join</code></li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/03/11/mysql-join-opt/" title="MySQL -- JOIN优化">http://zhongmingmao.me/2019/03/11/mysql-join-opt/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/10/mysql-join/" rel="next" title="MySQL -- JOIN">
+                <i class="fa fa-chevron-left"></i> MySQL -- JOIN
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/12/mysql-user-temporary-table/" rel="prev" title="MySQL -- 用户临时表">
+                MySQL -- 用户临时表 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#表初始化"><span class="nav-number">1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Multi-Range-Read"><span class="nav-number">2.</span> <span class="nav-text">Multi-Range Read</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#回表"><span class="nav-number">2.1.</span> <span class="nav-text">回表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MRR"><span class="nav-number">2.2.</span> <span class="nav-text">MRR</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#执行流程"><span class="nav-number">2.2.1.</span> <span class="nav-text">执行流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#EXPLAIN"><span class="nav-number">2.2.2.</span> <span class="nav-text">EXPLAIN</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">2.2.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NLJ优化"><span class="nav-number">3.</span> <span class="nav-text">NLJ优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#NLJ算法"><span class="nav-number">3.1.</span> <span class="nav-text">NLJ算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BKA优化"><span class="nav-number">3.2.</span> <span class="nav-text">BKA优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#启用"><span class="nav-number">3.3.</span> <span class="nav-text">启用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BNL优化"><span class="nav-number">4.</span> <span class="nav-text">BNL优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#性能问题"><span class="nav-number">4.1.</span> <span class="nav-text">性能问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不适合建索引"><span class="nav-number">4.2.</span> <span class="nav-text">不适合建索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#采用BNL"><span class="nav-number">4.2.1.</span> <span class="nav-text">采用BNL</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#临时表"><span class="nav-number">4.2.2.</span> <span class="nav-text">临时表</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#思路"><span class="nav-number">4.2.2.1.</span> <span class="nav-text">思路</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#执行过程"><span class="nav-number">4.2.2.2.</span> <span class="nav-text">执行过程</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hash-Join"><span class="nav-number">4.2.3.</span> <span class="nav-text">Hash Join</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结-1"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+    
+      <script type="text/x-mathjax-config">
+  
+
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$', '$'], ['\\(', '\\)'] ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+      
+      equationNumbers: {
+        autoNumber: 'AMS'
+      }
+    }
+  });
+  MathJax.Hub.Register.StartupHook('TeX Jax Ready', function() {
+    MathJax.InputJax.TeX.prefilterHooks.Add(function(data) {
+      if (data.display) {
+        var next = data.script.nextSibling;
+        while (next && next.nodeName.toLowerCase() === '#text') { next = next.nextSibling }
+        if (next && next.nodeName.toLowerCase() === 'br') { next.parentNode.removeChild(next) }
+      }
+    });
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i = 0; i < all.length; i += 1) {
+      document.getElementById(all[i].inputID + '-Frame').parentNode.className += ' has-jax';
+    }
+  });
+</script>
+<script src="//cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

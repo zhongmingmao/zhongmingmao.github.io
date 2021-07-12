@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文主要介绍InnoDB存储引擎的B+Tree索引">
+<meta name="keywords" content="Storage,MySQL,InnoDB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB -- B+Tree索引">
+<meta property="og:url" content="http://zhongmingmao.me/2017/05/12/innodb-btree-index/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文主要介绍InnoDB存储引擎的B+Tree索引">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_myisam.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_innodb.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_00.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_01.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_02.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_10.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_11.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_01.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_02.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_03.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_04.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_05.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_update_00.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_clustered_secondary.png">
+<meta property="og:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_multi_clo_index.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.140Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="InnoDB -- B+Tree索引">
+<meta name="twitter:description" content="本文主要介绍InnoDB存储引擎的B+Tree索引">
+<meta name="twitter:image" content="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2017/05/12/innodb-btree-index/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>InnoDB -- B+Tree索引 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2017/05/12/innodb-btree-index/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">InnoDB -- B+Tree索引
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2017-05-13 00:06:25" itemprop="dateCreated datePublished" datetime="2017-05-13T00:06:25+08:00">2017-05-13</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/innodb/" itemprop="url" rel="index"><span itemprop="name">InnoDB</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">37k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">1:07</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文主要介绍<code>InnoDB</code>存储引擎的<code>B+Tree索引</code></p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="B-Tree数据结构"><a href="#B-Tree数据结构" class="headerlink" title="B+Tree数据结构"></a>B+Tree数据结构</h1><img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree.png" width="500">
+
+<ol>
+<li>所有<code>叶子节点</code>出现在<code>同一层</code></li>
+<li><code>叶子节点</code>包含<code>关键字信息</code></li>
+<li><code>叶子节点</code>本身构成<code>单向有序链表</code></li>
+<li><code>叶子节点</code>内部的记录也构成<code>单向有序链表</code></li>
+<li><code>索引节点</code>不包含<code>关键字信息</code>，这样能容纳更多的索引信息，B+Tree的<code>高度很低</code>，查找效率很高</li>
+</ol>
+<p>关于B+Tree的更多内容请查看<a href="https://en.wikipedia.org/wiki/B-tree" target="_blank" rel="noopener">维基百科</a></p>
+<h1 id="MyISAM与InnoDB"><a href="#MyISAM与InnoDB" class="headerlink" title="MyISAM与InnoDB"></a>MyISAM与InnoDB</h1><h2 id="MyISAM"><a href="#MyISAM" class="headerlink" title="MyISAM"></a>MyISAM</h2><ol>
+<li><code>索引文件</code>与<code>数据文件</code>是<strong><code>分离</code></strong>的</li>
+<li><code>MyISAM</code>的索引文件采用<code>B+Tree</code>索引</li>
+<li><code>叶子节点data域</code>记录的是<strong><code>数据存放的地址</code></strong></li>
+<li><code>主索引（唯一）</code>与<code>辅助索引（可重复）</code>在结构上<code>没有任何区别</code></li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_myisam.png" width="500">
+
+<h2 id="InnoDB"><a href="#InnoDB" class="headerlink" title="InnoDB"></a>InnoDB</h2><ol>
+<li><code>数据文件</code>本身是按照<code>B+Tree</code>组织的索引结构（<code>主索引:Primary Index</code>或<code>聚集索引:Clustered Index</code>），而<code>叶子节点data域</code>记录的是<strong><code>完整的数据信息</code></strong></li>
+<li>InnoDB<strong><code>必须有主键</code></strong>，如果没有<code>显式定义主键</code>或<code>非NULL的唯一索引</code>，InnoDB会自动生成<code>6 Bytes的ROWID</code>作为主键</li>
+<li><code>辅助索引</code>（<code>Secondary Index</code>）也是按<code>B+Tree</code>组织，<code>叶子节点data域</code>记录的是<strong><code>主键值</code></strong>，因此<code>主键不宜定义太大</code></li>
+<li>搜索<code>辅助索引</code>需要<code>遍历两遍索引</code>，首先通过<code>辅助索引</code>获得主键值，再用主键值在<code>主索引</code>中获取实际数据</li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_btree_innodb.png" width="500">
+
+<h1 id="单列主键下的DML操作"><a href="#单列主键下的DML操作" class="headerlink" title="单列主键下的DML操作"></a>单列主键下的DML操作</h1><p>本节将通过实例介绍在<code>单列主键下的DML操作</code>时，<code>B+Tree索引</code>是如何变化的，关于页内查找的实例请参照「InnoDB备忘录 - 数据页结构」</p>
+<h2 id="Insert"><a href="#Insert" class="headerlink" title="Insert"></a>Insert</h2><h3 id="Leaf-Page满"><a href="#Leaf-Page满" class="headerlink" title="Leaf Page满"></a>Leaf Page满</h3><ol>
+<li>拆分<code>Leaf Page</code>，将<code>中间节点</code>放入到<code>Index Page</code>中</li>
+<li><code>小于</code>中间节点的行记录放在<code>左边Leaf Page</code></li>
+<li><code>大于</code>中间节点的行记录放<code>右边Leaf Page</code></li>
+</ol>
+<h4 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b VARCHAR(3500)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.08 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 10,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 20,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 30,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 40,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>CHARSET=LATIN1 ROW_FORMAT=COMPACT</code>下，每个行记录占用<code>3525 Byte</code>(相关内容请参照「InnoDB备忘录 - 行记录格式」)</li>
+<li><code>ROW_FORMAT=COMPACT</code>下，每个页固定占用（不考虑<code>User Records</code>、<code>Free Space</code>和<code>Page Directory</code>，相关内容请参照「InnoDB备忘录 - 数据页结构」）<code>128 Bytes</code></li>
+<li>默认页大小为<code>16KB</code>，因此数据页最多容纳<code>(16*1024-128)/3525=4</code>个行记录（这里<code>Page Directory</code>可忽略不计）</li>
+<li>插入<code>4</code>条记录后，只有一个<code>Leaf Page</code>，再插入第<code>5</code>条记录时，<code>B+Tree</code>索引会<code>分裂</code></li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_00.png" width="500">
+
+<h4 id="Insert-50"><a href="#Insert-50" class="headerlink" title="Insert 50"></a>Insert 50</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT 50,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 3</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 000a 0000 0004 0000 0019 ffe4 8000 001e  ................</span><br><span class="line">0000c090: 0000 0005 0000 0000 0000 0000 0000 0000  ................</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>插入第5条记录<code>a=50</code>后，<code>10 20 30 40 50</code>无法完全容纳在<code>page offset=3</code>的<code>Leaf Page</code>，需要进行分裂</li>
+<li>中间节点是<code>30</code>，将<code>30</code>（包括最小值<code>10</code>）提取到<code>page Offset=3</code>的<code>Index Page</code>（保存的是<code>主键a与页偏移的映射</code>）</li>
+<li>将<code>10 20</code>提取到<code>page offset=4</code>的<code>Leaf Page</code>（保存的是<code>行记录</code>）</li>
+<li>将<code>30 40 50</code>提取到<code>page offset=5</code>的<code>Leaf Page</code>（保存的是<code>行记录</code>）<ul>
+<li>如果插入的是<code>25</code>，分组为<code>10 20 25</code>和<code>30 40</code></li>
+</ul>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值（16进制）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0xc07e~0xc085</td>
+<td>8000 000a 0000 0004</td>
+<td>主键<code>a=10</code>的行记录在<code>page offset=4</code>的<code>Leaf Page</code></td>
+</tr>
+<tr>
+<td>0xc08c~0xc093</td>
+<td>8000 001e 0000 0005</td>
+<td>主键<code>a=30</code>的行记录在<code>page offset=5</code>的<code>Leaf Page</code></td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_01.png" width="500">
+
+<h3 id="Leaf-Page未满"><a href="#Leaf-Page未满" class="headerlink" title="Leaf Page未满"></a>Leaf Page未满</h3><p>接着上述步骤继续操作，直接将行记录<code>a=15</code>插入到<code>page offset=4</code>的<code>Leaf Page</code></p>
+<h4 id="Insert-15"><a href="#Insert-15" class="headerlink" title="Insert 15"></a>Insert 15</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT 15,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.06 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 3</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 000a 0000 0004 0000 0019 ffe4 8000 001e  ................</span><br><span class="line">0000c090: 0000 0005 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line">......</span><br><span class="line"># page offset=4</span><br><span class="line"># a=10</span><br><span class="line">00010070: 7375 7072 656d 756d ac8d 0000 0010 1b8a  supremum........</span><br><span class="line">00010080: 8000 000a 0000 0014 0b41 fc00 0001 f201  .........A......</span><br><span class="line">00010090: 1061 6161 6161 6161 6161 6161 6161 6161  .aaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line"># a=20</span><br><span class="line">00010e30: 6161 6161 6161 6161 6161 6161 61ac 8d00  aaaaaaaaaaaaa...</span><br><span class="line">00010e40: 0000 18f2 2b80 0000 1400 0000 140b 42fd  ....+.........B.</span><br><span class="line">00010e50: 0000 01f3 0110 6161 6161 6161 6161 6161  ......aaaaaaaaaa</span><br><span class="line">......</span><br><span class="line"># a=15</span><br><span class="line">00011c00: 6161 ac8d 0000 0020 f23b 8000 000f 0000  aa..... .;......</span><br><span class="line">00011c10: 0014 0b4e a500 0001 fb01 1061 6161 6161  ...N.......aaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>值（16进制）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0xc07e~0xc085</td>
+<td>8000 000a 0000 0004</td>
+<td>主键<code>a=10</code>的行记录在<code>page offset=4</code>的<code>Leaf Page</code></td>
+</tr>
+<tr>
+<td>0xc08c~0xc093</td>
+<td>8000 001e 0000 0005</td>
+<td>主键<code>a=30</code>的行记录在<code>page offset=5</code>的<code>Leaf Page</code></td>
+</tr>
+<tr>
+<td>0x10080~0x10083</td>
+<td>8000 000a</td>
+<td>主键<code>a=10</code>的行记录的<code>ROWID</code>字段</td>
+</tr>
+<tr>
+<td>0x10e45~0x10e48</td>
+<td>8000 0014</td>
+<td>主键<code>a=20</code>的行记录的<code>ROWID</code>字段</td>
+</tr>
+<tr>
+<td>0x11c0a~0x11c0d</td>
+<td>8000 000f</td>
+<td>主键<code>a=15</code>的行记录的<code>ROWID</code>字段</td>
+</tr>
+</tbody></table>
+<ol>
+<li>在<code>page offset=4</code>内可见，物理存储顺序为<code>10，20，15</code>，<strong><code>非物理有序</code></strong>，通过<code>Page Directory</code>和<code>next_record</code>保持<strong><code>逻辑有序</code></strong>（<code>单向有序链表</code>）</li>
+<li><code>行记录格式</code>和<code>数据页结构</code>的内容请参照「InnoDB备忘录 - 行记录格式」和「InnoDB备忘录 - 数据页结构」</li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_02.png" width="500">
+
+<p>Leaf Page中显示的是<code>逻辑顺序</code>10，15，20</p>
+<h3 id="Index-Page满"><a href="#Index-Page满" class="headerlink" title="Index Page满"></a>Index Page满</h3><ol>
+<li>拆分<code>Index Page</code>，中间节点放入上一次<code>Index Page</code></li>
+<li><code>小于</code>中间节点的记录放<code>左边Index Page</code></li>
+<li><code>大于</code>中间节点的记录放<code>右边Index Page</code></li>
+</ol>
+<h4 id="表初始化-1"><a href="#表初始化-1" class="headerlink" title="表初始化"></a>表初始化</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a VARCHAR(750) NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b VARCHAR(6500)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.11 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; DELIMITER //                                                                                                                    mysql&gt; CREATE PROCEDURE load_t (count INT UNSIGNED)</span><br><span class="line">    -&gt; BEGIN</span><br><span class="line">    -&gt; SET @c=0;</span><br><span class="line">    -&gt; WHILE @c &lt; count DO</span><br><span class="line">    -&gt; SET @x=(@c DIV 10);</span><br><span class="line">    -&gt; SET @y=(@c MOD 10);</span><br><span class="line">    -&gt; INSERT INTO t SELECT REPEAT(CONCAT(CHAR(48+@x),CHAR(48+@y)),375) , REPEAT('z',6500);</span><br><span class="line">    -&gt; SET @c=@c+1;</span><br><span class="line">    -&gt; END WHILE;</span><br><span class="line">    -&gt; END;</span><br><span class="line">    -&gt; //</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; CALL load_t(41);</span><br><span class="line">Query OK, 0 rows affected (0.09 sec)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000007, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">......</span><br><span class="line">page offset 00000016, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000017, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000018, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 26:</span><br><span class="line">Freshly Allocated Page: 1</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 22</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c360: 3030 3030 3030 3030 3030 3030 3030 0000  00000000000000..</span><br><span class="line">0000c370: 0004 ee82 0000 0019 02fa 3031 3031 3031  ..........010101</span><br><span class="line">......</span><br><span class="line">0000c660: 3031 3031 3031 3031 0000 0005 ee82 0000  01010101........</span><br><span class="line">0000c670: 0021 02fa 3033 3033 3033 3033 3033 3033  .!..030303030303</span><br><span class="line">......</span><br><span class="line">0000c950: 3033 3033 3033 3033 3033 3033 3033 3033  0303030303030303</span><br><span class="line">0000c960: 3033 0000 0006 ee82 0004 0029 02fa 3035  03.........)..05</span><br><span class="line">......</span><br><span class="line">0000f8f0: 3335 3335 3335 3335 3335 3335 3335 3335  3535353535353535</span><br><span class="line">0000f900: 3335 0000 0016 ee82 0000 00a9 02fa 3337  35............37</span><br><span class="line">0000f910: 3337 3337 3337 3337 3337 3337 3337 3337  3737373737373737</span><br><span class="line">......</span><br><span class="line">0000fbf0: 3337 3337 3337 3337 3337 3337 0000 0017  373737373737....</span><br><span class="line">0000fc00: ee82 0000 00b1 c468 3339 3339 3339 3339  .......h39393939</span><br><span class="line">......</span><br><span class="line">0000fef0: 3339 3339 3339 0000 0018 0000 0000 0000  393939..........</span><br></pre></td></tr></table></figure>
+
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_10.png" width="500">
+
+<ol>
+<li><code>CHARSET=LATIN1 ROW_FORMAT=COMPACT</code>下，<code>Leaf Page</code>每个行记录占用<code>7273 Bytes</code>，页大小为<code>16KB</code>时，最多存放<code>(16384-128)/7273=2</code>个行记录</li>
+<li><code>CHARSET=LATIN1 ROW_FORMAT=COMPACT</code>下，<code>Index Page</code>每个行记录（<code>索引信息</code>）占用<code>762 Bytes</code>，页大小为<code>16KB</code>时，最多存放<code>(16384-128)/762=21</code>个行记录<ul>
+<li><code>Index Page</code>中的每一个行记录（<code>索引信息</code>）中会指向一个<code>Leaf Page</code>，每个<code>Leaf Page</code>最多包含<code>2</code>条行记录，理论上因此应该<code>CALL load_t(42)</code></li>
+<li>但是在已经插入了<code>00 01</code>，准备插入<code>02</code>时，此时只有一个<code>Leaf Page</code>，没有<code>Index Page</code>，这会新建一个<code>Index Page</code>，导致<code>B+Tree增高</code>，<code>00</code>会放入一个<code>Leaf Page</code>，<code>01 02</code>放入另一个<code>Leaf Page</code>，因此只需要<code>CALL load_t(41)</code>就可以将<code>page offset=3</code>的<code>Index Page</code>塞满，再插入记录就需要进行下一步<code>分裂</code>（B+Tree继续增高）</li>
+</ul>
+</li>
+</ol>
+<p>注：这里的<code>00</code>其实指的是<code>a=REPEAT(&#39;00&#39;,375)</code>的行记录</p>
+<h4 id="Insert-42th-Reocrd"><a href="#Insert-42th-Reocrd" class="headerlink" title="Insert 42th Reocrd"></a>Insert 42th Reocrd</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT REPEAT(CONCAT(CHAR(48+4),CHAR(48+1)),375) , REPEAT('z',6500);</span><br><span class="line">Query OK, 1 row affected (0.31 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0002&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">......</span><br><span class="line">page offset 00000017, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000018, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000019, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 0000001a, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 0000001b, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">Total number of page: 28:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 25</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c360: 3030 3030 3030 3030 3030 3030 3030 0000  00000000000000..</span><br><span class="line">0000c370: 001a ee82 0000 0019 fcf6 3139 3139 3139  ..........191919</span><br><span class="line">......</span><br><span class="line">0000c660: 3139 3139 3139 3139 0000 001b 0000 0000  19191919........</span><br><span class="line"></span><br><span class="line"># page offset=0x1a</span><br><span class="line">00068030: 0000 0005 0000 000a 0000 0000 0000 0000  ................</span><br><span class="line">......</span><br><span class="line">00068360: 3030 3030 3030 3030 3030 3030 3030 0000  00000000000000..</span><br><span class="line">00068370: 0004 ee82 0000 0019 02fa 3031 3031 3031  ..........010101</span><br><span class="line">......</span><br><span class="line">00068660: 3031 3031 3031 3031 0000 0005 ee82 0000  01010101........</span><br><span class="line">00068670: 0021 02fa 3033 3033 3033 3033 3033 3033  .!..030303030303</span><br><span class="line">......</span><br><span class="line">00069b30: 3135 3135 3135 3135 3135 3135 3135 0000  15151515151515..</span><br><span class="line">00069b40: 000c ee82 0000 0059 e526 3137 3137 3137  .......Y.&amp;171717</span><br><span class="line">......</span><br><span class="line">00069e30: 3137 3137 3137 3137 0000 000d ee82 0000  17171717........</span><br><span class="line">00069e40: 0061 02fa 3139 3139 3139 3139 3139 3139  .a..191919191919</span><br><span class="line">......</span><br><span class="line">0006bef0: 3339 3339 3339 0000 0018 0000 0000 0000  393939..........</span><br><span class="line"></span><br><span class="line"># page offset=0x1b</span><br><span class="line">0006c360: 3139 3139 3139 3139 3139 3139 3139 0000  19191919191919..</span><br><span class="line">0006c370: 000e ee82 0000 0019 02fa 3231 3231 3231  ..........212121</span><br><span class="line">......</span><br><span class="line">0006c660: 3231 3231 3231 3231 0000 000f ee82 0000  21212121........</span><br><span class="line">0006c670: 0021 02fa 3233 3233 3233 3233 3233 3233  .!..232323232323</span><br><span class="line">......</span><br><span class="line">0006e130: 3339 0000 0018 ee82 0000 0069 df32 3431  39.........i.241</span><br><span class="line">......</span><br><span class="line">0006e420: 3431 3431 3431 3431 3431 3431 0000 0019  414141414141....</span><br></pre></td></tr></table></figure>
+
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_insert_11.png" width="500">
+
+<ol>
+<li><code>CALL load_t(41)</code>后，<code>page offset=3</code>的<code>Index Page</code>已经塞满，<code>page offset=18</code>的<code>Leaf Page</code>也已经塞满，因此在插入第42条行记录是，会新建<code>Leaf Page</code>，并且尝试将<code>索引信息</code>放入<code>page offset=3</code>的<code>Index Page</code>中</li>
+<li><code>page offset=3</code>的<code>Index Page</code>这时需要<code>分裂</code>，将其中的中间节点<code>19</code>（包括最小节点<code>00</code>）提取到上一层的<code>Index Page</code><ul>
+<li><code>00</code><del><code>17</code>的节点放入<code>page offset=1a</code>的<code>Index Page</code>中（其中包括了冗余节点<code>19</code></del><code>39</code>，后续再插入数据会被重用这部分空间）</li>
+<li><code>19</code>~<code>39</code>的节点放入<code>page offset=1b</code>的<code>Index Page</code>中（新建的索引信息<code>41</code>也在这个页中）</li>
+</ul>
+</li>
+</ol>
+<h2 id="Delete"><a href="#Delete" class="headerlink" title="Delete"></a>Delete</h2><h3 id="表初始化-2"><a href="#表初始化-2" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b VARCHAR(3500)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x10,REPEAT('a',3500);                                                                                     Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x20,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x30,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x40,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x50,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x60,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x70,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x80,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 8:</span><br><span class="line">Freshly Allocated Page: 1</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">0000c060: 0200 1b69 6e66 696d 756d 0004 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0070 0000  .......!.....p..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>80 00 00 10</td>
+<td>00 00 00 04</td>
+<td>包含行记录：0x10、0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td>80 00 00 70</td>
+<td>00 00 00 06</td>
+<td>包含行记录：0x70、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
+
+<h3 id="Delete-0x10"><a href="#Delete-0x10" class="headerlink" title="Delete 0x10"></a>Delete 0x10</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; DELETE FROM t WHERE a=0x10;</span><br><span class="line">Query OK, 1 row affected (0.03 sec)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 8:</span><br><span class="line">Freshly Allocated Page: 1</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c060: 0200 1b69 6e66 696d 756d 0004 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0070 0000  .......!.....p..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010070: 7375 7072 656d 756d ac8d 0020 0010 0dc5  supremum... ....</span><br><span class="line">00010080: 8000 0010 0000 0014 287c 7700 0001 d919  ........(|w.....</span><br><span class="line">00010090: 1061 6161 6161 6161 6161 6161 6161 6161  .aaaaaaaaaaaaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：0x10(<code>deleted_flag=1</code>)、0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td>80 00 00 70</td>
+<td>00 00 00 06</td>
+<td>包含行记录：0x70、0x80</td>
+</tr>
+</tbody></table>
+<ol>
+<li><code>DELETE</code>操作仅仅是将记录<strong><code>标记为删除</code></strong>（<code>deleted_flag=1</code>），实际的删除操作是在<code>Purge线程</code>中完成的</li>
+<li><code>Index Page</code>最小的行记录依旧是<code>0x10</code>（查找所有主键小于<code>0x30</code>的行记录都将<code>page offset=4</code>的<code>Leaf Page</code>载入内存）</li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_01.png" width="500">
+
+<h3 id="Insert-0x10"><a href="#Insert-0x10" class="headerlink" title="Insert 0x10"></a>Insert 0x10</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT 0x10,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.14 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c060: 0200 1b69 6e66 696d 756d 0004 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0070 0000  .......!.....p..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010070: 7375 7072 656d 756d ac8d 0000 0010 0dc5  supremum........</span><br><span class="line">00010080: 8000 0010 0000 0014 2891 a200 0001 f801  ........(.......</span><br><span class="line">00010090: 1062 6262 6262 6262 6262 6262 6262 6262  .bbbbbbbbbbbbbbb</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：0x10、0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td>80 00 00 70</td>
+<td>00 00 00 06</td>
+<td>包含行记录：0x70、0x80</td>
+</tr>
+</tbody></table>
+<ol>
+<li>在<code>Purge线程</code>未回收标记已删除的空间时，再次插入<code>0x10</code>，将<code>重用</code>该空间</li>
+<li><code>Index Page</code>最小的行记录依旧是<code>0x10</code>（查找所有主键小于<code>0x30</code>的行记录都将<code>page offset=4</code>的<code>Leaf Page</code>载入内存）</li>
+</ol>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
+
+<h3 id="Delete-0x10-Insert-0x08"><a href="#Delete-0x10-Insert-0x08" class="headerlink" title="Delete 0x10 + Insert 0x08"></a>Delete 0x10 + Insert 0x08</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; DELETE FROM t WHERE a=0x10;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x08,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0070 0000  .......!.....p..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010070: 7375 7072 656d 756d ac8d 0000 0010 0dc5  supremum........</span><br><span class="line">00010080: 8000 0008 0000 0014 2898 a600 0001 fc01  ........(.......</span><br><span class="line">00010090: 1061 6161 6161 6161 6161 6161 6161 6161  .aaaaaaaaaaaaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：<code>0x08</code>、0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td>80 00 00 70</td>
+<td>00 00 00 06</td>
+<td>包含行记录：0x70、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_02.png" width="500">
+
+<ol>
+<li><code>0x08</code>重用标记为已删除的<code>0x10</code>的空间</li>
+<li><code>Index Page</code>最小的行记录依旧是<code>0x10</code>（查找所有主键小于<code>0x30</code>的行记录都将<code>page offset=4</code>的<code>Leaf Page</code>载入内存）</li>
+</ol>
+<h3 id="Insert-0x68"><a href="#Insert-0x68" class="headerlink" title="Insert 0x68"></a>Insert 0x68</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT 0x68,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0068 0000  .......!.....h..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=6</span><br><span class="line">00018070: 7375 7072 656d 756d ac8d 0000 0010 0dc5  supremum........</span><br><span class="line">00018080: 8000 0070 0000 0014 289f aa00 0001 9601  ...p....(.......</span><br><span class="line">00018090: 1061 6161 6161 6161 6161 6161 6161 6161  .aaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00018e30: 6161 6161 6161 6161 6161 6161 61ac 8d00  aaaaaaaaaaaaa...</span><br><span class="line">00018e40: 0000 18f2 2b80 0000 8000 0000 1428 7bf6  ....+........(&#123;.</span><br><span class="line">00018e50: 0000 01ca 0110 6161 6161 6161 6161 6161  ......aaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00019c00: 6161 ac8d 0000 0020 e476 8000 0068 0000  aa..... .v...h..</span><br><span class="line">00019c10: 0014 28a0 ab00 0001 ff01 1061 6161 6161  ..(........aaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：<code>0x08</code>、0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td><code>80 00 00 68</code></td>
+<td>00 00 00 06</td>
+<td>包含行记录：<code>0x68</code>、0x70、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_03.png" width="500">
+
+<ol>
+<li><code>Leaf Page</code>的行记录是<code>物理无序</code>，<code>逻辑有序</code>（通过<code>next_reocord</code>保证）</li>
+<li><code>Index Page</code>最大的行记录从<code>0x70</code>修改了<code>0x68</code>，因为如果不修改，当查找<code>0x68</code>这条行记录时，将<code>page offset=5</code>的<code>Leaf Page</code>载入内存，而<code>0x68</code>实际上是在<code>page offset=6</code>的<code>Leaf Page</code>中</li>
+</ol>
+<h3 id="Delete-0x30-0x40-0x50-0x60"><a href="#Delete-0x30-0x40-0x50-0x60" class="headerlink" title="Delete 0x30,0x40,0x50,0x60"></a>Delete 0x30,0x40,0x50,0x60</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; DELETE FROM t WHERE a IN (0x30,0x40,0x50,0x60);</span><br><span class="line">Query OK, 4 rows affected (0.03 sec)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 001c 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 0000 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0068 0000  .......!.....h..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010000: 6e19 4026 0000 0004 ffff ffff 0000 0006  n.@&amp;............</span><br><span class="line"></span><br><span class="line"># page offset=5</span><br><span class="line">00014070: 7375 7072 656d 756d ac8d 0020 0010 294f  supremum... ..)O</span><br><span class="line">00014080: 8000 0030 0000 0014 28a5 2e00 0002 060a  ...0....(.......</span><br><span class="line">......</span><br><span class="line">00014e30: 6161 6161 6161 6161 6161 6161 61ac 8d00  aaaaaaaaaaaaa...</span><br><span class="line">00014e40: 2000 180d c580 0000 4000 0000 1428 a52e   .......@....(..</span><br><span class="line">00014e50: 0000 0206 0a8e 6161 6161 6161 6161 6161  ......aaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00015c00: 6161 ac8d 0020 0020 0000 8000 0050 0000  aa... . .....P..</span><br><span class="line">00015c10: 0014 28a5 2e00 0002 060a b161 6161 6161  ..(........aaaaa</span><br><span class="line">......</span><br><span class="line">000169c0: 6161 6161 6161 61ac 8d00 2000 28d6 a180  aaaaaaa... .(...</span><br><span class="line">000169d0: 0000 6000 0000 1428 a52e 0000 0206 0ad4  ..`....(........</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：<code>0x08</code>、0x20</td>
+</tr>
+<tr>
+<td><code>80 00 00 68</code></td>
+<td>00 00 00 06</td>
+<td>包含行记录：<code>0x68</code>、0x70、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_04.png" width="500">
+
+<ol>
+<li><code>page offset=5</code>的<code>Leaf Page</code>中的行记录0x30、0x40、0x50、0x60<code>标记为已删除</code></li>
+<li><code>page offset=4</code>的<code>Leaf Page</code>中的<code>FIL_PAGE_NEXT</code>从<code>5</code>变成了<code>6</code>（<code>0x1000c~1000f</code>）</li>
+<li><code>Index Page</code>中行记录的<code>单向链表</code>也由<code>0x10-&gt;0x30-&gt;0x68</code>变成了<code>0x10-&gt;0x68</code></li>
+</ol>
+<h3 id="Insert-0x48"><a href="#Insert-0x48" class="headerlink" title="Insert 0x48"></a>Insert 0x48</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO t SELECT 0x48,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 001c 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 0000 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0068 0000  .......!.....h..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00011c00: 6161 ac8d 0000 0020 e466 8000 0048 0000  aa..... .f...H..</span><br><span class="line">00011c10: 0014 28b6 b700 0001 9401 1061 6161 6161  ..(........aaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>80 00 00 10</code></td>
+<td>00 00 00 04</td>
+<td>包含行记录：<code>0x08</code>、0x20、<code>0x48</code></td>
+</tr>
+<tr>
+<td><code>80 00 00 68</code></td>
+<td>00 00 00 06</td>
+<td>包含行记录：<code>0x68</code>、0x70、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_05.png" width="500">
+
+<h2 id="Update"><a href="#Update" class="headerlink" title="Update"></a>Update</h2><h3 id="表初始化-3"><a href="#表初始化-3" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL PRIMARY KEY,</span><br><span class="line">    -&gt; b VARCHAR(3500)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x10,REPEAT('a',3500);                                                                                     Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x20,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x30,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x40,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x50,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x60,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x70,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x80,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_delete_00.png" width="500">
+
+<h3 id="更新主键列"><a href="#更新主键列" class="headerlink" title="更新主键列"></a>更新主键列</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; UPDATE t SET a=0x68 WHERE a=0x70;</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Rows matched: 1  Changed: 1  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0068 0000  .......!.....h..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=6</span><br><span class="line">00018070: 7375 7072 656d 756d ac8d 0020 0010 0dc5  supremum... ....</span><br><span class="line">00018080: 8000 0070 0000 0014 28e6 3800 0002 3003  ...p....(.8...0.</span><br><span class="line">00018090: f761 6161 6161 6161 6161 6161 6161 6161  .aaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00018e30: 6161 6161 6161 6161 6161 6161 61ac 8d00  aaaaaaaaaaaaa...</span><br><span class="line">00018e40: 0000 18f2 2b80 0000 8000 0000 1428 e1b5  ....+........(..</span><br><span class="line">00018e50: 0000 0191 0110 6161 6161 6161 6161 6161  ......aaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00019c00: 6161 ac8d 0000 0020 e476 8000 0068 0000  aa..... .v...h..</span><br><span class="line">00019c10: 0014 28e6 b800 0001 9701 1061 6161 6161  ..(........aaaaa</span><br><span class="line">00019c20: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>主键a</th>
+<th>页偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>80 00 00 10</td>
+<td>00 00 00 04</td>
+<td>包含行记录：0x10，0x20</td>
+</tr>
+<tr>
+<td>80 00 00 30</td>
+<td>00 00 00 05</td>
+<td>包含行记录：0x30、0x40、0x50、0x60</td>
+</tr>
+<tr>
+<td><code>80 00 00 68</code></td>
+<td>00 00 00 06</td>
+<td>包含行记录：0x68、0x70(<code>deleted_flag=1</code>)、0x80</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_update_00.png" width="500">
+
+<ol>
+<li>更新主键<code>a:0x70-&gt;0x68</code>，首先是<strong><code>逻辑删除</code></strong><code>0x70</code>（<code>MVCC</code>特性），然后再插入<code>0x68</code></li>
+<li>如果插入的过程中会影响查询过程，会同步更新<code>Index Page</code></li>
+</ol>
+<h3 id="更新非主键列"><a href="#更新非主键列" class="headerlink" title="更新非主键列"></a>更新非主键列</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; UPDATE t SET b=REPEAT('b',100) WHERE a=0x68;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Rows matched: 1  Changed: 1  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 9:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0004 0000 0019 000e 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0005 0000 0021 ffd6 8000 0068 0000  .......!.....h..</span><br><span class="line">0000c0a0: 0006 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=6</span><br><span class="line">00019c00: 6161 6400 0000 20f2 3c80 0000 6800 0000  aad... .&lt;...h...</span><br><span class="line">00019c10: 1428 e839 0000 0220 14fe 6262 6262 6262  .(.9... ..bbbbbb</span><br><span class="line">00019c20: 6262 6262 6262 6262 6262 6262 6262 6262  bbbbbbbbbbbbbbbb</span><br><span class="line">00019c30: 6262 6262 6262 6262 6262 6262 6262 6262  bbbbbbbbbbbbbbbb</span><br><span class="line">00019c40: 6262 6262 6262 6262 6262 6262 6262 6262  bbbbbbbbbbbbbbbb</span><br><span class="line">00019c50: 6262 6262 6262 6262 6262 6262 6262 6262  bbbbbbbbbbbbbbbb</span><br><span class="line">00019c60: 6262 6262 6262 6262 6262 6262 6262 6262  bbbbbbbbbbbbbbbb</span><br><span class="line">00019c70: 6262 6262 6262 6262 6262 6262 6262 6161  bbbbbbbbbbbbbbaa</span><br><span class="line">00019c80: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br></pre></td></tr></table></figure>
+
+<p>更新非主键列时<code>无需逻辑删除</code>，<code>直接更新</code>相应行记录</p>
+<h1 id="聚集索引与辅助索引"><a href="#聚集索引与辅助索引" class="headerlink" title="聚集索引与辅助索引"></a>聚集索引与辅助索引</h1><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL,</span><br><span class="line">    -&gt; b INT NOT NULL,</span><br><span class="line">    -&gt; c VARCHAR(3500),</span><br><span class="line">    -&gt; PRIMARY KEY (a),</span><br><span class="line">    -&gt; KEY (b)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.13 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; SHOW INDEX FROM t;</span><br><span class="line">+<span class="comment">-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span></span><br><span class="line">| Table | Non_unique | Key_name | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | <span class="keyword">Comment</span> | Index_comment |</span><br><span class="line">+<span class="comment">-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span></span><br><span class="line">| t     |          <span class="number">0</span> | PRIMARY  |            <span class="number">1</span> | a           | A         |           <span class="number">0</span> |     <span class="literal">NULL</span> | <span class="literal">NULL</span>   |      | BTREE      |         |               |</span><br><span class="line">| t     |          <span class="number">1</span> | b        |            <span class="number">1</span> | b           | A         |           <span class="number">0</span> |     <span class="literal">NULL</span> | <span class="literal">NULL</span>   |      | BTREE      |         |               |</span><br><span class="line">+<span class="comment">-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span></span><br><span class="line"><span class="number">2</span> <span class="keyword">rows</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> <span class="number">0x10</span>,<span class="number">0x100</span>,<span class="keyword">REPEAT</span>(<span class="string">'a'</span>,<span class="number">3500</span>);</span><br><span class="line">Query OK, 1 row affected (0.04 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x20,0x200,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x30,0x300,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x40,0x400,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 0x50,0x500,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000006, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">Total number of page: 7:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 4</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c060: 0200 1b69 6e66 696d 756d 0003 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 000e 8000  supremum........</span><br><span class="line">0000c080: 0010 0000 0005 0000 0019 ffe4 8000 0030  ...............0</span><br><span class="line">0000c090: 0000 0006 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010070: 7375 7072 656d 756d 0000 1000 0d80 0001  supremum........</span><br><span class="line">00010080: 0080 0000 1000 0018 000d 8000 0200 8000  ................</span><br><span class="line">00010090: 0020 0000 2000 0d80 0003 0080 0000 3000  . .. .........0.</span><br><span class="line">000100a0: 0028 000d 8000 0400 8000 0040 0000 30ff  .(.........@..0.</span><br><span class="line">000100b0: bf80 0005 0080 0000 5000 0000 0000 0000  ........P.......</span><br><span class="line"></span><br><span class="line"># page offset=5</span><br><span class="line">00014070: 7375 7072 656d 756d ac8d 0000 0010 0dc9  supremum........</span><br><span class="line">00014080: 8000 0010 0000 0014 2917 da00 0001 ac01  ........).......</span><br><span class="line">00014090: 1080 0001 0061 6161 6161 6161 6161 6161  .....aaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00014e40: 61ac 8d00 0000 18f2 2780 0000 2000 0000  a.......&apos;... ...</span><br><span class="line">00014e50: 1429 18db 0000 01ad 0110 8000 0200 6161  .)............aa</span><br><span class="line">00014e60: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br><span class="line"></span><br><span class="line"># page offset=6</span><br><span class="line">00018070: 7375 7072 656d 756d ac8d 0000 0010 0dc9  supremum........</span><br><span class="line">00018080: 8000 0030 0000 0014 291d de00 0001 b301  ...0....).......</span><br><span class="line">00018090: 1080 0003 0061 6161 6161 6161 6161 6161  .....aaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00018e40: 61ac 8d00 0000 180d c980 0000 4000 0000  a...........@...</span><br><span class="line">00018e50: 1429 1edf 0000 01b7 0110 8000 0400 6161  .)............aa</span><br><span class="line">......</span><br><span class="line">00019c00: 6161 6161 6161 6161 6161 ac8d 0000 0020  aaaaaaaaaa.....</span><br><span class="line">00019c10: e45e 8000 0050 0000 0014 2923 e200 0001  .^...P....)#....</span><br><span class="line">00019c20: c501 1080 0005 0061 6161 6161 6161 6161  .......aaaaaaaaa</span><br></pre></td></tr></table></figure>
+
+<p>聚集索引的<code>Index Page</code>（目前只有一个Page）在<code>page offset=3</code></p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>16进制</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0xc07e~0xc085</td>
+<td>8000 0010 0000 0005</td>
+<td><code>a=0x10</code>的行记录在<code>page offset=5</code>的<code>Leaf Page</code>上</td>
+</tr>
+<tr>
+<td>0xc08c~0xc093</td>
+<td>8000 0030 0000 0006</td>
+<td><code>a=0x30</code>的行记录在<code>page offset=6</code>的<code>Leaf Page</code>上</td>
+</tr>
+</tbody></table>
+<p>辅助索引的<code>Index Page</code>（目前只有一个Page）在<code>page offset=4</code></p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>16进制</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x1007d~0x10084</td>
+<td>8000 0100 8000 0010</td>
+<td><code>b=0x100</code>对应<code>a=0x10</code></td>
+</tr>
+<tr>
+<td>0x1008a~0x10091</td>
+<td>8000 0100 8000 0010</td>
+<td><code>b=0x200</code>对应<code>a=0x20</code></td>
+</tr>
+<tr>
+<td>0x10097~0x1009e</td>
+<td>8000 0100 8000 0010</td>
+<td><code>b=0x300</code>对应<code>a=0x30</code></td>
+</tr>
+<tr>
+<td>0x100a4~0x100ab</td>
+<td>8000 0100 8000 0010</td>
+<td><code>b=0x400</code>对应<code>a=0x40</code></td>
+</tr>
+<tr>
+<td>0x100b1~0x100b8</td>
+<td>8000 0100 8000 0010</td>
+<td><code>b=0x500</code>对应<code>a=0x50</code></td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_clustered_secondary.png" width="500">
+
+<h1 id="联合索引"><a href="#联合索引" class="headerlink" title="联合索引"></a>联合索引</h1><p>当表中有<code>联合索引(a,b)</code>，能有效利用联合索引的查询（因为索引已经按a，b的顺序进行排序）</p>
+<ol>
+<li><code>WHERE a=xxx AND b=xxx</code></li>
+<li><code>WHERE a=xxx</code></li>
+<li><code>WHERE a=xxx ORDER BY b</code></li>
+</ol>
+<p>不能有效利用联合索引的查询：<code>WHERE b=xxx</code>，因为没有索引<code>(b)</code>或索引<code>(b,a)</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE t (</span><br><span class="line">    -&gt; a INT NOT NULL,</span><br><span class="line">    -&gt; b INT NOT NULL,</span><br><span class="line">    -&gt; c VARCHAR(3500),</span><br><span class="line">    -&gt; PRIMARY KEY (a,b)</span><br><span class="line">    -&gt; ) ENGINE=INNODB CHARSET=LATIN1 ROW_FORMAT=COMPACT;</span><br><span class="line">Query OK, 0 rows affected (0.03 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 1,1,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.05 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 2,1,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 2,2,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 2,3,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; INSERT INTO t SELECT 3,1,REPEAT('a',3500);</span><br><span class="line">Query OK, 1 row affected (0.01 sec)</span><br><span class="line">Records: 1  Duplicates: 0  Warnings: 0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0001&gt;</span><br><span class="line">page offset 00000004, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000005, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 3</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># page offset=3</span><br><span class="line">0000c070: 7375 7072 656d 756d 0010 0011 0012 8000  supremum........</span><br><span class="line">0000c080: 0001 8000 0001 0000 0004 0000 0019 ffe0  ................</span><br><span class="line">0000c090: 8000 0002 8000 0002 0000 0005 0000 0000  ................</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>16进制</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0xc07e~0xc089</td>
+<td>8000 0001 8000 0001 0000 0004</td>
+<td><code>a=1,b=1</code>的行记录在<code>page offset=4</code>的<code>Leaf Page</code>上</td>
+</tr>
+<tr>
+<td>0xc090~0xc09b</td>
+<td>8000 0002 8000 0002 0000 0005</td>
+<td><code>a=2,b=2</code>的行记录在<code>page offset=5</code>的<code>Leaf Page</code>上</td>
+</tr>
+</tbody></table>
+<img src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/btree_index_multi_clo_index.png" width="500">
+
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://book.douban.com/subject/24708143/" target="_blank" rel="noopener">MySQL技术内幕 - InnoDB存储引擎 V2</a></li>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-index-types.html" target="_blank" rel="noopener">Clustered and Secondary Indexes</a></li>
+</ol>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/18/innodb-next-key-lock/" rel="bookmark">InnoDB -- Next-Key Lock</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2017/05/12/innodb-btree-index/" title="InnoDB -- B+Tree索引">http://zhongmingmao.me/2017/05/12/innodb-btree-index/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+            <a href="/tags/innodb/" rel="tag"><i class="fa fa-tag"></i> InnoDB</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/08/innodb-table-page-structure/" rel="next" title="InnoDB -- 数据页结构">
+                <i class="fa fa-chevron-left"></i> InnoDB -- 数据页结构
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/18/innodb-next-key-lock/" rel="prev" title="InnoDB -- Next-Key Lock">
+                InnoDB -- Next-Key Lock <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#B-Tree数据结构"><span class="nav-number">1.</span> <span class="nav-text">B+Tree数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MyISAM与InnoDB"><span class="nav-number">2.</span> <span class="nav-text">MyISAM与InnoDB</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#MyISAM"><span class="nav-number">2.1.</span> <span class="nav-text">MyISAM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InnoDB"><span class="nav-number">2.2.</span> <span class="nav-text">InnoDB</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#单列主键下的DML操作"><span class="nav-number">3.</span> <span class="nav-text">单列主键下的DML操作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Insert"><span class="nav-number">3.1.</span> <span class="nav-text">Insert</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Leaf-Page满"><span class="nav-number">3.1.1.</span> <span class="nav-text">Leaf Page满</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#表初始化"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Insert-50"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">Insert 50</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leaf-Page未满"><span class="nav-number">3.1.2.</span> <span class="nav-text">Leaf Page未满</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Insert-15"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">Insert 15</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Index-Page满"><span class="nav-number">3.1.3.</span> <span class="nav-text">Index Page满</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#表初始化-1"><span class="nav-number">3.1.3.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Insert-42th-Reocrd"><span class="nav-number">3.1.3.2.</span> <span class="nav-text">Insert 42th Reocrd</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Delete"><span class="nav-number">3.2.</span> <span class="nav-text">Delete</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#表初始化-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delete-0x10"><span class="nav-number">3.2.2.</span> <span class="nav-text">Delete 0x10</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-0x10"><span class="nav-number">3.2.3.</span> <span class="nav-text">Insert 0x10</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delete-0x10-Insert-0x08"><span class="nav-number">3.2.4.</span> <span class="nav-text">Delete 0x10 + Insert 0x08</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-0x68"><span class="nav-number">3.2.5.</span> <span class="nav-text">Insert 0x68</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delete-0x30-0x40-0x50-0x60"><span class="nav-number">3.2.6.</span> <span class="nav-text">Delete 0x30,0x40,0x50,0x60</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-0x48"><span class="nav-number">3.2.7.</span> <span class="nav-text">Insert 0x48</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Update"><span class="nav-number">3.3.</span> <span class="nav-text">Update</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#表初始化-3"><span class="nav-number">3.3.1.</span> <span class="nav-text">表初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新主键列"><span class="nav-number">3.3.2.</span> <span class="nav-text">更新主键列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新非主键列"><span class="nav-number">3.3.3.</span> <span class="nav-text">更新非主键列</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#聚集索引与辅助索引"><span class="nav-number">4.</span> <span class="nav-text">聚集索引与辅助索引</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#联合索引"><span class="nav-number">5.</span> <span class="nav-text">联合索引</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

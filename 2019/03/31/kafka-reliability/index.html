@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="可靠性保证 可靠性保证：确保系统在各种不同的环境下能够发生一致的行为 Kafka的保证 保证分区消息的顺序 如果使用同一个生产者往同一个分区写入消息，而且消息B在消息A之后写入 那么Kafka可以保证消息B的偏移量比消息A的偏移量大，而且消费者会先读取消息A再读取消息B   只有当消息被写入分区的所有同步副本时（文件系统缓存），它才被认为是已提交 生产者可以选择接收不同类型的确认，控制参数acks">
+<meta name="keywords" content="Middleware,MQ,Kafka,Stream">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka -- 可靠性">
+<meta property="og:url" content="http://zhongmingmao.me/2019/03/31/kafka-reliability/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="可靠性保证 可靠性保证：确保系统在各种不同的环境下能够发生一致的行为 Kafka的保证 保证分区消息的顺序 如果使用同一个生产者往同一个分区写入消息，而且消息B在消息A之后写入 那么Kafka可以保证消息B的偏移量比消息A的偏移量大，而且消费者会先读取消息A再读取消息B   只有当消息被写入分区的所有同步副本时（文件系统缓存），它才被认为是已提交 生产者可以选择接收不同类型的确认，控制参数acks">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka -- 可靠性">
+<meta name="twitter:description" content="可靠性保证 可靠性保证：确保系统在各种不同的环境下能够发生一致的行为 Kafka的保证 保证分区消息的顺序 如果使用同一个生产者往同一个分区写入消息，而且消息B在消息A之后写入 那么Kafka可以保证消息B的偏移量比消息A的偏移量大，而且消费者会先读取消息A再读取消息B   只有当消息被写入分区的所有同步副本时（文件系统缓存），它才被认为是已提交 生产者可以选择接收不同类型的确认，控制参数acks">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/03/31/kafka-reliability/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka -- 可靠性 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/03/31/kafka-reliability/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Kafka -- 可靠性
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-31 15:17:47" itemprop="dateCreated datePublished" datetime="2019-03-31T15:17:47+08:00">2019-03-31</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/" itemprop="url" rel="index"><span itemprop="name">Middleware</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/" itemprop="url" rel="index"><span itemprop="name">MQ</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/middleware/mq/kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">6.6k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">12 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="可靠性保证"><a href="#可靠性保证" class="headerlink" title="可靠性保证"></a>可靠性保证</h2><ol>
+<li>可靠性保证：确保系统在<strong>各种不同的环境</strong>下能够发生<strong>一致</strong>的行为</li>
+<li>Kafka的保证<ul>
+<li>保证<em><strong>分区消息的顺序</strong></em><ul>
+<li>如果使用<strong>同一个生产者</strong>往<strong>同一个分区</strong>写入消息，而且消息B在消息A之后写入</li>
+<li>那么Kafka可以保证消息B的偏移量比消息A的偏移量大，而且消费者会先读取消息A再读取消息B</li>
+</ul>
+</li>
+<li>只有当消息被写入分区的<strong>所有同步副本</strong>时（文件系统缓存），它才被认为是<strong>已提交</strong><ul>
+<li>生产者可以选择接收不同类型的确认，控制参数<code>acks</code></li>
+</ul>
+</li>
+<li>只要还有一个副本是活跃的，那么<strong>已提交的消息就不会丢失</strong></li>
+<li><em><strong>消费者只能读取已经提交的消息</strong></em></li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="复制"><a href="#复制" class="headerlink" title="复制"></a>复制</h2><ol>
+<li>Kafka可靠性保证的核心：<em><strong>复制机制</strong></em> + <em><strong>分区的多副本架构</strong></em></li>
+<li>把消息写入<strong>多个副本</strong>，可以使Kafka在发生<strong>崩溃</strong>时仍能<strong>保证消息的持久性</strong></li>
+<li>Kafka的主题被分成多个分区，分区是基本的数据块，分区存储在<strong>单个磁盘</strong>上</li>
+<li>Kafka可以保证分区里的事件总是<strong>有序</strong>的，分区可以<strong>在线</strong>（可用），也可以<strong>离线</strong>（不可用）</li>
+<li>每个分区可以有多个副本，其中一个副本是首领副本<ul>
+<li>所有的事件都直接发送给首领副本，或者直接从首领副本读取事件</li>
+<li>其他副本只需要与首领副本<strong>保持同步</strong>，并<strong>及时复制最新的事件</strong>即可</li>
+<li>当首领副本不可用时，其中一个<strong>同步副本</strong>将成为新的首领</li>
+</ul>
+</li>
+<li>_<strong>分区首领是同步副本</strong>_，对于跟随者副本来说，需要满足下列的<strong>全部条件</strong>才被认为是<strong>同步</strong>的<ul>
+<li>与<strong>ZooKeeper</strong>之间有一个<strong>活跃的会话</strong>（6S内的心跳）</li>
+<li>在过去的10S内从首领副本那里获取过<strong>最新的消息</strong>（几乎<strong>零延迟</strong>）</li>
+</ul>
+</li>
+<li>一个不同步的副本通过与ZooKeeper重新建立连接，并从首领副本那里获取最新的消息，可以重新变成同步的<ul>
+<li>这个过程在网络出现临时问题时很快就能得到修复，但如果Broker发生崩溃就需要较长的时间</li>
+</ul>
+</li>
+<li>如果一个或多个副本在<strong>同步</strong>和<strong>非同步</strong>状态之间<em><strong>快速切换</strong></em><ul>
+<li>说明集群内部出现了问题，通常是由于Java不恰当的<strong>垃圾回收配置</strong>导致的</li>
+<li>不恰当的垃圾回收配置会造成几秒钟的停顿，从而导致Broker和ZooKeeper之间断开连接</li>
+<li>最后变成不同步，进而发生状态切换</li>
+</ul>
+</li>
+<li>一个<strong>滞后的同步副本</strong>会导致生产者和消费者<strong>变慢</strong><ul>
+<li>因为消息在被认为<strong>已提交</strong>之前，客户端会等待<strong>所有同步副本</strong>接收消息</li>
+<li>如果一个副本不再同步了，那么我们将不再关心它是否已经接收到消息<ul>
+<li>因此，<em><strong>非同步副本不会对性能造成任何影响</strong></em></li>
+<li>但更少的同步副本意味着<strong>更低的有效复制系数</strong>，在发生宕机时<strong>丢失数据</strong>的风险就会变大</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="Broker配置"><a href="#Broker配置" class="headerlink" title="Broker配置"></a>Broker配置</h2><p>Broker有3个配置参数会影响到Kafka消息存储的<strong>可靠性</strong>，可以应用于<strong>Broker级别</strong>（所有主题），也可以应用于<strong>主题级别</strong></p>
+<h3 id="复制系数"><a href="#复制系数" class="headerlink" title="复制系数"></a>复制系数</h3><ol>
+<li>主题级别的配置参数为<code>replication.factor</code>，Broker级别的配置参数为<code>default.replication.factor</code></li>
+<li>Kafka的默认复制系数为3，即使在主题创建后，仍然可以通过<strong>新增</strong>或<strong>移除</strong>副本来改变复制系数</li>
+<li>如果复制系数为<code>N</code>，那么在<code>N-1</code>个Broker<strong>失效</strong>的情况下，仍然能够从主题<strong>读取</strong>数据或向主题<strong>写入</strong>数据<ul>
+<li>更高的复制系数可以带来<em><strong>更高的可用性、可靠性和更少的故障</strong></em></li>
+<li>但会占用<em><strong>更多的磁盘空间</strong></em></li>
+</ul>
+</li>
+<li>主题的<strong>复制系数</strong>与主题的<strong>重要程度</strong>成<strong>正相关</strong><ul>
+<li>在要求<strong>可用性</strong>的场景下，把复制系数设置为<strong>3</strong>，已经<strong>足够安全</strong>了，银行可能会使用5个副本</li>
+</ul>
+</li>
+<li>副本的<strong>分布</strong>也很重要<ul>
+<li>Kafka会确保分区的每个副本被放在<strong>不同</strong>的Broker上</li>
+<li>同时，为了避免<strong>机架级别</strong>的故障，建议把Broker分布在不同的机架上，控制参数为<code>broker.rack</code></li>
+</ul>
+</li>
+</ol>
+<h3 id="不完全的首领选举"><a href="#不完全的首领选举" class="headerlink" title="不完全的首领选举"></a>不完全的首领选举</h3><ol>
+<li><code>unclean.leader.election.enable</code>只能在<strong>Broker级别</strong>进行设置，默认值为false</li>
+<li>当分区首领不可用时，一个<strong>同步副本</strong>会被选为新的分区首领<ul>
+<li>如果<strong>选举过程中没有丢失数据</strong>，即提交到旧首领的数据同时存在于所有的同步副本上，那么这个选举过程是<strong>完全</strong>的</li>
+</ul>
+</li>
+<li>在首领不可用时，其他副本<strong>都不同步</strong>的场景<ul>
+<li>分区有3个副本，其中两个跟随者<strong>不可用</strong>，这时如果生产者继续往首领写入数据，所有消息都会得到确认并被提交<ul>
+<li>因为首领是<strong>唯一同步</strong>的副本</li>
+<li>如果首领也不可用了，恰巧之前的一个跟随者重新启动，该跟随者就成为分区的唯一不同步副本</li>
+</ul>
+</li>
+<li>分区有3个副本，因为网络问题导致两个跟随者<strong>复制消息滞后</strong>，尽管它们还在复制消息，但已经<strong>不同步</strong>了<ul>
+<li>首领作为<strong>唯一同步</strong>的副本继续接收消息</li>
+<li>如果首领变为不可用，另外两个副本再也无法变成同步的了</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="两难选择"><a href="#两难选择" class="headerlink" title="两难选择"></a>两难选择</h4><ol>
+<li>如果不同步的副本<strong>不能</strong>被提升为新首领，那么分区在旧首领恢复之前是<strong>不可用</strong>的，牺牲了可用性</li>
+<li>如果不同步的副本<strong>可以</strong>被提升为新首领，那么这个副本变为不同步之后写入旧首领的消息会全部消失，导致<strong>数据不一致</strong><ul>
+<li>假设在副本0和副本1不可用时，偏移量100~200的消息被写入副本2（首领）</li>
+<li>现在副本2也变为不可用，而副本0变成了可用，副本0只包含0~100的消息，不包含偏移量100~200的消息</li>
+<li>如果允许副本0成为新首领，生产者可以继续写入数据，消费者可以继续读取数据，保证了可用性<ul>
+<li>于是，新首领（副本0）就有了偏移量100~200的新消息</li>
+</ul>
+</li>
+<li>但是，部分消费者会读到100~200的<strong>旧消息</strong>，部分消费者会读到为100~200的<strong>新消息</strong>，部分消费者读到<strong>两者的混合</strong></li>
+</ul>
+</li>
+<li>小结<ul>
+<li>如果<strong>不允许</strong>不同步的副本成为新首领，那么就要接受<strong>较低的可用性</strong></li>
+<li>如果<strong>允许</strong>不同步的副本成为新首领，就要承担<strong>丢失数据</strong>和出现<strong>数据不一致</strong>的风险</li>
+</ul>
+</li>
+</ol>
+<h3 id="最少同步副本"><a href="#最少同步副本" class="headerlink" title="最少同步副本"></a>最少同步副本</h3><ol>
+<li><code>min.insync.replicas</code>，可以在<strong>主题级别</strong>和<strong>Broker级别</strong>上进行配置</li>
+<li>尽管为一个主题配置了3个副本，但还是会出现<strong>只有一个同步副本</strong>的情况</li>
+<li>Kafka对<strong>可靠性保证</strong>的定义：消息只有被写入到<strong>所有同步副本</strong>之后才被认为是<strong>已提交</strong>的<ul>
+<li>如果<strong>所有同步副本</strong>只剩下一个，那么在这个副本变为<strong>不可用</strong>时，数据就会<strong>丢失</strong></li>
+</ul>
+</li>
+<li>如果<code>min.insync.replicas=2</code>，那么<em><strong>至少要存在两个同步副本才能向分区写入数据</strong></em><ul>
+<li>如果只有一个同步副本，那么Broker就会停止接受生产者的请求</li>
+<li>此时Broker变成了<strong>只读</strong><ul>
+<li>尝试发送数据的生产者会收到<code>NotEnoughReplicasException</code>异常</li>
+<li>消费者仍然可以继续读取已有的数据</li>
+</ul>
+</li>
+<li>这是为了避免发生<strong>不完全选举</strong>时数据的写入和读取出现非预期的行为</li>
+</ul>
+</li>
+</ol>
+<h2 id="在可靠的系统里使用生产者"><a href="#在可靠的系统里使用生产者" class="headerlink" title="在可靠的系统里使用生产者"></a>在可靠的系统里使用生产者</h2><h3 id="反例"><a href="#反例" class="headerlink" title="反例"></a>反例</h3><h4 id="反例1"><a href="#反例1" class="headerlink" title="反例1"></a>反例1</h4><ol>
+<li>为Broker配置了<strong>3个副本</strong>，并且禁用了<strong>不完全首领选举</strong></li>
+<li>把生产者的<code>acks</code>设置为<code>1</code>（只要首领接收到消息就可以认为消息写入成功）</li>
+<li>生产者发送一个消息给首领，首领成功写入，但跟随者副本还没有收到这个消息</li>
+<li>首领向生产者发送一个响应，告诉生产者消息写入成功，然后首领崩溃了，此时消息还没有被其他副本复制过去<ul>
+<li>此时另外两个副本<strong>仍然</strong>被认为是<strong>同步</strong>的（判断一个副本不同步需要一小段时间）</li>
+<li>其中一个副本成为了新的首领，因为消息还没有被写入这个副本，所以消息<strong>丢失</strong>了<ul>
+<li>但<strong>生产者</strong>却认为消息已经<strong>成功写入</strong>了</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>因为<strong>消费者</strong>看不到丢失的消息，所以此时的系统仍然是<strong>一致</strong>的（因为副本没有收到这个消息，所以消息不算已提交）<ul>
+<li>但从生产者角度来看，它丢失了一个消息</li>
+</ul>
+</li>
+</ol>
+<h4 id="反例2"><a href="#反例2" class="headerlink" title="反例2"></a>反例2</h4><ol>
+<li>为Broker配置了<strong>3个副本</strong>，禁用了<strong>不完全首领选举</strong>，并且把生产者的<code>acks</code>设置为<code>all</code></li>
+<li>假设现在往Kafka发送给消息，分区的首领刚好崩溃，新的首领正在选举当中，Kafka会往生产者返回<strong>首领不可用</strong>的响应</li>
+<li>此时，如果生产者没能正确处理这个错误，也没有重试发送消息直到发送成功，那么消息也有可能<strong>丢失</strong></li>
+<li>但这不能算是Broker的可靠性问题，因为Broker并没有收到这个消息</li>
+<li>也不是一致性问题，因为消费者并没有读到这个消息</li>
+</ol>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><ol>
+<li>根据<strong>可靠性需求</strong>配置恰当的<code>acks</code>值</li>
+<li>在参数配置和代码里正确地处理错误</li>
+</ol>
+<h3 id="发送确认"><a href="#发送确认" class="headerlink" title="发送确认"></a>发送确认</h3><ol>
+<li><code>acks=0</code>：如果生产者能够通过网络把消息发送出去，那么就认为消息已经成功写入Kafka<ul>
+<li>如果<strong>分区离线</strong>或者<strong>整个集群长时间不可用</strong>，那么就<strong>不会收到任何错误</strong></li>
+<li>即使在完全首领选举的情况下，仍有可能丢失消息，因为在新首领选举过程中，生产者并不知道首领已经不可用了</li>
+<li>在该模式下，运行速度是非常快的，可以得到惊人的<strong>吞吐量</strong>和<strong>带宽利用率</strong>，但会<strong>丢失</strong>一些数据</li>
+</ul>
+</li>
+<li><code>acks=1</code>：首领在收到消息并把它写入到分区数据文件（Linux文件系统缓存）时返回确认或错误响应<ul>
+<li>在该模式下，如果发生正常的首领选举，生产者会在选举时收到<code>LeaderNotAvailableException</code>异常</li>
+<li>如果生产者能够恰当地处理该异常，那么它就会重试发送消息，最终消息会安全到达新首领</li>
+<li>但仍有可能<strong>丢失</strong>数据，例如消息已经成功写入首领，但在消息被复制到跟随者副本之前首领发生崩溃</li>
+</ul>
+</li>
+<li><code>acks=all</code>：首领在返回确认或者错误响应之前，会等待<strong>所有同步副本</strong>都收到消息<ul>
+<li>如果和<code>min.insync.replicas</code>结合，就能决定在返回确认前至少有多少个副本能够收到消息</li>
+<li>这是<strong>最保险</strong>的做法，生产者会<strong>一直重试</strong>直到消息被成功提交</li>
+<li>但这也是<strong>最慢</strong>的做法，生产者在继续发送其他消息之前需要等待<strong>所有副本</strong>都收到当前的消息</li>
+<li>可以通过使用<strong>异步模式</strong>和<strong>更大的批次</strong>来<strong>加快速度</strong>，但这样通常会<strong>降低吞吐量</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="重试配置"><a href="#重试配置" class="headerlink" title="重试配置"></a>重试配置</h3><ol>
+<li>生产者向Broker发送消息时，Broker可以返回一个<strong>成功响应码</strong>或者一个<strong>错误响应码</strong></li>
+<li>错误响应码分类：一种是可以通过重试解决，一种是无法通过重试解决<ul>
+<li>如果Broker返回的是<code>LeaderNotAvailableException</code>，生产者可以通过尝试重新发送消息来解决</li>
+<li>如果Broker返回的是<code>InvalidConfigurationException</code>，即使通过重试也无法改变配置选项</li>
+</ul>
+</li>
+<li>如果目标是<strong>不丢失任何消息</strong>，最好让生产者遇到<strong>可重试错误</strong>时能够<em><strong>保持重试</strong></em></li>
+<li>重试发送一个已经失败的消息会带来一些风险，如果两个消息都写入成功，会导致<em><strong>消息重复</strong></em><ul>
+<li>重试和恰当的错误处理可以保证每个消息<strong>至少被保存一次</strong></li>
+<li>目前的Kafka版本无法保证每个消息只被保存一次</li>
+<li>现实中的很多应用程序在消息里加入<strong>唯一标识符</strong>，用于<strong>检测重复消息</strong></li>
+<li>另外还需要应用程序可以做到消息的<strong>幂等</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="在可靠的系统里使用消费者"><a href="#在可靠的系统里使用消费者" class="headerlink" title="在可靠的系统里使用消费者"></a>在可靠的系统里使用消费者</h2><ol>
+<li>只有被提交到Kafka（已经被写入所有同步副本）的消息，对消费者才是可用的<ul>
+<li>对消费者而言，读取到的消息已经具备了<strong>一致性</strong></li>
+<li>消费者唯一要做的是要跟踪哪些消息已经读取过，哪些没有被读取过</li>
+</ul>
+</li>
+<li>从分区读取数据时，消费者会获取一批事件，检查这批事件里<strong>最大的偏移量</strong>，然后从这个偏移量开始读取另一批事件<ul>
+<li>这样保证消费者总能以<strong>正确的顺序</strong>获取新数据，不会错过任何事件</li>
+</ul>
+</li>
+<li>如果一个消费者退出，另一个消费者需要知道前一个消费者在<strong>退出前</strong>处理的<strong>最后一个偏移量</strong>是多少<ul>
+<li>因此消费者需要提交偏移量</li>
+</ul>
+</li>
+<li>消费者把当前读取的偏移量保存起来，在退出之后，同一个群组里的其他消费者就可以接手它的工作<ul>
+<li>如果消费者提交了偏移量却未能处理完消息，那么就可能会造成<em><strong>消息丢失</strong></em></li>
+</ul>
+</li>
+<li>已提交消息 VS 已提交偏移量<ul>
+<li>已提交消息：已经被写入<strong>所有同步副本</strong>并且对消费者可见的消息</li>
+<li>已提交偏移量：消费者发送给Kafka的偏移量，用于确认它已经<strong>收到并处理好</strong>的消息位置</li>
+</ul>
+</li>
+</ol>
+<h3 id="消费者的可靠性配置"><a href="#消费者的可靠性配置" class="headerlink" title="消费者的可靠性配置"></a>消费者的可靠性配置</h3><ol>
+<li>group.id<ul>
+<li>如果两个消费者具有相同的<code>group.id</code>，并且订阅了<strong>同一个主题</strong>，那么每个消费者会分到主题分区的一个<em><strong>子集</strong></em></li>
+</ul>
+</li>
+<li>auto.offset.reset<ul>
+<li>指定了在<strong>没有偏移量可提交</strong>时或者<strong>请求的偏移量在Broker不存在</strong>时，消费者的行为</li>
+<li><code>earliest</code>：消费者会从分区的开始位置读取数据，不管偏移量是否有效<ul>
+<li>导致消费者读取大量的<strong>重复</strong>数据，但可以保证最少的数据丢失</li>
+</ul>
+</li>
+<li><code>latest</code>：消费者会从分区的末尾开始读取数据<ul>
+<li>可以减少重复处理消息，也有可能会错过一些消息</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>enable.auto.commit<ul>
+<li>消费者基于任务调度自动提交偏移量</li>
+<li>如果消费者在轮询操作里处理完所有的数据，那么自动提交可以保证<em><strong>只提交已经处理过的偏移量</strong></em></li>
+<li>自动提交的主要缺点<ul>
+<li>无法控制<strong>重复处理消息</strong>（比如消费者在自动提交偏移量之前停止处理消息）</li>
+<li>如果把消息交给另一个后台线程去处理，自动提交机制可能会在消息还没处理完毕就提交偏移量</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>auto.commit.interval.ms<ul>
+<li>默认是每5S提交一次，频繁提交会增加额外的开销，但也会降低重复处理消息的概率</li>
+</ul>
+</li>
+</ol>
+<h3 id="显式提交偏移量"><a href="#显式提交偏移量" class="headerlink" title="显式提交偏移量"></a>显式提交偏移量</h3><ol>
+<li><strong>总是在处理完事件后再提交偏移量</strong><ul>
+<li>如果所有的处理都在<strong>轮询里</strong>完成，并且不需要在<strong>轮询之间</strong>维护状态（例如为了实现聚合操作）</li>
+<li>那么可以使用自动提交，或者在轮询结束后进行手动提交</li>
+</ul>
+</li>
+<li>提交频率是<strong>性能</strong>和<strong>重复消息</strong>之间的权衡<ul>
+<li>即使在最简单的场景里，仍然可以在一个循环里多次提交偏移量</li>
+<li>也可以在每处理完一个事件之后，或者多个循环里只提交一次</li>
+</ul>
+</li>
+<li>确保对提交的偏移量心里有数<ul>
+<li>在轮询过程中提交偏移量有个不好的地方<ul>
+<li>就是提交的偏移量有可能是读取到的最新偏移量，而不是处理过的最新偏移量</li>
+</ul>
+</li>
+<li>因此，必须确保<strong>处理完消息后再提交偏移量</strong>，否则会导致消费者错过消息</li>
+</ul>
+</li>
+<li>再均衡<ul>
+<li>在设计应用程序时要注意处理消费者的再均衡问题</li>
+<li>例如，一般要在分区被撤销之前提交偏移量，并在分配到新分区时清理之前的状态</li>
+</ul>
+</li>
+<li>消费者可能需要<strong>重试</strong><ul>
+<li>场景：在进行轮询之后，有些消息没有被<strong>完全处理</strong>，需要稍候再来处理<ul>
+<li>例如要把Kafka的数据写到数据库里，不过在那个时间数据库恰好不可用，需要稍候再试</li>
+</ul>
+</li>
+<li><em><strong>提交的是偏移量，而不是对消息的确认</strong></em><ul>
+<li>如果记录#30处理失败，但记录#31处理成功，那么就不应该提交#31</li>
+<li>否则会导致#31以内的偏移量都被提交，包括#30</li>
+</ul>
+</li>
+<li>解决方案<ul>
+<li>方案1<ul>
+<li>在遇到可重试错误时，提交最后一个处理成功的偏移量，然后把还没有处理好的消息保存到缓存区里</li>
+<li>调用消费者的<code>pause()</code>方法来确保其他的轮询不会返回数据，<em><strong>在保持轮询的同时尝试重新处理</strong></em></li>
+<li>如果重试成功，或者重试次数达到上限并决定放弃，那么把错误记录下来并丢弃消息</li>
+<li>然后调用<code>resume()</code>方法让消费者继续从轮询里获取新数据</li>
+</ul>
+</li>
+<li>方案2<ul>
+<li>在遇到可重试错误时，把错误写入一个独立的主题，然后继续</li>
+<li>一个独立的消费者群组负责从该主题上读取错误消息，并进行重试</li>
+<li>该模式有点类似其他消息系统的<code>dead-letter-queue</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>消费者可能需要维护状态<ul>
+<li>有时会希望在多个轮询之间维护状态<ul>
+<li>例如想计算消息的移动平均数，希望在首次轮询之后计算平均数，然后在后续的轮询中更新这个结果</li>
+</ul>
+</li>
+<li>提交偏移量的同时把最近计算的平均数写到一个结果的主题上</li>
+<li>消费者线程在重新启动之后，就可以拿到最近的平均事并接着计算</li>
+<li>由于Kafka并没有提供<strong>事务支持</strong>，消费者有可能写入平均数之后来不及提交偏移量就崩溃了</li>
+</ul>
+</li>
+<li>长时间处理<ul>
+<li>有时候处理数据需要很长时间</li>
+<li>但是暂停轮询的时间不能超过几秒钟，即使不想获得更多的数据，也要<strong>保持轮询</strong>，这样客户端才能往Broker发送<strong>心跳</strong></li>
+<li>解决方案<ul>
+<li>使用一个线程池来处理数据，使用多个线程可以进行并行处理，从而加快处理速度</li>
+<li>把数据移交给线程池去处理之后，就可以暂停消费者，然后<strong>保持轮询</strong>，但<strong>不获取新数据</strong>，直到处理完成</li>
+<li>在工作线程处理完成之后，让消费者继续获取新数据</li>
+<li><em><strong>消费者一直保持轮询，心跳会正常发送，就不会发生再均衡</strong></em></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>仅一次传递<ul>
+<li>应用程序不仅仅需要<strong>至少一次</strong>（<code>at-least-once</code>，没有数据丢失）语义，还需要<strong>仅一次</strong>（<code>exactly-once</code>）语义</li>
+<li>目前Kafka还不能完全支持仅一次语义，消费者采用其他办法来保证Kafka里的每个消息只被写到外部系统一次<ul>
+<li>但不会处理向Kafka<strong>写入数据</strong>时可能出现的重复数据</li>
+</ul>
+</li>
+<li>实现<strong>仅一次</strong>处理最简单且最常用的办法是把结果写到一个支持<strong>唯一键</strong>的系统里，比如键值存储引擎，关系型数据库等<ul>
+<li>这种情况下<ul>
+<li>要么<strong>消息本身</strong>包含一个唯一键</li>
+<li>要么使用<strong>主题、分区和偏移量</strong>的组合来创建唯一键（唯一标识一个Kafka记录）</li>
+</ul>
+</li>
+<li>如果你把消息和一个唯一键写入系统，然后恰巧又读到一个相同的消息，只要把原先的键值覆盖掉即可</li>
+<li>数据存储引擎会<strong>覆盖</strong>已经存在的键值对，就像没有出现过重复数据一样，这个模式叫作<em><strong>幂等性写入</strong></em></li>
+</ul>
+</li>
+<li>如果写入消息的系统<strong>支持事务</strong><ul>
+<li>最简单的是使用关系型数据库，把<strong>消息</strong>和<strong>偏移量</strong>放到<strong>同一个事务</strong>里，这样它们就能保持<strong>同步</strong></li>
+<li>在消费者启动时，会获取最近处理过的消息偏移量，然后调用<code>seek()</code>方法从该偏移量继续读取数据</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/28/kafka-admin-client/" rel="bookmark">Kafka -- KafkaAdminClient</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/01/kafka-avoid-rebalance/" rel="bookmark">Kafka -- 避免重平衡</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-bijection/" rel="bookmark">Kafka -- Avro + Twitter Bijection</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/15/kafka-avro-introduction/" rel="bookmark">Kafka -- Avro入门</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2018/10/16/kafka-avro-native/" rel="bookmark">Kafka -- Avro + Kafka Native API</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/03/31/kafka-reliability/" title="Kafka -- 可靠性">http://zhongmingmao.me/2019/03/31/kafka-reliability/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/middleware/" rel="tag"><i class="fa fa-tag"></i> Middleware</a>
+          
+            <a href="/tags/mq/" rel="tag"><i class="fa fa-tag"></i> MQ</a>
+          
+            <a href="/tags/kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a>
+          
+            <a href="/tags/stream/" rel="tag"><i class="fa fa-tag"></i> Stream</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/26/kafka-internal-principle/" rel="next" title="Kafka -- 内部原理">
+                <i class="fa fa-chevron-left"></i> Kafka -- 内部原理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/09/java-concurrent-overview/" rel="prev" title="Java并发 -- 概述">
+                Java并发 -- 概述 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#可靠性保证"><span class="nav-number">1.</span> <span class="nav-text">可靠性保证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#复制"><span class="nav-number">2.</span> <span class="nav-text">复制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Broker配置"><span class="nav-number">3.</span> <span class="nav-text">Broker配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#复制系数"><span class="nav-number">3.1.</span> <span class="nav-text">复制系数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不完全的首领选举"><span class="nav-number">3.2.</span> <span class="nav-text">不完全的首领选举</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#两难选择"><span class="nav-number">3.2.1.</span> <span class="nav-text">两难选择</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最少同步副本"><span class="nav-number">3.3.</span> <span class="nav-text">最少同步副本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在可靠的系统里使用生产者"><span class="nav-number">4.</span> <span class="nav-text">在可靠的系统里使用生产者</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#反例"><span class="nav-number">4.1.</span> <span class="nav-text">反例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#反例1"><span class="nav-number">4.1.1.</span> <span class="nav-text">反例1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#反例2"><span class="nav-number">4.1.2.</span> <span class="nav-text">反例2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">4.1.3.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送确认"><span class="nav-number">4.2.</span> <span class="nav-text">发送确认</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重试配置"><span class="nav-number">4.3.</span> <span class="nav-text">重试配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在可靠的系统里使用消费者"><span class="nav-number">5.</span> <span class="nav-text">在可靠的系统里使用消费者</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#消费者的可靠性配置"><span class="nav-number">5.1.</span> <span class="nav-text">消费者的可靠性配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#显式提交偏移量"><span class="nav-number">5.2.</span> <span class="nav-text">显式提交偏移量</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

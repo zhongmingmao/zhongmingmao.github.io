@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="什么是IO IO是机器获取和交换信息的主要渠道，而流是完成IO操作的主要方式 在计算机中，流是一种信息的转换 流是有序的 把机器或者应用程序接收外界的信息称为输入流（InputStream） 从机器或者应用程序向外输出的信息称为输出流（OutputStream）   流可以被看作一种数据的载体，通过它可以实现数据的交换和传输">
+<meta name="keywords" content="Java,Java Performance,IO,NIO,AIO,Epoll">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java性能 -- IO模型">
+<meta property="og:url" content="http://zhongmingmao.me/2019/07/22/java-performance-io-model/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="什么是IO IO是机器获取和交换信息的主要渠道，而流是完成IO操作的主要方式 在计算机中，流是一种信息的转换 流是有序的 把机器或者应用程序接收外界的信息称为输入流（InputStream） 从机器或者应用程序向外输出的信息称为输出流（OutputStream）   流可以被看作一种数据的载体，通过它可以实现数据的交换和传输">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-byte-stream.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-char-stream.jpg">
+<meta property="og:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-multi-copy.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.140Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java性能 -- IO模型">
+<meta name="twitter:description" content="什么是IO IO是机器获取和交换信息的主要渠道，而流是完成IO操作的主要方式 在计算机中，流是一种信息的转换 流是有序的 把机器或者应用程序接收外界的信息称为输入流（InputStream） 从机器或者应用程序向外输出的信息称为输出流（OutputStream）   流可以被看作一种数据的载体，通过它可以实现数据的交换和传输">
+<meta name="twitter:image" content="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-byte-stream.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/07/22/java-performance-io-model/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Java性能 -- IO模型 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/07/22/java-performance-io-model/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Java性能 -- IO模型
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-07-22 12:54:37" itemprop="dateCreated datePublished" datetime="2019-07-22T12:54:37+08:00">2019-07-22</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">2.9k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">5 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="什么是IO"><a href="#什么是IO" class="headerlink" title="什么是IO"></a>什么是IO</h2><ol>
+<li>IO是机器获取和交换信息的主要渠道，而<strong>流</strong>是完成IO操作的主要方式</li>
+<li>在计算机中，流是一种<strong>信息的转换</strong></li>
+<li>流是<strong>有序</strong>的<ul>
+<li>把机器或者应用程序接收外界的信息称为<strong>输入流</strong>（InputStream）</li>
+<li>从机器或者应用程序向外输出的信息称为<strong>输出流</strong>（OutputStream）</li>
+</ul>
+</li>
+<li>流可以被看作一种<strong>数据的载体</strong>，通过它可以实现数据的<strong>交换</strong>和<strong>传输</strong></li>
+</ol>
+<a id="more"></a>
+
+<h2 id="Java-IO"><a href="#Java-IO" class="headerlink" title="Java IO"></a>Java IO</h2><ol>
+<li>Java IO主要在java.io下，有四个基本类：<strong>InputStream</strong>、<strong>OutputStream</strong>、<strong>Reader</strong>、<strong>Writer</strong>，分别用于处理<strong>字节流</strong>和<strong>字符流</strong></li>
+<li>字符到字节必须经过<strong>转码</strong>，该过程<strong>非常耗时</strong>，如果不知道<strong>编码类型</strong>就很容易出现<strong>乱码</strong>问题<ul>
+<li>因此IO流提供了<strong>直接操作字符的接口</strong>，方便对<strong>字符</strong>进行<strong>流操作</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="字节流"><a href="#字节流" class="headerlink" title="字节流"></a>字节流</h3><img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-byte-stream.jpg" width="800/">
+
+<ol>
+<li>字节流的抽象类：<strong>InputStream/OutputStream</strong></li>
+<li>文件的读写操作：FileInputStream/FileOutputStream</li>
+<li>数组的读写操作：ByteArrayInputStream/ByteArrayOutputStream</li>
+<li>普通字符串的读写操作：BufferedInputStream/BufferedOutputStream</li>
+</ol>
+<h3 id="字符流"><a href="#字符流" class="headerlink" title="字符流"></a>字符流</h3><p>字符流的抽象类：<strong>Reader/Writer</strong></p>
+<img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-char-stream.jpg" width="800/">
+
+<h2 id="传统IO的性能问题"><a href="#传统IO的性能问题" class="headerlink" title="传统IO的性能问题"></a>传统IO的性能问题</h2><ol>
+<li>IO操作分为磁盘IO操作和网络IO操作</li>
+<li><strong>磁盘IO操作</strong>：从磁盘读取数据源输入到内存，之后将读取的信息持久化输出到物理磁盘上</li>
+<li><strong>网络IO操作</strong>：从网络中读取信息输入到内存，最终将信息输出到网络中</li>
+</ol>
+<h3 id="多次内存复制"><a href="#多次内存复制" class="headerlink" title="多次内存复制"></a>多次内存复制</h3><p>输入操作在操作系统中的具体流程</p>
+<img src="https://java-performance-1253868755.cos.ap-guangzhou.myqcloud.com/java-performance-io-multi-copy.jpg" width="800/">
+
+<ol>
+<li>JVM发出read<strong>系统调用</strong>，向内核发起读请求</li>
+<li>内核向硬件发出读指令，并等待<strong>读就绪</strong></li>
+<li>内核把将要读取的数据<strong>复制</strong>到指定的<strong>内核缓存</strong>中</li>
+<li>操作系统内核将数据<strong>复制</strong>到<strong>用户空间缓冲区</strong>，然后read系统调用返回</li>
+<li>数据先从<strong>外部设备</strong>复制到<strong>内核空间</strong>，再从<strong>内核空间</strong>复制到<strong>用户空间</strong>，发生了<strong>两次内存复制</strong><ul>
+<li>导致不必要的<strong>数据拷贝</strong>和<strong>上下文切换</strong>，<strong>降低了IO性能</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="阻塞"><a href="#阻塞" class="headerlink" title="阻塞"></a>阻塞</h3><ol>
+<li>在传统IO中，InputStream的read()是一个<strong>while循环操作</strong>，会<strong>一直等待数据读取</strong>，直到数据就绪才会返回<ul>
+<li>如果没有数据就绪，读取操作将会一直被<strong>挂起</strong>，用户线程将处于<strong>阻塞</strong>状态</li>
+</ul>
+</li>
+<li>在发生<strong>大量</strong>连接请求时，需要创建大量监听线程，一旦这些线程发生阻塞，就会<strong>不断地抢夺CPU资源</strong><ul>
+<li><em><strong>导致大量的CPU上下文切换，增加系统的性能开销</strong></em></li>
+</ul>
+</li>
+</ol>
+<h2 id="优化IO操作"><a href="#优化IO操作" class="headerlink" title="优化IO操作"></a>优化IO操作</h2><ol>
+<li>面对上面两个性能问题，不仅<strong>编程语言</strong>进行了优化，在<strong>操作系统</strong>层面也进行了优化</li>
+<li>JDK 1.4发布了java.nio包，NIO的发布优化了<strong>内存复制</strong>以及<strong>阻塞</strong>导致的严重性能问题</li>
+<li>JDK 1.7发布了NIO2，从<strong>操作系统</strong>层面实现<strong>异步IO</strong></li>
+</ol>
+<h3 id="使用缓冲区-–-优化读写流操作"><a href="#使用缓冲区-–-优化读写流操作" class="headerlink" title="使用缓冲区 – 优化读写流操作"></a>使用缓冲区 – 优化读写流操作</h3><ol>
+<li>在传统IO中，提出<strong>基于流的IO实现</strong>，即InputStream和OutputStream，这种基于流的实现是以<strong>字节</strong>为单位处理数据</li>
+<li>NIO与传统IO不同，它是基于<strong>块</strong>（Block）的，以<strong>块</strong>为单位处理数据</li>
+<li>NIO中最为重要的两个组件是<strong>缓冲区</strong>（Buffer）和<strong>通道</strong>（Channel）<ul>
+<li>Buffer是一块<strong>连续的内存块</strong>，是NIO<strong>读写数据的中转地</strong></li>
+<li>Channel表示<strong>缓冲数据的源头或目的地</strong>，用于<strong>读取</strong>缓冲或者<strong>写入</strong>缓冲，是<strong>访问缓冲的接口</strong></li>
+</ul>
+</li>
+<li>传统IO与NIO的最大区别：<em><strong>传统IO面向流，NIO面向Buffer</strong></em><ul>
+<li>Buffer可以将文件<strong>一次性读入</strong>内存再做后续处理，传统IO是<strong>边度边处理</strong>数据</li>
+<li>传统IO后来也使用了<strong>缓冲块</strong>，如BufferedInputStream，但仍然<strong>不能和NIO相媲美</strong></li>
+</ul>
+</li>
+<li>使用NIO替代传统IO，可以<strong>立竿见影地提升系统的整体性能</strong></li>
+</ol>
+<h3 id="使用DirectBuffer-–-减少内存复制"><a href="#使用DirectBuffer-–-减少内存复制" class="headerlink" title="使用DirectBuffer – 减少内存复制"></a>使用DirectBuffer – 减少内存复制</h3><ol>
+<li>NIO的Buffer除了做了<strong>缓冲区优化</strong>之外，还提供了<strong>直接访问物理内存</strong>的类：DirectBuffer</li>
+<li><em><strong>普通的Buffer分配的是JVM堆内存，而DirectBuffer是直接分配物理内存</strong></em></li>
+<li>输出数据到外部设备<ul>
+<li>普通Buffer：从用户空间复制到内核空间，再复制到外部设备</li>
+<li>DirectBuffer：<strong>简化为从内核空间复制到外部设备</strong>，减少了数据拷贝</li>
+</ul>
+</li>
+<li>DirectBuffer申请的是非JVM堆内存，<em><strong>创建和销毁的代价很高</strong></em></li>
+<li>DirectBuffer申请的内存并<strong>不直接由JVM负责GC</strong><ul>
+<li>在DirectBuffer包装类被回收时，会通过<strong>Java Reference机制</strong>来释放该内存块</li>
+</ul>
+</li>
+</ol>
+<h3 id="避免阻塞"><a href="#避免阻塞" class="headerlink" title="避免阻塞"></a>避免阻塞</h3><ol>
+<li>NIO常被称为Non-Block IO，即<strong>非阻塞IO</strong>，这体现了NIO的特点</li>
+<li><strong>传统IO即使使用了缓冲块，依然存在阻塞问题</strong><ul>
+<li>线程池线程数有限，一旦发生<strong>大量并发请求</strong>，超过最大数量的线程就只能<strong>等待</strong>，直到线程池中有<strong>空闲的线程</strong>可以被复用</li>
+<li>对Socket的输入流进行读取时，会一直<strong>阻塞</strong>，直到发生其中一种情况：<strong>有数据可读</strong>、<strong>连接释放</strong>、<strong>空指针或IO异常</strong></li>
+</ul>
+</li>
+<li><strong>阻塞问题是传统IO的最大弊端</strong>，NIO通过<strong>通道</strong>和<strong>多路复用器</strong>这两个组件实现了<strong>非阻塞</strong></li>
+</ol>
+<h4 id="通道（Channel）"><a href="#通道（Channel）" class="headerlink" title="通道（Channel）"></a>通道（Channel）</h4><ol>
+<li>传统IO的数据读写是从<strong>用户空间</strong>到<strong>内核空间</strong>来回复制，内核空间的数据是通过<strong>操作系统层面的IO接口</strong>从磁盘或网络读写的</li>
+<li>最开始，在应用程序调用操作系统IO接口时，<strong>由CPU完成分配</strong>，问题：<strong>发生大量IO请求时，非常消耗CPU</strong></li>
+<li>后来，操作系统引入<strong>DMA</strong>（Direct memory access）<ul>
+<li><strong>内核空间与磁盘之间的存取完全由DMA负责</strong></li>
+<li>但依然需要向CPU申请权限，且需求借助DMA总线来完成数据的复制操作，如果<strong>DMA总线过多</strong>，会造成<strong>总线冲突</strong></li>
+</ul>
+</li>
+<li><strong>Channel有自己的处理器</strong>：可以完成<strong>内核空间</strong>和<strong>磁盘</strong>之间的IO操作</li>
+<li>在NIO中，数据的读写都需要通过Channel，Channel是<strong>双向</strong>的，所以<strong>读写可以同时进行</strong></li>
+</ol>
+<h4 id="多路复用器（Selector）"><a href="#多路复用器（Selector）" class="headerlink" title="多路复用器（Selector）"></a>多路复用器（Selector）</h4><ol>
+<li>Selector是Java NIO编程的基础，用于<em><strong>检查一个或多个NIO Channel的状态是否处于可读、可写</strong></em></li>
+<li>Selector是基于<strong>事件驱动</strong>实现的<ul>
+<li>在Selector中<strong>注册accept、read监听事件</strong>，Selector会不断<strong>轮询</strong>注册在其上的Channel</li>
+<li>如果某个Channel上面发生<strong>监听事件</strong>，该Channel就处于<strong>就绪</strong>状态，然后进行IO操作</li>
+</ul>
+</li>
+<li><strong>一个线程使用一个Selector</strong>，通过<strong>轮询</strong>的方式，可以<strong>监听多个Channel上的事件</strong></li>
+<li>可以在<strong>注册Channel</strong>时设置该Channel为<strong>非阻塞</strong><ul>
+<li>当Channel上<strong>没有IO操作</strong>时，线程<strong>不会一直等待</strong>，而是会<strong>不断轮询所有Channel</strong>，从而<strong>避免发生阻塞</strong></li>
+</ul>
+</li>
+<li>目前操作系统的IO多路复用机制都使用了<strong>epoll</strong><ul>
+<li>相比于传统的select机制，epoll没有<strong>最大连接句柄1024</strong>的限制</li>
+<li>所以Selector理论上可以轮询成千上万的客户端</li>
+</ul>
+</li>
+</ol>
+<h2 id="AIO"><a href="#AIO" class="headerlink" title="AIO"></a>AIO</h2><ol>
+<li>JDK 1.7中，Java发布了NIO2，即<strong>AIO</strong></li>
+<li>AIO实现了<strong>真正意义上的异步IO</strong>，直接将IO操作交给操作系统进行异步处理</li>
+<li>但很多通信框架依然使用NIO，这是因为<strong>异步IO模型在Linux内核中没有实现</strong></li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://time.geekbang.org/column/intro/100028001" target="_blank" rel="noopener">Java性能调优实战</a></p>
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/12/java-performance-nio/" rel="bookmark">Java性能 -- NIO</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/06/26/java-performance-arraylist-linkedlist/" rel="bookmark">Java性能 -- ArrayList + LinkedList</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/20/java-performance-cas/" rel="bookmark">Java性能 --  CAS乐观锁</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/04/java-performance-command-line-tool/" rel="bookmark">Java性能 -- 命令行工具</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/08/30/java-performance-concurrent-container/" rel="bookmark">Java性能 -- 并发容器</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/07/22/java-performance-io-model/" title="Java性能 -- IO模型">http://zhongmingmao.me/2019/07/22/java-performance-io-model/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/java-performance/" rel="tag"><i class="fa fa-tag"></i> Java Performance</a>
+          
+            <a href="/tags/io/" rel="tag"><i class="fa fa-tag"></i> IO</a>
+          
+            <a href="/tags/nio/" rel="tag"><i class="fa fa-tag"></i> NIO</a>
+          
+            <a href="/tags/aio/" rel="tag"><i class="fa fa-tag"></i> AIO</a>
+          
+            <a href="/tags/epoll/" rel="tag"><i class="fa fa-tag"></i> Epoll</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/19/kafka-cluster-param/" rel="next" title="Kafka -- 集群参数">
+                <i class="fa fa-chevron-left"></i> Kafka -- 集群参数
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/24/kafka-producer-partitioning/" rel="prev" title="Kafka -- 生产者消息分区机制">
+                Kafka -- 生产者消息分区机制 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是IO"><span class="nav-number">1.</span> <span class="nav-text">什么是IO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-IO"><span class="nav-number">2.</span> <span class="nav-text">Java IO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#字节流"><span class="nav-number">2.1.</span> <span class="nav-text">字节流</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符流"><span class="nav-number">2.2.</span> <span class="nav-text">字符流</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#传统IO的性能问题"><span class="nav-number">3.</span> <span class="nav-text">传统IO的性能问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#多次内存复制"><span class="nav-number">3.1.</span> <span class="nav-text">多次内存复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#阻塞"><span class="nav-number">3.2.</span> <span class="nav-text">阻塞</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化IO操作"><span class="nav-number">4.</span> <span class="nav-text">优化IO操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用缓冲区-–-优化读写流操作"><span class="nav-number">4.1.</span> <span class="nav-text">使用缓冲区 – 优化读写流操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用DirectBuffer-–-减少内存复制"><span class="nav-number">4.2.</span> <span class="nav-text">使用DirectBuffer – 减少内存复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#避免阻塞"><span class="nav-number">4.3.</span> <span class="nav-text">避免阻塞</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#通道（Channel）"><span class="nav-number">4.3.1.</span> <span class="nav-text">通道（Channel）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多路复用器（Selector）"><span class="nav-number">4.3.2.</span> <span class="nav-text">多路复用器（Selector）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AIO"><span class="nav-number">5.</span> <span class="nav-text">AIO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

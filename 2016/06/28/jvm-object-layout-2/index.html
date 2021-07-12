@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本文将通过Instrumentation + sa-jdi来分析几个实例的内存对象布局">
+<meta name="keywords" content="Java,JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM基础 -- Instrumentation + sa-jdi 实例分析">
+<meta property="og:url" content="http://zhongmingmao.me/2016/06/28/jvm-object-layout-2/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="本文将通过Instrumentation + sa-jdi来分析几个实例的内存对象布局">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/compressed.png">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/uncompressed.png">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/reordering_1.png">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/innerclass.png">
+<meta property="og:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/inherit_1.png">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM基础 -- Instrumentation + sa-jdi 实例分析">
+<meta name="twitter:description" content="本文将通过Instrumentation + sa-jdi来分析几个实例的内存对象布局">
+<meta name="twitter:image" content="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/compressed.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2016/06/28/jvm-object-layout-2/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JVM基础 -- Instrumentation + sa-jdi 实例分析 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2016/06/28/jvm-object-layout-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">JVM基础 -- Instrumentation + sa-jdi 实例分析
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2016-06-29 00:06:25" itemprop="dateCreated datePublished" datetime="2016-06-29T00:06:25+08:00">2016-06-29</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/baisc/" itemprop="url" rel="index"><span itemprop="name">Baisc</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">9.2k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">17 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <div class="note info">
+            <p>本文将通过<code>Instrumentation</code> + <code>sa-jdi</code>来分析几个实例的内存对象布局</p>
+          </div>
+
+<a id="more"></a>
+
+<h1 id="关键概念"><a href="#关键概念" class="headerlink" title="关键概念"></a>关键概念</h1><ol>
+<li>Java对象的内存布局：对象头(<code>Header</code>) + 实例数据（<code>Instance Data</code>） + 对其填充（<code>Padding</code>）</li>
+<li><code>Header</code>具体内容<ul>
+<li><code>Mark Word</code>：存储对象hashCode、锁信息等</li>
+<li><code>Class MetaData Address</code>：存储对象类型数据的指针</li>
+<li><code>Array Length</code>：数组的长度（如果当前对象是数组，否则没有这一内容）</li>
+</ul>
+</li>
+<li>HotSpot JVM中对象的对齐方式：<code>8字节对齐</code></li>
+<li><code>实例域重排序</code>：为了<code>节省内存空间</code>，实例域将按（<code>double/long</code>，<code>int/float</code>，<code>short/char</code>，<code>boolean/byte</code>，<code>reference</code>）进行重排序</li>
+<li><code>非静态内部类</code>：有一个<code>隐藏的对外部类的引用</code></li>
+<li><code>指针压缩</code>：影响对象的内存布局，JVM参数：<code>-XX:+UseCompressedOops</code></li>
+</ol>
+<p>指针压缩的影响</p>
+<table>
+<thead>
+<tr>
+<th>是否开启压缩</th>
+<th>Mark Word</th>
+<th>Class MetaData Address</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>否</td>
+<td>8</td>
+<td>8</td>
+<td>8</td>
+</tr>
+<tr>
+<td>是</td>
+<td>8</td>
+<td>4</td>
+<td>4</td>
+</tr>
+</tbody></table>
+<h1 id="指针压缩"><a href="#指针压缩" class="headerlink" title="指针压缩"></a>指针压缩</h1><h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CompressedOopsTestClass</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> intValue;</span><br><span class="line">    Integer integerRef;</span><br><span class="line">    Integer[] integerArrayRef = <span class="keyword">new</span> Integer[<span class="number">3</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="开启压缩"><a href="#开启压缩" class="headerlink" title="开启压缩"></a>开启压缩</h2><h3 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">me.zhongmingmao.create.classes.CompressedOopsTestClass : shallow size = 24 Bytes , retained size= 56 Bytes</span><br></pre></td></tr></table></figure>
+
+<h3 id="内存映像"><a href="#内存映像" class="headerlink" title="内存映像"></a>内存映像</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Oop for me/zhongmingmao/create/classes/CompressedOopsTestClass @ 0x00000007bffe4e78 (object size = 24)</span><br><span class="line"> - _mark:    &#123;0&#125; :392050833673</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/CompressedOopsTestClass</span><br><span class="line"> - intValue:     &#123;12&#125; :0</span><br><span class="line"> - integerRef:   &#123;16&#125; :null</span><br><span class="line"> - integerArrayRef:  &#123;20&#125; :ObjArray @ 0x00000007bffe4e90</span><br><span class="line"></span><br><span class="line">ObjArray @ 0x00000007bffe4e90 (object size = 32)</span><br><span class="line"> - _mark:    &#123;0&#125; :490473115401</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :ObjArrayKlass for InstanceKlass for java/lang/Integer</span><br><span class="line"> - 0:    &#123;16&#125; :null</span><br><span class="line"> - 1:    &#123;20&#125; :null</span><br><span class="line"> - 2:    &#123;24&#125; :null</span><br></pre></td></tr></table></figure>
+
+<h3 id="对象布局"><a href="#对象布局" class="headerlink" title="对象布局"></a>对象布局</h3><img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/compressed.png" width="500">
+
+<h2 id="关闭压缩"><a href="#关闭压缩" class="headerlink" title="关闭压缩"></a>关闭压缩</h2><h3 id="运行结果-1"><a href="#运行结果-1" class="headerlink" title="运行结果"></a>运行结果</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">me.zhongmingmao.create.classes.CompressedOopsTestClass : shallow size = 40 Bytes , retained size= 88 Bytes</span><br></pre></td></tr></table></figure>
+
+<h3 id="内存映像-1"><a href="#内存映像-1" class="headerlink" title="内存映像"></a>内存映像</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Oop for me/zhongmingmao/create/classes/CompressedOopsTestClass @ 0x000000011602d7f8 (object size = 40)</span><br><span class="line"> - _mark:    &#123;0&#125; :392050833665</span><br><span class="line"> - _metadata._klass:     &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/CompressedOopsTestClass</span><br><span class="line"> - intValue:     &#123;16&#125; :0</span><br><span class="line"> - integerRef:   &#123;24&#125; :null</span><br><span class="line"> - integerArrayRef:  &#123;32&#125; :ObjArray @ 0x000000011602da20</span><br><span class="line"></span><br><span class="line">ObjArray @ 0x000000011602da20 (object size = 48)</span><br><span class="line"> - _mark:    &#123;0&#125; :490473115393</span><br><span class="line"> - _metadata._klass:     &#123;8&#125; :ObjArrayKlass for InstanceKlass for java/lang/Integer</span><br><span class="line"> - 0:    &#123;24&#125; :null</span><br><span class="line"> - 1:    &#123;32&#125; :null</span><br><span class="line"> - 2:    &#123;40&#125; :null</span><br></pre></td></tr></table></figure>
+
+<h3 id="对象布局-1"><a href="#对象布局-1" class="headerlink" title="对象布局"></a>对象布局</h3><img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/uncompressed.png" width="500">
+
+<h1 id="实例域重排序"><a href="#实例域重排序" class="headerlink" title="实例域重排序"></a>实例域重排序</h1><h2 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ReorderingTestClass</span> </span>&#123;</span><br><span class="line">    Object   objectRef;</span><br><span class="line">    Integer integerRef;</span><br><span class="line">    <span class="keyword">int</span> intValue_1;</span><br><span class="line">    <span class="keyword">int</span> intValue_2;</span><br><span class="line">    <span class="keyword">byte</span> byteValue_1;</span><br><span class="line">    <span class="keyword">byte</span> byteValue_2;</span><br><span class="line">    <span class="keyword">byte</span> byteValue_3;</span><br><span class="line">    <span class="keyword">short</span> shortValue_1;</span><br><span class="line">    <span class="keyword">long</span> longValue_1;</span><br><span class="line">    Long[] longArrayRef;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行结果-2"><a href="#运行结果-2" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 默认进行指针压缩</span><br><span class="line">me.zhongmingmao.create.classes.ReorderingTestClass : shallow size = 48 Bytes , retained size= 48 Bytes</span><br></pre></td></tr></table></figure>
+
+<h2 id="内存映像-2"><a href="#内存映像-2" class="headerlink" title="内存映像"></a>内存映像</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Oop for me/zhongmingmao/create/classes/ReorderingTestClass @ 0x00000007bfe2c750 (object size = 48)</span><br><span class="line"> - _mark:    &#123;0&#125; :40809812993</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/ReorderingTestClass</span><br><span class="line"> - objectRef:    &#123;36&#125; :null</span><br><span class="line"> - integerRef:   &#123;40&#125; :null</span><br><span class="line"> - intValue_1:   &#123;12&#125; :0</span><br><span class="line"> - intValue_2:   &#123;24&#125; :0</span><br><span class="line"> - byteValue_1:  &#123;30&#125; :0</span><br><span class="line"> - byteValue_2:  &#123;31&#125; :0</span><br><span class="line"> - byteValue_3:  &#123;32&#125; :0</span><br><span class="line"> - shortValue_1:     &#123;28&#125; :0</span><br><span class="line"> - longValue_1:  &#123;16&#125; :0</span><br><span class="line"> - longArrayRef:     &#123;44&#125; :null</span><br></pre></td></tr></table></figure>
+
+<h2 id="对象布局-2"><a href="#对象布局-2" class="headerlink" title="对象布局"></a>对象布局</h2><img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/reordering_1.png" width="500">
+1. 实例域重排序的主要目的是为了`让内存更为紧凑`，因为`Hotspot JVM`在内存中是`8Byte对齐`，必然会出现上面左图那样的内存浪费
+2. 大致原则上是按照`double/long`，`int/float`，`short/char`，`boolean/byte`，`reference`的优先级进行重排序，但还有进一步优化，如果有比自身优先级低的但能填充自己无法填充的区域，则让优先级低的进行填充（表述有点拗口）
+    - 如右图中，`12`的位置原本尝试填充`longValue_1`，但由于`long需要8 Bytes`和`字节对齐`，无法填充，而`intValue_1`恰好能填充这原本会被浪费的空间，让内存更为紧凑
+3. 从上图可知，进行实例域重排序能更有效的利用内存
+
+<h1 id="内部类"><a href="#内部类" class="headerlink" title="内部类"></a>内部类</h1><h2 id="代码-2"><a href="#代码-2" class="headerlink" title="代码"></a>代码</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OuterClass</span> </span>&#123;</span><br><span class="line">    InnerClass innerClassRef;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">OuterClass</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.innerClassRef = <span class="keyword">new</span> InnerClass();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">InnerClass</span> </span>&#123;</span><br><span class="line">        Integer integerRef;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行结果-3"><a href="#运行结果-3" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">me.zhongmingmao.create.classes.OuterClass : shallow size = 16 Bytes , retained size= 40 Bytes</span><br></pre></td></tr></table></figure>
+
+<h2 id="内存映像-3"><a href="#内存映像-3" class="headerlink" title="内存映像"></a>内存映像</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Oop for me/zhongmingmao/create/classes/OuterClass @ 0x00000007bfe30b40 (object size = 16)</span><br><span class="line"> - _mark:    &#123;0&#125; :128250200577</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/OuterClass</span><br><span class="line"> - innerClassRef:    &#123;12&#125; :Oop for me/zhongmingmao/create/classes/OuterClass$InnerClass @ 0x00000007bfe30b50</span><br><span class="line"></span><br><span class="line">Oop for me/zhongmingmao/create/classes/OuterClass$InnerClass @ 0x00000007bfe30b50 (object size = 24)</span><br><span class="line"> - _mark:    &#123;0&#125; :47710727425</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/OuterClass$InnerClass</span><br><span class="line"> - integerRef:   &#123;12&#125; :null</span><br><span class="line"> - this$0:   &#123;16&#125; :Oop for me/zhongmingmao/create/classes/OuterClass @ 0x00000007bfe30b40</span><br></pre></td></tr></table></figure>
+
+<h2 id="对象布局-3"><a href="#对象布局-3" class="headerlink" title="对象布局"></a>对象布局</h2><img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/innerclass.png" width="500">
+`非静态内部类`隐藏有一个的对`外部类的引用`（`this$0`）
+
+<h1 id="继承"><a href="#继承" class="headerlink" title="继承"></a>继承</h1><h2 id="代码-3"><a href="#代码-3" class="headerlink" title="代码"></a>代码</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Father</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> intValue;</span><br><span class="line">    Integer integerRef;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Father</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        integerRef = <span class="keyword">new</span> Integer(<span class="number">1</span> &lt;&lt; <span class="number">10</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Son</span> <span class="keyword">extends</span> <span class="title">Father</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">byte</span> byteValue;</span><br><span class="line">    <span class="keyword">short</span> shortValue;</span><br><span class="line">    Integer[] integerArrayRef = <span class="keyword">new</span> Integer[<span class="number">3</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GranSon</span> <span class="keyword">extends</span> <span class="title">Son</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> booleanValue;</span><br><span class="line">    Father[] fatherArrayRef = <span class="keyword">new</span> Father[<span class="number">3</span>];</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">GranSon</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; fatherArrayRef.length; ++i) &#123;</span><br><span class="line">            fatherArrayRef[i] = <span class="keyword">new</span> Father();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行结果-4"><a href="#运行结果-4" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">me.zhongmingmao.create.classes.Father : shallow size = 24 Bytes , retained size= 40 Bytes</span><br><span class="line">me.zhongmingmao.create.classes.Son : shallow size = 32 Bytes , retained size= 80 Bytes</span><br><span class="line">me.zhongmingmao.create.classes.GranSon : shallow size = 40 Bytes , retained size= 240 Bytes</span><br></pre></td></tr></table></figure>
+
+<h2 id="内存映像-4"><a href="#内存映像-4" class="headerlink" title="内存映像"></a>内存映像</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"># 只摘录了GranSon对象的完整记录，对于Son和Father的分析也是类似的</span><br><span class="line">Oop for me/zhongmingmao/create/classes/GranSon @ 0x00000007bfe364e8 (object size = 40)</span><br><span class="line"> - _mark:    &#123;0&#125; :116709573121</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/GranSon</span><br><span class="line"> - intValue:     &#123;12&#125; :0</span><br><span class="line"> - integerRef:   &#123;16&#125; :Oop for java/lang/Integer @ 0x00000007bfe36510</span><br><span class="line"> - byteValue:    &#123;22&#125; :0</span><br><span class="line"> - shortValue:   &#123;20&#125; :0</span><br><span class="line"> - integerArrayRef:  &#123;24&#125; :ObjArray @ 0x00000007bfe36520</span><br><span class="line"> - booleanValue:     &#123;28&#125; :false</span><br><span class="line"> - fatherArrayRef:   &#123;32&#125; :ObjArray @ 0x00000007bfe365a8</span><br><span class="line"></span><br><span class="line"># integerRef</span><br><span class="line">Oop for java/lang/Integer @ 0x00000007bfe36510 (object size = 16)</span><br><span class="line"> - _mark:    &#123;0&#125; :1</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for java/lang/Integer</span><br><span class="line"> - value:    &#123;12&#125; :1024</span><br><span class="line"></span><br><span class="line"># integerArrayRef</span><br><span class="line">ObjArray @ 0x00000007bfe36520 (object size = 32)</span><br><span class="line"> - _mark:    &#123;0&#125; :440814568449</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :ObjArrayKlass for InstanceKlass for java/lang/Integer</span><br><span class="line"> - 0:    &#123;16&#125; :null</span><br><span class="line"> - 1:    &#123;20&#125; :null</span><br><span class="line"> - 2:    &#123;24&#125; :null</span><br><span class="line"></span><br><span class="line"># fatherArrayRef</span><br><span class="line">ObjArray @ 0x00000007bfe365a8 (object size = 32)</span><br><span class="line"> - _mark:    &#123;0&#125; :131009079297</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :ObjArrayKlass for InstanceKlass for me/zhongmingmao/create/classes/Father</span><br><span class="line"> - 0:    &#123;16&#125; :Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe365c8</span><br><span class="line"> - 1:    &#123;20&#125; :Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe365f0</span><br><span class="line"> - 2:    &#123;24&#125; :Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe36618</span><br><span class="line"></span><br><span class="line"># fatherArrayRef[0]</span><br><span class="line">Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe365c8 (object size = 24)</span><br><span class="line"> - _mark:    &#123;0&#125; :306715851521</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/Father</span><br><span class="line"> - intValue:     &#123;12&#125; :0</span><br><span class="line"> - integerRef:   &#123;16&#125; :Oop for java/lang/Integer @ 0x00000007bfe365e0</span><br><span class="line"></span><br><span class="line">Oop for java/lang/Integer @ 0x00000007bfe365e0 (object size = 16)</span><br><span class="line"> - _mark:    &#123;0&#125; :1</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for java/lang/Integer</span><br><span class="line"> - value:    &#123;12&#125; :1024</span><br><span class="line"></span><br><span class="line"># fatherArrayRef[1]</span><br><span class="line">Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe365f0 (object size = 24)</span><br><span class="line"> - _mark:    &#123;0&#125; :54816361729</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/Father</span><br><span class="line"> - intValue:     &#123;12&#125; :0</span><br><span class="line"> - integerRef:   &#123;16&#125; :Oop for java/lang/Integer @ 0x00000007bfe36608</span><br><span class="line"></span><br><span class="line">Oop for java/lang/Integer @ 0x00000007bfe36608 (object size = 16)</span><br><span class="line"> - _mark:    &#123;0&#125; :1</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for java/lang/Integer</span><br><span class="line"> - value:    &#123;12&#125; :1024</span><br><span class="line"></span><br><span class="line"># fatherArrayRef[2]</span><br><span class="line">Oop for me/zhongmingmao/create/classes/Father @ 0x00000007bfe36618 (object size = 24)</span><br><span class="line"> - _mark:    &#123;0&#125; :101599592961</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for me/zhongmingmao/create/classes/Father</span><br><span class="line"> - intValue:     &#123;12&#125; :0</span><br><span class="line"> - integerRef:   &#123;16&#125; :Oop for java/lang/Integer @ 0x00000007bfe36630</span><br><span class="line"></span><br><span class="line">Oop for java/lang/Integer @ 0x00000007bfe36630 (object size = 16)</span><br><span class="line"> - _mark:    &#123;0&#125; :1</span><br><span class="line"> - _metadata._compressed_klass:  &#123;8&#125; :InstanceKlass for java/lang/Integer</span><br><span class="line"> - value:    &#123;12&#125; :1024</span><br></pre></td></tr></table></figure>
+
+<h2 id="对象布局-4"><a href="#对象布局-4" class="headerlink" title="对象布局"></a>对象布局</h2><img src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/inherit_1.png" width="500">
+1. `父类实例字段在子类实例字段前面`，只有`类自身定义的实例域`才会进行`重排序`，不会跨域到父类或子类
+    - 例如在GranSon的`23`的位置其实可以存放`booleanValue`，但由于来自Son的实例域还有`integerArrayRef`没有填充完，因此只能是`padding`
+    - 因此，`子类实例域不会插入到父类实例域的空隙中`
+2. retained size= 240 Bytes
+    - 240 = (24 + 16) * 3 + 32 + 32 +16 + 40
+
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/11/java-performance-gc/" rel="bookmark">Java性能 -- GC</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/09/java-performance-jit/" rel="bookmark">Java性能 -- JIT</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/13/java-performance-jvm-heap-allocation/" rel="bookmark">Java性能 -- JVM堆内存分配</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/09/07/java-performance-jvm-memory-model/" rel="bookmark">Java性能 -- JVM内存模型</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2019/01/12/jvm-advanced-agent/" rel="bookmark">JVM进阶 -- 浅谈Java Agent</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2016/06/28/jvm-object-layout-2/" title="JVM基础 -- Instrumentation + sa-jdi 实例分析">http://zhongmingmao.me/2016/06/28/jvm-object-layout-2/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> Java</a>
+          
+            <a href="/tags/jvm/" rel="tag"><i class="fa fa-tag"></i> JVM</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/06/26/jvm-object-layout-1/" rel="next" title="JVM基础 -- Instrumentation + sa-jdi 工具构建">
+                <i class="fa fa-chevron-left"></i> JVM基础 -- Instrumentation + sa-jdi 工具构建
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/07/01/jvm-jol-tutorial-1/" rel="prev" title="JVM基础 -- JOL使用教程 1">
+                JVM基础 -- JOL使用教程 1 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#关键概念"><span class="nav-number">1.</span> <span class="nav-text">关键概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#指针压缩"><span class="nav-number">2.</span> <span class="nav-text">指针压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#代码"><span class="nav-number">2.1.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开启压缩"><span class="nav-number">2.2.</span> <span class="nav-text">开启压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#运行结果"><span class="nav-number">2.2.1.</span> <span class="nav-text">运行结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内存映像"><span class="nav-number">2.2.2.</span> <span class="nav-text">内存映像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#对象布局"><span class="nav-number">2.2.3.</span> <span class="nav-text">对象布局</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关闭压缩"><span class="nav-number">2.3.</span> <span class="nav-text">关闭压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#运行结果-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">运行结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内存映像-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">内存映像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#对象布局-1"><span class="nav-number">2.3.3.</span> <span class="nav-text">对象布局</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实例域重排序"><span class="nav-number">3.</span> <span class="nav-text">实例域重排序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#代码-1"><span class="nav-number">3.1.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运行结果-2"><span class="nav-number">3.2.</span> <span class="nav-text">运行结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存映像-2"><span class="nav-number">3.3.</span> <span class="nav-text">内存映像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#对象布局-2"><span class="nav-number">3.4.</span> <span class="nav-text">对象布局</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#内部类"><span class="nav-number">4.</span> <span class="nav-text">内部类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#代码-2"><span class="nav-number">4.1.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运行结果-3"><span class="nav-number">4.2.</span> <span class="nav-text">运行结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存映像-3"><span class="nav-number">4.3.</span> <span class="nav-text">内存映像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#对象布局-3"><span class="nav-number">4.4.</span> <span class="nav-text">对象布局</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#继承"><span class="nav-number">5.</span> <span class="nav-text">继承</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#代码-3"><span class="nav-number">5.1.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运行结果-4"><span class="nav-number">5.2.</span> <span class="nav-text">运行结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存映像-4"><span class="nav-number">5.3.</span> <span class="nav-text">内存映像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#对象布局-4"><span class="nav-number">5.4.</span> <span class="nav-text">对象布局</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

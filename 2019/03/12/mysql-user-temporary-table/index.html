@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="临时表 VS 内存表 内存表，指的是使用Memory引擎的表，建表语法：CREATE TABLE ... ENGINE=Memory 所有数据都保存在内存中，系统重启时被清空，但表结构还在   临时表，可以使用各种引擎 如果使用的是InnoDB或者MyISAM引擎，数据需要写到磁盘上 当然也可以使用Memory引擎">
+<meta name="keywords" content="Storage,MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 用户临时表">
+<meta property="og:url" content="http://zhongmingmao.me/2019/03/12/mysql-user-temporary-table/index.html">
+<meta property="og:site_name" content="点滴积累">
+<meta property="og:description" content="临时表 VS 内存表 内存表，指的是使用Memory引擎的表，建表语法：CREATE TABLE ... ENGINE=Memory 所有数据都保存在内存中，系统重启时被清空，但表结构还在   临时表，可以使用各种引擎 如果使用的是InnoDB或者MyISAM引擎，数据需要写到磁盘上 当然也可以使用Memory引擎">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table.jpg">
+<meta property="og:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table-temporary-table.jpg">
+<meta property="og:updated_time" content="2021-07-12T10:16:16.156Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL -- 用户临时表">
+<meta name="twitter:description" content="临时表 VS 内存表 内存表，指的是使用Memory引擎的表，建表语法：CREATE TABLE ... ENGINE=Memory 所有数据都保存在内存中，系统重启时被清空，但表结构还在   临时表，可以使用各种引擎 如果使用的是InnoDB或者MyISAM引擎，数据需要写到磁盘上 当然也可以使用Memory引擎">
+<meta name="twitter:image" content="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="点滴积累" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://zhongmingmao.me/2019/03/12/mysql-user-temporary-table/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>MySQL -- 用户临时表 | 点滴积累</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">点滴积累</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">34</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">307</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zhongmingmao.me/2019/03/12/mysql-user-temporary-table/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="zhongmingmao">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="点滴积累">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">MySQL -- 用户临时表
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-12 09:18:55" itemprop="dateCreated datePublished" datetime="2019-03-12T09:18:55+08:00">2019-03-12</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/" itemprop="url" rel="index"><span itemprop="name">Storage</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/storage/mysql/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Symbols count in article: </span>
+                
+                <span title="Symbols count in article">4.4k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">8 mins.</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="临时表-VS-内存表"><a href="#临时表-VS-内存表" class="headerlink" title="临时表 VS 内存表"></a>临时表 VS 内存表</h2><ol>
+<li>内存表，指的是使用<code>Memory</code>引擎的表，建表语法：<code>CREATE TABLE ... ENGINE=Memory</code><ul>
+<li><em><strong>所有数据都保存在内存中，系统重启时被清空，但表结构还在</strong></em></li>
+</ul>
+</li>
+<li>临时表，可以使用<strong>各种引擎</strong><ul>
+<li>如果使用的是<code>InnoDB</code>或者<code>MyISAM</code>引擎，数据需要写到磁盘上</li>
+<li>当然也可以使用<code>Memory</code>引擎</li>
+</ul>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="特征"><a href="#特征" class="headerlink" title="特征"></a>特征</h2><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CREATE TEMPORARY TABLE t(c int) ENGINE=MyISAM;<br>（创建临时表）</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>SHOW CREATE TABLE t;<br>(Table ‘test.t’ doesn’t exist)</td>
+</tr>
+<tr>
+<td>CREATE TABLE t(id INT PRIMARY KEY) ENGINE=InnoDB;<br>（创建普通表）</td>
+<td></td>
+</tr>
+<tr>
+<td>SHOW CREATE TABLE t;<br>（显示临时表）</td>
+<td></td>
+</tr>
+<tr>
+<td>SHOW TABLES;<br>（显示普通表）</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (1);</td>
+</tr>
+<tr>
+<td></td>
+<td>SELECT * FROM t;<br>(返回1)</td>
+</tr>
+<tr>
+<td>SELECT * FROM t;<br>(Empty set)</td>
+<td></td>
+</tr>
+</tbody></table>
+<ol>
+<li>建表语法：<code>CREATE TEMPORARY TABLE</code></li>
+<li><strong>临时表只能被创建它的session访问</strong>，对其它线程是不可见的</li>
+<li><strong>临时表可以与普通表同名</strong></li>
+<li>同一个session内有<strong>同名</strong>的临时表和普通表时，<code>SHOW CREATE</code>语句以及<strong>增删改查</strong>语句访问的是<strong>临时表</strong></li>
+<li><code>SHOW TABLES</code>命令<strong>不显示临时表</strong></li>
+<li>在<strong>session结束</strong>时，会<strong>自动删除临时表</strong>，临时表特别适用于<strong>Join优化</strong>的场景<ul>
+<li>不同session的临时表可以<strong>重名</strong>，可以支持多个session并发执行Join优化</li>
+<li>无需担心数据的删除问题，临时表是<strong>自动回收</strong>的</li>
+</ul>
+</li>
+</ol>
+<h2 id="跨库查询"><a href="#跨库查询" class="headerlink" title="跨库查询"></a>跨库查询</h2><p>将一个大表ht，按照字段f，拆分成1024个表，然后分布到32个数据库实例，每个实例32张表<br><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table.jpg" width="800/"></p>
+<ol>
+<li>选择分区Key的依据：<strong>减少跨库查询和跨表查询</strong>，如果大部分语句都会包含f的等值条件，就要用f做分区键</li>
+<li>在Proxy这一层解析完SQL语句后，就能确定将这条语句路由到哪一个分区表做查询<ul>
+<li>例如<code>SELECT v FROM ht WHERE f=N;</code>，通过分表规则来确认需要的数据被放到哪一个分表上</li>
+</ul>
+</li>
+<li>假如表上还有另外一个索引k，<ul>
+<li>对于<code>SELECT v FROM ht WHERE k &gt;= M ORDER BY t_modified DESC LIMIT 100;</code></li>
+<li>没有用到字段f，只能到所有分区中去查找所有满足条件的行，然后再统一做<code>ORDER BY</code>操作</li>
+</ul>
+</li>
+<li>两种实现思路<ul>
+<li>在Proxy层的进程代码中实现排序<ul>
+<li>优点：<strong>处理速度快</strong></li>
+<li>缺点：<strong>开发工作量大</strong>，<strong>对Proxy端压力较大</strong>（内存不足和CPU瓶颈）</li>
+</ul>
+</li>
+<li>从各个分库拿到数据，汇总到一个MySQL实例中的一个表，然后在<strong>汇总表</strong>上做逻辑操作</li>
+</ul>
+</li>
+</ol>
+<h3 id="汇总表方案"><a href="#汇总表方案" class="headerlink" title="汇总表方案"></a>汇总表方案</h3><img src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-sub-db-table-temporary-table.jpg" width="600/">
+
+<ol>
+<li>在汇总库上创建一个临时表temp_ht，表里包含三个字段v、k和t_modified</li>
+<li>在各个分库上执行</li>
+<li><code>SELECT v,k,t_modified FROM ht_x WHERE k &gt;= M ORDER BY t_modified DESC LIMIT 100;</code></li>
+<li>把分库的执行结果插入到临时表temp_ht</li>
+<li>在temp_ht上执行<ul>
+<li><code>SELECT v FROM temp_ht ORDER BY t_modified DESC LIMIT 100;</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="重名"><a href="#重名" class="headerlink" title="重名"></a>重名</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TEMPORARY</span> <span class="keyword">TABLE</span> temp_t(<span class="keyword">id</span> <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"></span><br><span class="line">mysql&gt; SELECT @@tmpdir;</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| @@tmpdir |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| /tmp     |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line"></span><br><span class="line">mysql&gt; system ls -l /tmp</span><br><span class="line">total 108</span><br><span class="line">-rw-rw<span class="comment">---- 1 mysql mysql  8556 Mar 12 05:00 #sql1_1_0.frm</span></span><br><span class="line">-rw-rw<span class="comment">---- 1 mysql mysql 98304 Mar 12 05:00 #sql1_1_0.ibd</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>创建一个frm文件，用于保存<strong>表结构定义</strong>，放在<strong>临时文件目录</strong><ul>
+<li>前缀为<code>#sql{进程ID}_{线程ID}_{序号}</code>，后缀为<code>.frm</code></li>
+</ul>
+</li>
+<li>表中数据的存放<ul>
+<li>MySQL 5.6及之前，MySQL会在<strong>临时文件目录</strong>下创建一个<strong>相同的前缀</strong>，以<code>.ibd</code>为后缀</li>
+<li>从MySQL 5.7开始，MySQL引入了一个<strong>临时文件表空间</strong>，用来存放临时文件的数据，不再需要ibd</li>
+</ul>
+</li>
+<li>从文件名的前缀规则可知，临时表和普通表的<strong>存储是不一样</strong>的，因此可以<strong>重名</strong></li>
+</ol>
+<h3 id="磁盘存储"><a href="#磁盘存储" class="headerlink" title="磁盘存储"></a>磁盘存储</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CREATE TEMPORARY TABLE t1(id INT);<br>// #sql1_2_0.frm</td>
+<td></td>
+</tr>
+<tr>
+<td>CREATE TEMPORARY TABLE t2(id INT);<br>// #sql1_2_1.frm</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>CREATE TEMPORARY TABLE t1(id INT);<br>// #sql1_3_0.frm</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session A的线程ID为2，session B的线程ID为3</span></span><br><span class="line"><span class="comment">-- session A和session B创建的临时表，在磁盘上的文件是不会重名的</span></span><br><span class="line">mysql&gt; SHOW PROCESSLIST;</span><br><span class="line">+<span class="comment">----+------+-----------+------+---------+------+-------+------------------+</span></span><br><span class="line">| Id | User | Host      | db   | Command | Time | State | Info             |</span><br><span class="line">+<span class="comment">----+------+-----------+------+---------+------+-------+------------------+</span></span><br><span class="line">|  2 | root | localhost | test | Sleep   |  127 |       | NULL             |</span><br><span class="line">|  3 | root | localhost | test | Query   |    0 | init  | <span class="keyword">SHOW</span> <span class="keyword">PROCESSLIST</span> |</span><br><span class="line">+<span class="comment">----+------+-----------+------+---------+------+-------+------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="内存区分"><a href="#内存区分" class="headerlink" title="内存区分"></a>内存区分</h3><ol>
+<li>每个表都有一个对应的<code>table_def_key</code></li>
+<li>普通表的<code>table_def_key</code>：<strong>库名 + 表名</strong></li>
+<li>临时表的<code>table_def_key</code>：<strong>库名 + 表名 + server_id + thread_id</strong><ul>
+<li>session A和session B创建的临时表t1，<strong>磁盘文件名不同</strong>，<strong><code>table_def_key</code>也不同</strong>，因此可以<strong>并存</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><ol>
+<li>每个线程都维护自己的<strong>临时表链表</strong></li>
+<li>每次session内操作表的时候，先遍历链表，检查是否有<strong>同名的临时表</strong>（<strong>临时表优先</strong>）</li>
+<li>在session结束时，对链表里的每个临时表，执行删除表操作<ul>
+<li><code>DROP TEMPORARY TABLE t1</code></li>
+<li><code>binlog</code>中也记录了上面的删除命令</li>
+</ul>
+</li>
+</ol>
+<h2 id="主备复制"><a href="#主备复制" class="headerlink" title="主备复制"></a>主备复制</h2><p>写binlog，意味着备库需要</p>
+<h3 id="binlog-format"><a href="#binlog-format" class="headerlink" title="binlog_format"></a>binlog_format</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t_normal(<span class="keyword">id</span> <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>, c <span class="built_in">INT</span>) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>; <span class="comment">-- Q1</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TEMPORARY</span> <span class="keyword">TABLE</span> temp_t <span class="keyword">LIKE</span> t_normal; <span class="comment">-- Q2</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> temp_t <span class="keyword">VALUES</span>(<span class="number">1</span>,<span class="number">1</span>); <span class="comment">-- Q3</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_normal <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> temp_t; <span class="comment">-- Q4</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>binlog_format=STATEMENT/MIXED</code><ul>
+<li>如果关于临时表的操作都不记录，那么记录到binlog的语句就只有Q1和Q4</li>
+<li>备库执行到Q4时会报错：表temp_t不存在</li>
+<li>Q2会传到备库执行，备库的同步线程就会创建这个临时表<ul>
+<li>主库在线程退出时，就会自动删除临时表</li>
+<li>但备库同步线程时<strong>持续运行</strong>的，因此需要为主库的binlog自动加上<code>DROP TEMPORARY TABLE</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>binlog_format=ROW</code><ul>
+<li>与临时表相关的语句，都不会记录到binlog</li>
+<li>记录Q4时，<code>write_row enent</code>里面记录的逻辑是：插入一行数据(1,1)</li>
+<li><code>DROP TABLE t_normal，temp_t</code>，binlog只能重写成<ul>
+<li><code>DROP TABLE t_normal /* generated by server */</code></li>
+<li>这是因为备库上并没有temp_t，需要重写后再传到备库去执行，才不会导致备库同步线程停止</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="同名临时表"><a href="#同名临时表" class="headerlink" title="同名临时表"></a>同名临时表</h3><p>实例S是实例M的备库</p>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>M session A</th>
+<th>M session B</th>
+<th>S的应用日志线程</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>CREATE TEMPORARY TABLE t1(id INT);</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td></td>
+<td></td>
+<td>CREATE TEMPORARY TABLE t1(id INT);</td>
+</tr>
+<tr>
+<td>T3</td>
+<td></td>
+<td>CREATE TEMPORARY TABLE t1(id INT);</td>
+<td></td>
+</tr>
+<tr>
+<td>T4</td>
+<td></td>
+<td></td>
+<td>CREATE TEMPORARY TABLE t1(id INT);</td>
+</tr>
+</tbody></table>
+<ol>
+<li>主库上的两个session创建了同名的临时表t1，这两个语句都会被传到备库S上去执行</li>
+<li>但备库的应用日志线程是共用的（哪怕是多线程复制，两个语句也有可能被分配给同一个workder）<ul>
+<li><code>CREATE TEMPORARY TABLE</code>可能会被先后执行两次</li>
+</ul>
+</li>
+<li>MySQL在记录binlog的时候，会把主库执行这个语句的<strong>thread_id</strong>写到binlog<ul>
+<li>备库的应用线程就能知道每个语句的<strong>主库thread_id</strong><ul>
+<li>利用这个<strong>thread_id</strong>来构造临时表的<code>table_def_key</code></li>
+</ul>
+</li>
+<li>session A的临时表t1，在备库上的<code>table_def_key</code><ul>
+<li>库名 + t1 + M的server_id + <strong>session A的thread_id</strong></li>
+</ul>
+</li>
+<li>session B的临时表t2，在备库上的<code>table_def_key</code><ul>
+<li>库名 + t1 + M的server_id + <strong>session B的thread_id</strong></li>
+</ul>
+</li>
+<li>由于<code>table_def_key</code>是不同，所以两个表在备库的应用线程里面<strong>不会冲突</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+
+      
+    </div>
+
+    
+      
+
+  <div class="popular-posts-header">Related Posts</div>
+  <ul class="popular-posts">
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/12/innodb-btree-index/" rel="bookmark">InnoDB -- B+Tree索引</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/21/innodb-isolation-level/" rel="bookmark">InnoDB -- 事务隔离级别</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/06/innodb-table-logical-structure/" rel="bookmark">InnoDB -- 逻辑存储</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/08/innodb-table-page-structure/" rel="bookmark">InnoDB -- 数据页结构</a></div>
+      
+    </li>
+  
+    <li class="popular-posts-item">
+      
+      
+      <div class="popular-posts-title"><a href="/2017/05/07/innodb-table-row-format/" rel="bookmark">InnoDB -- 行记录格式</a></div>
+      
+    </li>
+  
+  </ul>
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>zhongmingmao</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://zhongmingmao.me/2019/03/12/mysql-user-temporary-table/" title="MySQL -- 用户临时表">http://zhongmingmao.me/2019/03/12/mysql-user-temporary-table/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"><i class="fa fa-tag"></i> Storage</a>
+          
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/11/mysql-join-opt/" rel="next" title="MySQL -- JOIN优化">
+                <i class="fa fa-chevron-left"></i> MySQL -- JOIN优化
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/13/mysql-internal-temporary-table/" rel="prev" title="MySQL -- 内部临时表">
+                MySQL -- 内部临时表 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/dog.jpg" alt="zhongmingmao">
+            
+              <p class="site-author-name" itemprop="name">zhongmingmao</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#临时表-VS-内存表"><span class="nav-number">1.</span> <span class="nav-text">临时表 VS 内存表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#特征"><span class="nav-number">2.</span> <span class="nav-text">特征</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#跨库查询"><span class="nav-number">3.</span> <span class="nav-text">跨库查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#汇总表方案"><span class="nav-number">3.1.</span> <span class="nav-text">汇总表方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重名"><span class="nav-number">4.</span> <span class="nav-text">重名</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘存储"><span class="nav-number">4.1.</span> <span class="nav-text">磁盘存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内存区分"><span class="nav-number">4.2.</span> <span class="nav-text">内存区分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现"><span class="nav-number">4.3.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主备复制"><span class="nav-number">5.</span> <span class="nav-text">主备复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#binlog-format"><span class="nav-number">5.1.</span> <span class="nav-text">binlog_format</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同名临时表"><span class="nav-number">5.2.</span> <span class="nav-text">同名临时表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhongmingmao</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Symbols count total: </span>
+    
+    <span title="Symbols count total">1.9m</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Reading time total &asymp;</span>
+    
+    <span title="Reading time total">56:19</span>
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.1.2"></script>
+
+  <script src="/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.1.2"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.1.2"></script>
+<script src="/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.json";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>
