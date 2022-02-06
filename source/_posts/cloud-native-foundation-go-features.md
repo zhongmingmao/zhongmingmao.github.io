@@ -240,9 +240,11 @@ type Car struct { // 只有属性
 
 // Duck Type
 func (h *Human) getName() string {
+	// 指针
 	return h.firstName + "," + h.lastName
 }
-func (c *Car) getName() string {
+func (c Car) getName() string {
+	// 结构体
 	return c.factory + "-" + c.model
 }
 
@@ -263,6 +265,53 @@ func main() {
 	}
 	// zhongming,mao
 	// benz-s
+}
+```
+
+```go
+type ParameterStruct struct {
+	Name string
+}
+
+func changeParameter(param *ParameterStruct, v string) *ParameterStruct {
+	// 值传递：值为指针值，两个指针指向同一份内存地址
+	// 拷贝指针，会影响外部
+	param.Name = v
+	return param
+}
+func canNotChangeParameter(param ParameterStruct, v string) *ParameterStruct {
+	// 值传递：值为结构体，分配新的内存
+	// 拷贝结构体，不会影响外部
+	param.Name = v
+	return &param
+}
+
+func main() {
+	a := "a"
+	p := &a
+	println(a) // a
+	println(p) // 0xc000068ee0
+
+	b := *&a    // 值传递，分配新的内存地址
+	println(b)  // a
+	println(&b) // 0xc000068ed0
+
+	a = "b"     // 内存地址没有发生变化
+	println(a)  // b
+	println(&a) // 0xc000068ee0
+
+	b = "b"     // 内存地址没有发生变化
+	println(b)  // b
+	println(&b) // 0xc000068ed0
+
+	param := ParameterStruct{Name: "aaa"}
+	fmt.Println(param) // {aaa}
+
+	p1 := changeParameter(&param, "bbb")
+	fmt.Printf("%v, %v\n", p1 == &param, param) // true, {bbb}
+
+	p2 := canNotChangeParameter(param, "ccc")
+	fmt.Printf("%v, %v\n", p2 == &param, param) // false, {bbb}
 }
 ```
 
@@ -364,8 +413,10 @@ fmt.Println(*name, age)
 ```
 
 ```
-> go run main.go -name=z -age=1
-z 1
+# go build main.go
+
+# ./main -name=y --age 99
+y 99
 ```
 
 ## Init 函数
@@ -374,15 +425,47 @@ z 1
 2. **谨慎**使用 init 函数
    - 当多个项目引用同一项目，且被引用的项目的初始化在 init 函数中完成，并且**不可重复运行**时，会导致启动错误
 
-```go
-var a = 0
+```go init/a/init.go
+package a
+
+import (
+	_ "init/b"
+)
 
 func init() {
-	a = 1
+	println("init from a")
+}
+```
+
+```go init/b/init.go
+package b
+
+func init() {
+	println("init from b")
+}
+```
+
+```go main.go
+package main
+
+import (
+	_ "init/a"
+	_ "init/b"
+)
+
+var v = 0
+
+func init() {
+	println("init from main")
+	v = 1
 }
 
 func main() {
-	fmt.Println(a) // 1
+	println("main", v)
+	// init from b
+	// init from a
+	// init from main
+	// main 1
 }
 ```
 
@@ -434,17 +517,31 @@ s = append(s, "a", "b", "c")
 
 ## 回调函数
 
-1. **函数作为参数**传入其他函数，并在其它函数内部进行**调用**
-2. 类似于 Java 的**函数式接口**（`@FunctionalInterface`）
+> **函数作为参数**传入其他函数，并在其它函数内部进行**调用**
 
 ```go
-strings.IndexFunc("", unicode.IsSpace)
+func main() {
+	DoOperation(10, increase) // 11
+	DoOperation(10, decrease) // 9
+}
+
+func DoOperation(y int, f func(int, int)) {
+	f(y, 1)
+}
+
+func increase(a, b int) {
+	println(a + b)
+}
+
+func decrease(a, b int) {
+	println(a - b)
+}
 ```
 
 ## 闭包
 
 1. 闭包的能力：可以在一个**内层**函数中访问到其**外层**函数的作用域
-2. 匿名函数
+2. **闭包 = 匿名函数 ！！**
    - **不能独立存在**
    - 可以**赋值给其它变量**：`x := func() {}`
    - 可以**直接调用**: `func(x, y int) { println(x + y) }(1, 2)`
@@ -545,6 +642,60 @@ func main() {
 }
 ```
 
+# JSON
+
+> json包使用 `map[string]interface{}` 和 `[]interface{}` 保存任意对象
+
+```go
+type Student struct {
+	Name  string `json:"name"`
+	sex   string
+	Class *Class `json:"class"`
+}
+
+type Class struct {
+	Name string
+}
+
+func main() {
+	class := new(Class)
+	class.Name = "c"
+
+	student := Student{
+		Name:  "z",
+		sex:   "male",
+		Class: class,
+	}
+
+	if bytes, err := json.Marshal(student); err == nil {
+		fmt.Println(string(bytes)) // {"name":"z","class":{"Name":"c"}}
+
+		// 解析任意对象
+		var obj interface{}
+		if err := json.Unmarshal(bytes, &obj); err == nil {
+			// Type assertions: v, ok = x.(T)
+			// 	If T is not an interface type, x.(T) asserts that the dynamic type of x is identical to the type T.
+			//	If T is an interface type, x.(T) asserts that the dynamic type of x implements the interface T.
+			if m, ok := obj.(map[string]interface{}); ok {
+				for key, v := range m {
+					// Type switches
+					switch value := v.(type) {
+					case string:
+						fmt.Printf("key: %v, value: %v, type: %T\n", key, value, value)
+					case interface{}:
+						fmt.Printf("key: %v, value: %v, type: %T\n", key, value, value)
+					default:
+						fmt.Printf("key: %v, value: %v, type: %T\n", key, value, value)
+					}
+				}
+				// key: name, value: z, type: string
+				// key: class, value: map[Name:c], type: map[string]interface {}
+			}
+		}
+	}
+}
+```
+
 # 面向对象
 
 | 特性 | 描述                                       |
@@ -578,6 +729,28 @@ println(e1.Error(), e2.Error()) // NotFound error_1
 
 1. 作用：函数返回前执行某个语句或者函数，等同于 Java 的 **finally**
 2. 使用场景：**关闭打开的资源**
+2. Defer 的执行顺序类似于**栈**：先定义后执行
+
+```go
+func main() {
+	defer print(1)
+	defer print(2)
+	defer print(3)
+	// 321
+}
+```
+
+```go
+lock := sync.Mutex{}
+for i := 0; i < 3; i++ {
+  i := i
+  go func() { // 使用闭包解决死锁，保证 Go Routine 结束的时候执行 defer 里面的解锁逻辑
+    defer lock.Unlock()
+    lock.Lock()
+    println(i)
+  }()
+}
+```
 
 ## Panic & Recover
 
@@ -589,6 +762,7 @@ println(e1.Error(), e2.Error()) // NotFound error_1
    - 函数从 panic 或者错误场景中恢复
 
 ```go
+// defer + recover
 defer func() {
   fmt.Println("defer func is called")
   if err := recover(); err != nil {
@@ -601,6 +775,11 @@ panic("a panic is triggered")
 ```
 
 # 并发
+
+## 并发 & 并行
+
+1. 并发（**单核**）：多个事件**间隔**发生
+2. 并行（**多核**）：多个事件**同时**发生
 
 ## 协程
 
@@ -782,29 +961,75 @@ select {
 
 ### Stop Routine
 
+#### Done Channel
+
 ```go
-func main() {
-	done1 := make(chan bool)
-	done2 := make(chan bool)
+messages := make(chan int, 10)
+defer close(messages)
 
-	startRoutine(done1)
-	startRoutine(done2)
+// consumer
+done := make(chan bool)
+go func() {
+  ticker := time.NewTicker(time.Second)
+  for range ticker.C {
+    select {
+      case <-done:
+      println("child process interrupt...")
+      return // 退出 Routine
+      default:
+      fmt.Printf("receive message: %d\n", <-messages)
+    }
+  }
+}()
 
-	done1 <- true // v=true, notClosed=true
-	close(done2)  // v=false, notClosed=false
-
-	time.Sleep(time.Second)
+// producer
+for i := 0; i < 10; i++ {
+  messages <- i
 }
 
-func startRoutine(done chan bool) {
-	go func() {
-		for {
-			select {
-			case v, notClosed := <-done:
-				fmt.Printf("v=%v, notClosed=%v\n", v, notClosed)
-				return // stop routine
-			}
-		}
-	}()
-}
+time.Sleep(3 * time.Second)
+close(done)
+time.Sleep(time.Second)
+println("main process exit!")
+
+// receive message: 0
+// receive message: 1
+// child process interrupt...
+// main process exit!
 ```
+
+#### Context
+
+```go
+baseCtx := context.Background()
+valuedCtx := context.WithValue(baseCtx, "name", "zhongmingmao")
+
+go func(c context.Context) {
+  fmt.Println(c.Value("name")) // zhongmingmao
+}(valuedCtx)
+
+timeoutCtx, cancel := context.WithTimeout(baseCtx, time.Second)
+defer cancel()
+go func(ctx context.Context) {
+  ticker := time.NewTicker(time.Second)
+  for range ticker.C {
+    select {
+      case <-ctx.Done(): // 超时后会触发
+      println("child process interrupt...")
+      return
+      default:
+      println("enter default")
+    }
+  }
+}(timeoutCtx)
+
+select {
+  case <-timeoutCtx.Done():
+  time.Sleep(time.Second)
+  println("main process exit!")
+}
+// enter default
+// child process interrupt...
+// main process exit!
+```
+
