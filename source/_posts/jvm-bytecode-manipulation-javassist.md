@@ -1,5 +1,5 @@
 ---
-title: Bytecode Manipulation -- Javassist
+title: Bytecode Manipulation - Javassist
 mathjax: false
 date: 2022-02-10 00:06:25
 categories:

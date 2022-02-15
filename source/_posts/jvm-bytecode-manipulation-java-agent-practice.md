@@ -1,5 +1,5 @@
 ---
-title: Bytecode Manipulation -- Java Agent Practice
+title: Bytecode Manipulation - Java Agent Practice
 mathjax: false
 date: 2022-02-11 00:06:25
 categories:

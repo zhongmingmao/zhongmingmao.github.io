@@ -1,5 +1,5 @@
 ---
-title: Cloud Native Foundation -- Go Memory Management
+title: Cloud Native Foundation - Go Memory Management
 mathjax: false
 date: 2022-02-12 00:06:25
 categories:

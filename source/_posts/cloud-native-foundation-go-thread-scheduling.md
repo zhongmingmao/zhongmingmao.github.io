@@ -1,5 +1,5 @@
 ---
-title: Cloud Native Foundation -- Go Thread Scheduling
+title: Cloud Native Foundation - Go Thread Scheduling
 mathjax: false
 date: 2022-02-08 00:06:25
 categories:
