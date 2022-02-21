@@ -1,7 +1,7 @@
 ---
 title: Bytecode Manipulation - Java Agent Practice
 mathjax: false
-date: 2022-02-11 00:06:25
+date: 2022-02-10 00:06:25
 categories:
   - Java
   - JVM
@@ -11,6 +11,26 @@ tags:
   - JVM
   - Bytecode Manipulation
 ---
+
+# 概念
+
+## Instrument
+
+1. Instrument 是 JVM 提供的一个可以**修改已加载类**的类库，依赖于 **JVMTI** 的 **Attach API** 机制
+2. 要使用 Instrument 的类修改功能，需要实现 `java.lang.instrument.ClassFileTransformer` 接口
+   - 可以在 `ClassFileTransformer#transform` 中利用 ASM 或者 Byte Buddy 等工具对字节码进行操作
+3. Instrument 通过与 Java Agent 结合来注入到 JVM 中
+
+## JVMTI & Agent
+
+1. **JPDA**（Java Platform Debugger Architecture）是 **JDK 标准**，必须实现
+   - 如果 JVM 启动时开启了 JPDA，那么类是**允许被重新加载**的
+   - 已加载的旧版类信息被**卸载**，然后重新加载新版本的类
+2. JVMTI 是 JVM 提供的一套对 JVM 进行操作的工具接口，**Agent 是 JVMTI 的一种实现**
+3. Attach API 的作用：提供 **JVM 进程间通信**的能力
+   - Attach 后，目标 JVM 在运行时走到 Agent 中定义的 `agentmain` 方法
+
+<!-- more -->
 
 # Modules
 
@@ -45,8 +65,6 @@ public class AppApplication {
 $ mvn clean package spring-boot:repackage
 $ java -jar target/app-0.0.1-SNAPSHOT.jar
 ```
-
-<!-- more -->
 
 # Static Load
 
