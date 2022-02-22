@@ -21,6 +21,8 @@ tags:
 3. ASM offers similar functionality as other Java bytecode frameworks, but is focused on **performance**.
    - Because it was designed and implemented to be as **small** and as **fast** as possible, it is well suited for use in **dynamic** systems (but can of course be used in a **static** way too, e.g. in compilers).
 
+<!-- more -->
+
 # Introduction
 
 ## Motivations
@@ -33,8 +35,6 @@ tags:
    - is used in **compilers**. This include **traditional compilers**, but also **stub or skeleton compilers** used for distributed programming, **Just in Time compilers**, etc.
 3. **Program transformation**
    - can be used to **optimize or obfuscate programs**, to insert **debugging** or **performance monitoring** code into applications, for **aspect oriented programming**, etc.
-
-<!-- more -->
 
 ### Advantages of working on compiled classes
 
