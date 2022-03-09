@@ -6,10 +6,10 @@ categories:
 
   - Cloud Native
   - Cloud Native Foundation
-  - GO
+  - Go
 tags:
   - Cloud Native
-  - GO
+  - Go
 ---
 
 # 特点

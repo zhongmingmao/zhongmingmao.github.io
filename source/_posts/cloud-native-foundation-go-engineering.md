@@ -5,10 +5,10 @@ date: 2022-02-13 00:06:25
 categories:
   - Cloud Native
   - Cloud Native Foundation
-  - GO
+  - Go
 tags:
   - Cloud Native
-  - GO
+  - Go
 ---
 
 # IO 模型
