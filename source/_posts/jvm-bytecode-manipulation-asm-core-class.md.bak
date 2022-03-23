@@ -1,0 +1,361 @@
+---
+title: ASM Core API - Class
+mathjax: false
+date: 2022-02-23 00:06:25
+categories:
+  - Java
+  - JVM
+  - Bytecode Manipulation
+tags:
+  - Java
+  - JVM
+  - Bytecode Manipulation
+  - ASM
+---
+
+# Structure
+
+## Overview
+
+### Compiled Class
+
+#### Sections
+
+1. A section describing the **modifiers** (such as public or private), the **name**, the **super class**, the **interfaces** and the **annotations** of the ***class***.
+2. One section per ***field*** declared in this class.
+   - Each section describes the **modifiers**, the **name**, the **type** and the **annotations** of a field.
+3. One section per ***method*** and **constructor** declared in this class.
+   - Each section describes the **modifiers**, the **name**, the **return and parameter types**, and the **annotations** of a method. 
+   - It also contains the **compiled code of the method**, in the form of a sequence of Java bytecode instructions.
+
+<!-- more -->
+
+> \* means zero or more
+
+![image-20220222170400634](https://jvm-byte-coding-1253868755.cos.ap-guangzhou.myqcloud.com/asm/image-20220222170400634.png)
+
+#### Source vs Compiled Class
+
+1. A **compiled class** describes **only one class**, while a source file can contain several classes.
+2. A compiled class **does not contain comments**.
+3. A compiled class **does not contain a package and import section**, so all type names must be **fully qualified**.
+4. A compiled class contains a ***constant pool*** section.
+   - These constants are **defined only once**, in the constant pool section, and are **referenced by their index** in **all other sections** of the class file.
+5. **Java types** are represented differently in compiled and source classes.
+
+## Internal names
+
+1. The internal name of a class is just the **fully qualified** name of this class, where **dots** are replaced with **slashes**. 
+2. For example the internal name of `String` is `java/lang/String`.
+
+```java
+  #30 = Class              #38            // java/lang/System
+  #31 = NameAndType        #39:#40        // out:Ljava/io/PrintStream;
+  #32 = Class              #41            // java/io/PrintStream
+```
+
+## Type descriptors
+
+1. **Internal names** are used only for types that are constrained to be **class** or **interface** types.
+2. In all other situations, such as **field types**, **Java types** are represented in compiled classes with *type descriptors*
+   - The descriptors of the **primitive types** are **single** characters.
+   - The descriptor of a **class type** is the **internal name** of this class, preceded by **L** and followed by a **semicolon**.
+   - The descriptor of **an array type** is a **square bracket** followed by the descriptor of the **array element type**.
+
+| Java type    | Type descriptor        |
+| ------------ | ---------------------- |
+| **boolean**  | **Z**                  |
+| char         | C                      |
+| byte         | B                      |
+| short        | S                      |
+| int          | I                      |
+| float        | F                      |
+| **long**     | **J**                  |
+| double       | D                      |
+| `Object`     | `Ljava/lang/Object;`   |
+| `int[]`      | `[I`                   |
+| `Object[][]` | `[[Ljava/lang/Object;` |
+
+## Method descriptors
+
+1. A method descriptor is **a list of type descriptors** that describe the **parameter types** and the **return type** of a method, **in a single string**.
+2. A method descriptor starts with a **left parenthesis**, followed by the **type descriptors of each formal parameter**, followed by a **right parenthesis**, followed by the **type descriptor of the return type**, or **V** if the method returns **void** 
+   - A method descriptor **does not contain** the **method’s name** or the **argument names**.
+
+| Method declaration in source file | Method descriptor         |
+| --------------------------------- | ------------------------- |
+| `void m(int i, float f)`          | `(IF)V`                   |
+| `int m(Object o)`                 | `(Ljava/lang/Object;)I`   |
+| `int[] m(int i, String s)`        | `(ILjava/lang/String;)[I` |
+| `Object m(int[] i)`               | `([I)Ljava/lang/Object;`  |
+
+# Interfaces & Components
+
+## Presentation
+
+1. The ASM API for **generating** and **transforming** compiled classes is based on the **`ClassVisitor`** abstract class.
+2. Each method in `ClassVisitor` corresponds to the **class file structure section** of the same name.
+   - Simple sections are visited with a **single method call** whose arguments describe their content, and which returns **void**.
+     - **visitEnd**, **visitNestHost**
+   - Sections whose **content** can be of **arbitrary length** and complexity are visited with a initial method call that returns an **auxiliary visitor** class.
+     - This is the case of the **visitAnnotation**, **visitField** and **visitMethod** methods, which return an **AnnotationVisitor**, a **FieldVisitor** and a **MethodVisitor** respectively.
+     - The same principles are used **recursively** for these auxiliary classes.
+3. The methods of the ClassVisitor class must be called in the **following order** -- `@ASM4`
+   - `visit [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )* ( visitInnerClass | visitField | visitMethod )* visitEnd`
+   - This means that visit must be called first, followed by **at most one** call to visitSource, followed by at most one call to visitOuterClass, followed by **any number of** calls **in any order** to visitAnnotation and visitAttribute, followed by any number of calls in any order to visitInnerClass, visitField and visitMethod, and terminated by a single call to visitEnd.
+4. ASM provides three core components based on the `ClassVisitor` API to generate and transform classes
+   - **ClassReader**
+     - The `ClassReader` class parses a **compiled class** given as a **byte array**, and calls the corresponding `visitXxx` methods on the `ClassVisitor` instance passed as argument to its `accept` method. It can be seen as an **event producer**.
+   - **ClassWriter**
+     - The `ClassWriter` class is **a subclass of the ClassVisitor** abstract class that **builds compiled classes directly in binary form**. It produces as output a **byte array** containing the **compiled class**, which can be retrieved with the `toByteArray` method. It can be seen as an **event consumer**.
+   - **ClassVisitor**
+     - The `ClassVisitor` class **delegates** all the method calls it receives to **another** ClassVisitor instance. It can be seen as an **event filter**.
+
+![image-20220222183154235](https://jvm-byte-coding-1253868755.cos.ap-guangzhou.myqcloud.com/asm/image-20220222183154235.png)
+
+![image-20220222183319377](https://jvm-byte-coding-1253868755.cos.ap-guangzhou.myqcloud.com/asm/image-20220222183319377.png)
+
+## Parsing classes
+
+> The only required component to **parse an existing class** is the **ClassReader** component.
+
+```java ClassPrinter
+public class ClassPrinter extends ClassVisitor {
+
+  public ClassPrinter() {
+    super(ASM9);
+  }
+
+  @Override
+  public void visit(
+      int version,
+      int access,
+      String name,
+      String signature,
+      String superName,
+      String[] interfaces) {
+    System.out.printf(
+        "%s extends %s implements %s {%n", name, superName, String.join(",", interfaces));
+  }
+
+  @Override
+  public FieldVisitor visitField(
+      int access, String name, String descriptor, String signature, Object value) {
+    System.out.printf("    %s %s%n", name, descriptor);
+    return null;
+  }
+
+  @Override
+  public MethodVisitor visitMethod(
+      int access, String name, String descriptor, String signature, String[] exceptions) {
+    System.out.printf("    %s %s%n", name, descriptor);
+    return null;
+  }
+
+  @Override
+  public void visitEnd() {
+    System.out.println("}");
+  }
+}
+```
+
+```java
+public class ClassPrinterTest {
+
+  @Test
+  public void printTest() throws IOException {
+    ClassReader cr = new ClassReader("me.zhongmingmao.asm.core.klass.Man");
+    ClassVisitor cv = new ClassPrinter();
+    cr.accept(cv, 0);
+  }
+}
+
+interface Human {
+  void speak();
+}
+
+class Man implements Human {
+
+  private int age;
+
+  @Override
+  public void speak() {
+    System.out.println("Hello");
+  }
+}
+```
+
+```java
+me/zhongmingmao/asm/core/klass/Man extends java/lang/Object implements me/zhongmingmao/asm/core/klass/Human {
+    age I
+    <init> ()V
+    speak ()V
+}
+```
+
+## Generating classes
+
+> The only required component to **generate a class** is the **ClassWriter** component.
+
+### Expected
+
+```java
+package me.zhongmingmao.asm.core.klass.generating;
+
+public interface Job extends Runnable {
+
+  int COUNT = 100;
+
+  int take();
+}
+```
+
+```java
+Warning: Binary file Job contains me.zhongmingmao.asm.core.klass.generating.Job
+Classfile /Users/zhongmingmao/Downloads/tmp/Job.class
+  Last modified Feb 23, 2022; size 225 bytes
+  MD5 checksum 61d8c5f44b2f400acea04d611bc661aa
+  Compiled from "Job.java"
+public interface me.zhongmingmao.asm.core.klass.generating.Job extends java.lang.Runnable
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_INTERFACE, ACC_ABSTRACT
+Constant pool:
+   #1 = Class              #12            // me/zhongmingmao/asm/core/klass/generating/Job
+   #2 = Class              #13            // java/lang/Object
+   #3 = Class              #14            // java/lang/Runnable
+   #4 = Utf8               COUNT
+   #5 = Utf8               I
+   #6 = Utf8               ConstantValue
+   #7 = Integer            100
+   #8 = Utf8               take
+   #9 = Utf8               ()I
+  #10 = Utf8               SourceFile
+  #11 = Utf8               Job.java
+  #12 = Utf8               me/zhongmingmao/asm/core/klass/generating/Job
+  #13 = Utf8               java/lang/Object
+  #14 = Utf8               java/lang/Runnable
+{
+  public static final int COUNT;
+    descriptor: I
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: int 100
+
+  public abstract int take();
+    descriptor: ()I
+    flags: ACC_PUBLIC, ACC_ABSTRACT
+}
+SourceFile: "Job.java"
+```
+
+### ClassGenerator
+
+1. The call to the `visit` method defines the **class header**.
+   - The `V1_7` argument is a constant defined, like all other ASM constants, in the ASM `Opcodes` interface. It specifies the **class version**, Java 1.7.
+     - `int V1_7 = 0 << 16 | 51`
+   - The `ACC_XXX` constants are flags that correspond to **Java modifiers**. Here we specify that the class is an **interface**, and that it is **public** and **abstract** (because it **cannot be instantiated**).
+   - The next argument specifies the **class name**, in **internal form**.
+     - compiled classes do not contain a package or import section, so all class names must be **fully qualified**.
+   - The next argument corresponds to **generics**.
+     - it is `null` because the interface is **not parameterized** by a type variable.
+   - The fifth argument is the **super class**, in **internal form**.
+     - interface classes implicitly inherit from Object
+   - The last argument is **an array of the interfaces** that are extended, specified by their **internal names**.
+2. The next call to `visitField` is used **to define an interface field**.
+   - The first argument is a set of flags that correspond to **Java modifiers**. Here we specify that the fields are **public**, **final** and **static**.
+   - The second argument is the **name of the field**, as it appears in source code.
+   - The third argument is the **type of the field**, in **type descriptor form**.
+   - The fourth argument corresponds to **generics**.
+     - it is null because the field types are not using generics.
+   - The last argument is the field’s **constant** value
+     - this argument must be used only for **truly constant fields**, i.e. **final static fields**. For other fields it must be **null**.
+   - Since there are **no annotations** here, we call the `visitEnd` method of the returned **FieldVisitor** immediately, i.e. without any call to its `visitAnnotation` or `visitAttribute` methods.
+3. The `visitMethod` call is used to **define the `take` method**.
+   - Here again the first argument is a set of flags that correspond to **Java modifiers**.
+   - The second argument is the **method name**.
+   - The third argument is the **descriptor of the method**.
+   - The fourth argument corresponds to **generics**.
+     - it is null because the method is not using generics.
+   - The last argument is an **array of the exceptions** that can be thrown by the method, specified by their **internal names**.
+     - Here it is null because the method does not declare any exception.
+   - The `visitMethod` method returns a **MethodVisitor**, which can be used to define the method’s **annotations** and **attributes**, and most importantly the method’s **code**.
+     - Here, since there are no annotations and since the method is **abstract**, we call the `visitEnd` method of the returned MethodVisitor immediately.
+4. Finally a last call to `visitEnd` is used to inform **cw** that **the class is finished** and a call to `toByteArray` is used to retrieve it as a **byte array**.
+
+```java
+public class ClassGenerator {
+
+  public static void main(String[] args) throws IOException {
+    ClassWriter cw = new ClassWriter(0);
+    cw.visit(
+        V1_7,
+        ACC_PUBLIC | ACC_INTERFACE | ACC_ABSTRACT,
+        "me/zhongmingmao/asm/core/klass/generating/Job",
+        null,
+        "java/lang/Object",
+        new String[] {"java/lang/Runnable"});
+    cw.visitField(ACC_PUBLIC | ACC_STATIC | ACC_FINAL, "COUNT", "I", null, 100).visitEnd();
+    cw.visitMethod(ACC_PUBLIC | ACC_ABSTRACT, "take", "()I", null, null).visitEnd();
+    cw.visitEnd();
+    byte[] bytes = cw.toByteArray();
+
+    new FileOutputStream("/tmp/Job.class").write(bytes);
+
+    MyClassLoader loader = new MyClassLoader();
+    Class<?> c = loader.defineClass("me.zhongmingmao.asm.core.klass.generating.Job", bytes);
+
+    System.out.println(c.getName());
+    Arrays.stream(c.getDeclaredFields()).forEach(field -> System.out.println(field.getName()));
+    Arrays.stream(c.getDeclaredMethods()).forEach(method -> System.out.println(method.getName()));
+
+    // me.zhongmingmao.asm.core.klass.generating.Job
+    // COUNT
+    // take
+  }
+}
+
+class MyClassLoader extends ClassLoader {
+
+  public Class<?> defineClass(String name, byte[] b) {
+    return defineClass(name, b, 0, b.length);
+  }
+}
+```
+
+```java /tmp/Job.class
+Classfile /tmp/Job.class
+  Last modified Feb 23, 2022; size 193 bytes
+  MD5 checksum 50c5d73239b105a95602375ffaa3a0fd
+public interface me.zhongmingmao.asm.core.klass.generating.Job extends java.lang.Runnable
+  minor version: 0
+  major version: 51
+  flags: ACC_PUBLIC, ACC_INTERFACE, ACC_ABSTRACT
+Constant pool:
+   #1 = Utf8               me/zhongmingmao/asm/core/klass/generating/Job
+   #2 = Class              #1             // me/zhongmingmao/asm/core/klass/generating/Job
+   #3 = Utf8               java/lang/Object
+   #4 = Class              #3             // java/lang/Object
+   #5 = Utf8               java/lang/Runnable
+   #6 = Class              #5             // java/lang/Runnable
+   #7 = Utf8               COUNT
+   #8 = Utf8               I
+   #9 = Integer            100
+  #10 = Utf8               take
+  #11 = Utf8               ()I
+  #12 = Utf8               ConstantValue
+{
+  public static final int COUNT;
+    descriptor: I
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: int 100
+
+  public abstract int take();
+    descriptor: ()I
+    flags: ACC_PUBLIC, ACC_ABSTRACT
+}
+```
+
+> In fact the way of **using** your **generated classes** depends on the context, and is **out of scope of the ASM API**.
+
+## Transforming classes
+

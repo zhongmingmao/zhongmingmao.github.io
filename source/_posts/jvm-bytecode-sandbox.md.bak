@@ -1,0 +1,63 @@
+---
+title: JVM Sandbox 技术调研
+mathjax: false
+date: 2022-02-28 00:06:25
+categories:
+  - Java
+  - JVM
+  - Bytecode Manipulation
+tags:
+  - Java
+  - JVM
+  - Bytecode Manipulation
+---
+
+<!-- more -->
+
+# 核心原理
+
+## 事件驱动
+
+1. 将**目标方法**分解成 `BEFORE`、`RETURN`、`THROWS` 三个环节
+2. 对三个环节的事件进行分离，可以完成 JVM 的 AOP 操作
+   - 动态感知、改变方法的**入参**
+   - 动态感知、改变方法的**出参**和抛出**异常**
+   - 改变方法的**执行流程**
+
+```java
+// BEFORE 执行方法体之前被调用
+try {
+  /*
+	 * do something...
+	 */
+  
+	// RETURN 执行方法体返回之前被调用
+	return;
+} catch (Throwable cause) {
+	// THROWS 执行方法体抛出异常之前被调用
+}
+```
+
+## 类增强策略
+
+1. 当方法逻辑执行之前，首先触发 `BEFORE` 事件
+2. 待 `BEFORE` 事件结束后，通过返回的状态信息来判断方法的后续走向
+3. 如果返回的状态码并不是直接返回的自定义结果或者抛出异常，则继续执行方法的正常流程
+
+![img](https://static001.geekbang.org/infoq/24/241c5f4bf271500ea2303b5032894dfa.png)
+
+# 参考
+
+1. [源码系列 | 阿里 JVM-Sandbox 核心源码剖析](https://xie.infoq.cn/article/afb69dbad5329096215ffe9e1)
+1. [JVM SandBox 的技术原理与应用分析](https://www.infoq.cn/article/tsy4lgjvsfweuxebw*gp)
+
+# TODO
+
+1. 原理 && issues
+2. 使用限制
+3. 二次开发
+4. 落地场景
+5. 性能开销
+6. 兼容性：适用 JDK
+7. 类隔离后通信策略
+8. 类隔离策略
