@@ -1,7 +1,7 @@
 ---
 title: Infrastructure - Authentication - Basic + JWT
 mathjax: false
-date: 2022-03-26 00:06:25
+date: 2022-03-26 01:06:25
 categories:
     - Infrastructure
     - Authentication

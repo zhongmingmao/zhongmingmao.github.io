@@ -1,14 +1,14 @@
 ---
 title: Infrastructure - Authentication - LDAP
 mathjax: false
-date: 2022-03-26 01:06:25
+date: 2022-03-26 02:06:25
 categories:
     - Infrastructure
     - Authentication
 tags:
     - Infrastructure
     - Authentication
-    - JWT
+    - LDAP
 ---
 
 # What is LDAP
