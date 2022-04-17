@@ -10,6 +10,8 @@ tags:
   - Cloud Native
   - Go Engineering
   - Go
+  - RPC
+  - gRPC
 ---
 
 # RPC
