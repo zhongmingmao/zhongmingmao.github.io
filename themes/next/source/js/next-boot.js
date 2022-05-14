@@ -1,53 +1,75 @@
 /* global NexT, CONFIG */
 
-$(document).ready(function() {
+NexT.boot = {};
 
-  $(document).trigger('bootstrap:before');
+NexT.boot.registerEvents = function() {
 
-  /**
-   * Register JS handlers by condition option.
-   * Need to add config option in Front-End at 'layout/_partials/head.swig' file.
-   */
-  CONFIG.fastclick && NexT.utils.isMobile() && window.FastClick.attach(document.body);
-  CONFIG.lazyload && NexT.utils.lazyLoadPostsImages();
-
-  NexT.utils.registerESCKeyEvent();
-
-  CONFIG.back2top && NexT.utils.registerBackToTop();
+  NexT.utils.registerScrollPercent();
+  NexT.utils.registerCanIUseTag();
 
   // Mobile top menu bar.
-  $('.site-nav-toggle button').on('click', function() {
-    var $siteNav = $('.site-nav');
-    var ON_CLASS_NAME = 'site-nav-on';
-    var isSiteNavOn = $siteNav.hasClass(ON_CLASS_NAME);
-    var animateAction = isSiteNavOn ? 'slideUp' : 'slideDown';
-    var animateCallback = isSiteNavOn ? 'removeClass' : 'addClass';
+  document.querySelector('.site-nav-toggle .toggle').addEventListener('click', event => {
+    event.currentTarget.classList.toggle('toggle-close');
+    const siteNav = document.querySelector('.site-nav');
+    if (!siteNav) return;
+    siteNav.style.setProperty('--scroll-height', siteNav.scrollHeight + 'px');
+    document.body.classList.toggle('site-nav-on');
+  });
 
-    $siteNav.stop()[animateAction]('fast', function() {
-      $siteNav[animateCallback](ON_CLASS_NAME);
+  document.querySelectorAll('.sidebar-nav li').forEach((element, index) => {
+    element.addEventListener('click', () => {
+      NexT.utils.activateSidebarPanel(index);
     });
   });
 
+  window.addEventListener('hashchange', () => {
+    const tHash = location.hash;
+    if (tHash !== '' && !tHash.match(/%\S{2}/)) {
+      const target = document.querySelector(`.tabs ul.nav-tabs li a[href="${tHash}"]`);
+      target && target.click();
+    }
+  });
+};
+
+NexT.boot.refresh = function() {
+
   /**
    * Register JS handlers by condition option.
-   * Need to add config option in Front-End at 'layout/_partials/head.swig' file.
+   * Need to add config option in Front-End at 'scripts/helpers/next-config.js' file.
    */
-  CONFIG.fancybox && NexT.utils.wrapImageWithFancyBox();
-  CONFIG.tabs && NexT.utils.registerTabsTag();
+  CONFIG.prism && window.Prism.highlightAll();
+  CONFIG.mediumzoom && window.mediumZoom('.post-body :not(a) > img, .post-body > img', {
+    background: 'var(--content-bg-color)'
+  });
+  CONFIG.lazyload && window.lozad('.post-body img').observe();
+  CONFIG.pangu && window.pangu.spacingPage();
 
-  NexT.utils.embeddedVideoTransformer();
+  CONFIG.exturl && NexT.utils.registerExtURL();
+  NexT.utils.registerCopyCode();
+  NexT.utils.registerTabsTag();
+  NexT.utils.registerActiveMenuItem();
+  NexT.utils.registerLangSelect();
+  NexT.utils.registerSidebarTOC();
+  NexT.utils.registerPostReward();
+  NexT.utils.wrapTableWithBox();
+  NexT.utils.registerVideoIframe();
+};
 
-  // Define Motion Sequence.
-  NexT.motion.integrator
-    .add(NexT.motion.middleWares.logo)
-    .add(NexT.motion.middleWares.menu)
-    .add(NexT.motion.middleWares.postList)
-    .add(NexT.motion.middleWares.sidebar);
+NexT.boot.motion = function() {
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .add(NexT.motion.middleWares.header)
+      .add(NexT.motion.middleWares.postList)
+      .add(NexT.motion.middleWares.sidebar)
+      .add(NexT.motion.middleWares.footer)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+};
 
-  $(document).trigger('motion:before');
-
-  // Bootstrap Motion.
-  CONFIG.motion.enable && NexT.motion.integrator.bootstrap();
-
-  $(document).trigger('bootstrap:after');
+document.addEventListener('DOMContentLoaded', () => {
+  NexT.boot.registerEvents();
+  NexT.boot.refresh();
+  NexT.boot.motion();
 });
