@@ -1,5 +1,5 @@
 ---
-title: Infrastructure - Security - OAuth 2.0 - Authorization server
+title: Infrastructure - Security - OAuth 2.0 - Authorization Server
 mathjax: false
 date: 2022-05-14 01:06:25
 categories:
