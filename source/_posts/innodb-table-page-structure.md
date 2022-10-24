@@ -11,9 +11,8 @@ tags:
     - InnoDB
 ---
 
-{% note info %}
-本文主要介绍`InnoDB`存储引擎的`数据页结构`
-{% endnote %}
+> 本文主要介绍`InnoDB`存储引擎的`数据页结构`
+
 
 <!-- more -->
 

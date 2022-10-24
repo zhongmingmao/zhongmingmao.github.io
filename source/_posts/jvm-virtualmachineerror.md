@@ -10,9 +10,8 @@ tags:
     - JVM
 ---
 
-{% note info %}
-`VirtualMachineError`有两个常见的实现类：`StackOverflowError`、`OutOfMemoryError`，本文将用代码分析几种情况的`VirtualMachineError`
-{% endnote %}
+> `VirtualMachineError`有两个常见的实现类：`StackOverflowError`、`OutOfMemoryError`，本文将用代码分析几种情况的`VirtualMachineError`
+
 
 <!-- more -->
 
@@ -25,12 +24,11 @@ tags:
 | 异常情况 | StackOverflowError<br/>OutOfMemoryError | OutOfMemoryError | OutOfMemoryError |
 | JVM参数 | -Xss | -Xms<br/>-Xmx | -XX:PermSize<br/>-XX:MaxPermSize<br/>-XX:MetaspaceSize<br/>-XX:MaxMetaspaceSize |
 
-{% note warning %}
-注：在JDK8之前，`Hotspot JVM`采用永生代（`Permanent Generation`）来实现方法区（`Method Area`），从`JDK8`开始，已经移除了永生代，使用`Metaspace`进行替代，相关连接请参考：
-1. http://blog.csdn.net/zhushuai1221/article/details/52122880
-2. http://openjdk.java.net/jeps/122
-3. https://stackoverflow.com/questions/18339707/permgen-elimination-in-jdk-8
-{% endnote %}
+> 注：在JDK8之前，`Hotspot JVM`采用永生代（`Permanent Generation`）来实现方法区（`Method Area`），从`JDK8`开始，已经移除了永生代，使用`Metaspace`进行替代，相关连接请参考：
+> 1. http://blog.csdn.net/zhushuai1221/article/details/52122880
+> 2. http://openjdk.java.net/jeps/122
+> 3. https://stackoverflow.com/questions/18339707/permgen-elimination-in-jdk-8
+
 
 
 # 实例

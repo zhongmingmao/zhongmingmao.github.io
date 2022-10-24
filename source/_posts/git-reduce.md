@@ -9,16 +9,14 @@ tags:
     - Git
 ---
 
-{% note info %}
-本文主要介绍两种`减少.git仓库磁盘大小`的两种方式：`git gc`和`git prune`
-{% endnote %}
+> 本文主要介绍两种`减少.git仓库磁盘大小`的两种方式：`git gc`和`git prune`
+
 
 <!-- more -->
 
 # git gc
-{% note info %}
-适用于`存在大文件`，且`多次提交都只是轻微改动该大文件`的场景，因为这些提交都会生成大小相近的大文件`blob对象`，非常占用磁盘空间
-{% endnote %}
+> 适用于`存在大文件`，且`多次提交都只是轻微改动该大文件`的场景，因为这些提交都会生成大小相近的大文件`blob对象`，非常占用磁盘空间
+
 
 1. Git最初向磁盘中存储对象使用`松散`的格式，后续会将多个对象打包为一个二进制的`包文件`（`packfile`），以`节省磁盘空间`
 2. `.pack`文件存储了`对象的内容`
@@ -129,9 +127,8 @@ $ git cat-file -s ce4134c5eecf2b379d2eac3f812409f1b602cd85
 ```
 
 # git prune
-{% note warning %}
-`git clone`会下载`整个`项目提交历史，如果`曾经`添加过`大文件`，后续`git rm`了，每次`git clone`依旧会下载那个大文件对应的`blob对象`，将要介绍的方法会`重写提交历史`，请`谨慎使用`
-{% endnote %}
+> `git clone`会下载`整个`项目提交历史，如果`曾经`添加过`大文件`，后续`git rm`了，每次`git clone`依旧会下载那个大文件对应的`blob对象`，将要介绍的方法会`重写提交历史`，请`谨慎使用`
+
 
 1. `git count-objects -v`：快速查看`object databse`的概要情况
 2. `git rev-list --all --objects`：显示`所有commit及其所关联的所有对象`

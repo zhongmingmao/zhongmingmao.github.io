@@ -9,9 +9,8 @@ tags:
     - Git
 ---
 
-{% note info %}
-本文主要介绍通过`reset`如何将` HEAD重置到特定的状态`
-{% endnote %}
+> 本文主要介绍通过`reset`如何将` HEAD重置到特定的状态`
+
 
 <!-- more -->
 
@@ -121,9 +120,8 @@ $ git branch -vv
 3. 将`Index`的内容填充`Working Directory`
 
 # reset
-{% note info %}
-`reset`可以直接操纵`HEAD`、`Index`、`Working Directory`的状态
-{% endnote %}
+> `reset`可以直接操纵`HEAD`、`Index`、`Working Directory`的状态
+
 ## 提交历史
 ```
 $ git log --oneline --decorate --graph --all
@@ -189,9 +187,8 @@ $ git diff --cached # HEAD on 7806e5f , Index on 7806e5f , nothing printed
 <img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/git_reset_mixed.png" width="500">
 
 ## git reset `--hard`
-{% note danger %}
-`--hard`**直接覆盖**未提交的修改，谨慎使用，可以先`stash`起来（Stash的内容请参照「Git++ - Stash」）
-{% endnote %}
+> `--hard`**直接覆盖**未提交的修改，谨慎使用，可以先`stash`起来（Stash的内容请参照「Git++ - Stash」）
+
 ```
 $ git branch -vv
 * master 7806e5f file.txt v2

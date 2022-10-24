@@ -9,8 +9,8 @@ tags:
     - Git
 ---
 
-{% note info %} 本文主要介绍一些我在日常开发中觉得比较有趣的Git`基础命令`
-{% endnote %}
+> 本文主要介绍一些我在日常开发中觉得比较有趣的Git`基础命令`
+
 
 <!-- more -->
 
@@ -88,8 +88,8 @@ index e69de29..e965047 100644
 ```
 
 # 移除版本控制
-{% note warning %} `git rm`只会将文件或目录从版本控制中移除，但并不会从以前的提交记录中移除文件或目录
-{% endnote %}
+> `git rm`只会将文件或目录从版本控制中移除，但并不会从以前的提交记录中移除文件或目录
+
 
 ## git rm
 从`Working Tree`和`Index`中移除
@@ -292,8 +292,8 @@ $ git log --oneline --decorate --graph --grep=C --author=zhongmingmao  --committ
 
 ## 撤销`Commit`
 
-{% note warning %}`git commit --amend `会重新生成新的Commit对象
-{% endnote %}
+> `git commit --amend `会重新生成新的Commit对象
+
 
 ### 修改提交日志
 ```
@@ -337,8 +337,8 @@ $ git log --oneline --decorate --graph
 ```
 
 ## 撤销`Index`的修改
-{% note info %}`git reset HEAD` == `git reset --mixed HEAD`，用`HEAD`覆盖`Index`
-{% endnote %}
+> `git reset HEAD` == `git reset --mixed HEAD`，用`HEAD`覆盖`Index`
+
 ```
 $ gst -sb
 ## master
@@ -389,8 +389,8 @@ index e69de29..35d242b 100644
 ```
 
 ## 撤销`Working Tree`的修改
-{% note info %}`git checkout --`，用`Index`覆盖`Working Tree`
-{% endnote %}
+> `git checkout --`，用`Index`覆盖`Working Tree`
+
 ```
 $ gst -sb
 ## master
@@ -415,8 +415,8 @@ $ git diff # Stdout print nothing
 ```
 
 ## 撤销`Index`和`Working Tree`的修改
-{% note danger %}`git reset --hard HEAD`，`git checkout HEAD [filename]`是**危险操作**，将会丢失上次Commit后的所有修改，用`HEAD`覆盖`Index`和`Working Tree`
-{% endnote %}
+> `git reset --hard HEAD`，`git checkout HEAD [filename]`是**危险操作**，将会丢失上次Commit后的所有修改，用`HEAD`覆盖`Index`和`Working Tree`
+
 ```
 $ git log --oneline --decorate --graph
 de41093 (HEAD -> master) C3

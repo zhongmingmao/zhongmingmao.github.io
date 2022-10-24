@@ -10,9 +10,8 @@ tags:
     - JVM
 ---
 
-{% note info %}
-本文将通过`Instrumentation` + `sa-jdi`来分析几个实例的内存对象布局
-{% endnote %}
+> 本文将通过`Instrumentation` + `sa-jdi`来分析几个实例的内存对象布局
+
 
 <!-- more -->
 

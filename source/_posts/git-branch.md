@@ -9,16 +9,16 @@ tags:
     - Git
 ---
 
-{% note info %} 本文主要介绍一些我在日常开发中与`Git分支`相关的一些操作，通过实例阐述一些基本分支概念
-{% endnote %}
+> 本文主要介绍一些我在日常开发中与`Git分支`相关的一些操作，通过实例阐述一些基本分支概念
+
 
 <!-- more -->
 # 分支的本质
 
 Git分支的本质仅仅只是指向`Commit对象`的`可变指针`
 
-{% note info %} master分支并非一个特殊分支
-{% endnote %}
+> master分支并非一个特殊分支
+
 
 # Merge
 
@@ -82,8 +82,8 @@ $ git log --oneline --decorate --graph --all
 ```
 
 # Remote Branch
-{% note info %} `origin`与`master`一样，并`无特殊含义`，仅仅是Git的默认名称
-{% endnote %}
+> `origin`与`master`一样，并`无特殊含义`，仅仅是Git的默认名称
+
 
 ## origin
 `origin`：`Remote Repository`的引用
@@ -122,8 +122,8 @@ $ git log --decorate --graph --oneline
 ```
 
 ## git fetch
-{% note info %} git fetch仅仅抓取Remote Repository的数据到本地数据库(包括移动相关指针），但并`不会自动合并`数据
-{% endnote %}
+> git fetch仅仅抓取Remote Repository的数据到本地数据库(包括移动相关指针），但并`不会自动合并`数据
+
 ```
 $ git remote -v # Show remote repository
 repA	https://github.com/hzmajia/repA.git (fetch)
@@ -165,8 +165,8 @@ $ git log --decorate --graph --oneline --all
 ```
 
 ## track remote branch
-{% note info %} 本地分支可以跟踪远程分支，被跟踪的远程分支是本地分支的上游分支（`upstream branch`）
-{% endnote %}
+> 本地分支可以跟踪远程分支，被跟踪的远程分支是本地分支的上游分支（`upstream branch`）
+
 
 ### git clone
 master自动跟踪repo_name/master
@@ -232,8 +232,8 @@ $ git branch -vv
 ```
 
 ## git pull
-{% note warning %} 查找当前分支的上游分支，从远程仓库`拉取数据并尝试合并`，推荐使用**`git fetch`+`git merge`**
-{% endnote %}
+> 查找当前分支的上游分支，从远程仓库`拉取数据并尝试合并`，推荐使用**`git fetch`+`git merge`**
+
 ```
 $ git branch -vv
 * master 7e00be3 [origin/master] C6
@@ -278,8 +278,8 @@ $ git log --oneline --graph --decorate --all
 ```
 
 # Rebase
-{% note danger %} `谨慎使用`，适用于尚未push的Commit，rebase`会丢弃现有Commit`，新建Commit，从而使得提交历史更加整洁，我在实际开发中比较少使用，真实记录开发中的提交历史
-{% endnote %}
+> `谨慎使用`，适用于尚未push的Commit，rebase`会丢弃现有Commit`，新建Commit，从而使得提交历史更加整洁，我在实际开发中比较少使用，真实记录开发中的提交历史
+
 
 ## 原理
 `A rebase B`：寻找两者的`最近共同祖先C`，将C到A的一系列Commit按次序应用到B上，生成一系列新的Commit，`对应的Commit Message不变`
@@ -310,8 +310,8 @@ $ git log --oneline --graph --decorate --all
 ```
 
 ## 错误样例
-{% note danger %} 下例中因为对`已push的Commit`进行rebase，产生了两个C4，令人很疑惑。这是因为rebase默认生成新的Commit，但Commit Message是一致的
-{% endnote %}
+> 下例中因为对`已push的Commit`进行rebase，产生了两个C4，令人很疑惑。这是因为rebase默认生成新的Commit，但Commit Message是一致的
+
 ```
 $ git log --oneline --graph --decorate --all
 *   b91c74e (HEAD -> master) C6

@@ -9,9 +9,8 @@ tags:
     - Git
 ---
 
-{% note info %}
-主要介绍`Git Flow`中`Feature`分支、`Release`分支、`Hotfix`分支的流程
-{% endnote %}
+> 主要介绍`Git Flow`中`Feature`分支、`Release`分支、`Hotfix`分支的流程
+
 
 <!-- more -->
 

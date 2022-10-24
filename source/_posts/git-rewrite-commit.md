@@ -9,9 +9,8 @@ tags:
     - Git
 ---
 
-{% note danger %}
-本文将通过介绍通过`rebase`和`filter-branch`重写提交历史，但两者都会`新建`提交对象，`谨慎使用`，尤其是提交历史已共享的情况下
-{% endnote %}
+> 本文将通过介绍通过`rebase`和`filter-branch`重写提交历史，但两者都会`新建`提交对象，`谨慎使用`，尤其是提交历史已共享的情况下
+
 
 <!-- more -->
 
@@ -132,9 +131,8 @@ $ git log --oneline --decorate --graph --all
 ```
 
 # 移除文件
-{% note danger %}
-`filter-branch`会大量`重写提交历史`，`谨慎使用`
-{% endnote %}
+> `filter-branch`会大量`重写提交历史`，`谨慎使用`
+
 `--tree-filter`：checkout当前分支（所有分支，`--all`）的每一个提交，执行命令后，重新提交，但`原始的提交历史依旧存在`
 ```
 $ git log --oneline --decorate --graph --all

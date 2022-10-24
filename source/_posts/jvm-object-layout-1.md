@@ -10,9 +10,8 @@ tags:
     - JVM
 ---
 
-{% note info %}
-本文首先介绍测量对象内存布局的其中一种方法，`Instrumentation` + `sa-jdi`
-{% endnote %}
+> 本文首先介绍测量对象内存布局的其中一种方法，`Instrumentation` + `sa-jdi`
+
 
 <!-- more -->
 

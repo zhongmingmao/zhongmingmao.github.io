@@ -11,10 +11,9 @@ tags:
     - JOL
 ---
 
-{% note info %}
-本文将通过`JOL`分析`Java对象的内存布局`，包括`Throwable`、`Class`、`Object Header`、`HashCode`等内容
-代码托管在[https://github.com/zhongmingmao/java_object_layout](https://github.com/zhongmingmao/java_object_layout)
-{% endnote %}
+> 本文将通过`JOL`分析`Java对象的内存布局`，包括`Throwable`、`Class`、`Object Header`、`HashCode`等内容
+> 代码托管在[https://github.com/zhongmingmao/java_object_layout](https://github.com/zhongmingmao/java_object_layout)
+
 
 <!-- more -->
 

@@ -10,9 +10,8 @@ tags:
     - JVM
 ---
 
-{% note info %}
-本文将通过是实例简单介绍`JVM字节码`基于`栈`的执行过程
-{% endnote %}
+> 本文将通过是实例简单介绍`JVM字节码`基于`栈`的执行过程
+
 
 <!-- more -->
 # Stack Frame

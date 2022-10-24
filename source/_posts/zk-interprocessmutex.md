@@ -8,9 +8,8 @@ tags:
     - Distributed Lock
 ---
 
-{% note info %}
-`Curator`是`ZooKeeper`的一个客户端框架，其中封装了`分布式互斥锁`的实现，最为常用的是`InterProcessMutex`，本文将对其进行代码剖析
-{% endnote %}
+> `Curator`是`ZooKeeper`的一个客户端框架，其中封装了`分布式互斥锁`的实现，最为常用的是`InterProcessMutex`，本文将对其进行代码剖析
+
 
 <!-- more -->
 

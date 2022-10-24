@@ -11,9 +11,8 @@ tags:
     - InnoDB
 ---
 
-{% note info %}
-本文主要介绍`InnoDB`存储引擎的`逻辑存储结构`
-{% endnote %}
+> 本文主要介绍`InnoDB`存储引擎的`逻辑存储结构`
+
 
 <!-- more -->
 
@@ -126,9 +125,8 @@ total 112K
 2. 为了保证`页的连续性`，InnoDB可以一次性从磁盘申请`4个Extent`
 3. 为了`节省磁盘空间`，如表的数据量很小（`Leaf node segment`和`Non-Leaf node segment`都很小）或`Rollback segment`，Segment一开始`不会直接申请Extent`，而是先用`32个碎片页`（用于`叶子节点`）来存放数据，用完之后才继续对`Extent(1MB)`的申请（下面实例是`Leaf Node Segment`的对空间的申请过程）
 
-{% note warning %}
-下列操作过程中涉及到了`ROW_FORMAT`的部分内容，本文并没有详细展开，只为佐证结果
-{% endnote %}
+> 下列操作过程中涉及到了`ROW_FORMAT`的部分内容，本文并没有详细展开，只为佐证结果
+
 
 ## 创建表
 ```SQL

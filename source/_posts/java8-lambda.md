@@ -9,9 +9,8 @@ tags:
     - Lambda
 ---
 
-{% note info %}
-本文主要介绍`Java 8`的 `Lambda` 表达式的简单使用
-{% endnote %}
+> 本文主要介绍`Java 8`的 `Lambda` 表达式的简单使用
+
 
 <!-- more -->
 

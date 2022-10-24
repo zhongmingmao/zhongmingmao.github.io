@@ -11,10 +11,9 @@ tags:
     - GC
 ---
 
-{% note info %}
-本文将通过最`基本`的垃圾收集器（`Serial` + `Serial Old`），简单地讲述JVM`内存分配和回收过程`中的`3`个基本的晋升规则：`大对象直接晋升`、`对象年龄晋升`、`动态晋升`
-代码托管在：[https://github.com/zhongmingmao/jvm_demo](https://github.com/zhongmingmao/jvm_demo)
-{% endnote %}
+> 本文将通过最`基本`的垃圾收集器（`Serial` + `Serial Old`），简单地讲述JVM`内存分配和回收过程`中的`3`个基本的晋升规则：`大对象直接晋升`、`对象年龄晋升`、`动态晋升`
+> 代码托管在：[https://github.com/zhongmingmao/jvm_demo](https://github.com/zhongmingmao/jvm_demo)
+
 
 <!-- more -->
 

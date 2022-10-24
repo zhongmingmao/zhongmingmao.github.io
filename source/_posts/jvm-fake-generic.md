@@ -10,9 +10,8 @@ tags:
     - JVM
 ---
 
-{% note info %}
-本文将从`JVM字节码`的角度解释一下Java为什么是`伪泛型`
-{% endnote %}
+> 本文将从`JVM字节码`的角度解释一下Java为什么是`伪泛型`
+
 
 <!-- more -->
 

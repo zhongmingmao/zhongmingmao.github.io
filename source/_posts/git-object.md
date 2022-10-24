@@ -9,9 +9,8 @@ tags:
     - Git
 ---
 
-{% note info %}
-本文将主要介绍`blob`对象，`tree`对象，`commit`对象，`tag`对象
-{% endnote %}
+> 本文将主要介绍`blob`对象，`tree`对象，`commit`对象，`tag`对象
+
 
 <!-- more -->
 
@@ -381,9 +380,8 @@ committer zhongmingmao <zhongmingmao@yeah.net> 1492597186 +0800
 <img src="https://git-1253868755.cos.ap-guangzhou.myqcloud.com/pro/commit_object.png" width="500">
 
 # tag对象
-{% note info %}
-只有`annotated tag`才会创建`tag`对象，`lightweight tag`直接指向`commit`对象
-{% endnote %}
+> 只有`annotated tag`才会创建`tag`对象，`lightweight tag`直接指向`commit`对象
+
 
 ## lightweight tag
 ```

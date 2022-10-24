@@ -9,10 +9,9 @@ tags:
     - Git
 ---
 
-{% note info %}
-本文主要介绍`常见的引用`（commit对象及其祖先的的引用，branch引用，HEAD引用等）和`提交区间`
-`commit对象`，`tag对象`的内容请参照「Git++ - 对象」
-{% endnote %}
+> 本文主要介绍`常见的引用`（commit对象及其祖先的的引用，branch引用，HEAD引用等）和`提交区间`
+> `commit对象`，`tag对象`的内容请参照「Git++ - 对象」
+
 
 <!-- more -->
 
@@ -36,10 +35,9 @@ $ git show --oneline -s master
 ```
 
 ## commit对象祖先的引用
-{% note info %}
-在`Fast Forward Merge`中，`只有一个`父提交对象，`第一父提交对象`
-在`Recursive Merge`中，合并操作发生时的当前分支所指向的提交对象是`第一父提交对象`，被合并的分支所指向的提交对象是`第二父提交对象`
-{% endnote %}
+> 在`Fast Forward Merge`中，`只有一个`父提交对象，`第一父提交对象`
+> 在`Recursive Merge`中，合并操作发生时的当前分支所指向的提交对象是`第一父提交对象`，被合并的分支所指向的提交对象是`第二父提交对象`
+
 `HEAD^`：HEAD的第一父提交对象
 `HEAD^1`：HEAD的第一父提交对象
 `HEAD^2`：HEAD的第二父提交对象
@@ -157,9 +155,8 @@ $ git log --oneline --decorate --graph --all
 ```
 
 ## HEAD引用历史
-{% note warning %}
-`git reflog`只存在于本地仓库，记录本地仓库的操作历史
-{% endnote %}
+> `git reflog`只存在于本地仓库，记录本地仓库的操作历史
+
 `reflog`记录`HEAD`的引用历史，常用于本地`reset --hard`（Reset的内容请参照「Git++ - Reset」）后的回滚操作
 ```
 $ git log --oneline --graph --decorate --all

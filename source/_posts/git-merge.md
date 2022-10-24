@@ -9,9 +9,8 @@ tags:
     - Git
 ---
 
-{% note info %}
-本文主要介绍`合并中断`，`查看冲突`，`冲突相关的提交`，`撤销合并`
-{% endnote %}
+> 本文主要介绍`合并中断`，`查看冲突`，`冲突相关的提交`，`撤销合并`
+
 
 <!-- more -->
 
@@ -184,14 +183,12 @@ index e69de29..38f8e88 100644
 ```
 
 # 撤销合并
-{% note warning %}
-将要介绍`reset`和`revert`这两种方式来`撤销已提交的合并`，请`谨慎使用`，适用于`尚未共享的提交`
-{% endnote %}
+> 将要介绍`reset`和`revert`这两种方式来`撤销已提交的合并`，请`谨慎使用`，适用于`尚未共享的提交`
+
 
 ## reset `--hard`
-{% note info %}
-相关内容请参照「Git++ - Reset」
-{% endnote %}
+> 相关内容请参照「Git++ - Reset」
+
 ```
 $ git log --oneline --decorate --graph --all
 *   7a18228 (HEAD -> master) M1
@@ -218,11 +215,10 @@ $ git log --oneline --decorate --graph --all
 ```
 
 ## revert
-{% note warning %}
-当提交对象是`普通提交对象`C1时，新建提交对象C2，还原C1的修改
-当提交对象是`合并提交对象`是C1，新建提交对象C2，`保留其中一个父提交对象`P1，还原`其他父提交对象`的修改
-`revert后再次merge`，有可能出现`Already up-to-date`，因为在当前提交对象能回溯到相关的提交。如果想再次合并之前放弃掉的父提交对象的修改，可以再次执行`revert`或直接`reset --hard`
-{% endnote %}
+> 当提交对象是`普通提交对象`C1时，新建提交对象C2，还原C1的修改
+> 当提交对象是`合并提交对象`是C1，新建提交对象C2，`保留其中一个父提交对象`P1，还原`其他父提交对象`的修改
+> `revert后再次merge`，有可能出现`Already up-to-date`，因为在当前提交对象能回溯到相关的提交。如果想再次合并之前放弃掉的父提交对象的修改，可以再次执行`revert`或直接`reset --hard`
+
 `revert -m`：保留父提交对象，`1`代表第一父提交对象，`2`代表第二提交对象
 ```
 $ git log --oneline --decorate --graph --all

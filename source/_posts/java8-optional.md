@@ -8,9 +8,8 @@ tags:
     - Java
 ---
 
-{% note info %}
-本文主要介绍`Java 8`的 `Optional` 的简单使用
-{% endnote %}
+> 本文主要介绍`Java 8`的 `Optional` 的简单使用
+
 
 <!-- more -->
 ## Address

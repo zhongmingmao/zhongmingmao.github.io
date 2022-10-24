@@ -8,9 +8,8 @@ tags:
     - Vim
 ---
 
-{% note info %}
-本文将介绍`Vim`中的`文件`
-{% endnote %}
+> 本文将介绍`Vim`中的`文件`
+
 
 <!-- more -->
 

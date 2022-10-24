@@ -8,9 +8,8 @@ tags:
     - ZAB
 ---
 
-{% note info %}
-本文将简要介绍`Zookeeper`的`ZAB`协议
-{% endnote %}
+> 本文将简要介绍`Zookeeper`的`ZAB`协议
+
 
 <!-- more -->
 

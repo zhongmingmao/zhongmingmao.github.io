@@ -11,9 +11,8 @@ tags:
     - InnoDB
 ---
 
-{% note info %}
-本文主要介绍`InnoDB`存储引擎的行记录格式`ROW_FORMAT`
-{% endnote %}
+> 本文主要介绍`InnoDB`存储引擎的行记录格式`ROW_FORMAT`
+
 <!-- more -->
 
 # 分类

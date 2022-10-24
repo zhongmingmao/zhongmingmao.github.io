@@ -11,10 +11,9 @@ tags:
     - InnoDB
 ---
 
-{% note info %}
-本文主要介绍`InnoDB`的`事务隔离级别`
-关于`Next-Key Lock`的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述
-{% endnote %}
+> 本文主要介绍`InnoDB`的`事务隔离级别`
+> 关于`Next-Key Lock`的内容，请参照「InnoDB备忘录 - Next-Key Lock」，这里不再赘述
+
 
 <!-- more -->
 
