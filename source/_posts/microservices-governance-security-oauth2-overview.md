@@ -1,17 +1,17 @@
 ---
-title: Oauth - Overview
+title: Oauth2 - Overview
 mathjax: false
 date: 2022-09-12 00:06:25
 cover: https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png
 categories:
   - Microservices Governance
   - Security
-  - Oauth
+  - Oauth2
 tags:
   - Microservices Governance
   - Microservices
   - Security
-  - Oauth
+  - Oauth2
   - Architecture
   - Cloud Native
 ---
