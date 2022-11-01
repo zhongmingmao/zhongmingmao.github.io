@@ -86,7 +86,13 @@ tags:
 
 ![image-20221101233546772](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221101233546772.png)
 
+## Token 类型
 
+![image-20221101235646089](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221101235646089.png)
+
+## 常见误区
+
+![image-20221101235819650](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221101235819650.png)
 
 # 参考
 
