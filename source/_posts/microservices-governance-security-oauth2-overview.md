@@ -126,6 +126,29 @@ tags:
 
 ![image-20221102002451225](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102002451225.png)
 
+## Flow 选型
+
+### 授权流程渠道
+
+> **前端**渠道：**资源服务器**不参与的交互过程
+> **后端**渠道：**资源拥有者**不参与的交互过程
+
+![image-20221102003325354](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102003325354.png)
+
+### 客户应用类型
+
+![image-20221102003757461](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102003757461.png)
+
+### 适用场景
+
+![image-20221102004111201](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102004111201.png)
+
+### 选型流程
+
+> 第一方：内部应用
+
+![image-20221102004642403](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102004642403.png)
+
 # 参考
 
 1. [微服务架构实战 160 讲](https://time.geekbang.org/course/intro/100007001)
