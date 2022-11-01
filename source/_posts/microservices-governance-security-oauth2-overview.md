@@ -94,6 +94,38 @@ tags:
 
 ![image-20221101235819650](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221101235819650.png)
 
+## 典型 Flow
+
+> https://www.rfc-editor.org/rfc/rfc6749
+
+### Authorization Code Flow
+
+> _**最复杂 + 最安全 + 应用最广泛**_
+
+![image-20221102000540824](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102000540824.png)
+
+### Implicit Grant Flow
+
+> 减少了**授权码兑换**的过程（**通过 Script 解析 Access Token**），适用于**单页应用**（无后端）
+
+![image-20221102001550406](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102001550406.png)
+
+### Resource Owner Password Credentials Flow
+
+> 适用于公司内部应用等**风险可控**的场景
+
+![image-20221102001311093](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102001311093.png)
+
+### Client Credentials Flow
+
+> 连资源所有者都没有，适用于**服务器之间**的场景
+
+![image-20221102002252924](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102002252924.png)
+
+## 刷新令牌
+
+![image-20221102002451225](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102002451225.png)
+
 # 参考
 
 1. [微服务架构实战 160 讲](https://time.geekbang.org/course/intro/100007001)
