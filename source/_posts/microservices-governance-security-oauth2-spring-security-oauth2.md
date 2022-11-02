@@ -190,3 +190,6 @@ $ curl -s --location --request GET 'http://localhost:8000/api/user' \
 }
 ```
 
+# 参考
+
+1. [微服务架构实战 160 讲](https://time.geekbang.org/course/intro/100007001)
