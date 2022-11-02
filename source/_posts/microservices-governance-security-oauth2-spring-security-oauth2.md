@@ -30,7 +30,7 @@ tags:
 
 ![](http://terasolunaorg.github.io/guideline/5.3.0.RELEASE/en/_images/OAuth_OAuth2Architecture.png)
 
-# Authorization Server
+# Authorization Code Flow
 
 ## Maven
 
