@@ -1,5 +1,5 @@
 ---
-title: Oauth2 -  Spring Security OAuth2
+title: Spring Security OAuth2 - Authorization Server
 mathjax: false
 date: 2022-09-13 00:06:25
 cover: https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png
@@ -16,6 +16,7 @@ tags:
   - Cloud Native
   - Spring
   - Spring Security
+  - Spring Security OAuth2
 ---
 
 # 授权服务器
@@ -30,11 +31,13 @@ tags:
 
 ![](http://terasolunaorg.github.io/guideline/5.3.0.RELEASE/en/_images/OAuth_OAuth2Architecture.png)
 
-# Authorization Code Flow
+# Authorization flow
+
+## Authorization Code Flow
 
 ![image-20221102000540824](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102000540824.png)
 
-## Maven
+### Maven
 
 ```xml
 <dependency>
@@ -47,7 +50,7 @@ tags:
 </dependency>
 ```
 
-## API
+### API
 
 ```java
 @Data
@@ -71,9 +74,10 @@ public ResponseEntity<UserInfo> getUser() {
 }
 ```
 
-## Authorization Server
+### Authorization Server
 
 > Authorization Server + Client App
+> **authorization_code**
 
 ```java
 @Configuration
@@ -93,7 +97,7 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
 }
 ```
 
-## Resource Server
+### Resource Server
 
 ```java
 @Configuration
@@ -112,7 +116,7 @@ public class ResourceServer extends ResourceServerConfigurerAdapter {
 }
 ```
 
-## Resource owner
+### Resource owner
 
 ```yaml
 server:
@@ -123,7 +127,7 @@ security:
     password: 123456
 ```
 
-## Flow
+### Flow
 
 > 未授权
 
@@ -192,15 +196,17 @@ $ curl -s --location --request GET 'http://localhost:8000/api/user' \
 }
 ```
 
-# Implicit Grant Flow
+## Implicit Grant Flow
 
-> 相对于授权码模式，减少了**授权码兑换**的过程，直接获得 Access Token，**非常不安全**
+> 相对于授权码模式，减少了**授权码兑换**的过程，直接获得 Access Token，**非常不安全**！
 
 ![image-20221102001550406](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102001550406.png)
 
 > 代码结构与授权码类似
 
-## Authorization Server
+### Authorization Server
+
+> **implicit**
 
 ```java
 @Configuration
@@ -214,17 +220,16 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
         .withClient("wechat")
         .secret("654321")
         .redirectUris("http://localhost:9000/callback")
-        //        .authorizedGrantTypes("authorization_code")
-        .authorizedGrantTypes("implicit") // 简化模式
+        .authorizedGrantTypes("implicit")
         .accessTokenValiditySeconds(1 << 8)
         .scopes("read_userinfo", "read_contacts");
   }
 }
 ```
 
-## Flow
+### Flow
 
-> **response_type=token**
+> 直接获取 Access Token：**response_type=token**
 > 浏览器：http://localhost:8000/oauth/authorize?client_id=wechat&redirect_uri=http://localhost:9000/callback&response_type=token&scope=read_userinfo
 
 ![image-20221103011001348](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221103011001348.png)
@@ -239,6 +244,145 @@ $ curl -s --location --request GET 'http://localhost:8000/api/user' \
   "email": "zhongmingmao@gmail.com"
 }
 ```
+
+## Resource Owner Password Credentials Flow
+
+![](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102001311093.png)
+
+### Authorization Server
+
+> **password**
+
+```java
+@Configuration
+@EnableAuthorizationServer
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
+
+  // 认证
+  AuthenticationManager authenticationManager;
+
+  @Override
+  public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+    endpoints.authenticationManager(authenticationManager);
+  }
+
+  @Override
+  public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+    clients
+        .inMemory()
+        .withClient("wechat")
+        .secret("654321")
+        .authorizedGrantTypes("password")
+        .scopes("read_userinfo", "read_contacts");
+  }
+}
+```
+
+### Flow
+
+```shell
+$ echo -n 'wechat:654321' | base64
+d2VjaGF0OjY1NDMyMQ==
+```
+
+> 客户应用直接使用**用户账密**去授权服务器申请 Access Token
+
+```shell
+$ curl -s --location --request POST 'http://localhost:8000/oauth/token' \
+--header 'accept: application/json' \
+--header 'content-type: application/x-www-form-urlencoded' \
+--header 'Authorization: Basic d2VjaGF0OjY1NDMyMQ==' \
+--data-urlencode 'grant_type=password' \
+--data-urlencode 'username=zhongmingmao' \
+--data-urlencode 'password=123456' \
+--data-urlencode 'scope=read_userinfo' | jq
+{
+  "access_token": "e2849e93-125d-444a-862e-acc2c3a0bad9",
+  "token_type": "bearer",
+  "expires_in": 43145,
+  "scope": "read_userinfo"
+}
+```
+
+```shell
+$ curl -s --location --request GET 'http://localhost:8000/api/user' \
+--header 'authorization: Bearer e2849e93-125d-444a-862e-acc2c3a0bad9' | jq
+{
+  "name": "zhongmingmao",
+  "email": "zhongmingmao@gmail.com"
+}
+```
+
+## Client Credentials Flow
+
+![](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102002252924.png)
+
+### API
+
+```java
+@GetMapping("/api/users")
+public ResponseEntity<List<UserInfo>> getUsers() {
+  List<UserInfo> users = new ArrayList<>();
+  users.add(UserInfo.builder().name("zhongmingmao").email("zhongmingmao@gmail.com").build());
+  users.add(UserInfo.builder().name("zhongmingwu").email("zhongmingmao@outlook.com").build());
+  return ResponseEntity.ok(users);
+}
+```
+
+### Authorization Server
+
+> **client_credentials**
+
+```java
+clients
+  .inMemory()
+  .withClient("wechat")
+  .secret("654321")
+  .authorizedGrantTypes("client_credentials")
+  .scopes("read_userinfo", "read_contacts");
+```
+
+### Flow
+
+```shell
+$ echo -n 'wechat:654321' | base64
+d2VjaGF0OjY1NDMyMQ==
+```
+
+```shell
+$ curl -s --location --request POST 'http://localhost:8000/oauth/token' \
+--header 'Authorization: Basic d2VjaGF0OjY1NDMyMQ==' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'grant_type=client_credentials' \
+--data-urlencode 'scope=read_userinfo' | jq
+{
+  "access_token": "5954cfbc-5b1b-4699-9478-8233774c05c6",
+  "token_type": "bearer",
+  "expires_in": 43199,
+  "scope": "read_userinfo"
+}
+```
+
+```shell
+$ curl -s --location --request GET 'http://localhost:8000/api/users' \
+--header 'authorization: Bearer 5954cfbc-5b1b-4699-9478-8233774c05c6' | jq
+[
+  {
+    "name": "zhongmingmao",
+    "email": "zhongmingmao@gmail.com"
+  },
+  {
+    "name": "zhongmingwu",
+    "email": "zhongmingmao@outlook.com"
+  }
+]
+```
+
+## 技术选型
+
+![](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102004642403.png)
 
 # 参考
 
