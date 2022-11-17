@@ -18,7 +18,7 @@ tags:
 
 > 容器，是一个特殊的**隔离**环境，能够让进程只看到这个环境内的**有限**信息，不能对外界环境施加影响
 > 隔离的原因：**系统安全**
-> 隔离的实现：**namespace + cgroup+ rootfs**
+> 隔离的实现：**namespace + cgroup + chroot(rootfs)**
 
 <!-- more -->
 
