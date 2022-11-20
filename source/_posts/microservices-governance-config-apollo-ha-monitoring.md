@@ -23,6 +23,10 @@ tags:
 
 <!-- more -->
 
+# Deployment
+
+![Deployment](https://cdn.jsdelivr.net/gh/apolloconfig/apollo@master/doc/images/apollo-deployment.png)
+
 # HA
 
 | Scene                        | Influence               | Downgrade                                        | Reason                |
