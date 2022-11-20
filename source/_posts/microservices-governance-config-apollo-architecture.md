@@ -1,5 +1,5 @@
 ---
-title: Apollo Architecture - Server
+title: Apollo - Architecture
 mathjax: false
 date: 2022-09-24 00:06:25
 cover: https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp
@@ -17,7 +17,9 @@ tags:
   - Apollo
 ---
 
-# Architecture
+# Server
+
+## Architecture
 
 > 逻辑视图，**Software Load Balancer** 即 **Nginx**
 
@@ -25,7 +27,7 @@ tags:
 
 <!-- more -->
 
-# Module
+## Module
 
 | Module             | Desc                                                         | Note                                                  |
 | ------------------ | ------------------------------------------------------------ | ----------------------------------------------------- |
@@ -40,7 +42,7 @@ tags:
 
 ![image-20221120223535438](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120223535438.png)
 
-# Domain Model
+## Domain Model
 
 ![image-20221120224219477](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120224219477.png)
 
@@ -48,19 +50,33 @@ tags:
 
 ![image-20221120224538070](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120224538070.png)
 
-# Authority Model
+## Authority Model
 
 > 基于 **RBAC**
 
 ![image-20221120224727281](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120224727281.png)
 
-# Real-time push
+## Real-time push
 
 > 借助**数据库**实现**异步通知**（Admin Service -> Config Service）
 
 ![image-20221120224937601](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120224937601.png)
 
 ![image-20221120224947360](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120224947360.png)
+
+# Client
+
+## Architecture
+
+![image-20221120231907885](https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120231907885.png)
+
+## Highlight
+
+| Point        | Note                                                         |
+| ------------ | ------------------------------------------------------------ |
+| **推拉结合** | 保持一个**长连接**，配置**实时推送**<br />**定期拉取**配置（**fallback**） |
+| **数据缓存** | **内存 + 磁盘**                                              |
+| **事件通知** | **订阅**配置更新通知                                         |
 
 # Reference
 
