@@ -169,6 +169,8 @@ $ docker exec 469 ip a
 
 > 默认模式，不需要显式指定 `--net=bridge`
 
+> 默认网段为 `172.17.0.0/16`，宿主机固定为 `172.17.0.1`，IP 地址**按顺序分配**
+
 ![image-20230130225125143](https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20230130225125143.png)
 
 ```shell
