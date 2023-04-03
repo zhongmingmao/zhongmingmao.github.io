@@ -1,0 +1,301 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Java并发 -- 等待-通知机制 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="循环等待 在《Java并发 – 死锁》中，通过破坏占用且等待条件来规避死锁，核心代码如下 while (!allocator.apply(this, target)) &amp;#123;&amp;#125;   如果apply()操作的时间非常短，并且并发不大，该方案还能应付 一旦apply()操作比较耗时，或者并发比较大，该方案就不适用了 因为这可能需要循环上万次才能获得锁，非常_消耗CPU_   最好的方案">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java并发 -- 等待-通知机制">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/04/22/java-concurrent-wait-notify/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="循环等待 在《Java并发 – 死锁》中，通过破坏占用且等待条件来规避死锁，核心代码如下 while (!allocator.apply(this, target)) &amp;#123;&amp;#125;   如果apply()操作的时间非常短，并且并发不大，该方案还能应付 一旦apply()操作比较耗时，或者并发比较大，该方案就不适用了 因为这可能需要循环上万次才能获得锁，非常_消耗CPU_   最好的方案">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png">
+<meta property="article:published_time" content="2019-04-22T10:20:59.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.581Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Java Concurrent">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/04/22/java-concurrent-wait-notify/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java并发 -- 等待-通知机制',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Java并发 -- 等待-通知机制</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-04-22T10:20:59.000Z" title="Created 2019-04-22 18:20:59">2019-04-22</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/concurrent/">Concurrent</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>5min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="循环等待"><a href="#循环等待" class="headerlink" title="循环等待"></a>循环等待</h2><ol>
+<li>在《Java并发 – 死锁》中，通过破坏<strong>占用且等待</strong>条件来规避死锁，核心代码如下<ul>
+<li><code>while (!allocator.apply(this, target)) &#123;&#125;</code></li>
+</ul>
+</li>
+<li>如果apply()操作的时间非常短，并且并发不大，该方案还能应付</li>
+<li>一旦apply()操作比较耗时，或者并发比较大，该方案就不适用了<ul>
+<li>因为这可能需要循环上万次才能获得锁，非常_<strong>消耗CPU</strong>_</li>
+</ul>
+</li>
+<li>最好的方案：_<strong>等待-通知</strong>_<ul>
+<li>当线程要求的条件不满足，则线程<strong>阻塞</strong>自己，进入<strong>等待</strong>状态</li>
+<li>当线程要求的条件满足后，通知等待的线程，重新开始执行</li>
+<li>线程阻塞能够避免因循环等待而消耗CPU的问题</li>
+</ul>
+</li>
+<li>Java语言原生支持<strong>等待-通知机制</strong><ul>
+<li>线程<strong>首先获取互斥锁</strong>，当线程要求的条件<strong>不满足</strong>时，<strong>释放互斥锁</strong>，进入等待状态</li>
+<li>当要求的条件满足时，通知等待的线程，<strong>重新获取互斥锁</strong></li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="等待-通知机制"><a href="#等待-通知机制" class="headerlink" title="等待-通知机制"></a>等待-通知机制</h2><p>Java语言原生支持的等待-通知机制：**<code>synchronized + wait + notify/notifyAll</code>**</p>
+<h3 id="wait"><a href="#wait" class="headerlink" title="wait"></a>wait</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-synchronized-wait.png" width=800/>
+
+<ol>
+<li><strong>每个互斥锁有两个独立的等待队列</strong>，如上图所示，等待队列L和等待队列R</li>
+<li>左边有一个<strong>等待队列</strong>（等待队列L），_<strong>在同一时刻，只允许一个线程进入synchronized保护的临界区</strong>_</li>
+<li>当已经有一个线程进入synchronized保护的临界区后，其他线程就只能进入等待队列L进行等待</li>
+<li>当一个线程<strong>进入临界区后</strong>，由于某些条件<strong>不满足</strong>，需要进入<strong>等待</strong>状态，可以调用wait()方法</li>
+<li>当调用wait()方法后，当前线程就会被<strong>阻塞</strong>，并且进入到<strong>右边的等待队列</strong>（等待队列R）<ul>
+<li>线程在进入等待队列R的同时，会<strong>释放持有的互斥锁</strong>，其他线程就有机会获得锁，并进入临界区</li>
+</ul>
+</li>
+<li>关键点：_<strong>sleep不会释放互斥锁</strong>_</li>
+</ol>
+<h3 id="notify-x2F-notifyAll"><a href="#notify-x2F-notifyAll" class="headerlink" title="notify&#x2F;notifyAll"></a>notify&#x2F;notifyAll</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-synchronized-notify.png" width=800/>
+
+<ol>
+<li>当线程要求的条件满足时，可以通过<code>notify/notifyAll</code>来通知等待的线程</li>
+<li>当条件满足时调用notify()，会通知等待队列R（<strong>将等待队列L中第1个节点移到等待队列R</strong>）中的线程，告知它_<strong>条件曾经满足</strong>_<ul>
+<li><em><strong>notify()只能保证在通知的时间点，条件是满足的</strong></em></li>
+<li>而<strong>被通知线程的执行时间点</strong>与<strong>通知时间点</strong>基本上<strong>不会重合</strong>，当线程执行的时候，条件很可能已经不满足了</li>
+</ul>
+</li>
+<li>被通知的线程如果想要<strong>重新执行</strong>，仍然需要先获取到<strong>互斥锁</strong><ul>
+<li>因为曾经获取到的锁在调用wait()时已经<strong>释放</strong>了</li>
+</ul>
+</li>
+<li>关键点：_<strong>执行notify&#x2F;notifyAll并不会释放互斥锁，在synchronized代码块结束后才真正的释放互斥锁</strong>_</li>
+</ol>
+<h4 id="编码范式"><a href="#编码范式" class="headerlink" title="编码范式"></a>编码范式</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (条件不满足) &#123;</span><br><span class="line">    wait();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>可以解决<strong>条件曾经满足</strong>的问题</li>
+<li>当wait()返回时，条件有可能已经改变了，需要重新检验条件是否满足，如果不满足，继续wait()</li>
+</ol>
+<h4 id="notifyAll"><a href="#notifyAll" class="headerlink" title="notifyAll"></a>notifyAll</h4><ol>
+<li><em><strong>尽量使用notifyAll()</strong></em></li>
+<li>notify()：会<strong>随机</strong>地通知等待队列R中的<strong>一个</strong>线程<ul>
+<li>隐含动作：先将等待队列L的<strong>第一个节点</strong>移动到等待队列R</li>
+</ul>
+</li>
+<li>notifyAll()：会通知等待队列R中的<strong>所有</strong>线程<ul>
+<li>隐含动作：先将等待队列L的<strong>所有节点</strong>移动到等待队列R（待确定是否正确）</li>
+</ul>
+</li>
+<li>notify()的风险：_<strong>可能导致某些线程永远不会被通知到</strong>_<ul>
+<li>假设有资源A、B、C、D，线程1~4都对应<strong>同一个</strong>互斥锁L</li>
+<li>线程1申请到了AB，线程2申请到了CD</li>
+<li>此时线程3申请AB，会进入互斥锁L的等待队列L，线程4申请CD，也会进入互斥锁L的等待队列L</li>
+<li>线程1归还AB，通过notify()来通知互斥锁L的等待队列R中的线程，假设为线程4（先被移动到等待队列R）</li>
+<li>但线程4申请的是CD，不满足条件，执行wait()，而真正该被唤醒的线程3就再也没有机会被唤醒了</li>
+</ul>
+</li>
+</ol>
+<h3 id="等待队列"><a href="#等待队列" class="headerlink" title="等待队列"></a>等待队列</h3><ol>
+<li>wait&#x2F;notify&#x2F;notifyAll操作的等待队列都是_<strong>互斥锁的等待队列</strong>_</li>
+<li>如果synchronized锁定的是this，那么对应的一定是this.wait()&#x2F;this.notify()&#x2F;this.notifyAll()</li>
+<li>如果synchronized锁定的是target，那么对应的一定是target.wait()&#x2F;target.notify()&#x2F;target.notifyAll()</li>
+<li>上面这3个方法能够被调用的前提是<strong>已经获取了相应的互斥锁</strong>，都必须在synchronized内部被调用</li>
+<li>如果在synchronized外部调用，或者锁定的是this，而调用的是target.wait()，JVM会抛出IllegalMonitorStateException</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IllegalMonitorStateExceptionTest</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">Object</span> <span class="variable">lockA</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="type">Object</span> <span class="variable">lockB</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">test1</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="comment">// java.lang.IllegalMonitorStateException</span></span><br><span class="line">        lockA.wait();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">test2</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (lockA) &#123;</span><br><span class="line">            <span class="comment">// java.lang.IllegalMonitorStateException</span></span><br><span class="line">            lockB.wait();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="转账实例"><a href="#转账实例" class="headerlink" title="转账实例"></a>转账实例</h2><h3 id="Allocator"><a href="#Allocator" class="headerlink" title="Allocator"></a>Allocator</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Allocator</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Holder</span> &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">Allocator</span> <span class="variable">allocator</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Allocator</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Allocator <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Holder.allocator;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">Allocator</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> List&lt;Object&gt; als = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 一次性申请所有资源</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title function_">apply</span><span class="params">(Object from, Object to)</span> &#123;</span><br><span class="line">        <span class="comment">// 编程范式</span></span><br><span class="line">        <span class="keyword">while</span> (als.contains(from) || als.contains(to)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                wait(); <span class="comment">// this，单例</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        als.add(from);</span><br><span class="line">        als.add(to);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 归还资源</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title function_">free</span><span class="params">(Object from, Object to)</span> &#123;</span><br><span class="line">        als.remove(from);</span><br><span class="line">        als.remove(to);</span><br><span class="line">        notifyAll(); <span class="comment">// this，单例</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Account"><a href="#Account" class="headerlink" title="Account"></a>Account</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Account</span> &#123;</span><br><span class="line">    <span class="comment">// 必须是单例，因为要分配和释放资源</span></span><br><span class="line">    <span class="keyword">private</span> <span class="type">Allocator</span> <span class="variable">allocator</span> <span class="operator">=</span> Allocator.getInstance();</span><br><span class="line">    <span class="comment">// 账户余额</span></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转账</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">transfer</span><span class="params">(Account target, <span class="type">int</span> amt)</span> &#123;</span><br><span class="line">        <span class="comment">// 一次性申请转出账户和转入账户</span></span><br><span class="line">        allocator.apply(<span class="built_in">this</span>, target);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 锁定转出账户</span></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="built_in">this</span>) &#123;</span><br><span class="line">                <span class="comment">// 锁定转入账户</span></span><br><span class="line">                <span class="keyword">synchronized</span> (target) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (balance &gt; amt) &#123;</span><br><span class="line">                        balance -= amt;</span><br><span class="line">                        target.balance += amt;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            allocator.free(<span class="built_in">this</span>, target);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<!-- indicate-the-source -->
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100023901">Java并发编程实战</a></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/04/22/java-concurrent-wait-notify/">https://blog.zhongmingmao.top/2019/04/22/java-concurrent-wait-notify/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/java-concurrent/">Java Concurrent</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/04/23/java-concurrent-safety-active-performance/" title="Java并发 -- 安全性、活跃性、性能"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Java并发 -- 安全性、活跃性、性能</div></div></a></div><div class="next-post pull-right"><a href="/2019/04/21/java-concurrent-dead-lock/" title="Java并发 -- 死锁"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Java并发 -- 死锁</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/06/12/java-concurrent-csp/" title="Java并发 -- CSP模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-24.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-12</div><div class="title">Java并发 -- CSP模型</div></div></a></div><div><a href="/2019/06/08/java-concurrent-coroutine/" title="Java并发 -- 协程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-08</div><div class="title">Java并发 -- 协程</div></div></a></div><div><a href="/2019/06/06/java-concurrent-stm/" title="Java并发 -- 软件事务内存"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-06</div><div class="title">Java并发 -- 软件事务内存</div></div></a></div><div><a href="/2019/06/04/java-concurrent-actor/" title="Java并发 -- Actor模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-04</div><div class="title">Java并发 -- Actor模型</div></div></a></div><div><a href="/2019/05/31/java-concurrent-disruptor/" title="Java并发 -- Disruptor"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-31</div><div class="title">Java并发 -- Disruptor</div></div></a></div><div><a href="/2019/05/30/java-concurrent-netty/" title="Java并发 -- Netty线程模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-30</div><div class="title">Java并发 -- Netty线程模型</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BE%AA%E7%8E%AF%E7%AD%89%E5%BE%85"><span class="toc-number">1.</span> <span class="toc-text">循环等待</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AD%89%E5%BE%85-%E9%80%9A%E7%9F%A5%E6%9C%BA%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">等待-通知机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#wait"><span class="toc-number">2.1.</span> <span class="toc-text">wait</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#notify-x2F-notifyAll"><span class="toc-number">2.2.</span> <span class="toc-text">notify&#x2F;notifyAll</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%96%E7%A0%81%E8%8C%83%E5%BC%8F"><span class="toc-number">2.2.1.</span> <span class="toc-text">编码范式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#notifyAll"><span class="toc-number">2.2.2.</span> <span class="toc-text">notifyAll</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%BE%85%E9%98%9F%E5%88%97"><span class="toc-number">2.3.</span> <span class="toc-text">等待队列</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BD%AC%E8%B4%A6%E5%AE%9E%E4%BE%8B"><span class="toc-number">3.</span> <span class="toc-text">转账实例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Allocator"><span class="toc-number">3.1.</span> <span class="toc-text">Allocator</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Account"><span class="toc-number">3.2.</span> <span class="toc-text">Account</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

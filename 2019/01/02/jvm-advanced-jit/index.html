@@ -1,0 +1,433 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>JVM进阶 -- 浅谈即时编译 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="概念 即时编译是用来提升应用运行效率的技术 代码会先在JVM上解释执行，之后反复执行的热点代码会被即时翻译成为机器码，直接运行在底层硬件上">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM进阶 -- 浅谈即时编译">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/01/02/jvm-advanced-jit/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="概念 即时编译是用来提升应用运行效率的技术 代码会先在JVM上解释执行，之后反复执行的热点代码会被即时翻译成为机器码，直接运行在底层硬件上">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp">
+<meta property="article:published_time" content="2019-01-02T12:01:06.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.585Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/01/02/jvm-advanced-jit/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'JVM进阶 -- 浅谈即时编译',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">JVM进阶 -- 浅谈即时编译</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-01-02T12:01:06.000Z" title="Created 2019-01-02 20:01:06">2019-01-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/">JVM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/advanced/">Advanced</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">3.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>10min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><ol>
+<li>即时编译是用来<strong>提升应用运行效率</strong>的技术</li>
+<li>代码会先在JVM上<strong>解释执行</strong>，之后反复执行的<strong>热点代码</strong>会被<strong>即时翻译成为机器码</strong>，直接运行在<strong>底层硬件</strong>上</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="分层编译"><a href="#分层编译" class="headerlink" title="分层编译"></a>分层编译</h2><ol>
+<li>HotSpot包含多个即时编译器：C1、C2和Graal（Java 10，实验性）</li>
+<li>在Java 7之前，需要根据程序的特性选择对应的<strong>即时编译器</strong><ul>
+<li>对于<strong>执行时间较短</strong>或<strong>对启动性能有要求</strong>的程序，采用<strong>编译效率较快的C1</strong>，对应参数：<code>-client</code></li>
+<li>对于<strong>执行时间较长</strong>或<strong>对峰值性能有要求</strong>的程序，采用<strong>生成代码执行效率较快的C2</strong>，对应参数：<code>-server</code></li>
+</ul>
+</li>
+<li>Java 7引入了<strong>分层编译</strong>（-XX:+TieredCompilation），综合了<strong>C1的启动性能优势</strong>和<strong>C2的峰值性能优势</strong></li>
+<li>分层编译将<strong>JVM的执行状态</strong>分了5个层次<ul>
+<li>0：解释执行（也会profiling）</li>
+<li>1：执行<strong>不带profiling</strong>的C1代码</li>
+<li>2：执行仅带<strong>方法调用次数</strong>和<strong>循环回边执行次数</strong>profiling的C1代码</li>
+<li>3：执行带<strong>所有profiling</strong>的C1代码</li>
+<li>4：执行C2代码</li>
+</ul>
+</li>
+<li>通常情况下，<strong>C2代码的执行效率比C1代码高出30%以上</strong></li>
+<li>对于C1代码的三种状态，按执行效率从高至低：1层 &gt; 2层 &gt; 3层<ul>
+<li><strong>1层的性能略高于2层，2层的性能比3层高出30%</strong></li>
+<li><strong>profiling越多，额外的性能开销越大</strong></li>
+</ul>
+</li>
+<li>profiling：在程序执行过程中，收集能够反映程序执行状态的数据<ul>
+<li>profile：收集的数据</li>
+<li>JDK附带的<strong>hprof</strong>（CPU+Heap）</li>
+<li>JVM<strong>内置profiling</strong></li>
+</ul>
+</li>
+<li>Java 8默认开启了分层编译，无论开启还是关闭分层编译，原本的<code>-client</code>和<code>-client</code>都是无效的<ul>
+<li>如果<strong>关闭分层编译</strong>，JVM将直接采用<strong>C2</strong></li>
+<li>如果只想用C1，在打开分层编译的同时，使用参数：-XX:TieredStopAtLevel&#x3D;1</li>
+</ul>
+</li>
+</ol>
+<h3 id="编译路径"><a href="#编译路径" class="headerlink" title="编译路径"></a>编译路径</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-path.png" width=600/>
+
+
+<ol>
+<li>1层和4层是<strong>终止状态</strong><ul>
+<li>当一个<strong>方法</strong>被<strong>终止状态</strong>编译后，如果<strong>编译后的代码没有失效</strong>，那么JVM<strong>不会再次发出该方法的编译请求</strong></li>
+</ul>
+</li>
+<li>通常情况下，热点方法会被3层的C1编译，然后再被4层的C2编译</li>
+<li>如果方法的<strong>字节码数目较少</strong>（如getter&#x2F;setter），并且<strong>3层的profiling没有可收集的数据</strong><ul>
+<li>JVM会断定<strong>该方法对于C1和C2的执行效率相同</strong></li>
+<li>JVM会在3层的C1编译后，<strong>直接选用1层的C1编译</strong></li>
+<li>由于1层是<strong>终止状态</strong>，JVM不会继续用4层的C2编译</li>
+</ul>
+</li>
+<li>在C1忙碌的情况下，JVM在<strong>解释执行过程</strong>中对程序进行<strong>profiling</strong>，而后直接由4层的C2编译</li>
+<li>在C2忙碌的情况下，方法会被2层的C1编译，然后再被3层的C1编译，以减少方法在3层的执行时间</li>
+</ol>
+<h3 id="触发JIT的条件"><a href="#触发JIT的条件" class="headerlink" title="触发JIT的条件"></a>触发JIT的条件</h3><ol>
+<li>JVM是依据<strong>方法的调用次数</strong>以及<strong>循环回边的执行次数</strong>来触发JIT的</li>
+<li>JVM将在0层、2层和3层执行状态时进行profiling，其中包括方法的调用次数和循环回边的执行次数<ul>
+<li>循环回边是一个控制流程图中的概念，在字节码中，可以简单理解为<strong>往回跳</strong>的指令</li>
+<li>在即时编译过程中，JVM会识别循环的头部和尾部，<strong>循环尾部到循环头部的控制流就是真正意义上的循环回边</strong></li>
+<li>C1将在<strong>循环回边</strong>插入<strong>循环回边计数器</strong>的代码</li>
+<li>解释执行和C1代码中增加循环回边计数的<strong>位置</strong>并不相同，但这不会对程序造成影响</li>
+<li>JVM不会对这些<strong>计数器</strong>进行<strong>同步</strong>操作，因此收集到的执行次数也<strong>不是精确值</strong></li>
+<li>只要该数值<strong>足够大</strong>，就能表示对应的方法包含热点代码</li>
+</ul>
+</li>
+<li>在<strong>不启动</strong>分层编译时，当<strong>方法的调用次数和循环回边的次数的和</strong>超过-XX:CompileThreshold，便会触发JIT<ul>
+<li>使用<strong>C1</strong>时，该值为<strong>1500</strong></li>
+<li>使用<strong>C2</strong>时，该值为<strong>10000</strong></li>
+</ul>
+</li>
+<li>当<strong>启用</strong>分层编译时，阈值大小是<strong>动态调整</strong>的<ul>
+<li><strong>阈值 * 系数</strong></li>
+</ul>
+</li>
+</ol>
+<h4 id="系数"><a href="#系数" class="headerlink" title="系数"></a>系数</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">系数的计算方法：</span><br><span class="line">s = queue_size_X / (TierXLoadFeedback * compiler_count_X) + 1</span><br><span class="line"></span><br><span class="line">其中X是执行层次，可取3或者4</span><br><span class="line">queue_size_X：执行层次为X的待编译方法的数目</span><br><span class="line">TierXLoadFeedback：预设好的参数，其中Tier3LoadFeedback为5，Tier4LoadFeedback为3</span><br><span class="line">compiler_count_X：层次X的编译线程数目。</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译线程数"><a href="#编译线程数" class="headerlink" title="编译线程数"></a>编译线程数</h4><ol>
+<li>在64位JVM中，默认情况下，编译线程的总数目是根据<strong>处理器数量</strong>来调整的<ul>
+<li>-XX:+CICompilerCountPerCPU&#x3D;true，<strong>编译线程数依赖于处理器数量</strong></li>
+<li>-XX:+CICompilerCountPerCPU&#x3D;false -XX:+CICompilerCount&#x3D;N，<strong>强制设定总编译线程数</strong></li>
+</ul>
+</li>
+<li>JVM会将这些编译线程按照1:2的比例分配给C1和C2（至少1个），对于4核CPU，总编译线程数为3</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// -XX:+CICompilerCountPerCPU=true</span><br><span class="line">n = log2(N) * log2(log2(N)) * 3 / 2</span><br><span class="line">其中 N 为 CPU 核心数目，N &gt;= 4</span><br></pre></td></tr></table></figure>
+
+<h4 id="触发条件"><a href="#触发条件" class="headerlink" title="触发条件"></a>触发条件</h4><p>当启用分层编译时，触发JIT的条件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">i &gt; TierXInvocationThreshold * s || (i &gt; TierXMinInvocationThreshold * s  &amp;&amp; i + b &gt; TierXCompileThreshold * s)</span><br><span class="line">其中i为方法调用次数，b为循环回边执行次数</span><br></pre></td></tr></table></figure>
+
+<h2 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h2><ol>
+<li>在分层编译中的0层、2层和3层，都会进行profiling，最为基础的是<strong>方法的调用次数</strong>以及<strong>循环回边的执行次数</strong><ul>
+<li>主要拥有触发JIT</li>
+</ul>
+</li>
+<li>此外，0层和3层还会收集用于4层C2编译的数据，例如<ul>
+<li><strong>branch profiling</strong><ul>
+<li>分支跳转字节码，包括跳转次数和不跳转次数</li>
+</ul>
+</li>
+<li><strong>type profiling</strong><ul>
+<li>非私有实例方法调用指令：<strong>invokevirtual</strong></li>
+<li>强制类型转换指令：<strong>checkcast</strong></li>
+<li>类型测试指令：<strong>instanceof</strong></li>
+<li>引用类型数组存储指令：<strong>aastore</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>branch profiling和type profiling将给应用带来不少的<strong>性能开销</strong><ul>
+<li>3层C1的性能比2层C1的性能低30%</li>
+<li>通常情况下，我们不会在<strong>解析执行</strong>过程中进行branch profiling和type profiling<ul>
+<li>只有在方法<strong>触发C1编译后</strong>，JVM认为该方法<strong>有可能被C2编译</strong>，才会在该方法的C1代码中收集这些profile</li>
+</ul>
+</li>
+<li>只有在<strong>极端</strong>情况下（如等待C1编译的方法数目太多），才会开始在<strong>解释</strong>执行过程中收集这些profile</li>
+<li>C2可以根据收集得到的数据进行<strong>猜测和假设</strong>，从而作出比较<strong>激进的优化</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="branch-profiling"><a href="#branch-profiling" class="headerlink" title="branch profiling"></a>branch profiling</h3><h4 id="Java代码"><a href="#Java代码" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">foo</span><span class="params">(<span class="type">boolean</span> f, <span class="type">int</span> in)</span> &#123;</span><br><span class="line">    <span class="type">int</span> v;</span><br><span class="line">    <span class="keyword">if</span> (f) &#123;</span><br><span class="line">        v = in;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        v = (<span class="type">int</span>) Math.sin(in);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (v == in) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="type">int</span>) Math.cos(v);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="字节码"><a href="#字节码" class="headerlink" title="字节码"></a>字节码</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">public static int foo(boolean, int);</span><br><span class="line">  descriptor: (ZI)I</span><br><span class="line">  flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">  Code:</span><br><span class="line">    stack=2, locals=3, args_size=2</span><br><span class="line">       0: iload_0</span><br><span class="line">       1: ifeq          9       // false，跳转到偏移量为9的字节码</span><br><span class="line">       4: iload_1</span><br><span class="line">       5: istore_2</span><br><span class="line">       6: goto          16</span><br><span class="line">       9: iload_1</span><br><span class="line">      10: i2d</span><br><span class="line">      11: invokestatic          // Method java/lang/Math.sin:(D)D</span><br><span class="line">      14: d2i</span><br><span class="line">      15: istore_2</span><br><span class="line">      16: iload_2</span><br><span class="line">      17: iload_1</span><br><span class="line">      18: if_icmpne     23      // 如果v!=in，跳转到偏移量为23的字节码</span><br><span class="line">      21: iconst_0</span><br><span class="line">      22: ireturn</span><br><span class="line">      23: iload_2</span><br><span class="line">      24: i2d</span><br><span class="line">      25: invokestatic          // Method java/lang/Math.cos:(D)D</span><br><span class="line">      28: d2i</span><br><span class="line">      29: ireturn</span><br></pre></td></tr></table></figure>
+
+<h4 id="优化过程"><a href="#优化过程" class="headerlink" title="优化过程"></a>优化过程</h4><h5 id="正常分支"><a href="#正常分支" class="headerlink" title="正常分支"></a>正常分支</h5><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-0.png" width=500/>
+
+
+<h5 id="profiling"><a href="#profiling" class="headerlink" title="profiling"></a>profiling</h5><p>假设应用程序调用该方法，所传入的都是true，那么偏移量为1和偏移量为18的条件跳转指令所对应的分支profile中，其跳转的次数都是0。实际执行的分支如下：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-1.png" width=500/></p>
+<h5 id="剪枝"><a href="#剪枝" class="headerlink" title="剪枝"></a>剪枝</h5><p>C2根据这两个分支profile作出假设，在后续的执行过程中，这两个条件跳转指令仍旧不会执行，基于这个假设，C2不会在编译这两个条件跳转语句所对应的false分支（剪枝）。最终的结果是在第一个条件跳转之后，C2代码直接返回0<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-branch-profiling-2.png" width=500/></p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><ol>
+<li>根据条件跳转指令的分支profile，即时编译器可以将<strong>从未执行过</strong>的分支减掉<ul>
+<li>避免编译这些不会用到的代码</li>
+<li>节省<strong>编译时间</strong>以及部署代码所要消耗的<strong>内存空间</strong></li>
+</ul>
+</li>
+<li>剪枝同时也能精简数据流，从而触发更多的优化</li>
+<li>现实中，分支profile出现仅跳转或者不跳转的情况并不常见</li>
+<li>即时编译器对分支profile的利用也不仅仅限于剪枝<ul>
+<li>还可以依据分支profile，<strong>计算每一条执行路径的概率</strong></li>
+<li>以便于某些编译器优化优先处理概率较高的路径</li>
+</ul>
+</li>
+</ol>
+<h3 id="type-profiling"><a href="#type-profiling" class="headerlink" title="type profiling"></a>type profiling</h3><h4 id="Java代码-1"><a href="#Java代码-1" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">hash</span><span class="params">(Object in)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (in <span class="keyword">instanceof</span> Exception) &#123;</span><br><span class="line">        <span class="keyword">return</span> System.identityHashCode(in);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> in.hashCode();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="字节码-1"><a href="#字节码-1" class="headerlink" title="字节码"></a>字节码</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public static int hash(java.lang.Object);</span><br><span class="line">  descriptor: (Ljava/lang/Object;)I</span><br><span class="line">  flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">  Code:</span><br><span class="line">    stack=1, locals=1, args_size=1</span><br><span class="line">       0: aload_0</span><br><span class="line">       1: instanceof        // class java/lang/Exception</span><br><span class="line">       4: ifeq          12  // 不是Exception，跳转到偏移量为12的字节码</span><br><span class="line">       7: aload_0</span><br><span class="line">       8: invokestatic      // Method java/lang/System.identityHashCode:(Ljava/lang/Object;)I</span><br><span class="line">      11: ireturn</span><br><span class="line">      12: aload_0</span><br><span class="line">      13: invokevirtual     // Method java/lang/Object.hashCode:()I</span><br><span class="line">      16: ireturn</span><br></pre></td></tr></table></figure>
+
+<h4 id="优化过程-1"><a href="#优化过程-1" class="headerlink" title="优化过程"></a>优化过程</h4><h5 id="正常分支-1"><a href="#正常分支-1" class="headerlink" title="正常分支"></a>正常分支</h5><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-0.png" width=500/>
+
+
+<h5 id="profiling-优化"><a href="#profiling-优化" class="headerlink" title="profiling+优化"></a>profiling+优化</h5><ol>
+<li>假设应用调用该方法时，所传入的Object皆为Integer实例<ul>
+<li>偏移量为1的<strong>instanceof</strong>指令的<strong>类型profile</strong>仅包含Integer</li>
+<li>偏移量为4的分支跳转语句的<strong>分支profile</strong>不跳转次数为0</li>
+<li>偏移量为13的方法调用指令的<strong>类型profile</strong>仅包含Integer</li>
+</ul>
+</li>
+<li>测试instanceof<ul>
+<li>如果instanceof的<strong>目标类型是final类型</strong>，那么JVM仅需比较测试<strong>对象的动态类型</strong>是否为该final类型</li>
+<li>如果<strong>目标类型不是final类型</strong>，JVM需要依次按下列顺序测试是否与目标类型一致<ul>
+<li>该类本身</li>
+<li>该类的父类、祖先类</li>
+<li>该类所直接实现或间接实现的接口</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>instanceof指令的类型profile仅包含Integer<ul>
+<li>JVM会假设在接下来的执行过程中，所输入的Object对象仍为Integer对象</li>
+<li>生成的代码将<strong>直接测试所输入的动态类型是否为Integer</strong>，如果是继续执行接下来的代码</li>
+</ul>
+</li>
+<li>然后，即时编译器会采用<strong>针对分支profile的优化</strong>以及<strong>对方法调用的条件去虚化内联</strong><ul>
+<li>内联结果：生成的代码将测试所输入对象的动态类型是否为Integer，如果是，执行<code>Integer.hashCode()</code>方法的代码</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">Integer</span> ... &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Integer.hashCode(value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">(<span class="type">int</span> value)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>针对上面三个profile的分支图<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-1.png" width=500/></p>
+<p>进一步优化（剪枝）<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/advanced/jvm-advanced-jit-type-profiling-2.png" width=500/></p>
+<h4 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h4><ol>
+<li>和基于分支profile的优化一样，基于类型profile的优化同样也是作出假设，从而精简控制流以及数据流，两者的<strong>核心是假设</strong></li>
+<li>对于<strong>分支profile</strong>，即时编译器假设<strong>仅执行某一分支</strong></li>
+<li>对于<strong>类型profile</strong>，即时编译器假设的是<strong>对象的动态类型仅为类型profile中的那几个</strong></li>
+<li>如果<strong>假设失败</strong>，将进入<strong>去优化</strong></li>
+</ol>
+<h3 id="去优化"><a href="#去优化" class="headerlink" title="去优化"></a>去优化</h3><ol>
+<li>去优化：从执行即时编译生成的机器码<strong>切回解释执行</strong></li>
+<li>在生成的机器码中，即时编译器将在<strong>假设失败</strong>的位置插入一个<strong>陷阱</strong>（trap）<ul>
+<li>陷阱实际上是一条<strong>call指令</strong>，调用至JVM<strong>专门负责去优化的方法</strong></li>
+<li>上图红色方框的问号，便代表陷阱</li>
+</ul>
+</li>
+<li>去优化的过程很复杂，由于即时编译器采用了许多优化方式，其生成的代码和原本字节码的差异非常大</li>
+<li>在去优化的过程中，<strong>需要将当前机器码的执行状态切换至某一字节码之前的执行状态，并从该字节码开始执行</strong><ul>
+<li>要求即时编译器在编译过程中记录好这两种执行状态的<strong>映射</strong></li>
+</ul>
+</li>
+<li>在调用JVM的去优化方法时，即时编译器生成的机器码可以根据<strong>产生去优化的原因</strong>决定<strong>是否保留这份机器码</strong>，以及<strong>何时重新编译对应的Java代码</strong><ul>
+<li>如果去优化的原因<strong>与优化无关</strong><ul>
+<li>即使重新编译也不会改变生成的机器码，那么生成的机器码可以在调用去优化代码时传入<strong>Action_None</strong></li>
+<li><strong>表示保留这一份机器码，在下次调用该方法时重新进入这一份机器码</strong></li>
+</ul>
+</li>
+<li>如果去优化的原因<strong>与静态分析的结果有关</strong>，例如类层次分析<ul>
+<li>那么生成的机器码可以在调用去优化方法时传入<strong>Action_Recompile</strong></li>
+<li><strong>表示不保留这一份机器码，但是可以不经过重新收集profile，直接重新编译</strong></li>
+</ul>
+</li>
+<li>如果去优化的原因<strong>与基于profile的激进优化有关</strong><ul>
+<li>那么生成的机器码需要在调用去优化方法时传入<strong>Action_Reinterpret</strong></li>
+<li><strong>表示不保留这一份机器码，并且需要重新收集profile，再重新编译</strong></li>
+<li>因为之前收集到的profile已经<strong>不能准确</strong>反映程序的运行情况，需要重新收集</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100010301">深入拆解Java虚拟机</a></p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/01/02/jvm-advanced-jit/">https://blog.zhongmingmao.top/2019/01/02/jvm-advanced-jit/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/jvm/">JVM</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/01/03/jvm-basic-bytecode/" title="JVM基础 -- 字节码"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">JVM基础 -- 字节码</div></div></a></div><div class="next-post pull-right"><a href="/2019/01/01/jvm-basic-sugar/" title="JVM基础 -- Java语法糖"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">JVM基础 -- Java语法糖</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/02/22/jvm-bytecode-manipulation-asm-introduction/" title="ASM - Introduction"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-22</div><div class="title">ASM - Introduction</div></div></a></div><div><a href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="title">Bytecode Manipulation - Javassist</div></div></a></div><div><a href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-10</div><div class="title">Bytecode Manipulation - Java Agent Practice</div></div></a></div><div><a href="/2019/09/13/java-performance-jvm-heap-allocation/" title="Java性能 -- JVM堆内存分配"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-13</div><div class="title">Java性能 -- JVM堆内存分配</div></div></a></div><div><a href="/2019/09/11/java-performance-gc/" title="Java性能 -- GC"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-11</div><div class="title">Java性能 -- GC</div></div></a></div><div><a href="/2019/09/09/java-performance-jit/" title="Java性能 -- JIT"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-09</div><div class="title">Java性能 -- JIT</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E5%BF%B5"><span class="toc-number">1.</span> <span class="toc-text">概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B1%82%E7%BC%96%E8%AF%91"><span class="toc-number">2.</span> <span class="toc-text">分层编译</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E8%B7%AF%E5%BE%84"><span class="toc-number">2.1.</span> <span class="toc-text">编译路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A6%E5%8F%91JIT%E7%9A%84%E6%9D%A1%E4%BB%B6"><span class="toc-number">2.2.</span> <span class="toc-text">触发JIT的条件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%B3%BB%E6%95%B0"><span class="toc-number">2.2.1.</span> <span class="toc-text">系数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E7%BA%BF%E7%A8%8B%E6%95%B0"><span class="toc-number">2.2.2.</span> <span class="toc-text">编译线程数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6"><span class="toc-number">2.2.3.</span> <span class="toc-text">触发条件</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Profiling"><span class="toc-number">3.</span> <span class="toc-text">Profiling</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#branch-profiling"><span class="toc-number">3.1.</span> <span class="toc-text">branch profiling</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Java%E4%BB%A3%E7%A0%81"><span class="toc-number">3.1.1.</span> <span class="toc-text">Java代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E7%A0%81"><span class="toc-number">3.1.2.</span> <span class="toc-text">字节码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E8%BF%87%E7%A8%8B"><span class="toc-number">3.1.3.</span> <span class="toc-text">优化过程</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%AD%A3%E5%B8%B8%E5%88%86%E6%94%AF"><span class="toc-number">3.1.3.1.</span> <span class="toc-text">正常分支</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#profiling"><span class="toc-number">3.1.3.2.</span> <span class="toc-text">profiling</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%89%AA%E6%9E%9D"><span class="toc-number">3.1.3.3.</span> <span class="toc-text">剪枝</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">3.1.4.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#type-profiling"><span class="toc-number">3.2.</span> <span class="toc-text">type profiling</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Java%E4%BB%A3%E7%A0%81-1"><span class="toc-number">3.2.1.</span> <span class="toc-text">Java代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E7%A0%81-1"><span class="toc-number">3.2.2.</span> <span class="toc-text">字节码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E8%BF%87%E7%A8%8B-1"><span class="toc-number">3.2.3.</span> <span class="toc-text">优化过程</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%AD%A3%E5%B8%B8%E5%88%86%E6%94%AF-1"><span class="toc-number">3.2.3.1.</span> <span class="toc-text">正常分支</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#profiling-%E4%BC%98%E5%8C%96"><span class="toc-number">3.2.3.2.</span> <span class="toc-text">profiling+优化</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93-1"><span class="toc-number">3.2.4.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%BB%E4%BC%98%E5%8C%96"><span class="toc-number">3.3.</span> <span class="toc-text">去优化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

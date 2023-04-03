@@ -1,0 +1,768 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>InnoDB -- 行记录格式 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="本文主要介绍InnoDB存储引擎的行记录格式ROW_FORMAT">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB -- 行记录格式">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2017/05/07/innodb-table-row-format/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="本文主要介绍InnoDB存储引擎的行记录格式ROW_FORMAT">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png">
+<meta property="article:published_time" content="2017-05-07T06:23:41.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.579Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="InnoDB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2017/05/07/innodb-table-row-format/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'InnoDB -- 行记录格式',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">InnoDB -- 行记录格式</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2017-05-07T06:23:41.000Z" title="Created 2017-05-07 14:23:41">2017-05-07</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/">Storage</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/">MySQL</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/innodb/">InnoDB</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">3.9k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>18min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><blockquote>
+<p>本文主要介绍<code>InnoDB</code>存储引擎的行记录格式<code>ROW_FORMAT</code></p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h1><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/row_format.png" width="500">
+
+<h2 id="Named-File-Format"><a href="#Named-File-Format" class="headerlink" title="Named File Format"></a>Named File Format</h2><ol>
+<li>InnoDB<code>早期</code>的文件格式（<code>页格式</code>）为<code>Antelope</code>，可以定义两种行记录格式，分别是<code>Compact</code>和<code>Redundant</code></li>
+<li><code>Named File Format</code>为了解决不同版本下<code>页结构的兼容性</code>，在<code>Barracuda</code>可以定义两种新的行记录格式<code>Compressed</code>和<code>Dynamic</code></li>
+<li>变量为<code>innodb_file_format</code>和<code>innodb_default_row_format</code></li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span>  <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;innodb_file_format&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------+-----------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name      <span class="operator">|</span> <span class="keyword">Value</span>     <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------+-----------+</span></span><br><span class="line"><span class="operator">|</span> innodb_file_format <span class="operator">|</span> Barracuda <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------+-----------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span>  <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;%row%format%&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">---------------------------+---------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name             <span class="operator">|</span> <span class="keyword">Value</span>   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------------------+---------+</span></span><br><span class="line"><span class="operator">|</span> innodb_default_row_format <span class="operator">|</span> <span class="keyword">dynamic</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------------------+---------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.38</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h2 id="行记录最大长度"><a href="#行记录最大长度" class="headerlink" title="行记录最大长度"></a>行记录最大长度</h2><ol>
+<li>页大小（<code>page size</code>）为<code>4KB</code>、<code>8KB</code>、<code>16KB</code>和<code>32KB</code>时，行记录最大长度（<code>maximum row length</code>）应该略小于<code>页大小的一半</code><ul>
+<li>默认页大小为<code>16KB</code>，因此行记录最大长度应该略小于<code>8KB</code> ，因此一个<code>B+Tree叶子节点最少有2个行记录</code></li>
+</ul>
+</li>
+<li>页大小为<code>64KB</code>时，行记录最大长度略小于<code>16KB</code></li>
+</ol>
+<h2 id="CHAR-N-与VARCHAR-N"><a href="#CHAR-N-与VARCHAR-N" class="headerlink" title="CHAR(N)与VARCHAR(N)"></a>CHAR(N)与VARCHAR(N)</h2><p><code>N</code>指的是**<code>字符长度</code>**，而不是<code>Byte大小</code>，在不同的编码下，同样的字符会占用不同的空间，如<code>LATIN1</code>（<code>定长编码</code>）和<code>UTF8</code>(<code>变长编码</code>)</p>
+<h2 id="变长列"><a href="#变长列" class="headerlink" title="变长列"></a>变长列</h2><p>在InnoDB中，变长列（<code>variable-length column</code>）可能是以下几种情况</p>
+<ol>
+<li><code>长度不固定</code>的数据类型，例如<code>VARCHAR</code>、<code>VARBINARY</code>、<code>BLOB</code>、<code>TEXT</code>等</li>
+<li>对于<code>长度固定</code>的数据类型，如<code>CHAR</code>，如果<code>实际存储</code>占用的空间<code>大于768Byte</code>，InnoDB会将其视为变长列</li>
+<li><code>变长编码</code>下的<code>CHAR</code></li>
+</ol>
+<h2 id="行溢出"><a href="#行溢出" class="headerlink" title="行溢出"></a>行溢出</h2><ol>
+<li>当<code>行记录的长度</code>没有超过<code>行记录最大长度</code>时，<code>所有数据</code>都会存储在<code>当前页</code></li>
+<li>当<code>行记录的长度</code>超过<code>行记录最大长度</code>时，变长列（<code>variable-length column</code>）会选择外部溢出页（<code>overflow page</code>，一般是<code>Uncompressed BLOB Page</code>）进行存储<ul>
+<li><p><code>Compact</code> + <code>Redundant</code>：保留前<code>768Byte</code>在当前页（<code>B+Tree叶子节点</code>），其余数据存放在<code>溢出页</code>。<code>768Byte</code>后面跟着<code>20Byte</code>的数据，用来存储<code>指向溢出页的指针</code></p>
+</li>
+<li><p><code>Dynamic</code> + <code>Compressed</code>：仅存储<code>20Byte</code>数据，存储<code>指向溢出页的指针</code>，这时比<code>Compact</code>和<code>Redundant</code>更高效，因为一个<code>B+Tree叶子节点</code>能<code>存放更多的行记录</code></p>
+</li>
+</ul>
+</li>
+</ol>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/overflow.png" width="500">
+
+<h1 id="Redundant"><a href="#Redundant" class="headerlink" title="Redundant"></a>Redundant</h1><p><code>MySQL 5.0</code>之前的ROW_FORMAT</p>
+<h2 id="格式"><a href="#格式" class="headerlink" title="格式"></a>格式</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/redundant_format.png" width="500">
+
+<h3 id="字段偏移列表"><a href="#字段偏移列表" class="headerlink" title="字段偏移列表"></a>字段偏移列表</h3><ol>
+<li>按照列的顺序<code>逆序</code>放置</li>
+<li>列长度<code>小于255Byte</code>，用<code>1Byte</code>存储</li>
+<li>列长度<code>大于255Byte</code>，用<code>2Byte</code>存储</li>
+</ol>
+<h3 id="记录头信息"><a href="#记录头信息" class="headerlink" title="记录头信息"></a>记录头信息</h3><table>
+<thead>
+<tr>
+<th>名称</th>
+<th>大小（bit）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>()</td>
+<td>1</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>()</td>
+<td>1</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>deleted_flag</td>
+<td>1</td>
+<td>该行是否已被删除</td>
+</tr>
+<tr>
+<td>min_rec_flag</td>
+<td>1</td>
+<td>如果该行记录是预定义为最小的记录，为1</td>
+</tr>
+<tr>
+<td><strong>n_owned</strong></td>
+<td>4</td>
+<td>该记录拥有的记录数，用于<code>Slot</code></td>
+</tr>
+<tr>
+<td>heap_no</td>
+<td>13</td>
+<td>索引堆中该条记录的索引号</td>
+</tr>
+<tr>
+<td><strong>n_fields</strong></td>
+<td>10</td>
+<td>记录中<code>列的数量</code>，一行最多支持<code>1023</code>列</td>
+</tr>
+<tr>
+<td><strong>1byte_offs_flag</strong></td>
+<td>1</td>
+<td>偏移列表的单位为<code>1Byte</code>还是<code>2Byte</code></td>
+</tr>
+<tr>
+<td>next_record</td>
+<td>16</td>
+<td>页中下一条记录的相对位置</td>
+</tr>
+<tr>
+<td>Total</td>
+<td><code>48(6Byte)</code></td>
+<td>nothing</td>
+</tr>
+</tbody></table>
+<h3 id="隐藏列"><a href="#隐藏列" class="headerlink" title="隐藏列"></a>隐藏列</h3><ol>
+<li>ROWID<br> 没有<code>显式定义主键</code>或<code>唯一非NULL的索引</code>时，InnoDB会<code>自动创建6Byte的ROWID</code></li>
+<li>Transaction ID<br> 事务ID</li>
+<li>Roll Pointer</li>
+</ol>
+<h2 id="非行溢出实例"><a href="#非行溢出实例" class="headerlink" title="非行溢出实例"></a>非行溢出实例</h2><h3 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> b <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> c <span class="type">CHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> d <span class="type">VARCHAR</span>(<span class="number">10</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>LATIN1 ROW_FORMAT<span class="operator">=</span>REDUNDANT;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.23</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="string">&#x27;1&#x27;</span>,<span class="string">&#x27;22&#x27;</span>,<span class="string">&#x27;22&#x27;</span>,<span class="string">&#x27;333&#x27;</span>),(<span class="string">&#x27;4&#x27;</span>,<span class="keyword">NULL</span>,<span class="keyword">NULL</span>,<span class="string">&#x27;555&#x27;</span>);</span><br><span class="line">Query OK, <span class="number">2</span> <span class="keyword">rows</span> affected (<span class="number">0.08</span> sec)</span><br><span class="line">Records: <span class="number">2</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+<p>行记录在<code>page offset=3</code>的页中</p>
+<h3 id="16进制信息"><a href="#16进制信息" class="headerlink" title="16进制信息"></a>16进制信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line"># page offset=3</span><br><span class="line">0000c000: 32d4 0518 0000 0003 ffff ffff ffff ffff  2...............</span><br><span class="line">0000c010: 0000 0000 408f 1c1b 45bf 0000 0000 0000  ....@...E.......</span><br><span class="line">0000c020: 0000 0000 0112 0002 00db 0004 0000 0000  ................</span><br><span class="line">0000c030: 00ba 0002 0001 0002 0000 0000 0000 0000  ................</span><br><span class="line">0000c040: 0000 0000 0000 0000 0156 0000 0112 0000  .........V......</span><br><span class="line">0000c050: 0002 00f2 0000 0112 0000 0002 0032 0801  .............2..</span><br><span class="line">0000c060: 0000 0300 8a69 6e66 696d 756d 0009 0300  .....infimum....</span><br><span class="line">0000c070: 0803 0000 7375 7072 656d 756d 0023 2016  ....supremum.# .</span><br><span class="line">0000c080: 1413 0c06 0000 100f 00ba 0000 0014 b201  ................</span><br><span class="line">0000c090: 0000 0014 08bf b900 0002 0301 1031 3232  .............122</span><br><span class="line">0000c0a0: 3232 2020 2020 2020 2020 3333 3321 9e94  22        333!..</span><br><span class="line">0000c0b0: 1413 0c06 0000 180f 0074 0000 0014 b202  .........t......</span><br><span class="line">0000c0c0: 0000 0014 08bf b900 0002 0301 1f34 0000  .............4..</span><br><span class="line">0000c0d0: 0000 0000 0000 0000 3535 3500 0000 0000  ........555.....</span><br></pre></td></tr></table></figure>
+
+<h4 id="第1行记录（0xc07d）"><a href="#第1行记录（0xc07d）" class="headerlink" title="第1行记录（0xc07d）"></a>第1行记录（<code>0xc07d</code>）</h4><ul>
+<li>长度偏移列表（<code>23 20 16 14 13 0c 06</code>）<br>总共有<code>7</code>列，每列的长度都不超过<code>255Byte</code>，偏移列表的单位为<code>1Byte</code>，所以<code>0xc07d~0xc083</code>为长度偏移列表</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>列序号</th>
+<th>长度</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>6</code> &#x3D; 0x06</td>
+<td>ROWID，隐藏列</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>6</code> &#x3D; 0x0c-0x06</td>
+<td>Transaction ID，隐藏列</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>7</code> &#x3D; 0x13-0x0c</td>
+<td>Roll Pointer，隐藏列</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>1</code> &#x3D; 0x14-0x13</td>
+<td>a VARCHAR(10)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>2</code> &#x3D; 0x16-0x14</td>
+<td>b VARCHAR(10)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>10</code> &#x3D; 0x20-0x16</td>
+<td>c CHAR(10)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>3</code> &#x3D; 0x23-0x20</td>
+<td>d VARCHAR(10)</td>
+</tr>
+</tbody></table>
+<ul>
+<li>记录头信息（<code>00 00 10 0f 00 ba</code>）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>n_fields</td>
+<td>7</td>
+<td>记录中列的数量</td>
+</tr>
+<tr>
+<td>1byte_offs_flag</td>
+<td>1</td>
+<td>偏移列表的单位为<code>1Byte</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>ROWID（<code>00 00 00 14 b2 01</code>）</li>
+<li>Transaction ID（<code>00 00 00 14 08 bf</code>）</li>
+<li>Roll Pointer（<code>b9 00 00 02 03 01 10</code>）</li>
+<li>a（<code>31</code>）<ul>
+<li>字符<code>1</code>，VARCHAR(10)，<code>1个字符</code>只占用了<code>1Byte</code></li>
+</ul>
+</li>
+<li>b（<code>32 32</code>）<ul>
+<li>字符<code>22</code>，VARCHAR(10)，<code>2个字符</code>只占用了<code>2Byte</code></li>
+</ul>
+</li>
+<li>c（<code>32 32 20 20 20 20 20 20 20 20</code>）<ul>
+<li>字符<code>22</code>，CHAR(10)，<code>2个字符</code>依旧占用了<code>10Byte</code></li>
+</ul>
+</li>
+<li>d（<code>33 33 33</code>）<ul>
+<li>字符<code>333</code>，VARCHAR(10)，<code>3个字符</code>只占用了<code>3Byte</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="第2行记录（0xc0ad）"><a href="#第2行记录（0xc0ad）" class="headerlink" title="第2行记录（0xc0ad）"></a>第2行记录（<code>0xc0ad</code>）</h4><ul>
+<li>长度偏移列表（<code>21 9e 94 14 13 0c 06</code>）<br>总共有<code>7</code>列，每列的长度都不超过<code>255Byte</code>，偏移列表的单位为<code>1Byte</code>，所以<code>0xc0ad~0xc0b3</code>为长度偏移列表</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>列序号</th>
+<th>长度</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>6</code> &#x3D; 0x06</td>
+<td>ROWID，隐藏列</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>6</code> &#x3D; 0x0c-0x06</td>
+<td>Transaction ID，隐藏列</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>7</code> &#x3D; 0x13-0x0c</td>
+<td>Roll Pointer，隐藏列</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>1</code> &#x3D; 0x14-0x13</td>
+<td>a VARCHAR(10)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>0</code>(0x94-0x14&#x3D;0x80&gt;10)</td>
+<td>b VARCHAR(10)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>10</code> &#x3D; 0x9e-0x94</td>
+<td>c CHAR(10)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>3</code> &#x3D; 0x21-(0x9e-0x94)-0x14</td>
+<td>d VARCHAR(10)</td>
+</tr>
+</tbody></table>
+<ul>
+<li>记录头信息（<code>00 00 18 0f 00 74</code>）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>n_fields</td>
+<td>7</td>
+<td>记录中列的数量</td>
+</tr>
+<tr>
+<td>1byte_offs_flag</td>
+<td>1</td>
+<td>偏移列表的单位为<code>1Byte</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>ROWID（<code>00 00 00 14 b2 02</code>）</li>
+<li>Transaction ID（<code>00 00 00 14 08 bf</code>）<ul>
+<li><code>与第1条记录的事务ID一致</code>（在InnoDB中会将<code>INSERT VALUES</code>视为在<code>同一事务</code>内，MyISAM则不会）</li>
+</ul>
+</li>
+<li>Roll Pointer（<code>b9 00 00 02 03 01 1f</code>）</li>
+<li>a（<code>34</code>）<ul>
+<li>字符<code>4</code>，VARCHAR(10)，<code>1个字符</code>只占用了<code>1Byte</code></li>
+</ul>
+</li>
+<li>b<ul>
+<li><code>VARCHAR为NULL</code>时，**<code>不占用空间</code>**</li>
+</ul>
+</li>
+<li>c（<code>00 00 00 00 00 00 00 00 00 00</code>）<ul>
+<li><code>CHAR(10)为NULL</code>时，依旧<code>占用10Byte</code></li>
+</ul>
+</li>
+<li>d（<code>35 35 35</code>）<ul>
+<li>字符<code>555</code>，VARCHAR(10)，<code>3个字符</code>只占用了<code>3Byte</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="行溢出实例"><a href="#行溢出实例" class="headerlink" title="行溢出实例"></a>行溢出实例</h2><h3 id="表初始化-1"><a href="#表初始化-1" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">VARCHAR</span>(<span class="number">9000</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>LATIN1 ROW_FORMAT<span class="operator">=</span>REDUNDANT;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.08</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> REPEAT(<span class="string">&#x27;a&#x27;</span>,<span class="number">9000</span>);</span><br><span class="line">Query OK, <span class="number">1</span> <span class="type">row</span> affected (<span class="number">0.05</span> sec)</span><br><span class="line">Records: <span class="number">1</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000004, page type &lt;Uncompressed BLOB Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">Freshly Allocated Page: 1</span><br><span class="line">File Segment inode: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">Uncompressed BLOB Page: 1</span><br></pre></td></tr></table></figure>
+<p>行记录的前<code>768Byte</code>在<code>page offset=3</code>的页中，但由于<code>9000&gt;8192&gt;行记录最大长度</code>，所以将剩余数据放在了<code>溢出页</code>，即<code>page offset=4</code>的页中</p>
+<h3 id="16进制信息-1"><a href="#16进制信息-1" class="headerlink" title="16进制信息"></a>16进制信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line"># page offset=3</span><br><span class="line">0000c000: 17e8 3157 0000 0003 ffff ffff ffff ffff  ..1W............</span><br><span class="line">0000c010: 0000 0000 408f 6113 45bf 0000 0000 0000  ....@.a.E.......</span><br><span class="line">0000c020: 0000 0000 0113 0002 03b2 0003 0000 0000  ................</span><br><span class="line">0000c030: 008b 0005 0000 0001 0000 0000 0000 0000  ................</span><br><span class="line">0000c040: 0000 0000 0000 0000 0157 0000 0113 0000  .........W......</span><br><span class="line">0000c050: 0002 00f2 0000 0113 0000 0002 0032 0801  .............2..</span><br><span class="line">0000c060: 0000 0300 8b69 6e66 696d 756d 0009 0200  .....infimum....</span><br><span class="line">0000c070: 0803 0000 7375 7072 656d 756d 0043 2700  ....supremum.C&#x27;.</span><br><span class="line">0000c080: 1300 0c00 0600 0010 0800 7400 0000 14b2  ..........t.....</span><br><span class="line">0000c090: 0300 0000 1408 cea3 0000 01f9 0110 6161  ..............aa</span><br><span class="line">0000c0a0: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">0000c390: 6161 6161 6161 6161 6161 6161 6161 0000  aaaaaaaaaaaaaa..</span><br><span class="line">0000c3a0: 0113 0000 0004 0000 0026 0000 0000 0000  .........&amp;......</span><br><span class="line">0000c3b0: 2028 0000 0000 0000 0000 0000 0000 0000   (..............</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010000: 273a f701 0000 0004 0000 0000 0000 0000  &#x27;:..............</span><br><span class="line">00010010: 0000 0000 408f 6113 000a 0000 0000 0000  ....@.a.........</span><br><span class="line">00010020: 0000 0000 0113 0000 2028 ffff ffff 6161  ........ (....aa</span><br><span class="line">00010030: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00012050: 6161 6161 6161 0000 0000 0000 0000 0000  aaaaaa..........</span><br><span class="line">00012060: 0000 0000 0000 0000 0000 0000 0000 0000  ................</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>长度偏移列表（<code>4327 0013 000c 0006</code>）<br>总共有<code>4</code>列，<code>a</code>列的长度超过了<code>255Byte</code>，偏移列表的单位为<code>2Byte</code>，所以<code>0xc07d~0xc084</code>为长度偏移列表</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>列序号</th>
+<th>长度</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>6</code> &#x3D; 0x0006</td>
+<td>ROWID，隐藏列</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>6</code> &#x3D; 0x000c-0x0006</td>
+<td>Transaction ID，隐藏列</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>7</code> &#x3D; 0x0013-0x000c</td>
+<td>Roll Pointer，隐藏列</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>9000</code>(0x4327暂不理解)</td>
+<td>a VARCHAR(9000)</td>
+</tr>
+</tbody></table>
+<ul>
+<li>记录头信息（<code>00 00 10 08 00 74</code>）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>n_fields</td>
+<td>4</td>
+<td>记录中列的数量</td>
+</tr>
+<tr>
+<td>1byte_offs_flag</td>
+<td>0</td>
+<td>偏移列表的单位为<code>2Byte</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>ROWID（<code>00 00 00 14 b2 03</code>）</li>
+<li>Transaction ID（<code>00 00 00 14 08 ce</code>）</li>
+<li>Roll Pointer（<code>a3 00 00 01 f9 01 10</code>）</li>
+<li>a<ul>
+<li><code>page offset=3</code>，前768Byte（<code>0xc09e~0xc39d</code>），在溢出页的长度为<code>0x2028</code>，即<code>8232</code></li>
+<li><code>page offset=4</code>为<code>溢出页</code>，存放后8232Byte的数据(<code>0x1002e~0x12055</code>)</li>
+</ul>
+</li>
+</ul>
+<h1 id="Compact"><a href="#Compact" class="headerlink" title="Compact"></a>Compact</h1><p><code>MySQL 5.0</code>引入，<code>MySQL 5.1</code>默认ROW_FORMAT</p>
+<h2 id="对比Redundant"><a href="#对比Redundant" class="headerlink" title="对比Redundant"></a>对比Redundant</h2><ol>
+<li>减少了大约<code>20%</code>的空间</li>
+<li>在某些操作下会增加<code>CPU</code>的占用</li>
+<li>在<code>典型</code>的应用场景下，比Redundant快</li>
+</ol>
+<h2 id="格式-1"><a href="#格式-1" class="headerlink" title="格式"></a>格式</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://innodb-1253868755.cos.ap-guangzhou.myqcloud.com/compact_format.png" width="500">
+
+<h3 id="变长字段长度列表"><a href="#变长字段长度列表" class="headerlink" title="变长字段长度列表"></a>变长字段长度列表</h3><ol>
+<li>条件<ul>
+<li><code>VARCHAR</code>、<code>BLOB</code>等</li>
+<li><code>变长编码</code>（如<code>UTF8</code>）下的<code>CHAR</code></li>
+</ul>
+</li>
+<li>放置排序：<code>逆序</code></li>
+<li>用<code>2Byte</code>存储的情况：需要用<code>溢出页</code>；<code>最大长度</code>超过<code>255Byte</code>；<code>实际长度</code>超过<code>127Byte</code></li>
+</ol>
+<h3 id="NULL标志位"><a href="#NULL标志位" class="headerlink" title="NULL标志位"></a>NULL标志位</h3><ol>
+<li>行记录中是否有NULL值，是一个位向量（<code>Bit Vector</code>）</li>
+<li>可为NULL的列数量为N，则该标志位占用的<code>CEILING(N/8)Byte</code></li>
+<li>列为NULL时<code>不占用实际空间</code></li>
+</ol>
+<h3 id="记录头信息-1"><a href="#记录头信息-1" class="headerlink" title="记录头信息"></a>记录头信息</h3><table>
+<thead>
+<tr>
+<th>名称</th>
+<th>大小（bit）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>()</td>
+<td>1</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>()</td>
+<td>1</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>deleted_flag</td>
+<td>1</td>
+<td>该行是否已被删除</td>
+</tr>
+<tr>
+<td>min_rec_flag</td>
+<td>1</td>
+<td>如果该行记录是预定义为最小的记录，为1</td>
+</tr>
+<tr>
+<td>n_owned</td>
+<td>4</td>
+<td>该记录拥有的记录数，用于<code>Slot</code></td>
+</tr>
+<tr>
+<td>heap_no</td>
+<td>13</td>
+<td>索引堆中该条记录的索引号</td>
+</tr>
+<tr>
+<td>record_type</td>
+<td>3</td>
+<td>记录类型，000（普通），001（B+Tree节点指针），010（Infimum），011（Supremum）</td>
+</tr>
+<tr>
+<td>next_record</td>
+<td>16</td>
+<td>页中下一条记录的相对位置</td>
+</tr>
+<tr>
+<td>Total</td>
+<td><code>40(5Byte)</code></td>
+<td>nothing</td>
+</tr>
+</tbody></table>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><p><code>行溢出</code>时的处理方式与<code>Redundant</code>类似，这里仅给出<code>非行溢出</code>的实例</p>
+<h3 id="表初始化-2"><a href="#表初始化-2" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> b <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> c <span class="type">CHAR</span>(<span class="number">10</span>),</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> d <span class="type">VARCHAR</span>(<span class="number">10</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>LATIN1 ROW_FORMAT<span class="operator">=</span>COMPACT;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.03</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="string">&#x27;1&#x27;</span>,<span class="string">&#x27;22&#x27;</span>,<span class="string">&#x27;22&#x27;</span>,<span class="string">&#x27;333&#x27;</span>),(<span class="string">&#x27;4&#x27;</span>,<span class="keyword">NULL</span>,<span class="keyword">NULL</span>,<span class="string">&#x27;555&#x27;</span>);                                                               Query OK, <span class="number">2</span> <span class="keyword">rows</span> affected (<span class="number">0.02</span> sec)</span><br><span class="line">Records: <span class="number">2</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Freshly Allocated Page: 2</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Segment inode: 1</span><br></pre></td></tr></table></figure>
+<p>行记录在<code>page offset=3</code>的页中</p>
+<h3 id="16进制信息-2"><a href="#16进制信息-2" class="headerlink" title="16进制信息"></a>16进制信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line"># page offset=3</span><br><span class="line">0000c000: 1f96 f8df 0000 0003 ffff ffff ffff ffff  ................</span><br><span class="line">0000c010: 0000 0000 408f deaa 45bf 0000 0000 0000  ....@...E.......</span><br><span class="line">0000c020: 0000 0000 0116 0002 00c3 8004 0000 0000  ................</span><br><span class="line">0000c030: 00ac 0002 0001 0002 0000 0000 0000 0000  ................</span><br><span class="line">0000c040: 0000 0000 0000 0000 015a 0000 0116 0000  .........Z......</span><br><span class="line">0000c050: 0002 00f2 0000 0116 0000 0002 0032 0100  .............2..</span><br><span class="line">0000c060: 0200 1e69 6e66 696d 756d 0003 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 0302 0100 0000 1000  supremum........</span><br><span class="line">0000c080: 2b00 0000 14b2 0a00 0000 1409 03c6 0000  +...............</span><br><span class="line">0000c090: 020a 0110 3132 3232 3220 2020 2020 2020  ....12222</span><br><span class="line">0000c0a0: 2033 3333 0301 0600 0018 ffc4 0000 0014   333............</span><br><span class="line">0000c0b0: b20b 0000 0014 0903 c600 0002 0a01 1f34  ...............4</span><br><span class="line">0000c0c0: 3535 3500 0000 0000 0000 0000 0000 0000  555.............</span><br></pre></td></tr></table></figure>
+
+<h4 id="第1行记录（0xc078）"><a href="#第1行记录（0xc078）" class="headerlink" title="第1行记录（0xc078）"></a>第1行记录（<code>0xc078</code>）</h4><ol>
+<li>变长字段长度列表（<code>03 02 01</code>）<ul>
+<li>列a长度为1</li>
+<li>列b长度为2</li>
+<li>列c在<code>LATIN1</code>单字节编码下，长度固定，因此不会出现在该列表中</li>
+<li>列d长度为3</li>
+</ul>
+</li>
+<li>NULL标志位（<code>00</code>）<ul>
+<li>在表中可以为NULL的可变列为a、b、d，<code>0&lt; 3/8 &lt; 1</code>，所以NULL标志位占用<code>1Byte</code></li>
+<li><code>00</code>表示没有字段为NULL</li>
+</ul>
+</li>
+<li>记录头信息（<code>00 00 10 00 2b</code>）<ul>
+<li>本行记录结束的位置<code>0xc078+0x2b</code>&#x3D;<strong><code>c0a3</code></strong></li>
+</ul>
+</li>
+<li>ROWID（<code>00 00 00 14 b2 0a</code>）</li>
+<li>Transaction ID（<code>00 00 00 14 09 03</code>）</li>
+<li>Roll Pointer（<code>c6 00 00 02 0a 01 10</code>）</li>
+<li>a（<code>31</code>）<ul>
+<li>字符<code>1</code>，VARCHAR(10)，<code>1个字符</code>只占用了<code>1Byte</code></li>
+</ul>
+</li>
+<li>b（<code>32 32</code>）<ul>
+<li>字符<code>22</code>，VARCHAR(10)，<code>2个字符</code>只占用了<code>2Byte</code></li>
+</ul>
+</li>
+<li>c（<code>32 32 20 20 20 20 20 20 20 20</code>）<ul>
+<li>字符<code>22</code>，CHAR(10)，<code>2个字符</code>依旧占用了<code>10Byte</code></li>
+</ul>
+</li>
+<li>d（<code>33 33 33</code>）<ul>
+<li>字符<code>333</code>，VARCHAR(10)，<code>3个字符</code>只占用了<code>3Byte</code></li>
+</ul>
+</li>
+</ol>
+<h4 id="第2行记录（0xc0a4）"><a href="#第2行记录（0xc0a4）" class="headerlink" title="第2行记录（0xc0a4）"></a>第2行记录（<code>0xc0a4</code>）</h4><ol>
+<li>变长字段长度列表（<code>03 01</code>）<ul>
+<li>列a长度为1</li>
+<li>列b、c为NULL，不占用空间，因此不会出现在该列表中，<code>NULL标志位</code>会标识那一列为NULL</li>
+<li>列d长度为3</li>
+</ul>
+</li>
+<li>NULL标志位（<code>06</code>）<ul>
+<li><code>0000 0110</code>，表示列b和列c为NULL</li>
+</ul>
+</li>
+<li>记录头信息（<code>00 00 18 ff c4</code>）</li>
+<li>ROWID（<code>00 00 00 14 b2 0b</code>）</li>
+<li>Transaction ID（<code>00 00 00 14 09 03</code>）<ul>
+<li>跟第1行记录在<code>同一个事务内</code></li>
+</ul>
+</li>
+<li>Roll Pointer（<code>c6 00 00 02 0a 01 1f</code>）</li>
+<li>a（<code>34</code>）<ul>
+<li>字符<code>1</code>，VARCHAR(10)，<code>1个字符</code>只占用了<code>1Byte</code></li>
+</ul>
+</li>
+<li>b<ul>
+<li><code>VARCHAR(10)</code>为<code>NULL</code>时，<code>不占用空间</code></li>
+</ul>
+</li>
+<li>c<ul>
+<li><code>CHAR(10)</code>为<code>NULL</code>时，<code>不占用空间</code></li>
+</ul>
+</li>
+<li>d（<code>35 35 35</code>）<ul>
+<li>字符<code>555</code>，VARCHAR(10)，<code>3个字符</code>只占用了<code>3Byte</code></li>
+</ul>
+</li>
+</ol>
+<h1 id="Dynamic和Compressed"><a href="#Dynamic和Compressed" class="headerlink" title="Dynamic和Compressed"></a>Dynamic和Compressed</h1><ol>
+<li><code>Dynamic</code>和<code>Compressed</code>是<code>Compact</code>的变种形式</li>
+<li><code>Compressed</code>会对存储在其中的行数据会以<code>zlib</code>的算法进行压缩，对<code>BLOB</code>、<code>TEXT</code>、<code>VARCHAR</code>这类<code>大长度类型</code>的数据能够进行非常有效的存储</li>
+<li><code>Dynamic</code>（或<code>Compressed</code>）与<code>Compact</code>（或<code>Redundant</code>）比较大的差异是<code>行溢出</code>的处理方式，下面是<code>Dynamic行溢出实例</code></li>
+</ol>
+<h2 id="表初始化-3"><a href="#表初始化-3" class="headerlink" title="表初始化"></a>表初始化</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">VARCHAR</span>(<span class="number">9000</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>LATIN1 ROW_FORMAT<span class="operator">=</span><span class="keyword">DYNAMIC</span>;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.01</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> REPEAT(<span class="string">&#x27;a&#x27;</span>,<span class="number">9000</span>);                                                                                          Query OK, <span class="number">1</span> <span class="type">row</span> affected (<span class="number">0.02</span> sec)</span><br><span class="line">Records: <span class="number">1</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ sudo python py_innodb_page_info.py -v /var/lib/mysql/test/t.ibd</span><br><span class="line">page offset 00000000, page type &lt;File Space Header&gt;</span><br><span class="line">page offset 00000001, page type &lt;Insert Buffer Bitmap&gt;</span><br><span class="line">page offset 00000002, page type &lt;File Segment inode&gt;</span><br><span class="line">page offset 00000003, page type &lt;B-tree Node&gt;, page level &lt;0000&gt;</span><br><span class="line">page offset 00000004, page type &lt;Uncompressed BLOB Page&gt;</span><br><span class="line">page offset 00000000, page type &lt;Freshly Allocated Page&gt;</span><br><span class="line">Total number of page: 6:</span><br><span class="line">Insert Buffer Bitmap: 1</span><br><span class="line">Freshly Allocated Page: 1</span><br><span class="line">File Segment inode: 1</span><br><span class="line">B-tree Node: 1</span><br><span class="line">File Space Header: 1</span><br><span class="line">Uncompressed BLOB Page: 1</span><br></pre></td></tr></table></figure>
+
+<h2 id="16进制信息-3"><a href="#16进制信息-3" class="headerlink" title="16进制信息"></a>16进制信息</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"># Vim,:%!xxd</span><br><span class="line"># page offset=3</span><br><span class="line">0000c000: 0006 f2d2 0000 0003 ffff ffff ffff ffff  ................</span><br><span class="line">0000c010: 0000 0000 4090 bbcb 45bf 0000 0000 0000  ....@...E.......</span><br><span class="line">0000c020: 0000 0000 011a 0002 00a7 8003 0000 0000  ................</span><br><span class="line">0000c030: 0080 0005 0000 0001 0000 0000 0000 0000  ................</span><br><span class="line">0000c040: 0000 0000 0000 0000 015e 0000 011a 0000  .........^......</span><br><span class="line">0000c050: 0002 00f2 0000 011a 0000 0002 0032 0100  .............2..</span><br><span class="line">0000c060: 0200 1d69 6e66 696d 756d 0002 000b 0000  ...infimum......</span><br><span class="line">0000c070: 7375 7072 656d 756d 14c0 0000 0010 fff0  supremum........</span><br><span class="line">0000c080: 0000 0014 b211 0000 0014 093d ee00 0001  ...........=....</span><br><span class="line">0000c090: c201 1000 0001 1a00 0000 0400 0000 2600  ..............&amp;.</span><br><span class="line">0000c0a0: 0000 0000 0023 2800 0000 0000 0000 0000  .....#(.........</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line"># page offset=4</span><br><span class="line">00010000: 2371 f7ac 0000 0004 0000 0000 0000 0000  #q..............</span><br><span class="line">00010010: 0000 0000 4090 bbcb 000a 0000 0000 0000  ....@...........</span><br><span class="line">00010020: 0000 0000 011a 0000 2328 ffff ffff 6161  ........#(....aa</span><br><span class="line">00010030: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br><span class="line">......</span><br><span class="line">00012340: 6161 6161 6161 6161 6161 6161 6161 6161  aaaaaaaaaaaaaaaa</span><br><span class="line">00012350: 6161 6161 6161 0000 0000 0000 0000 0000  aaaaaa..........</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>page offset=3</code>中没有前缀的<code>768Byte</code>，<code>Roll Pointer</code>后直接跟着<code>20Byte</code>的指针</li>
+<li><code>page offset=4</code>为<code>溢出页</code>，存储实际的数据，范围为<code>0x1002d~0x12355</code>，总共<code>9000</code>，即完全溢出</li>
+</ol>
+<h1 id="UTF8与CHAR"><a href="#UTF8与CHAR" class="headerlink" title="UTF8与CHAR"></a>UTF8与CHAR</h1><ol>
+<li><code>Latin1</code>与<code>UTF8</code>代表了两种编码类型，分别是<code>定长编码</code>和<code>变长编码</code></li>
+<li><code>UTF8</code>对<code>CHAR(N)</code>的的处理方式在<code>Redundant</code>和<code>Compact</code>（或Dynamic、Compressed）中是不一样的<ul>
+<li><code>Redundant</code>中占用<code>N * Maximum_Character_Byte_Length</code></li>
+<li><code>Compact</code>中<code>最小化</code>占用空间</li>
+</ul>
+</li>
+</ol>
+<h2 id="Redundant实例"><a href="#Redundant实例" class="headerlink" title="Redundant实例"></a>Redundant实例</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">CHAR</span>(<span class="number">10</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>UTF8 ROW_FORMAT<span class="operator">=</span>REDUNDANT;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.02</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> <span class="string">&#x27;a&#x27;</span>;</span><br><span class="line">Query OK, <span class="number">1</span> <span class="type">row</span> affected (<span class="number">0.00</span> sec)</span><br><span class="line">Records: <span class="number">1</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0000c090: 1409 69ae 0000 018d 0110 6120 2020 2020  ..i.......a</span><br><span class="line">0000c0a0: 2020 2020 2020 2020 2020 2020 2020 2020</span><br><span class="line">0000c0b0: 2020 2020 2020 2020 0000 0000 0000 0000          ........</span><br></pre></td></tr></table></figure>
+<p><code>0xc09a~0xc0b7</code>总共占用了<code>30Byte</code>(&#x3D;<code>3</code>*10)</p>
+<h2 id="Compact实例"><a href="#Compact实例" class="headerlink" title="Compact实例"></a>Compact实例</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> a <span class="type">CHAR</span>(<span class="number">10</span>)</span><br><span class="line">    <span class="operator">-</span><span class="operator">&gt;</span> ) ENGINE<span class="operator">=</span>INNODB CHARSET<span class="operator">=</span>UTF8 ROW_FORMAT<span class="operator">=</span>REDUNDANT;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.02</span> sec)</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">SELECT</span> <span class="string">&#x27;a&#x27;</span>;</span><br><span class="line">Query OK, <span class="number">1</span> <span class="type">row</span> affected (<span class="number">0.00</span> sec)</span><br><span class="line">Records: <span class="number">1</span>  Duplicates: <span class="number">0</span>  Warnings: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0000c090: 0110 6120 2020 2020 2020 2020 0000 0000  ..a         ....</span><br></pre></td></tr></table></figure>
+<p><code>0xc092~0xc09b</code>总共占用了<code>10Byte</code>(&#x3D;<code>1</code>*10)</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a target="_blank" rel="noopener" href="https://book.douban.com/subject/24708143/">MySQL技术内幕 - InnoDB存储引擎 V2</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html">File Space Management</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/5.7/en/innodb-row-format-antelope.html">COMPACT and REDUNDANT Row Formats</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/5.7/en/innodb-physical-record.html">Physical Row Structure of InnoDB Tables</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/5.7/en/innodb-row-format-dynamic.html">DYNAMIC and COMPRESSED Row Formats</a></li>
+</ol>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2017/05/07/innodb-table-row-format/">https://blog.zhongmingmao.top/2017/05/07/innodb-table-row-format/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/storage/">Storage</a><a class="post-meta__tags" href="/tags/mysql/">MySQL</a><a class="post-meta__tags" href="/tags/innodb/">InnoDB</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2017/05/09/innodb-table-page-structure/" title="InnoDB -- 数据页结构"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">InnoDB -- 数据页结构</div></div></a></div><div class="next-post pull-right"><a href="/2017/05/06/innodb-table-logical-structure/" title="InnoDB -- 逻辑存储"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">InnoDB -- 逻辑存储</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2017/05/22/innodb-isolation-level/" title="InnoDB -- 事务隔离级别"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2017-05-22</div><div class="title">InnoDB -- 事务隔离级别</div></div></a></div><div><a href="/2017/05/19/innodb-next-key-lock/" title="InnoDB -- Next-Key Lock"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2017-05-19</div><div class="title">InnoDB -- Next-Key Lock</div></div></a></div><div><a href="/2017/05/13/innodb-btree-index/" title="InnoDB -- B+Tree索引"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2017-05-13</div><div class="title">InnoDB -- B+Tree索引</div></div></a></div><div><a href="/2017/05/09/innodb-table-page-structure/" title="InnoDB -- 数据页结构"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2017-05-09</div><div class="title">InnoDB -- 数据页结构</div></div></a></div><div><a href="/2017/05/06/innodb-table-logical-structure/" title="InnoDB -- 逻辑存储"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2017-05-06</div><div class="title">InnoDB -- 逻辑存储</div></div></a></div><div><a href="/2019/03/19/mysql-self-increase-id-run-out/" title="MySQL -- 自增ID耗尽"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-19</div><div class="title">MySQL -- 自增ID耗尽</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E7%B1%BB"><span class="toc-number">1.</span> <span class="toc-text">分类</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Named-File-Format"><span class="toc-number">1.1.</span> <span class="toc-text">Named File Format</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%8C%E8%AE%B0%E5%BD%95%E6%9C%80%E5%A4%A7%E9%95%BF%E5%BA%A6"><span class="toc-number">1.2.</span> <span class="toc-text">行记录最大长度</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CHAR-N-%E4%B8%8EVARCHAR-N"><span class="toc-number">1.3.</span> <span class="toc-text">CHAR(N)与VARCHAR(N)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%95%BF%E5%88%97"><span class="toc-number">1.4.</span> <span class="toc-text">变长列</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%8C%E6%BA%A2%E5%87%BA"><span class="toc-number">1.5.</span> <span class="toc-text">行溢出</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Redundant"><span class="toc-number">2.</span> <span class="toc-text">Redundant</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E6%AE%B5%E5%81%8F%E7%A7%BB%E5%88%97%E8%A1%A8"><span class="toc-number">2.1.1.</span> <span class="toc-text">字段偏移列表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%B0%E5%BD%95%E5%A4%B4%E4%BF%A1%E6%81%AF"><span class="toc-number">2.1.2.</span> <span class="toc-text">记录头信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9A%90%E8%97%8F%E5%88%97"><span class="toc-number">2.1.3.</span> <span class="toc-text">隐藏列</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%9E%E8%A1%8C%E6%BA%A2%E5%87%BA%E5%AE%9E%E4%BE%8B"><span class="toc-number">2.2.</span> <span class="toc-text">非行溢出实例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">2.2.1.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16%E8%BF%9B%E5%88%B6%E4%BF%A1%E6%81%AF"><span class="toc-number">2.2.2.</span> <span class="toc-text">16进制信息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AC%AC1%E8%A1%8C%E8%AE%B0%E5%BD%95%EF%BC%880xc07d%EF%BC%89"><span class="toc-number">2.2.2.1.</span> <span class="toc-text">第1行记录（0xc07d）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AC%AC2%E8%A1%8C%E8%AE%B0%E5%BD%95%EF%BC%880xc0ad%EF%BC%89"><span class="toc-number">2.2.2.2.</span> <span class="toc-text">第2行记录（0xc0ad）</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%8C%E6%BA%A2%E5%87%BA%E5%AE%9E%E4%BE%8B"><span class="toc-number">2.3.</span> <span class="toc-text">行溢出实例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96-1"><span class="toc-number">2.3.1.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16%E8%BF%9B%E5%88%B6%E4%BF%A1%E6%81%AF-1"><span class="toc-number">2.3.2.</span> <span class="toc-text">16进制信息</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Compact"><span class="toc-number">3.</span> <span class="toc-text">Compact</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94Redundant"><span class="toc-number">3.1.</span> <span class="toc-text">对比Redundant</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%BC%E5%BC%8F-1"><span class="toc-number">3.2.</span> <span class="toc-text">格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%95%BF%E5%AD%97%E6%AE%B5%E9%95%BF%E5%BA%A6%E5%88%97%E8%A1%A8"><span class="toc-number">3.2.1.</span> <span class="toc-text">变长字段长度列表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#NULL%E6%A0%87%E5%BF%97%E4%BD%8D"><span class="toc-number">3.2.2.</span> <span class="toc-text">NULL标志位</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%B0%E5%BD%95%E5%A4%B4%E4%BF%A1%E6%81%AF-1"><span class="toc-number">3.2.3.</span> <span class="toc-text">记录头信息</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E4%BE%8B"><span class="toc-number">3.3.</span> <span class="toc-text">实例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96-2"><span class="toc-number">3.3.1.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16%E8%BF%9B%E5%88%B6%E4%BF%A1%E6%81%AF-2"><span class="toc-number">3.3.2.</span> <span class="toc-text">16进制信息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AC%AC1%E8%A1%8C%E8%AE%B0%E5%BD%95%EF%BC%880xc078%EF%BC%89"><span class="toc-number">3.3.2.1.</span> <span class="toc-text">第1行记录（0xc078）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AC%AC2%E8%A1%8C%E8%AE%B0%E5%BD%95%EF%BC%880xc0a4%EF%BC%89"><span class="toc-number">3.3.2.2.</span> <span class="toc-text">第2行记录（0xc0a4）</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dynamic%E5%92%8CCompressed"><span class="toc-number">4.</span> <span class="toc-text">Dynamic和Compressed</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96-3"><span class="toc-number">4.1.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#16%E8%BF%9B%E5%88%B6%E4%BF%A1%E6%81%AF-3"><span class="toc-number">4.2.</span> <span class="toc-text">16进制信息</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#UTF8%E4%B8%8ECHAR"><span class="toc-number">5.</span> <span class="toc-text">UTF8与CHAR</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Redundant%E5%AE%9E%E4%BE%8B"><span class="toc-number">5.1.</span> <span class="toc-text">Redundant实例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Compact%E5%AE%9E%E4%BE%8B"><span class="toc-number">5.2.</span> <span class="toc-text">Compact实例</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

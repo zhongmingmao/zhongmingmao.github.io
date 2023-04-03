@@ -1,0 +1,281 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Java核心 -- 动态代理 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="编程语言分类 动态类型和静态类型：语言类型是运行时检查，还是编译期检查 强类型和弱类型：为不同类型的变量赋值时，是否需要进行显式的类型转换 Java是静态的强类型语言，但提供了类似反射等机制，因此也具备了部分动态类型语言的能力">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java核心 -- 动态代理">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/05/03/java-core-dynamic-proxy/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="编程语言分类 动态类型和静态类型：语言类型是运行时检查，还是编译期检查 强类型和弱类型：为不同类型的变量赋值时，是否需要进行显式的类型转换 Java是静态的强类型语言，但提供了类似反射等机制，因此也具备了部分动态类型语言的能力">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png">
+<meta property="article:published_time" content="2019-05-03T13:08:18.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.581Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Java Core">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/05/03/java-core-dynamic-proxy/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java核心 -- 动态代理',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Java核心 -- 动态代理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-05-03T13:08:18.000Z" title="Created 2019-05-03 21:08:18">2019-05-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/core/">Core</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>3min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="编程语言分类"><a href="#编程语言分类" class="headerlink" title="编程语言分类"></a>编程语言分类</h2><ol>
+<li>动态类型和静态类型：语言类型是<strong>运行时</strong>检查，还是<strong>编译期</strong>检查</li>
+<li>强类型和弱类型：为<strong>不同类型</strong>的变量赋值时，是否需要进行<strong>显式的类型转换</strong></li>
+<li>Java是<strong>静态的强类型语言</strong>，但提供了类似<strong>反射</strong>等机制，因此也具备了<strong>部分</strong>动态类型语言的能力</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="反射"><a href="#反射" class="headerlink" title="反射"></a>反射</h2><ol>
+<li>反射机制是Java语言提供的一种基础功能，赋予程序<strong>在运行时自省</strong>的能力</li>
+<li>通过反射可以<strong>直接操作类或者对象</strong><ul>
+<li>获取某个对象的类定义</li>
+<li>获取类声明的属性和方法</li>
+<li>调用方法或者构造函数</li>
+<li>运行时修改类定义</li>
+</ul>
+</li>
+</ol>
+<h3 id="setAccessible"><a href="#setAccessible" class="headerlink" title="setAccessible"></a>setAccessible</h3><ol>
+<li>AccessibleObject.setAccessible(boolean flag)：可以在<strong>运行时</strong>修改成员的<strong>访问限制</strong></li>
+<li>setAccessible的应用遍布在日常开发、测试、依赖注入等框架中<ul>
+<li>在O&#x2F;R Mapping框架中，为一个Java实体对象，运行时自动生成getter&#x2F;setter方法</li>
+<li>绕过API的访问控制，来调用内部API</li>
+</ul>
+</li>
+</ol>
+<h2 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h2><ol>
+<li>动态代理是一种方便<strong>运行时动态构建代理、动态处理代理方法调用</strong>的机制</li>
+<li>很多场景都是利用类似的机制来实现的，例如用来<strong>包装RPC调用</strong>和<strong>AOP</strong></li>
+<li>实现动态代理的方式<ul>
+<li>JDK自身提供的动态代理，主要利用<strong>反射</strong>机制</li>
+<li><strong>字节码操作机制</strong>，类似ASM、cglib（基于ASM）和Javassist</li>
+</ul>
+</li>
+</ol>
+<h3 id="解决的问题"><a href="#解决的问题" class="headerlink" title="解决的问题"></a>解决的问题</h3><ol>
+<li>动态代理是一种<strong>代理</strong>机制，代理可以看作对调用目标的<strong>包装</strong>，对目标代码的调用是通过代理完成的</li>
+<li>通过代理可以让<strong>调用者和实现者解耦</strong>，例如RPC调用，框架内部的寻址、序列化、反序列化等，对调用者没什么意义</li>
+</ol>
+<h3 id="发展历程"><a href="#发展历程" class="headerlink" title="发展历程"></a>发展历程</h3><ol>
+<li>静态代理 -&gt; 动态代理</li>
+<li>静态代理：需要引入<strong>额外的工作</strong>，而这些工作与实际的业务逻辑没有关系<ul>
+<li>古董技术RMI，需要rmic之类的工具生成静态stub等文件，增加了很多繁琐的准备工作</li>
+</ul>
+</li>
+<li>动态代理：相应的stub等类，可以在运行时生成，对应的调用操作也是动态生成的，极大地提高生产力</li>
+</ol>
+<h3 id="JDK-Proxy-cglib"><a href="#JDK-Proxy-cglib" class="headerlink" title="JDK Proxy + cglib"></a>JDK Proxy + cglib</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyDynamicProxy</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Hello</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloImpl</span>();</span><br><span class="line">        <span class="type">MyInvocationHandler</span> <span class="variable">handler</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyInvocationHandler</span>(hello);</span><br><span class="line">        <span class="comment">// 构造代理实例</span></span><br><span class="line">        <span class="type">Hello</span> <span class="variable">proxyHello</span> <span class="operator">=</span> (Hello) Proxy.newProxyInstance(Hello.class.getClassLoader(), hello.getClass().getInterfaces(), handler);</span><br><span class="line">        <span class="comment">// 调用代理方法</span></span><br><span class="line">        proxyHello.sayHello();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 输出</span></span><br><span class="line">        <span class="comment">//  MyInvocationHandler Invoking HelloImpl#sayHello</span></span><br><span class="line">        <span class="comment">//  HelloImpl : Hello World</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">HelloImpl</span> <span class="keyword">implements</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(getClass().getSimpleName() + <span class="string">&quot; : Hello World&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyInvocationHandler</span> <span class="keyword">implements</span> <span class="title class_">InvocationHandler</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.out.println(getClass().getSimpleName() + <span class="string">&quot; Invoking &quot;</span> + target.getClass().getSimpleName() + <span class="string">&quot;#&quot;</span> + method.getName());</span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> method.invoke(target, args);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>实现InvocationHandler，添加<strong>额外</strong>逻辑</li>
+<li>以Hello接口为纽带，为被调用目标构建<strong>代理对象</strong>，可以使用代理对象<strong>间接</strong>运行调用目标的逻辑</li>
+<li>以<strong>接口</strong>为中心，相当于添加了一种<strong>对被调用者没有太大意义的限制</strong></li>
+<li>另外实例化的是<strong>Proxy对象</strong>，而不是真正的被调用类型，可能会带来各种不变和能力退化</li>
+<li>如果<strong>被调用者没有实现接口</strong>，可以通过<strong>cglib</strong>来实现动态代理（克服了对接口的依赖）<ul>
+<li>cglib动态代理的方式：创建目标类的<strong>子类</strong>，可以达到<strong>近似使用被调用者本身</strong>的效果</li>
+</ul>
+</li>
+</ol>
+<h3 id="优势对比"><a href="#优势对比" class="headerlink" title="优势对比"></a>优势对比</h3><h4 id="JDK-Proxy"><a href="#JDK-Proxy" class="headerlink" title="JDK Proxy"></a>JDK Proxy</h4><ol>
+<li><strong>最小化依赖关系</strong>，简化开发和维护，JDK本身的支持</li>
+<li><strong>JDK平滑升级</strong>，而字节码类库通常需要进行<strong>更新</strong>以保证在新版Java上能够使用</li>
+<li><strong>代码实现简单</strong></li>
+</ol>
+<h4 id="cglib"><a href="#cglib" class="headerlink" title="cglib"></a>cglib</h4><ol>
+<li><strong>侵入性更小</strong>，JDK Proxy是基于<strong>接口</strong>的，而<strong>限定被调用者实现特定接口</strong>是有侵入性的实践</li>
+<li><strong>只需操作关心的类</strong>，而不必为其它相关类增加工作量</li>
+<li><strong>高性能</strong></li>
+</ol>
+<h3 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h3><ol>
+<li>在<strong>主流</strong>的JDK版本中，JDK Proxy在<strong>典型场景</strong>可以提供<strong>对等的性能水平</strong>，在数量级的差距并不是广泛存在的</li>
+<li>反射机制的性能在<strong>现代</strong>JDK中，已经得到了<strong>极大的改进和优化</strong>，同时JDK的很多功能同样使用了<strong>ASM</strong>进行字节码操作</li>
+<li>在选型时，性能并不是唯一考量，而<strong>可靠性、可维护性和编程工作量</strong>才是更主要的考虑因素</li>
+</ol>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/05/03/java-core-dynamic-proxy/">https://blog.zhongmingmao.top/2019/05/03/java-core-dynamic-proxy/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/java-core/">Java Core</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/05/04/java-core-int-integer/" title="Java核心 -- int + Integer"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Java核心 -- int + Integer</div></div></a></div><div class="next-post pull-right"><a href="/2019/05/01/java-concurrent-object-oriented/" title="Java并发 -- 面向对象"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-21.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Java并发 -- 面向对象</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/05/06/java-core-vector-arraylist-linkedlist/" title="Java核心 -- Vector + ArrayList + LinkedList"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-06</div><div class="title">Java核心 -- Vector + ArrayList + LinkedList</div></div></a></div><div><a href="/2019/05/04/java-core-int-integer/" title="Java核心 -- int + Integer"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-04</div><div class="title">Java核心 -- int + Integer</div></div></a></div><div><a href="/2019/04/27/java-core-string/" title="Java核心 -- 字符串"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-04-27</div><div class="title">Java核心 -- 字符串</div></div></a></div><div><a href="/2019/04/24/java-core-reference/" title="Java核心 -- 引用"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-04-24</div><div class="title">Java核心 -- 引用</div></div></a></div><div><a href="/2019/02/25/java-core-final-finally-finalize/" title="Java核心 -- final + finally + finalize"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-8.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-02-25</div><div class="title">Java核心 -- final + finally + finalize</div></div></a></div><div><a href="/2019/02/21/java-core-exception-error/" title="Java核心 -- Exception + Error"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-02-21</div><div class="title">Java核心 -- Exception + Error</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%88%86%E7%B1%BB"><span class="toc-number">1.</span> <span class="toc-text">编程语言分类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%8D%E5%B0%84"><span class="toc-number">2.</span> <span class="toc-text">反射</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#setAccessible"><span class="toc-number">2.1.</span> <span class="toc-text">setAccessible</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86"><span class="toc-number">3.</span> <span class="toc-text">动态代理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">3.1.</span> <span class="toc-text">解决的问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%91%E5%B1%95%E5%8E%86%E7%A8%8B"><span class="toc-number">3.2.</span> <span class="toc-text">发展历程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JDK-Proxy-cglib"><span class="toc-number">3.3.</span> <span class="toc-text">JDK Proxy + cglib</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E5%8A%BF%E5%AF%B9%E6%AF%94"><span class="toc-number">3.4.</span> <span class="toc-text">优势对比</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#JDK-Proxy"><span class="toc-number">3.4.1.</span> <span class="toc-text">JDK Proxy</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#cglib"><span class="toc-number">3.4.2.</span> <span class="toc-text">cglib</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="toc-number">3.5.</span> <span class="toc-text">性能对比</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

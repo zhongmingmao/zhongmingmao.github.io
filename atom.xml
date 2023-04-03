@@ -1,0 +1,754 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>ByteCoding</title>
+  
+  
+  <link href="https://blog.zhongmingmao.top/atom.xml" rel="self"/>
+  
+  <link href="https://blog.zhongmingmao.top/"/>
+  <updated>2023-04-03T10:04:59.593Z</updated>
+  <id>https://blog.zhongmingmao.top/</id>
+  
+  <author>
+    <name>zhongmingmao</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Kubernetes - Container Interconnection</title>
+    <link href="https://blog.zhongmingmao.top/2022/10/01/kubernetes-container-interconnection/"/>
+    <id>https://blog.zhongmingmao.top/2022/10/01/kubernetes-container-interconnection/</id>
+    <published>2022-09-30T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.593Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;拷贝数据&quot;&gt;&lt;a href=&quot;#拷贝数据&quot; class=&quot;headerlink&quot; title=&quot;拷贝数据&quot;&gt;&lt;/a&gt;拷贝数据&lt;/h1&gt;&lt;figure class=&quot;highlight shell&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;docker run -d --&lt;span class=&quot;built_in&quot;&gt;rm&lt;/span&gt; redis&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;450662153d83e6e1b30af57443ccfe68d798d5c7f4f8e50d2d287fdde2c1645c&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;docker ps&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS         PORTS      NAMES&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;450662153d83   redis     &amp;quot;docker-entrypoint.s…&amp;quot;   7 seconds ago   Up 6 seconds   6379/tcp   cranky_wilbur&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;拷贝宿主机文件到容器&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;figure class=&quot;highlight shell&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;md5sum&lt;/span&gt; a.txt&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;d41d8cd98f00b204e9800998ecf8427e  a.txt&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;docker &lt;span class=&quot;built_in&quot;&gt;cp&lt;/span&gt; a.txt 450:/tmp&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;docker &lt;span class=&quot;built_in&quot;&gt;exec&lt;/span&gt; -it 450 sh&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;# &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;ls&lt;/span&gt; /tmp&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;a.txt&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;# &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;md5sum&lt;/span&gt; /tmp/a.txt&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;d41d8cd98f00b204e9800998ecf8427e  /tmp/a.txt&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;# &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;exit&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;拷贝容器文件到宿主机&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;figure class=&quot;highlight shell&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;docker &lt;span class=&quot;built_in&quot;&gt;cp&lt;/span&gt; 450:/tmp/a.txt ./b.txt&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;meta prompt_&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;language-bash&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;md5sum&lt;/span&gt; a.txt b.txt&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;d41d8cd98f00b204e9800998ecf8427e  a.txt&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;d41d8cd98f00b204e9800998ecf8427e  b.txt&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Docker Hub</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/26/kubernetes-docker-hub/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/26/kubernetes-docker-hub/</id>
+    <published>2022-09-25T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.593Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Registry&quot;&gt;&lt;a href=&quot;#Registry&quot; class=&quot;headerlink&quot; title=&quot;Registry&quot;&gt;&lt;/a&gt;Registry&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Registry&lt;/strong&gt; -&amp;gt; &lt;strong&gt;Repository&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://docs.docker.com/engine/images/architecture.svg&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apollo - HA + Monitoring</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/25/microservices-governance-config-apollo-ha-monitoring/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/25/microservices-governance-config-apollo-ha-monitoring/</id>
+    <published>2022-09-24T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Architecture&quot;&gt;&lt;a href=&quot;#Architecture&quot; class=&quot;headerlink&quot; title=&quot;Architecture&quot;&gt;&lt;/a&gt;Architecture&lt;/h1&gt;&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120223535438.png&quot; alt=&quot;image-20221120223535438&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/apollo/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/tags/config/"/>
+    
+    <category term="Configuration Center" scheme="https://blog.zhongmingmao.top/tags/configuration-center/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/tags/apollo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apollo - Architecture</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/24/microservices-governance-config-apollo-architecture/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/24/microservices-governance-config-apollo-architecture/</id>
+    <published>2022-09-23T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Server&quot;&gt;&lt;a href=&quot;#Server&quot; class=&quot;headerlink&quot; title=&quot;Server&quot;&gt;&lt;/a&gt;Server&lt;/h1&gt;&lt;h2 id=&quot;Architecture&quot;&gt;&lt;a href=&quot;#Architecture&quot; class=&quot;headerlink&quot; title=&quot;Architecture&quot;&gt;&lt;/a&gt;Architecture&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;逻辑视图，&lt;strong&gt;Software Load Balancer&lt;/strong&gt; 即 &lt;strong&gt;Nginx&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://cdn.jsdelivr.net/gh/apolloconfig/apollo@master/doc/images/overall-architecture.png&quot; alt=&quot;overall-architecture&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/apollo/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/tags/config/"/>
+    
+    <category term="Configuration Center" scheme="https://blog.zhongmingmao.top/tags/configuration-center/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/tags/apollo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apollo - Core Concept</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/23/microservices-governance-config-apollo-core-concept/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/23/microservices-governance-config-apollo-core-concept/</id>
+    <published>2022-09-22T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Application&quot;&gt;&lt;a href=&quot;#Application&quot; class=&quot;headerlink&quot; title=&quot;Application&quot;&gt;&lt;/a&gt;Application&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;应用的&lt;strong&gt;唯一标识&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;classpath:&amp;#x2F;META-INF&amp;#x2F;app.properties -&amp;gt; appid&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&quot;Environment&quot;&gt;&lt;a href=&quot;#Environment&quot; class=&quot;headerlink&quot; title=&quot;Environment&quot;&gt;&lt;/a&gt;Environment&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;DEV &amp;#x2F; UAT &amp;#x2F; PRO&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;&amp;#x2F;opt&amp;#x2F;settings&amp;#x2F;server.properties -&amp;gt; env&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/image-20221120195817508.png&quot; alt=&quot;image-20221120195817508&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/config/apollo/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Config" scheme="https://blog.zhongmingmao.top/tags/config/"/>
+    
+    <category term="Configuration Center" scheme="https://blog.zhongmingmao.top/tags/configuration-center/"/>
+    
+    <category term="Apollo" scheme="https://blog.zhongmingmao.top/tags/apollo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DevOps - Feature Flag-Driven Development</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/22/devops-feature-flag-driven-development/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/22/devops-feature-flag-driven-development/</id>
+    <published>2022-09-21T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.576Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Feature-Flag-Driven-Development&quot;&gt;&lt;a href=&quot;#Feature-Flag-Driven-Development&quot; class=&quot;headerlink&quot; title=&quot;Feature Flag-Driven Development&quot;&gt;&lt;/a&gt;Feature Flag-Driven Development&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;DevOps 最佳实践&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://devops-1253868755.cos.ap-guangzhou.myqcloud.com/image-20221120150054348.png&quot; alt=&quot;image-20221120150054348&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="DevOps" scheme="https://blog.zhongmingmao.top/categories/devops/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="DevOps" scheme="https://blog.zhongmingmao.top/tags/devops/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Microservices - Security Architecture</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/21/microservices-governance-security-architecture/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/21/microservices-governance-security-architecture/</id>
+    <published>2022-09-20T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Option-1&quot;&gt;&lt;a href=&quot;#Option-1&quot; class=&quot;headerlink&quot; title=&quot;Option 1&quot;&gt;&lt;/a&gt;Option 1&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;Access Token 为&lt;strong&gt;透明&lt;/strong&gt;令牌，API 网关需要去授权服务器&lt;strong&gt;集中校验并兑换&lt;/strong&gt;成 JWT（自校验），然后再传递到后续的微服务&lt;br&gt;缺点：授权服务器压力比较大&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221119222913389.png&quot; alt=&quot;image-20221119222913389&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+    <category term="Spring Security" scheme="https://blog.zhongmingmao.top/tags/spring-security/"/>
+    
+    <category term="Spring Security OAuth2" scheme="https://blog.zhongmingmao.top/tags/spring-security-oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Oauth2 - Github</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/20/microservices-governance-security-oauth2-github/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/20/microservices-governance-security-oauth2-github/</id>
+    <published>2022-09-19T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Module&quot;&gt;&lt;a href=&quot;#Module&quot; class=&quot;headerlink&quot; title=&quot;Module&quot;&gt;&lt;/a&gt;Module&lt;/h1&gt;&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模块&lt;/th&gt;
+&lt;th&gt;描述&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;&lt;tr&gt;
+&lt;td&gt;spring-security-oauth2-core&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;OAuth2&lt;/strong&gt; 授权框架 + &lt;strong&gt;OIDC&lt;/strong&gt; 核心数据结构及接口&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;spring-security-oauth2-jose&lt;/td&gt;
+&lt;td&gt;支持 &lt;strong&gt;JOSE&lt;/strong&gt; 协议组&lt;br /&gt;&lt;strong&gt;JWT&lt;/strong&gt;: JSON Web &lt;strong&gt;Token&lt;/strong&gt;&lt;br /&gt;&lt;strong&gt;JWS&lt;/strong&gt;: JSON Web &lt;strong&gt;Signature&lt;/strong&gt;&lt;br /&gt;&lt;strong&gt;JWE&lt;/strong&gt;: JSON Web &lt;strong&gt;Encryption&lt;/strong&gt;&lt;br /&gt;&lt;strong&gt;JWK&lt;/strong&gt;: JSON Web &lt;strong&gt;Key&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;spring-security-oauth2-client&lt;/td&gt;
+&lt;td&gt;支持 &lt;strong&gt;OAuth2&lt;/strong&gt; 和 &lt;strong&gt;OIDC&lt;/strong&gt; 的客户端&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+    <category term="Spring Security" scheme="https://blog.zhongmingmao.top/tags/spring-security/"/>
+    
+    <category term="Spring Security OAuth2" scheme="https://blog.zhongmingmao.top/tags/spring-security-oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Dockerfile</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/19/kubernetes-dockerfile/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/19/kubernetes-dockerfile/</id>
+    <published>2022-09-18T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.594Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Image&quot;&gt;&lt;a href=&quot;#Image&quot; class=&quot;headerlink&quot; title=&quot;Image&quot;&gt;&lt;/a&gt;Image&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;镜像由多层 &lt;strong&gt;Layer&lt;/strong&gt; 组成，Layer 是一组&lt;strong&gt;只读不可修改&lt;/strong&gt;的文件，Layer 可以在镜像间&lt;strong&gt;共享&lt;/strong&gt;&lt;br&gt;&lt;strong&gt;Image &amp;#x3D; Layer + Union FS&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-layer.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Containerization</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/18/kubernetes-containerization/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/18/kubernetes-containerization/</id>
+    <published>2022-09-17T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.593Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;镜像&quot;&gt;&lt;a href=&quot;#镜像&quot; class=&quot;headerlink&quot; title=&quot;镜像&quot;&gt;&lt;/a&gt;镜像&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;只读&lt;/strong&gt;：依赖的文件系统、依赖库、环境变量、启动参数等&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-container.jpeg&quot; alt=&quot;docker-image&quot;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;核心解决的问题：&lt;strong&gt;应用分发&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Oauth2 - JWT</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/17/microservices-governance-security-oauth2-jwt/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/17/microservices-governance-security-oauth2-jwt/</id>
+    <published>2022-09-16T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Token-Type&quot;&gt;&lt;a href=&quot;#Token-Type&quot; class=&quot;headerlink&quot; title=&quot;Token Type&quot;&gt;&lt;/a&gt;Token Type&lt;/h1&gt;&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221114220349916.png&quot; alt=&quot;image-20221114220349916&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+    <category term="Spring Security" scheme="https://blog.zhongmingmao.top/tags/spring-security/"/>
+    
+    <category term="Spring Security OAuth2" scheme="https://blog.zhongmingmao.top/tags/spring-security-oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Docker Nature</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/16/kubernetes-docker-nature/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/16/kubernetes-docker-nature/</id>
+    <published>2022-09-15T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.593Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;本质&quot;&gt;&lt;a href=&quot;#本质&quot; class=&quot;headerlink&quot; title=&quot;本质&quot;&gt;&lt;/a&gt;本质&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;容器，是一个特殊的&lt;strong&gt;隔离&lt;/strong&gt;环境，能够让进程只看到这个环境内的&lt;strong&gt;有限&lt;/strong&gt;信息，不能对外界环境施加影响&lt;br&gt;隔离的原因：&lt;strong&gt;系统安全&lt;/strong&gt;&lt;br&gt;隔离的实现：&lt;strong&gt;namespace + cgroup + chroot(rootfs)&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Docker Architecture</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/15/kubernetes-docker-architecture/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/15/kubernetes-docker-architecture/</id>
+    <published>2022-09-14T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.593Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Architecture&quot;&gt;&lt;a href=&quot;#Architecture&quot; class=&quot;headerlink&quot; title=&quot;Architecture&quot;&gt;&lt;/a&gt;Architecture&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;核心是 Docker daemon&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://docs.docker.com/engine/images/architecture.svg&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/kubernetes/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/categories/kubernetes/docker/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Container" scheme="https://blog.zhongmingmao.top/tags/container/"/>
+    
+    <category term="Docker" scheme="https://blog.zhongmingmao.top/tags/docker/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Oauth2 - Authorization Code Flow</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/14/microservices-governance-security-oauth2-authorization-code-flow/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/14/microservices-governance-security-oauth2-authorization-code-flow/</id>
+    <published>2022-09-13T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Authorization-Server&quot;&gt;&lt;a href=&quot;#Authorization-Server&quot; class=&quot;headerlink&quot; title=&quot;Authorization Server&quot;&gt;&lt;/a&gt;Authorization Server&lt;/h1&gt;&lt;h2 id=&quot;Maven&quot;&gt;&lt;a href=&quot;#Maven&quot; class=&quot;headerlink&quot; title=&quot;Maven&quot;&gt;&lt;/a&gt;Maven&lt;/h2&gt;&lt;figure class=&quot;highlight xml&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;17&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;18&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;19&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;dependencies&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;spring-boot-starter-web&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;spring-boot-starter-security&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;org.springframework.security.oauth&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;spring-security-oauth2&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;org.projectlombok&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;groupId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;lombok&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;artifactId&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;tag&quot;&gt;&amp;lt;&lt;span class=&quot;name&quot;&gt;optional&lt;/span&gt;&amp;gt;&lt;/span&gt;true&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;optional&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;dependency&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;tag&quot;&gt;&amp;lt;/&lt;span class=&quot;name&quot;&gt;dependencies&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+    <category term="Spring Security" scheme="https://blog.zhongmingmao.top/tags/spring-security/"/>
+    
+    <category term="Spring Security OAuth2" scheme="https://blog.zhongmingmao.top/tags/spring-security-oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring Security OAuth2 - Authorization Server</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/13/microservices-governance-security-oauth2-spring-security-oauth2-authorization-server/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/13/microservices-governance-security-oauth2-spring-security-oauth2-authorization-server/</id>
+    <published>2022-09-12T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;授权服务器&quot;&gt;&lt;a href=&quot;#授权服务器&quot; class=&quot;headerlink&quot; title=&quot;授权服务器&quot;&gt;&lt;/a&gt;授权服务器&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Introspection Endpoint&lt;/strong&gt;：校验 Access Token 的合法性&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/image-20221102010635416.png&quot; alt=&quot;image-20221102010635416&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+    <category term="Spring Security" scheme="https://blog.zhongmingmao.top/tags/spring-security/"/>
+    
+    <category term="Spring Security OAuth2" scheme="https://blog.zhongmingmao.top/tags/spring-security-oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Oauth2 - Overview</title>
+    <link href="https://blog.zhongmingmao.top/2022/09/12/microservices-governance-security-oauth2-overview/"/>
+    <id>https://blog.zhongmingmao.top/2022/09/12/microservices-governance-security-oauth2-overview/</id>
+    <published>2022-09-11T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.596Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;问题域&quot;&gt;&lt;a href=&quot;#问题域&quot; class=&quot;headerlink&quot; title=&quot;问题域&quot;&gt;&lt;/a&gt;问题域&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;开放系统间&lt;strong&gt;授权&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&quot;https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/image-20221028082756181.png&quot; alt=&quot;image-20221028082756181&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/categories/microservices-governance/security/oauth2/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="Architecture" scheme="https://blog.zhongmingmao.top/tags/architecture/"/>
+    
+    <category term="Microservices Governance" scheme="https://blog.zhongmingmao.top/tags/microservices-governance/"/>
+    
+    <category term="Oauth2" scheme="https://blog.zhongmingmao.top/tags/oauth2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring Cloud - Load Balancing</title>
+    <link href="https://blog.zhongmingmao.top/2022/07/18/cloud-native-foundation-microsservices-springcloud-load-balancing/"/>
+    <id>https://blog.zhongmingmao.top/2022/07/18/cloud-native-foundation-microsservices-springcloud-load-balancing/</id>
+    <published>2022-07-17T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.570Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;实现方式&quot;&gt;&lt;a href=&quot;#实现方式&quot; class=&quot;headerlink&quot; title=&quot;实现方式&quot;&gt;&lt;/a&gt;实现方式&lt;/h1&gt;&lt;p&gt;&lt;img src=&quot;https://spring-cloud-1253868755.cos.ap-guangzhou.myqcloud.com/spring-cloud-load-balancing-impl.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/categories/cloud-native/"/>
+    
+    <category term="Cloud Native Foundation" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/spring-cloud/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/tags/spring-cloud/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Java" scheme="https://blog.zhongmingmao.top/tags/java/"/>
+    
+    <category term="Service Governance" scheme="https://blog.zhongmingmao.top/tags/service-governance/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring Cloud - Service Discovery</title>
+    <link href="https://blog.zhongmingmao.top/2022/07/17/cloud-native-foundation-microsservices-springcloud-service-discovery/"/>
+    <id>https://blog.zhongmingmao.top/2022/07/17/cloud-native-foundation-microsservices-springcloud-service-discovery/</id>
+    <published>2022-07-16T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.570Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;Webflux&quot;&gt;&lt;a href=&quot;#Webflux&quot; class=&quot;headerlink&quot; title=&quot;Webflux&quot;&gt;&lt;/a&gt;Webflux&lt;/h1&gt;&lt;p&gt;&lt;img src=&quot;https://spring-cloud-1253868755.cos.ap-guangzhou.myqcloud.com/spring-cloud-service-discovery-webflux.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/categories/cloud-native/"/>
+    
+    <category term="Cloud Native Foundation" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/spring-cloud/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/tags/spring-cloud/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Java" scheme="https://blog.zhongmingmao.top/tags/java/"/>
+    
+    <category term="Service Governance" scheme="https://blog.zhongmingmao.top/tags/service-governance/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring Cloud - Service Registration</title>
+    <link href="https://blog.zhongmingmao.top/2022/07/16/cloud-native-foundation-microsservices-springcloud-service-registration/"/>
+    <id>https://blog.zhongmingmao.top/2022/07/16/cloud-native-foundation-microsservices-springcloud-service-registration/</id>
+    <published>2022-07-15T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.570Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;版本匹配&quot;&gt;&lt;a href=&quot;#版本匹配&quot; class=&quot;headerlink&quot; title=&quot;版本匹配&quot;&gt;&lt;/a&gt;版本匹配&lt;/h1&gt;&lt;p&gt;&lt;img src=&quot;https://spring-cloud-1253868755.cos.ap-guangzhou.myqcloud.com/spring-cloud-service-registration-version.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/categories/cloud-native/"/>
+    
+    <category term="Cloud Native Foundation" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/microservices/spring-cloud/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Microservices" scheme="https://blog.zhongmingmao.top/tags/microservices/"/>
+    
+    <category term="Spring Cloud" scheme="https://blog.zhongmingmao.top/tags/spring-cloud/"/>
+    
+    <category term="Spring" scheme="https://blog.zhongmingmao.top/tags/spring/"/>
+    
+    <category term="Java" scheme="https://blog.zhongmingmao.top/tags/java/"/>
+    
+    <category term="Service Governance" scheme="https://blog.zhongmingmao.top/tags/service-governance/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Kubernetes - Deprecating Docker</title>
+    <link href="https://blog.zhongmingmao.top/2022/07/15/cloud-native-foundation-k8s-deprecating-docker/"/>
+    <id>https://blog.zhongmingmao.top/2022/07/15/cloud-native-foundation-k8s-deprecating-docker/</id>
+    <published>2022-07-14T16:06:25.000Z</published>
+    <updated>2023-04-03T10:04:59.569Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;&lt;img src=&quot;https://cloud-native-kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/introduction/deprecating-docker.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/categories/cloud-native/"/>
+    
+    <category term="Cloud Native Foundation" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/categories/cloud-native/cloud-native-foundation/kubernetes/"/>
+    
+    
+    <category term="Cloud Native" scheme="https://blog.zhongmingmao.top/tags/cloud-native/"/>
+    
+    <category term="Kubernetes" scheme="https://blog.zhongmingmao.top/tags/kubernetes/"/>
+    
+  </entry>
+  
+</feed>

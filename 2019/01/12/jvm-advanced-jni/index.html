@@ -1,0 +1,331 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>JVM进阶 -- 浅谈JNI | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="native方法123public class Object &amp;#123;    public native int hashCode();&amp;#125; 当Java代码调用native方法时，JVM将通过JNI，调用至对应的C函数Object.hashCode()就是一个native方法，对应的C函数将计算对象的哈希值，并缓存在对象头、栈上锁记录（轻量级锁）或者对象监视锁（重量级锁，monitor">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM进阶 -- 浅谈JNI">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/01/12/jvm-advanced-jni/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="native方法123public class Object &amp;#123;    public native int hashCode();&amp;#125; 当Java代码调用native方法时，JVM将通过JNI，调用至对应的C函数Object.hashCode()就是一个native方法，对应的C函数将计算对象的哈希值，并缓存在对象头、栈上锁记录（轻量级锁）或者对象监视锁（重量级锁，monitor">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp">
+<meta property="article:published_time" content="2019-01-12T03:05:52.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.585Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/01/12/jvm-advanced-jni/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'JVM进阶 -- 浅谈JNI',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">JVM进阶 -- 浅谈JNI</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-01-12T03:05:52.000Z" title="Created 2019-01-12 11:05:52">2019-01-12</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/">JVM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/advanced/">Advanced</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>9min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="native方法"><a href="#native方法" class="headerlink" title="native方法"></a>native方法</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Object</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">native</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当Java代码调用native方法时，JVM将通过<strong>JNI</strong>，调用至对应的C函数<br>Object.hashCode()就是一个native方法，对应的C函数将计算对象的哈希值，并缓存在<strong>对象头</strong>、<strong>栈上锁记录</strong>（轻量级锁）或者<strong>对象监视锁</strong>（重量级锁，monitor）中，以确保该值在<strong>对象的生命周期之内不会变更</strong></p>
+<span id="more"></span>
+
+<h2 id="链接方式"><a href="#链接方式" class="headerlink" title="链接方式"></a>链接方式</h2><p>在调用native方法之前，JVM需要将该native方法链接至对应的C函数上</p>
+<h3 id="自动链接"><a href="#自动链接" class="headerlink" title="自动链接"></a>自动链接</h3><p>JVM自动查找符合<strong>默认命名规范</strong>的C函数，并且链接起来</p>
+<h4 id="Java代码"><a href="#Java代码" class="headerlink" title="Java代码"></a>Java代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> me.zhongmingmao.advanced.jni;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Foo</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0xDEADBEEF</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">foo</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">bar</span><span class="params">(<span class="type">int</span> i, <span class="type">long</span> j)</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">bar</span><span class="params">(String s, Object o)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="生成C头文件"><a href="#生成C头文件" class="headerlink" title="生成C头文件"></a>生成C头文件</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">$ javac -h . me/zhongmingmao/advanced/jni/Foo.java</span><br><span class="line"></span><br><span class="line">$ cat me_zhongmingmao_advanced_jni_Foo.h</span><br><span class="line"><span class="comment">/* DO NOT EDIT THIS FILE - it is machine generated */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;jni.h&gt;</span></span></span><br><span class="line"><span class="comment">/* Header for class me_zhongmingmao_advanced_jni_Foo */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> _Included_me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> _Included_me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    foo</span></span><br><span class="line"><span class="comment"> * Signature: ()V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_foo</span></span><br><span class="line">  <span class="params">(JNIEnv *, jclass)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    bar</span></span><br><span class="line"><span class="comment"> * Signature: (IJ)V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__IJ</span></span><br><span class="line">  <span class="params">(JNIEnv *, jobject, jint, jlong)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    bar</span></span><br><span class="line"><span class="comment"> * Signature: (Ljava/lang/String;Ljava/lang/Object;)V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__Ljava_lang_String_2Ljava_lang_Object_2</span></span><br><span class="line">  <span class="params">(JNIEnv *, jobject, jstring, jobject)</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __cplusplus</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>native方法对应的C函数都需要以<strong>Java_<strong>为前缀，之后跟着完整的</strong>包名</strong>、<strong>方法名</strong>（和<strong>方法描述符</strong>）</li>
+<li>C函数名不支持&#x2F;字符，&#x2F;字符会被转换为_，原本方法名中的 _ 字符，转换为_1</li>
+<li>当某个类出现<strong>重载的native方法</strong>时，JVM会将<strong>参数类型</strong>纳入自动链接对象的考虑范围之中<ul>
+<li>在前面C函数名的基础上，追加__以及<strong>方法描述符</strong>作为后缀</li>
+<li>方法描述符中的<strong>特殊符</strong>号同样会被替换：<ul>
+<li>分隔符&#x2F;被替换为_</li>
+<li>引用类型所使用的;被替换为_2</li>
+<li>数组类型所使用的[被替换为_3</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="主动链接"><a href="#主动链接" class="headerlink" title="主动链接"></a>主动链接</h3><p>这种链接方式对C函数名没有要求，通常会使用一个名为<code>registerNatives</code>的native方法，该方法还是会按照<strong>自动链接</strong>的方式链接到对应的C函数，然后在<code>registerNatives</code>对应的C函数中，<strong>手动链接该类的其他native方法</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Object</span> &#123;</span><br><span class="line">    <span class="comment">// 自动链接</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">registerNatives</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        registerNatives();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> Class&lt;?&gt; getClass();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 主动链接</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">native</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">wait</span><span class="params">(<span class="type">long</span> timeout)</span> <span class="keyword">throws</span> InterruptedException;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">notify</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title function_">notifyAll</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">native</span> Object <span class="title function_">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> JNINativeMethod methods[] = &#123;</span><br><span class="line">    &#123;<span class="string">&quot;hashCode&quot;</span>,    <span class="string">&quot;()I&quot;</span>,                    (<span class="type">void</span> *)&amp;JVM_IHashCode&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;wait&quot;</span>,        <span class="string">&quot;(J)V&quot;</span>,                   (<span class="type">void</span> *)&amp;JVM_MonitorWait&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;notify&quot;</span>,      <span class="string">&quot;()V&quot;</span>,                    (<span class="type">void</span> *)&amp;JVM_MonitorNotify&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;notifyAll&quot;</span>,   <span class="string">&quot;()V&quot;</span>,                    (<span class="type">void</span> *)&amp;JVM_MonitorNotifyAll&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;clone&quot;</span>,       <span class="string">&quot;()Ljava/lang/Object;&quot;</span>,   (<span class="type">void</span> *)&amp;JVM_Clone&#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL</span><br><span class="line"><span class="title function_">Java_java_lang_Object_registerNatives</span><span class="params">(JNIEnv *env, jclass cls)</span></span><br><span class="line">&#123;</span><br><span class="line">    (*env)-&gt;RegisterNatives(env, cls,</span><br><span class="line">                            methods, <span class="keyword">sizeof</span>(methods)/<span class="keyword">sizeof</span>(methods[<span class="number">0</span>]));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">JNIEXPORT jclass JNICALL</span><br><span class="line"><span class="title function_">Java_java_lang_Object_getClass</span><span class="params">(JNIEnv *env, jobject this)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (this == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        JNU_ThrowNullPointerException(env, <span class="literal">NULL</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (*env)-&gt;GetObjectClass(env, this);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C函数将调用<strong>RegisterNatives API</strong>，注册Object类中其他native方法（不包括getClass）所要链接的C函数，这些C函数的函数名并<strong>不符合默认的命名规则</strong>，详细的C代码请查阅<a target="_blank" rel="noopener" href="http://hg.openjdk.java.net/jdk8u/jdk8u60/jdk/file/afbc08ea922b/src/share/native/java/lang/Object.c">Object.c</a></p>
+<h2 id="实现native方法"><a href="#实现native方法" class="headerlink" title="实现native方法"></a>实现native方法</h2><h3 id="C实现"><a href="#C实现" class="headerlink" title="C实现"></a>C实现</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// foo.c</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;me_zhongmingmao_advanced_jni_Foo.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__Ljava_lang_String_2Ljava_lang_Object_2</span></span><br><span class="line">  <span class="params">(JNIEnv *env, jobject thisObject, jstring str, jobject obj)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello, World\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="动态链接库"><a href="#动态链接库" class="headerlink" title="动态链接库"></a>动态链接库</h3><p>通过<strong>gcc</strong>命令将其编译成<strong>动态链接库</strong>，动态链接库的名字必须以<strong>lib</strong>为前缀，以**.dylib<strong>（Linux上为</strong>.so**）为扩展名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -I$JAVA_HOME/include -I$JAVA_HOME/include/darwin -o libfoo.dylib -shared foo.c</span><br></pre></td></tr></table></figure>
+
+<h3 id="调用"><a href="#调用" class="headerlink" title="调用"></a>调用</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// -Djava.library.path=$PATH_TO_DYLIB</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        System.loadLibrary(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsatisfiedLinkError e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">        System.exit(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">Foo</span>().bar(<span class="string">&quot;&quot;</span>, <span class="string">&quot;&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ java -Djava.library.path=$PATH_TO_DYLIB me.zhongmingmao.advanced.jni.Foo</span><br><span class="line">Hello, World</span><br></pre></td></tr></table></figure>
+
+<h2 id="JNI-API"><a href="#JNI-API" class="headerlink" title="JNI API"></a>JNI API</h2><ol>
+<li>JVM会将<strong>所有JNI函数的函数指针</strong>聚合到一个名为<strong>JNIEnv</strong>的数据结构中</li>
+<li>JNIEnv是一个<strong>线程私有</strong>的数据结构，JVM会为每个线程创建一个JNIEnv<ul>
+<li>并且规定C代码不能将当前线程的JNIEnv共享给其他线程，否则<strong>无法保证JNI函数的正确性</strong></li>
+</ul>
+</li>
+<li>JNIEnv采用线程私有的设计原因<ul>
+<li>给<strong>JNI函数</strong>提供一个<strong>单独的命名空间</strong></li>
+<li>允许JVM通过<strong>更改函数指针</strong>来的方式来<strong>替换</strong>JNI函数的<strong>具体实现</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="类型映射关系"><a href="#类型映射关系" class="headerlink" title="类型映射关系"></a>类型映射关系</h3><p>JNI会将Java层面的<strong>基本类型</strong>以及<strong>引用类型</strong>映射为另一套可供C代码使用的<strong>数据结构</strong></p>
+<h4 id="基本类型"><a href="#基本类型" class="headerlink" title="基本类型"></a>基本类型</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Java类型     C数据结构</span><br><span class="line">--------------------</span><br><span class="line">boolean     jboolean</span><br><span class="line">byte        jbyte</span><br><span class="line">char        jchar</span><br><span class="line">short       jshort</span><br><span class="line">int         jint</span><br><span class="line">long        jlong</span><br><span class="line">float       jfloat</span><br><span class="line">double      jdouble</span><br><span class="line">void        jvoid</span><br></pre></td></tr></table></figure>
+
+<h4 id="引用类型"><a href="#引用类型" class="headerlink" title="引用类型"></a>引用类型</h4><p>引用类型对应的数据结构之间也存在<strong>继承</strong>关系</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">jobject</span><br><span class="line">|- jclass (java.lang.Class objects)</span><br><span class="line">|- jstring (java.lang.String objects)</span><br><span class="line">|- jthrowable (java.lang.Throwable objects)</span><br><span class="line">|- jarray (arrays)</span><br><span class="line">   |- jobjectArray (object arrays)</span><br><span class="line">   |- jbooleanArray (boolean arrays)</span><br><span class="line">   |- jbyteArray (byte arrays)</span><br><span class="line">   |- jcharArray (char arrays)</span><br><span class="line">   |- jshortArray (short arrays)</span><br><span class="line">   |- jintArray (int arrays)</span><br><span class="line">   |- jlongArray (long arrays)</span><br><span class="line">   |- jfloatArray (float arrays)</span><br><span class="line">   |- jdoubleArray (double arrays)</span><br></pre></td></tr></table></figure>
+
+<h3 id="头文件解析"><a href="#头文件解析" class="headerlink" title="头文件解析"></a>头文件解析</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    foo</span></span><br><span class="line"><span class="comment"> * Signature: ()V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_foo</span></span><br><span class="line">  <span class="params">(JNIEnv *, jclass)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    bar</span></span><br><span class="line"><span class="comment"> * Signature: (IJ)V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__IJ</span></span><br><span class="line">  <span class="params">(JNIEnv *, jobject, jint, jlong)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Class:     me_zhongmingmao_advanced_jni_Foo</span></span><br><span class="line"><span class="comment"> * Method:    bar</span></span><br><span class="line"><span class="comment"> * Signature: (Ljava/lang/String;Ljava/lang/Object;)V</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__Ljava_lang_String_2Ljava_lang_Object_2</span></span><br><span class="line">  <span class="params">(JNIEnv *, jobject, jstring, jobject)</span>;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>静态native方法foo接收两个参数<ul>
+<li>一个为<strong>JNIEnv</strong>指针（聚合JNI函数的函数指针）</li>
+<li>另一个是<strong>jclass</strong>参数（用来指代<strong>定义该native方法的类</strong>）</li>
+</ul>
+</li>
+<li>实例native方法bar的第二个参数为<strong>jobject</strong>类型，<strong>用来指代该native方法的调用者</strong></li>
+<li>如果native方法声明了参数，那么对应的C函数也将会接收这些参数（映射为对应的C数据结构）</li>
+</ol>
+<h3 id="获取实例字段"><a href="#获取实例字段" class="headerlink" title="获取实例字段"></a>获取实例字段</h3><p>修改C代码，获取Foo类实例的i字段</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT <span class="keyword">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__Ljava_lang_String_2Ljava_lang_Object_2</span></span><br><span class="line">  <span class="params">(JNIEnv *env, jobject thisObject, jstring str, jobject obj)</span> &#123;</span><br><span class="line">    <span class="comment">// JNI中访问实例字段的方式类似于JAVA的反射API</span></span><br><span class="line">    <span class="type">jclass</span> <span class="variable">cls</span> <span class="operator">=</span> (*env)-&gt;GetObjectClass(env, thisObject);</span><br><span class="line">    <span class="type">jfieldID</span> <span class="variable">fieldID</span> <span class="operator">=</span> (*env)-&gt;GetFieldID(env, cls, <span class="string">&quot;i&quot;</span>, <span class="string">&quot;I&quot;</span>);</span><br><span class="line">    <span class="type">jint</span> <span class="variable">value</span> <span class="operator">=</span> (*env)-&gt;GetIntField(env, thisObject, fieldID);</span><br><span class="line">    printf(<span class="string">&quot;Hello, World 0x%x\n&quot;</span>, value);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ java -Djava.library.path=$PATH_TO_DYLIB me.zhongmingmao.advanced.jni.Foo</span><br><span class="line">Hello, World 0xdeadbeef</span><br></pre></td></tr></table></figure>
+<p>如果尝试获取<strong>不存在</strong>的实例字段j，会抛出异常</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ java -Djava.library.path=$PATH_TO_DYLIB me.zhongmingmao.advanced.jni.Foo</span><br><span class="line">Hello, World 0x1</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.NoSuchFieldError: j</span><br><span class="line">        at me.zhongmingmao.advanced.jni.Foo.bar(Native Method)</span><br><span class="line">        at me.zhongmingmao.advanced.jni.Foo.main(Foo.java:19)</span><br></pre></td></tr></table></figure>
+<ol>
+<li>当调用JNI函数的过程中，<strong>JVM会生成相关的异常实例</strong>，并<strong>缓存</strong>在内存的某一个位置</li>
+<li>但与Java编程不一样的是，它不会显式地跳转至异常处理器或者调用者，而是<strong>继续执行</strong>接下来的C代码</li>
+<li>因此，当从<strong>可能触发异常</strong>的JNI函数返回时，需要通过JNI函数<strong>ExceptionOccurred</strong>来检查是否发生了异常</li>
+<li>如果无须抛出该异常，需要通过JNI函数<strong>ExceptionClear</strong>显式地<strong>清空已缓存的异常实例</strong></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT <span class="type">void</span> JNICALL <span class="title function_">Java_me_zhongmingmao_advanced_jni_Foo_bar__Ljava_lang_String_2Ljava_lang_Object_2</span></span><br><span class="line">  <span class="params">(JNIEnv *env, jobject thisObject, jstring str, jobject obj)</span> &#123;</span><br><span class="line">    <span class="comment">// JNI中访问实例字段的方式类似于JAVA的反射API</span></span><br><span class="line">    jclass cls = (*env)-&gt;GetObjectClass(env, thisObject);</span><br><span class="line">    jfieldID fieldID = (*env)-&gt;GetFieldID(env, cls, <span class="string">&quot;j&quot;</span>, <span class="string">&quot;I&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>((*env)-&gt;ExceptionOccurred(env)) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Exception!\n&quot;</span>);</span><br><span class="line">        (*env)-&gt;ExceptionClear(env);</span><br><span class="line">    &#125;</span><br><span class="line">    fieldID = (*env)-&gt;GetFieldID(env, cls, <span class="string">&quot;i&quot;</span>, <span class="string">&quot;I&quot;</span>);</span><br><span class="line">    jint value = (*env)-&gt;GetIntField(env, thisObject, fieldID);</span><br><span class="line">    <span class="comment">// we should put an exception guard here as well.</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello, World 0x%x\n&quot;</span>, value);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ java -Djava.library.path=$PATH_TO_DYLIB me.zhongmingmao.advanced.jni.Foo</span><br><span class="line">Exception!</span><br><span class="line">Hello, World 0xdeadbeef</span><br></pre></td></tr></table></figure>
+
+<h2 id="句柄与性能"><a href="#句柄与性能" class="headerlink" title="句柄与性能"></a>句柄与性能</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><ol>
+<li>在<strong>C代码</strong>中，既可以<strong>访问所传入的引用类型参数</strong>，也可以<strong>通过JNI函数创建新的Java对象</strong></li>
+<li>这些<strong>Java对象</strong>也会<strong>受到GC的影响</strong>，因此JVM需要一种机制，来告知GC算法：<strong>不要回收这些C代码中可能引用到的Java对象</strong></li>
+<li>该机制就是<strong>局部引用</strong>和<strong>全局引用</strong>，GC算法会将这两种引用指向的对象标记为<strong>不可回收</strong></li>
+</ol>
+<h3 id="局部引用与全局引用"><a href="#局部引用与全局引用" class="headerlink" title="局部引用与全局引用"></a>局部引用与全局引用</h3><ol>
+<li>局部引用<ul>
+<li><strong>传入的引用类型参数</strong>，</li>
+<li>通过<strong>JNI函数返回的引用类型参数</strong>（除NewGlobalRef和NewWeakGlobalRef）</li>
+</ul>
+</li>
+<li>一旦<strong>从C函数返回至Java方法</strong>之中，那么<strong>局部引用将失效</strong><ul>
+<li>因此<strong>不能缓存局部引用</strong>，以供<strong>另一个C线程</strong>或<strong>下一次native方法调用</strong>时使用</li>
+<li>因此，可以借助JNI函数<strong>NewGlobalRef</strong>，将局部引用转换为<strong>全局引用</strong>，以确保其指向的Java对象不会被垃圾回收</li>
+<li>相应的，可以通过JNI函数<strong>DeleteGlobalRef</strong>来消除<strong>全局引用</strong>，以便回收被全局引用指向的Java对象</li>
+</ul>
+</li>
+<li>如果C函数<strong>运行时间极长</strong>，可以通过JNI函数<strong>DeleteLocalRef</strong>来消除<strong>不再使用的局部引用</strong>，以便回收被引用的Java对象</li>
+</ol>
+<h3 id="句柄"><a href="#句柄" class="headerlink" title="句柄"></a>句柄</h3><ol>
+<li>由于<strong>垃圾回收器</strong>可能会<strong>移动对象在内存中的位置</strong>，因此JVM需要另一种机制<ul>
+<li>保证<strong>局部引用</strong>或<strong>全局引用</strong>将<strong>正确地指向移动后的对象</strong>，HotSpot通过<strong>句柄</strong>的方式来实现</li>
+<li>句柄：<strong>Java对象指针的指针</strong></li>
+<li>当发生GC时，如果Java对象被移动了，那么句柄指向的指针也将发生变动，但<strong>句柄本身保持不变</strong></li>
+</ul>
+</li>
+<li>无论<strong>局部引用</strong>还是<strong>全局引用</strong>，都是<strong>句柄</strong></li>
+<li>局部引用所对应的句柄有两种<strong>存储方式</strong><ul>
+<li>一种是在<strong>本地方法栈帧</strong>中，主要用于存储<strong>C函数所接收的来自Java层面的引用类型参数</strong></li>
+<li>另一种是<strong>线程私有的句柄块</strong>，主要用于存储<strong>C函数运行过程中创建的局部引用</strong></li>
+</ul>
+</li>
+<li>当<strong>从C函数返回至Java方法</strong>时<ul>
+<li>本地方法栈帧中的句柄将被<strong>自动清除</strong></li>
+<li>线程私有句柄块则需要由<strong>JVM显式清除</strong></li>
+</ul>
+</li>
+<li>JNI调用的<strong>额外性能开销</strong><ul>
+<li>进入C函数时对引用类型参数的<strong>句柄化</strong></li>
+<li><strong>调整参数位置</strong>（C调用和Java调用传参的方式不一样）</li>
+<li>从C函数返回时<strong>清理线程私有句柄块</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100010301">深入拆解Java虚拟机</a></p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/01/12/jvm-advanced-jni/">https://blog.zhongmingmao.top/2019/01/12/jvm-advanced-jni/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/jvm/">JVM</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/01/12/jvm-advanced-agent/" title="JVM进阶 -- 浅谈Java Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">JVM进阶 -- 浅谈Java Agent</div></div></a></div><div class="next-post pull-right"><a href="/2019/01/10/jvm-advanced-gui-mat/" title="JVM进阶 -- MAT"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-8.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">JVM进阶 -- MAT</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/02/22/jvm-bytecode-manipulation-asm-introduction/" title="ASM - Introduction"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-22</div><div class="title">ASM - Introduction</div></div></a></div><div><a href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="title">Bytecode Manipulation - Javassist</div></div></a></div><div><a href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-10</div><div class="title">Bytecode Manipulation - Java Agent Practice</div></div></a></div><div><a href="/2019/09/13/java-performance-jvm-heap-allocation/" title="Java性能 -- JVM堆内存分配"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-13</div><div class="title">Java性能 -- JVM堆内存分配</div></div></a></div><div><a href="/2019/09/11/java-performance-gc/" title="Java性能 -- GC"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-11</div><div class="title">Java性能 -- GC</div></div></a></div><div><a href="/2019/09/09/java-performance-jit/" title="Java性能 -- JIT"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-09</div><div class="title">Java性能 -- JIT</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#native%E6%96%B9%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">native方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%93%BE%E6%8E%A5%E6%96%B9%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">链接方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E9%93%BE%E6%8E%A5"><span class="toc-number">2.1.</span> <span class="toc-text">自动链接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Java%E4%BB%A3%E7%A0%81"><span class="toc-number">2.1.1.</span> <span class="toc-text">Java代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%9F%E6%88%90C%E5%A4%B4%E6%96%87%E4%BB%B6"><span class="toc-number">2.1.2.</span> <span class="toc-text">生成C头文件</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E5%8A%A8%E9%93%BE%E6%8E%A5"><span class="toc-number">2.2.</span> <span class="toc-text">主动链接</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0native%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">实现native方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#C%E5%AE%9E%E7%8E%B0"><span class="toc-number">3.1.</span> <span class="toc-text">C实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E5%BA%93"><span class="toc-number">3.2.</span> <span class="toc-text">动态链接库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B0%83%E7%94%A8"><span class="toc-number">3.3.</span> <span class="toc-text">调用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JNI-API"><span class="toc-number">4.</span> <span class="toc-text">JNI API</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B1%BB%E5%9E%8B%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"><span class="toc-number">4.1.</span> <span class="toc-text">类型映射关系</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.1.1.</span> <span class="toc-text">基本类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%95%E7%94%A8%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.1.2.</span> <span class="toc-text">引用类型</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%B4%E6%96%87%E4%BB%B6%E8%A7%A3%E6%9E%90"><span class="toc-number">4.2.</span> <span class="toc-text">头文件解析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%AE%9E%E4%BE%8B%E5%AD%97%E6%AE%B5"><span class="toc-number">4.3.</span> <span class="toc-text">获取实例字段</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%A5%E6%9F%84%E4%B8%8E%E6%80%A7%E8%83%BD"><span class="toc-number">5.</span> <span class="toc-text">句柄与性能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">5.1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%80%E9%83%A8%E5%BC%95%E7%94%A8%E4%B8%8E%E5%85%A8%E5%B1%80%E5%BC%95%E7%94%A8"><span class="toc-number">5.2.</span> <span class="toc-text">局部引用与全局引用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%A5%E6%9F%84"><span class="toc-number">5.3.</span> <span class="toc-text">句柄</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

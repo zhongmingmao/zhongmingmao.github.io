@@ -1,0 +1,512 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Cloud Native Foundation - Go Thread Scheduling | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="进程 &amp; 线程 进程：资源分配的基本单位 线程：调度的基本单位 在内核视角，线程与进程无本质差别，在 Linux 中都是以**task_struct**进行描述 glibc 中的 pthread 库提供了 Native POSIX Thread Library 支持 Native POSIX Thread Library (NPTL) is an implementation of the">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cloud Native Foundation - Go Thread Scheduling">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/02/08/cloud-native-foundation-go-thread-scheduling/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="进程 &amp; 线程 进程：资源分配的基本单位 线程：调度的基本单位 在内核视角，线程与进程无本质差别，在 Linux 中都是以**task_struct**进行描述 glibc 中的 pthread 库提供了 Native POSIX Thread Library 支持 Native POSIX Thread Library (NPTL) is an implementation of the">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp">
+<meta property="article:published_time" content="2022-02-07T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.569Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/02/08/cloud-native-foundation-go-thread-scheduling/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Cloud Native Foundation - Go Thread Scheduling',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Cloud Native Foundation - Go Thread Scheduling</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-02-07T16:06:25.000Z" title="Created 2022-02-08 00:06:25">2022-02-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/go/">Go</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>7min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="进程-amp-线程"><a href="#进程-amp-线程" class="headerlink" title="进程 &amp; 线程"></a>进程 &amp; 线程</h1><ol>
+<li><strong>进程</strong>：<strong>资源分配</strong>的基本单位</li>
+<li><strong>线程</strong>：<strong>调度</strong>的基本单位</li>
+<li>在<strong>内核</strong>视角，<strong>线程与进程无本质差别</strong>，在 Linux 中都是以**<code>task_struct</code>**进行描述<ul>
+<li>glibc 中的 pthread 库提供了 <code>Native POSIX Thread Library</code> 支持</li>
+<li><strong>Native POSIX Thread Library</strong> (<strong>NPTL</strong>)<ul>
+<li>is an <strong>implementation</strong> of the <strong>POSIX Threads specification</strong> for the <strong>Linux</strong> operating system.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>子进程通过 <code>fork</code> 的方式产生，基于<strong>父子关系</strong>形成<strong>进程树</strong>，Linux 中的初始进程一般为<code>systemd</code></li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ pmap 1</span><br><span class="line">1:   /lib/systemd/systemd --system --deserialize 37</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220207213038762.png" alt="image-20220207213038762"></p>
+<span id="more"></span>
+
+<h1 id="Linux-进程内存"><a href="#Linux-进程内存" class="headerlink" title="Linux 进程内存"></a>Linux 进程内存</h1><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220207221016045.png" alt="image-20220207221016045"></p>
+<h2 id="虚拟地址"><a href="#虚拟地址" class="headerlink" title="虚拟地址"></a>虚拟地址</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://ggirjau.com/text-data-bss-heap-stack-and-where-in-memory-are-stored-variables-of-c-program/">https://ggirjau.com/text-data-bss-heap-stack-and-where-in-memory-are-stored-variables-of-c-program/</a></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Segment</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>.text</strong></td>
+<td>contains <strong>executable instructions</strong></td>
+</tr>
+<tr>
+<td><strong>.data</strong></td>
+<td>contains any <strong>global</strong> or <strong>static</strong> variables which have a <strong>pre-defined value</strong> and can be modified</td>
+</tr>
+<tr>
+<td></td>
+<td>The values for these variables are <strong>initially stored</strong> within the <strong>read-only</strong> memory (typically within <em>.text</em>) and are <strong>copied into</strong> the <em>.data</em> segment during the <strong>start-up</strong> routine of the program</td>
+</tr>
+<tr>
+<td><strong>.bss</strong></td>
+<td>Named after an ancient assembler operator that stood for “block started by symbol”</td>
+</tr>
+<tr>
+<td></td>
+<td>Data in this segment is <strong>initialized by the kernel to arithmetic 0 before the program starts executing</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>Uninitialized data starts at the end of the data segment and contains all <strong>global</strong> variables and <strong>static</strong> variables that are <strong>initialized to zero</strong> or <strong>do not have explicit initialization in source code</strong>.</td>
+</tr>
+<tr>
+<td><strong>Heap</strong></td>
+<td>Heap is the segment where <strong>dynamic memory allocation</strong> usually takes place.</td>
+</tr>
+<tr>
+<td></td>
+<td>The heap area begins at the end of the BSS segment and <strong>grows to larger addresses</strong> from there.</td>
+</tr>
+<tr>
+<td></td>
+<td>The Heap area is <strong>shared by all shared libraries and dynamically loaded modules in a process</strong>.</td>
+</tr>
+<tr>
+<td><strong>Stack</strong></td>
+<td>The stack area contains the program stack, a <strong>LIFO</strong> structure, typically located in the higher parts of memory.</td>
+</tr>
+<tr>
+<td></td>
+<td>A “<strong>stack pointer</strong>“ register tracks the top of the stack; it is adjusted each time a value is “pushed” onto the stack.</td>
+</tr>
+<tr>
+<td></td>
+<td>The set of values pushed for one <strong>function call</strong> is termed a “<strong>stack frame</strong>“. A stack frame consists at minimum of a <strong>return address</strong>. <strong>Automatic variables</strong> are also allocated on the stack.<br />方法中的<strong>本地变量</strong>会分配到<strong>栈</strong>上</td>
+</tr>
+<tr>
+<td></td>
+<td>The stack area traditionally adjoined the heap area and they <strong>grew towards each other</strong>; when the stack pointer met the heap pointer, free memory was exhausted.</td>
+</tr>
+<tr>
+<td></td>
+<td>On the standard PC <strong>x86</strong> architecture the <strong>stack grows toward address zero</strong>, meaning that more recent items, deeper in the call chain, are at numerically lower addresses and closer to the heap.</td>
+</tr>
+</tbody></table>
+<figure class="highlight c"><figcaption><span>.data initialized data</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> debug_sesion = <span class="number">1</span>;</span><br><span class="line"><span class="type">char</span> <span class="built_in">string</span>[] = <span class="string">&quot;Hello World&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">foo</span> <span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">static</span> <span class="type">int</span> reset_cnt = <span class="number">5</span>;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><figcaption><span>.bss uninitialized data</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> i;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Go-样例"><a href="#Go-样例" class="headerlink" title="Go 样例"></a>Go 样例</h3><blockquote>
+<p>Go 不支持静态变量，Go 代码本身编译后在 <em>.data</em> 和 <em>.bss</em> 没有值（里面实际存储的是 Go Runtime 的值）</p>
+</blockquote>
+<figure class="highlight go"><figcaption><span>main.go</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> name = <span class="string">&quot;zhongmingmao&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ go build main.go </span><br><span class="line"></span><br><span class="line">$ size main</span><br><span class="line">   text    data     bss     dec     hex filename</span><br><span class="line"> 785799   10904  121752  918455   e03b7 main</span><br><span class="line"> </span><br><span class="line">$ objdump -x main</span><br><span class="line">...</span><br><span class="line">Sections:</span><br><span class="line">Idx Name          Size      VMA               LMA               File off  Algn</span><br><span class="line">  0 .text         000515b0  0000000000401000  0000000000401000  00001000  2**4</span><br><span class="line">...</span><br><span class="line">  8 .data         00001e90  00000000004c2c20  00000000004c2c20  000c2c20  2**5</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line">  9 .bss          0001b470  00000000004c4ac0  00000000004c4ac0  000c4ac0  2**5</span><br><span class="line">                  ALLOC</span><br><span class="line">....</span><br></pre></td></tr></table></figure>
+
+<h2 id="多级页表"><a href="#多级页表" class="headerlink" title="多级页表"></a>多级页表</h2><ol>
+<li>页表的作用：虚拟地址与物理地址的<strong>映射</strong>关系</li>
+<li>单级页表相当于一一映射，本身就非常浪费内存，为了<strong>节省内存</strong>，发展出了多级页表（常见为<strong>4级</strong>）</li>
+<li>寻址：<strong>多级索引 + 页内偏移</strong></li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ getconf PAGE_SIZE</span><br><span class="line">4096</span><br></pre></td></tr></table></figure>
+
+<h1 id="CPU-访问内存"><a href="#CPU-访问内存" class="headerlink" title="CPU 访问内存"></a>CPU 访问内存</h1><ol>
+<li>MMU: <strong>Memory Management Unit</strong></li>
+<li>TLB: <strong>Translation Lookaside Buffer</strong>，用于<strong>缓存虚拟地址和物理地址的映射关系</strong><ul>
+<li><strong>TLB 在 CPU 内部，比 L1 Cache 都要快</strong></li>
+<li>注意区分 JVM 中的 TLAB（Thread Local Allocation Buffer）</li>
+</ul>
+</li>
+<li>过程（缓存模式：<strong>Cache-Aside</strong>）<ul>
+<li>第一次访问，CPU 把虚拟地址交给 MMU，MMU 去物理内存中查找多级页表，得到实际的物理地址</li>
+<li>然后将虚拟地址与物理地址的映射关系缓存到 TLB</li>
+<li>对于同一个虚拟地址的后续访问，将直接访问 TLB</li>
+</ul>
+</li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220207234249516.png" alt="image-20220207234249516"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220207235521793.png" alt="image-20220207235521793"></p>
+<h1 id="切换开销"><a href="#切换开销" class="headerlink" title="切换开销"></a>切换开销</h1><table>
+<thead>
+<tr>
+<th></th>
+<th>内核参与（系统调用）</th>
+<th>虚拟地址空间切换</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>进程</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>线程</td>
+<td>Y</td>
+<td>N</td>
+</tr>
+<tr>
+<td>用户线程 - goroutine</td>
+<td>N</td>
+<td>N</td>
+</tr>
+</tbody></table>
+<h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><ol>
+<li>直接开销<ul>
+<li>切换 <strong>PGD</strong></li>
+<li>刷新 <strong>TLB</strong></li>
+<li>切换<strong>硬件上下文</strong>（即：进程恢复前，必须装入<strong>寄存器</strong>的数据）</li>
+<li>切换<strong>内核态堆栈</strong></li>
+<li><strong>系统调度器</strong>的代码执行</li>
+</ul>
+</li>
+<li>间接开销<ul>
+<li>新切入的进程，由于 <strong>CPU 缓存失效</strong>，导致该进程<strong>直接访问内存</strong>的操作变多</li>
+</ul>
+</li>
+</ol>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><ol>
+<li><strong>线程本质上只是一批共享资源的进程，线程切换本质上依然需要内核（系统调用）进行进程切换</strong></li>
+<li><strong>共享 &#x3D;&gt; 节省</strong><ul>
+<li>进程内的所有线程共享虚拟地址空间 – 即<em>mm</em>，线程切换相比进程切换，主要<strong>节省了虚拟地址空间的切换</strong>，开销小很多</li>
+</ul>
+</li>
+</ol>
+<h2 id="用户线程"><a href="#用户线程" class="headerlink" title="用户线程"></a>用户线程</h2><blockquote>
+<p>应用程序在用户空间创建的可执行单元（<strong>goroutine</strong>），创建销毁<strong>完全在用户态</strong>完成，无需切换，<strong>无需内核参与（系统调用）</strong></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220208002033001.png" alt="image-20220208002033001"></p>
+<h1 id="GMP-模型"><a href="#GMP-模型" class="headerlink" title="GMP 模型"></a>GMP 模型</h1><blockquote>
+<p>Go 基于 GMP 模型实现用户态线程</p>
+</blockquote>
+<h2 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220208225332764.png" alt="image-20220208225332764"></p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>G : Goroutine</strong></td>
+<td><strong>goroutine</strong><br />每个 goroutine 都有自己的<strong>栈空间</strong>和和<strong>定时器</strong>，初始化的栈空间在 <strong>2K</strong> 左右，后续可能增长</td>
+</tr>
+<tr>
+<td><strong>M : Machine</strong></td>
+<td>抽象化代表<strong>内核线程</strong>，记录内核线程栈信息<br />当 goroutine 调度到线程时，<strong>使用该 goroutine 自身的栈信息</strong><br />任何运行中的 goroutine 会与某个<strong>内核态</strong>的线程绑定</td>
+</tr>
+<tr>
+<td><strong>P : Processor</strong></td>
+<td>代表<strong>调度器</strong>，负责<strong>调度 goroutine</strong><br />维护一个<strong>本地 goroutine 队列</strong>，M 从 P 上获取 goroutine 并执行，同时还负责部分内存的管理</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>KSE: Kernel Scheduling Entity – 轻量级进程</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220208232451974.png" alt="image-20220208232451974"></p>
+<h2 id="细节"><a href="#细节" class="headerlink" title="细节"></a>细节</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220208232657730.png" alt="image-20220208232657730"></p>
+<h3 id="P-状态"><a href="#P-状态" class="headerlink" title="P 状态"></a>P 状态</h3><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>_Pidle</strong></td>
+<td>没有运行用户代码或者调度逻辑，执行队列为空</td>
+</tr>
+<tr>
+<td><strong>_Prunning</strong></td>
+<td>被 M 持有，并且正在执行用户代码或者调度逻辑</td>
+</tr>
+<tr>
+<td><strong>_Psyscall</strong></td>
+<td>没有执行用户代码，当前线程<strong>陷入系统调用</strong></td>
+</tr>
+<tr>
+<td>_Pgcstop</td>
+<td>被 M 持有，当前 P 由于 GC 被停止</td>
+</tr>
+<tr>
+<td>_Pdead</td>
+<td>不再被使用</td>
+</tr>
+</tbody></table>
+<h3 id="G-状态"><a href="#G-状态" class="headerlink" title="G 状态"></a>G 状态</h3><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>_Gidle</td>
+<td>刚被分配还未初始化，值为0，为创建 goroutine 后的默认值</td>
+</tr>
+<tr>
+<td><strong>_Grunnable</strong></td>
+<td>没有执行代码，没有栈的所有权，存储在执行队列中（LRQ 或者 GRQ）</td>
+</tr>
+<tr>
+<td><strong>_Grunning</strong></td>
+<td>正在执行代码，拥有栈的所有权</td>
+</tr>
+<tr>
+<td><strong>_Gsyscall</strong></td>
+<td><strong>正在执行系统调用，拥有栈的所有权，与 P 脱离，与 M 绑定</strong><br /><strong>系统调用结束后会被分配到执行队列</strong></td>
+</tr>
+<tr>
+<td><strong>_Gwaiting</strong></td>
+<td>被阻塞的 goroutine，阻塞在某个 channel 的发送或者接收队列</td>
+</tr>
+<tr>
+<td><strong>_Gdead</strong></td>
+<td>当前 goroutine 未被使用，没有执行代码，分布在 gFree<br />1. 可能是一个<strong>刚初始化</strong>的 goroutine<br />2. 也可能是<strong>刚执行完</strong>的 goroutine</td>
+</tr>
+<tr>
+<td>_Gcopystac</td>
+<td>栈正在被拷贝，没有执行代码，不在执行队列上，执行权在</td>
+</tr>
+<tr>
+<td>_Gscan</td>
+<td>GC 正在扫描栈空间，没有执行代码，可以与其他状态同时存在</td>
+</tr>
+</tbody></table>
+<h3 id="G-位置"><a href="#G-位置" class="headerlink" title="G 位置"></a>G 位置</h3><ol>
+<li>进程都有一个全局的 G 队列</li>
+<li>每个 P 拥有一个本地执行队列 LRQ</li>
+<li>不在执行队列（LRQ 或者 GRQ）中的 G<ul>
+<li>处于 channel 阻塞态的 G 被放在 sudog</li>
+<li>脱离 P 绑定在 M 上的 G，例如系统调用</li>
+<li>为了<strong>复用</strong>，执行结束后进入  <strong>P 的 gFree 列表</strong>中的 G</li>
+</ul>
+</li>
+</ol>
+<h3 id="创建-G"><a href="#创建-G" class="headerlink" title="创建 G"></a>创建 G</h3><ol>
+<li>创建过程<ul>
+<li>从 P 的 gFree 列表中查找空闲的 goroutine</li>
+<li>如果不存在空闲的 goroutine，会创建一个栈大小足够的新结构体</li>
+</ul>
+</li>
+<li>将函数传入的参数移到 goroutine 的栈上</li>
+<li>更新 goroutine 调度相关的属性，更新状态为 _Grunnable</li>
+<li>返回的 goroutine 会存储到全局变量 allgs 中</li>
+</ol>
+<h3 id="G-gt-Q"><a href="#G-gt-Q" class="headerlink" title="G -&gt; Q"></a>G -&gt; Q</h3><ol>
+<li>首先尝试将 G 放入对应的 LRQ</li>
+<li>如果 LRQ 已经满了（256），会把 LRQ 中的一部分 G 和待加入的 G 一起放到 GRQ</li>
+</ol>
+<h3 id="P"><a href="#P" class="headerlink" title="P"></a>P</h3><ol>
+<li>为了保证公平，当 GRQ 中有 G，首先以一定的概率（1&#x2F;61）尝试从 GRQ 中获取 G，获取失败再尝试从 LRQ 中获取</li>
+<li>如果还是失败，则随机从其他 P 对应的 LRQ 中获取 G</li>
+</ol>
+<h3 id="M-amp-P"><a href="#M-amp-P" class="headerlink" title="M &amp; P"></a>M &amp; P</h3><ol>
+<li>默认情况下，<strong>P 的数量 &#x3D; CPU 个数</strong>，可以通过 <code>GOMAXPROCS</code> 修改，上限为<strong>256</strong></li>
+<li><strong>M</strong> 的数量为<strong>内核线程数量</strong>，<strong>M ＞ P</strong>，上限为<strong>10,000</strong></li>
+<li>P 的数量在调度器初始化的 procresize 中控制</li>
+<li>当调度器进行调度，唤醒 P 的时候，<strong>会尝试获取 idle m</strong>，如果获取不到，则<strong>创建新的 M（内核线程）</strong><ul>
+<li>因为 M 可能陷入<strong>系统调用</strong>，而系统调用可能是<strong>阻塞</strong>的，如 IO，此时 <strong>CPU 是空闲的</strong></li>
+<li>创建新的 M 与 P 关联，可以让更多的 G 被调度，<strong>充分利用 CPU</strong></li>
+</ul>
+</li>
+</ol>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/02/08/cloud-native-foundation-go-thread-scheduling/">https://blog.zhongmingmao.top/2022/02/08/cloud-native-foundation-go-thread-scheduling/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/go/">Go</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Bytecode Manipulation - Java Agent Practice</div></div></a></div><div class="next-post pull-right"><a href="/2022/02/06/cloud-native-foundation-go-sync/" title="Cloud Native Foundation - Go Sync"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Cloud Native Foundation - Go Sync</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/05/15/cloud-native-foundation-go-core-list-ring/" title="Go Core - List + Ring"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-9.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - List + Ring</div></div></a></div><div><a href="/2022/05/15/cloud-native-foundation-go-core-array-slice/" title="Go Core - Array + Slice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - Array + Slice</div></div></a></div><div><a href="/2022/05/15/cloud-native-foundation-go-core-entity/" title="Go Core - Entity"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - Entity</div></div></a></div><div><a href="/2022/05/03/cloud-native-foundation-go-engineering-foundation-cli/" title="Go Engineering - Foundation - CLI"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-03</div><div class="title">Go Engineering - Foundation - CLI</div></div></a></div><div><a href="/2022/05/02/cloud-native-foundation-go-engineering-foundation-log-package/" title="Go Engineering - Foundation - Log - Package"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-02</div><div class="title">Go Engineering - Foundation - Log - Package</div></div></a></div><div><a href="/2022/05/01/cloud-native-foundation-go-engineering-foundation-log-design/" title="Go Engineering - Foundation - Log - Design"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-01</div><div class="title">Go Engineering - Foundation - Log - Design</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BF%9B%E7%A8%8B-amp-%E7%BA%BF%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">进程 &amp; 线程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98"><span class="toc-number">2.</span> <span class="toc-text">Linux 进程内存</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80"><span class="toc-number">2.1.</span> <span class="toc-text">虚拟地址</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Go-%E6%A0%B7%E4%BE%8B"><span class="toc-number">2.1.1.</span> <span class="toc-text">Go 样例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8"><span class="toc-number">2.2.</span> <span class="toc-text">多级页表</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CPU-%E8%AE%BF%E9%97%AE%E5%86%85%E5%AD%98"><span class="toc-number">3.</span> <span class="toc-text">CPU 访问内存</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%87%E6%8D%A2%E5%BC%80%E9%94%80"><span class="toc-number">4.</span> <span class="toc-text">切换开销</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9B%E7%A8%8B"><span class="toc-number">4.1.</span> <span class="toc-text">进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B"><span class="toc-number">4.2.</span> <span class="toc-text">线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E7%BA%BF%E7%A8%8B"><span class="toc-number">4.3.</span> <span class="toc-text">用户线程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#GMP-%E6%A8%A1%E5%9E%8B"><span class="toc-number">5.</span> <span class="toc-text">GMP 模型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E8%A6%81"><span class="toc-number">5.1.</span> <span class="toc-text">概要</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%86%E8%8A%82"><span class="toc-number">5.2.</span> <span class="toc-text">细节</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#P-%E7%8A%B6%E6%80%81"><span class="toc-number">5.2.1.</span> <span class="toc-text">P 状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#G-%E7%8A%B6%E6%80%81"><span class="toc-number">5.2.2.</span> <span class="toc-text">G 状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#G-%E4%BD%8D%E7%BD%AE"><span class="toc-number">5.2.3.</span> <span class="toc-text">G 位置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-G"><span class="toc-number">5.2.4.</span> <span class="toc-text">创建 G</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#G-gt-Q"><span class="toc-number">5.2.5.</span> <span class="toc-text">G -&gt; Q</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#P"><span class="toc-number">5.2.6.</span> <span class="toc-text">P</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#M-amp-P"><span class="toc-number">5.2.7.</span> <span class="toc-text">M &amp; P</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

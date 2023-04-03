@@ -1,0 +1,450 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>MySQL -- KILL + 客户端 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="KILL KILL QUERY THREAD_ID 终止这个线程中正在执行的语句   KILL [ CONNECTION ] THREAD_ID 断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- KILL + 客户端">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/03/06/mysql-kill-client/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="KILL KILL QUERY THREAD_ID 终止这个线程中正在执行的语句   KILL [ CONNECTION ] THREAD_ID 断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png">
+<meta property="article:published_time" content="2019-03-06T14:40:20.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.598Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/03/06/mysql-kill-client/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySQL -- KILL + 客户端',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySQL -- KILL + 客户端</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-03-06T14:40:20.000Z" title="Created 2019-03-06 22:40:20">2019-03-06</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/">Storage</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/">MySQL</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>6min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="KILL"><a href="#KILL" class="headerlink" title="KILL"></a>KILL</h2><ol>
+<li><code>KILL QUERY THREAD_ID</code><ul>
+<li>终止这个线程中正在执行的语句</li>
+</ul>
+</li>
+<li><code>KILL [ CONNECTION ] THREAD_ID</code><ul>
+<li>断开这个线程的连接，如果该线程有语句在执行，先停止正在执行的语句</li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="锁等待"><a href="#锁等待" class="headerlink" title="锁等待"></a>锁等待</h2><h3 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `t` (</span><br><span class="line">  `id` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  `c` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`id`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">1</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="操作次序"><a href="#操作次序" class="headerlink" title="操作次序"></a>操作次序</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>UPDATE t SET c&#x3D;c+1 WHERE id&#x3D;1;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET c&#x3D;c+2 WHERE id&#x3D;1;<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>KILL QUERY 24;</td>
+</tr>
+<tr>
+<td></td>
+<td>ERROR 1317 (70100): Query execution was interrupted</td>
+<td></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> PROCESSLIST;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br><span class="line"><span class="operator">|</span> Id <span class="operator">|</span> <span class="keyword">User</span>            <span class="operator">|</span> Host      <span class="operator">|</span> db   <span class="operator">|</span> Command <span class="operator">|</span> <span class="type">Time</span>   <span class="operator">|</span> State                  <span class="operator">|</span> Info                          <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">4</span> <span class="operator">|</span> event_scheduler <span class="operator">|</span> localhost <span class="operator">|</span> <span class="keyword">NULL</span> <span class="operator">|</span> Daemon  <span class="operator">|</span> <span class="number">472733</span> <span class="operator">|</span> Waiting <span class="keyword">on</span> <span class="keyword">empty</span> queue <span class="operator">|</span> <span class="keyword">NULL</span>                          <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">21</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Sleep   <span class="operator">|</span>    <span class="number">130</span> <span class="operator">|</span>                        <span class="operator">|</span> <span class="keyword">NULL</span>                          <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">23</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">0</span> <span class="operator">|</span> starting               <span class="operator">|</span> <span class="keyword">show</span> processlist              <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">24</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">5</span> <span class="operator">|</span> updating               <span class="operator">|</span> <span class="keyword">UPDATE</span> t <span class="keyword">SET</span> c<span class="operator">=</span>c<span class="operator">+</span><span class="number">2</span> <span class="keyword">WHERE</span> id<span class="operator">=</span><span class="number">1</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+-------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="KILL-QUERY"><a href="#KILL-QUERY" class="headerlink" title="KILL QUERY"></a>KILL QUERY</h3><ol>
+<li>对表进行<strong>增删改查</strong>操作时，会在表上加<strong>MDL读锁</strong></li>
+<li><code>KILL QUERY</code>并不是马上停止，而是告诉线程这条语句已经<strong>不需要再继续执行</strong>，可以开始执行停止的逻辑<ul>
+<li>类似于Linux的<code>kill -N pid</code>命令，并不是让进程直接停止</li>
+<li>而是给进程发一个信号，然后让进程处理这个信号，进入终止逻辑</li>
+</ul>
+</li>
+<li>MySQL的具体动作<ul>
+<li>把<code>session B</code>的线程状态改成<code>THD:KILL_QUERY</code>(将变量<code>killed</code>赋值为<code>THD:KILL_QUERY</code>)</li>
+<li>给<code>session B</code>的执行线程发一个<strong>信号</strong><ul>
+<li><code>session B</code>原本处于锁等待状态</li>
+<li>如果只是修改线程状态，线程B是<strong>不知道这个状态的变化</strong>的，还会继续等待</li>
+<li>发信号的目的：让<code>session B</code>退出等待，来处理<code>THD:KILL_QUERY</code>状态</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>隐含逻辑<ul>
+<li>一个语句在执行过程中会有多处<strong>埋点</strong>，在这些<strong>埋点</strong>的地方会判断线程状态<ul>
+<li>如果发现线程状态为<code>THD:KILL_QUERY</code>，才开始进入<strong>语句终止</strong>的逻辑</li>
+</ul>
+</li>
+<li>如果处于等待状态，必须是一个<strong>可以被唤醒的等待</strong>，否则根本不会执行到埋点处</li>
+<li>语句从<strong>开始进入</strong>终止逻辑，到<strong>完全完成</strong>终止逻辑，是有个过程的</li>
+</ul>
+</li>
+</ol>
+<h2 id="并发线程数"><a href="#并发线程数" class="headerlink" title="并发线程数"></a>并发线程数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> innodb_thread_concurrency<span class="operator">=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="操作序列"><a href="#操作序列" class="headerlink" title="操作序列"></a>操作序列</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+<th>session D</th>
+<th>session E</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SELECT SLEEP(100) FROM t;</td>
+<td>SELECT SLEEP(100) FROM t;</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>SELECT * FROM t;<br/>(Blocked)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;<br/>(1st)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>KILL QUERY 28;<br/>(无效)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>KILL 28;</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>ERROR 2013 (HY000): Lost connection to MySQL server during query</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>SHOW PROCESSLIST;<br/>(2nd)</td>
+<td></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 1st</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> PROCESSLIST;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span> Id <span class="operator">|</span> <span class="keyword">User</span>            <span class="operator">|</span> Host      <span class="operator">|</span> db   <span class="operator">|</span> Command <span class="operator">|</span> <span class="type">Time</span>   <span class="operator">|</span> State                  <span class="operator">|</span> Info                     <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">4</span> <span class="operator">|</span> event_scheduler <span class="operator">|</span> localhost <span class="operator">|</span> <span class="keyword">NULL</span> <span class="operator">|</span> Daemon  <span class="operator">|</span> <span class="number">477650</span> <span class="operator">|</span> Waiting <span class="keyword">on</span> <span class="keyword">empty</span> queue <span class="operator">|</span> <span class="keyword">NULL</span>                     <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">21</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>     <span class="number">12</span> <span class="operator">|</span> <span class="keyword">User</span> sleep             <span class="operator">|</span> <span class="keyword">SELECT</span> SLEEP(<span class="number">100</span>) <span class="keyword">FROM</span> t <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">24</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">8</span> <span class="operator">|</span> <span class="keyword">User</span> sleep             <span class="operator">|</span> <span class="keyword">SELECT</span> SLEEP(<span class="number">100</span>) <span class="keyword">FROM</span> t <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">26</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Sleep   <span class="operator">|</span>    <span class="number">291</span> <span class="operator">|</span>                        <span class="operator">|</span> <span class="keyword">NULL</span>                     <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">27</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">0</span> <span class="operator">|</span> starting               <span class="operator">|</span> <span class="keyword">SHOW</span> PROCESSLIST         <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">28</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">5</span> <span class="operator">|</span> Sending data           <span class="operator">|</span> <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> t          <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2nd</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> PROCESSLIST;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span> Id <span class="operator">|</span> <span class="keyword">User</span>            <span class="operator">|</span> Host      <span class="operator">|</span> db   <span class="operator">|</span> Command <span class="operator">|</span> <span class="type">Time</span>   <span class="operator">|</span> State                  <span class="operator">|</span> Info                     <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">4</span> <span class="operator">|</span> event_scheduler <span class="operator">|</span> localhost <span class="operator">|</span> <span class="keyword">NULL</span> <span class="operator">|</span> Daemon  <span class="operator">|</span> <span class="number">477667</span> <span class="operator">|</span> Waiting <span class="keyword">on</span> <span class="keyword">empty</span> queue <span class="operator">|</span> <span class="keyword">NULL</span>                     <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">21</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>     <span class="number">29</span> <span class="operator">|</span> <span class="keyword">User</span> sleep             <span class="operator">|</span> <span class="keyword">SELECT</span> SLEEP(<span class="number">100</span>) <span class="keyword">FROM</span> t <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">24</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>     <span class="number">25</span> <span class="operator">|</span> <span class="keyword">User</span> sleep             <span class="operator">|</span> <span class="keyword">SELECT</span> SLEEP(<span class="number">100</span>) <span class="keyword">FROM</span> t <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">26</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Sleep   <span class="operator">|</span>      <span class="number">4</span> <span class="operator">|</span>                        <span class="operator">|</span> <span class="keyword">NULL</span>                     <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">27</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Query   <span class="operator">|</span>      <span class="number">0</span> <span class="operator">|</span> starting               <span class="operator">|</span> <span class="keyword">SHOW</span> PROCESSLIST         <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">28</span> <span class="operator">|</span> root            <span class="operator">|</span> localhost <span class="operator">|</span> test <span class="operator">|</span> Killed  <span class="operator">|</span>     <span class="number">22</span> <span class="operator">|</span> Sending data           <span class="operator">|</span> <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> t          <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-----------------+-----------+------+---------+--------+------------------------+--------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="KILL-QUERY-x2F-CONNECTION"><a href="#KILL-QUERY-x2F-CONNECTION" class="headerlink" title="KILL QUERY &#x2F; CONNECTION"></a>KILL QUERY &#x2F; CONNECTION</h3><ol>
+<li><code>session C</code>执行的时候被堵住了，<code>session D</code>执行<code>KILL QUERY</code>没啥效果<ul>
+<li>等行锁时，使用的是<code>pthread_cond_timedwait</code>函数，这个等待状态是<strong>可以被唤醒</strong>的</li>
+<li>本例中，28号线程的等待逻辑为<ul>
+<li>每<strong>10ms</strong>判断下能否进入InnoDB执行，如果不行，调用<code>nanosleep</code>函数进入<code>SLEEP</code>状态</li>
+</ul>
+</li>
+<li>虽然28号线程的状态被设置成了<code>THD:KILL_QUERY</code>，但在等待进入InnoDB的循环过程中<ul>
+<li>并<strong>没有去判断线程的状态</strong>，因此根本不会进入<strong>终止逻辑</strong>阶段</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>session E</code>执行<code>KILL CONNECTION</code>，断开<code>session C</code>的连接，<code>Command</code>列变成了<code>Killed</code><ul>
+<li>表示<strong>客户端</strong>虽然<strong>断开了连接</strong>，但实际上<strong>服务端</strong>上这条语句还是在<strong>执行中</strong></li>
+<li>把28号线程的状态设置为<code>THD:KILL_CONNECTION</code>，然后<strong>关闭</strong>12号线程的<strong>网络连接</strong><ul>
+<li><code>session C</code>会收到断开连接的提示</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SHOW PROCESSLIST<ul>
+<li>如果一个线程的状态为<code>THD:KILL_CONNECTION</code>，<code>Command</code>列会显示为<code>Killed</code></li>
+<li>28号线程只有满足进入InnoDB的条件后，<code>session C</code>的查询语句将继续执行<ul>
+<li>才有可能判断到线程状态是否已经变成了<code>KILL_QUERY</code>或者<code>KILL_CONNECTION</code></li>
+<li>再进入终止逻辑阶段</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="KILL无效的情况"><a href="#KILL无效的情况" class="headerlink" title="KILL无效的情况"></a>KILL无效的情况</h2><ol>
+<li>线程没有执行到<strong>判断线程状态</strong>的逻辑<ul>
+<li>innodb_thread_concurrency过小</li>
+<li>例如IO压力过大，读写IO的函数一直没有返回，导致不能及时判断线程的状态</li>
+</ul>
+</li>
+<li><strong>终止逻辑耗时较长</strong>，<code>SHOW PROCESSLIST</code>显示为<code>Command=Killed</code><ul>
+<li><strong>超大事务执行期间被KILL</strong><ul>
+<li>回滚操作需要<strong>对事务执行期间生成的所有新数据版本做回收操作</strong>，耗时很长</li>
+</ul>
+</li>
+<li><strong>大查询回滚</strong><ul>
+<li>查询过程中生成了<strong>较大的临时文件</strong>，恰好此时<strong>文件系统压力较大</strong></li>
+<li>删除临时文件需要等待IO资源，导致耗时较长</li>
+</ul>
+</li>
+<li><strong>DDL执行到最后阶段被KILL</strong><ul>
+<li>需要删除中间过程的<strong>临时文件</strong>，可能受<strong>IO资源</strong>影响，耗时比较久</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="CTRL-C"><a href="#CTRL-C" class="headerlink" title="CTRL + C"></a>CTRL + C</h2><ol>
+<li>在客户端的操作<strong>只能影响到客户端的线程</strong></li>
+<li>客户端与服务端只能通过<strong>网络交互</strong>，因此是<strong>不可能直接操作服务端线程</strong>的</li>
+<li>MySQL是<strong>停等协议</strong>，在这个线程执行的语句还没有返回的时候，再往该连接发命令是没有用的<ul>
+<li>实际上，执行<code>CTRL + C</code>，MySQL是<strong>另起一个连接</strong>，然后发送一个<code>KILL QUERY</code>命令</li>
+</ul>
+</li>
+</ol>
+<h2 id="mysql-A"><a href="#mysql-A" class="headerlink" title="mysql -A"></a>mysql -A</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mysql <span class="operator">-</span>uroot <span class="operator">-</span>Dtest</span><br><span class="line">Reading <span class="keyword">table</span> information <span class="keyword">for</span> completion <span class="keyword">of</span> <span class="keyword">table</span> <span class="keyword">and</span> <span class="keyword">column</span> names</span><br><span class="line">You can turn off this feature <span class="keyword">to</span> <span class="keyword">get</span> a quicker startup <span class="keyword">with</span> <span class="operator">-</span>A</span><br></pre></td></tr></table></figure>
+<ol>
+<li>MySQL客户端默认会提供一个本地库名和表名<strong>补全</strong>的功能，在客户端连接成功后，会多执行以下操作<ul>
+<li><code>SHOW DATABASES;</code> -&gt; <code>USE test;</code> -&gt; <code>SHOW TABLES;</code></li>
+<li>目的：用于构建一个<strong>本地的哈希表</strong></li>
+</ul>
+</li>
+<li>当表很多的时候，会表现得慢，但这是<strong>客户端慢</strong>，而非<strong>连接慢</strong>或者<strong>服务端慢</strong></li>
+</ol>
+<h2 id="mysql-–quick"><a href="#mysql-–quick" class="headerlink" title="mysql –quick"></a>mysql –quick</h2><ol>
+<li>MySQL客户端发送请求后，接收服务端返回结果的两种方式<ul>
+<li><strong>使用本地缓存</strong>，在本地开辟一片内存，先把结果存起来，对应API为<code>mysql_store_result</code><ul>
+<li>MySQL客户端默认行为，即不加参数<code>--quick</code></li>
+</ul>
+</li>
+<li><strong>不使用本地缓存</strong>，读一个处理一个，对应API为<code>mysql_use_result</code><ul>
+<li>如果<strong>客户端本地处理得慢</strong>，会导致<strong>服务端发送结果被阻塞</strong>，导致服务端变慢</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>使用<code>--quick</code>的效果<ul>
+<li><code>-A</code>参数，<strong>跳过表名自动补全功能</strong></li>
+<li><code>mysql_store_result</code>需要申请<strong>本地内存</strong>来缓存结果<ul>
+<li>如果查询结果太大，可能会<strong>影响客户端本地机器的性能</strong></li>
+</ul>
+</li>
+<li>不会把执行命令记录到本地的<strong>命令历史文件</strong></li>
+</ul>
+</li>
+<li><code>--quick</code>的目的是为了让<strong>客户端更快</strong>，但有可能会<strong>降低服务端性能</strong></li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/03/06/mysql-kill-client/">https://blog.zhongmingmao.top/2019/03/06/mysql-kill-client/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/storage/">Storage</a><a class="post-meta__tags" href="/tags/mysql/">MySQL</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/03/08/mysql-full-table-scan/" title="MySQL -- 全表扫描"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">MySQL -- 全表扫描</div></div></a></div><div class="next-post pull-right"><a href="/2019/03/04/mysql-data-recovery/" title="MySQL -- 数据恢复"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">MySQL -- 数据恢复</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/03/19/mysql-self-increase-id-run-out/" title="MySQL -- 自增ID耗尽"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-19</div><div class="title">MySQL -- 自增ID耗尽</div></div></a></div><div><a href="/2019/03/17/mysql-partition-table/" title="MySQL -- 分区表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 分区表</div></div></a></div><div><a href="/2019/03/17/mysql-grant-flush-privileges/" title="MySQL -- 权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 权限</div></div></a></div><div><a href="/2019/03/16/mysql-copy-table/" title="MySQL -- 拷贝表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- 拷贝表</div></div></a></div><div><a href="/2019/03/16/mysql-insert-lock/" title="MySQL -- INSERT语句的锁"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- INSERT语句的锁</div></div></a></div><div><a href="/2019/03/15/mysql-auto-increment/" title="MySQL -- 自增主键"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-15</div><div class="title">MySQL -- 自增主键</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#KILL"><span class="toc-number">1.</span> <span class="toc-text">KILL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E7%AD%89%E5%BE%85"><span class="toc-number">2.</span> <span class="toc-text">锁等待</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">2.1.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E6%AC%A1%E5%BA%8F"><span class="toc-number">2.2.</span> <span class="toc-text">操作次序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#KILL-QUERY"><span class="toc-number">2.3.</span> <span class="toc-text">KILL QUERY</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E7%BA%BF%E7%A8%8B%E6%95%B0"><span class="toc-number">3.</span> <span class="toc-text">并发线程数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E5%BA%8F%E5%88%97"><span class="toc-number">3.1.</span> <span class="toc-text">操作序列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#KILL-QUERY-x2F-CONNECTION"><span class="toc-number">3.2.</span> <span class="toc-text">KILL QUERY &#x2F; CONNECTION</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#KILL%E6%97%A0%E6%95%88%E7%9A%84%E6%83%85%E5%86%B5"><span class="toc-number">4.</span> <span class="toc-text">KILL无效的情况</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CTRL-C"><span class="toc-number">5.</span> <span class="toc-text">CTRL + C</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#mysql-A"><span class="toc-number">6.</span> <span class="toc-text">mysql -A</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#mysql-%E2%80%93quick"><span class="toc-number">7.</span> <span class="toc-text">mysql –quick</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">8.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

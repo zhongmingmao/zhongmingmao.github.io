@@ -1,0 +1,292 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>JVM基础 -- VirtualMachineError实例 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="VirtualMachineError有两个常见的实现类：StackOverflowError、OutOfMemoryError，本文将用代码分析几种情况的VirtualMachineError">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM基础 -- VirtualMachineError实例">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2016/06/25/jvm-virtualmachineerror/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="VirtualMachineError有两个常见的实现类：StackOverflowError、OutOfMemoryError，本文将用代码分析几种情况的VirtualMachineError">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png">
+<meta property="article:published_time" content="2016-06-24T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.588Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2016/06/25/jvm-virtualmachineerror/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'JVM基础 -- VirtualMachineError实例',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">JVM基础 -- VirtualMachineError实例</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2016-06-24T16:06:25.000Z" title="Created 2016-06-25 00:06:25">2016-06-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/">JVM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/baisc/">Baisc</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>8min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><blockquote>
+<p><code>VirtualMachineError</code>有两个常见的实现类：<code>StackOverflowError</code>、<code>OutOfMemoryError</code>，本文将用代码分析几种情况的<code>VirtualMachineError</code></p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="JVM参数"><a href="#JVM参数" class="headerlink" title="JVM参数"></a>JVM参数</h1><table>
+<thead>
+<tr>
+<th>内存区域</th>
+<th>虚拟机栈<br/>VM Stack</th>
+<th>堆<br/>Heap</th>
+<th>方法区<br/>Method Area</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>共享&#x2F;隔离</td>
+<td>线程隔离</td>
+<td>线程共享</td>
+<td>线程共享</td>
+</tr>
+<tr>
+<td>存放的数据</td>
+<td>栈帧 Stack Frame</td>
+<td>对象实例&#x2F;数组</td>
+<td>类信息、常量、静态变量等数据</td>
+</tr>
+<tr>
+<td>异常情况</td>
+<td>StackOverflowError<br/>OutOfMemoryError</td>
+<td>OutOfMemoryError</td>
+<td>OutOfMemoryError</td>
+</tr>
+<tr>
+<td>JVM参数</td>
+<td>-Xss</td>
+<td>-Xms<br/>-Xmx</td>
+<td>-XX:PermSize<br/>-XX:MaxPermSize<br/>-XX:MetaspaceSize<br/>-XX:MaxMetaspaceSize</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>注：在JDK8之前，<code>Hotspot JVM</code>采用永生代（<code>Permanent Generation</code>）来实现方法区（<code>Method Area</code>），从<code>JDK8</code>开始，已经移除了永生代，使用<code>Metaspace</code>进行替代，相关连接请参考：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="http://blog.csdn.net/zhushuai1221/article/details/52122880">http://blog.csdn.net/zhushuai1221/article/details/52122880</a></li>
+<li><a target="_blank" rel="noopener" href="http://openjdk.java.net/jeps/122">http://openjdk.java.net/jeps/122</a></li>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/18339707/permgen-elimination-in-jdk-8">https://stackoverflow.com/questions/18339707/permgen-elimination-in-jdk-8</a></li>
+</ol>
+</blockquote>
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><h2 id="VM-Stack-StackOverflowError"><a href="#VM-Stack-StackOverflowError" class="headerlink" title="VM Stack - StackOverflowError"></a>VM Stack - StackOverflowError</h2><h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VMStackSOF</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">stackDepth</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">stackLeak</span><span class="params">()</span> &#123;</span><br><span class="line">        ++stackDepth;</span><br><span class="line">        stackLeak();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> String.format(<span class="string">&quot;stackDepth:%s&quot;</span>, stackDepth);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// JDK ➔ 7</span></span><br><span class="line">    <span class="comment">// JVM Args ➔ -Xss256k</span></span><br><span class="line">    <span class="comment">// -Xss ➔ VM Stack大小</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">VMStackSOF</span> <span class="variable">sof</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VMStackSOF</span>();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            sof.stackLeak();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            System.out.println(e.getClass().getCanonicalName());</span><br><span class="line">            System.out.println(sof);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">java.lang.StackOverflowError</span><br><span class="line">stackDepth:1890</span><br></pre></td></tr></table></figure>
+
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><ol>
+<li><code>VM Stack</code>是<code>线程私有</code>，当线程执行一个方法时，会在<code>VM Stack</code>上创建一个<code>Stack Frame</code>，<code>VM Stack</code>类似于<code>Stack</code>（FILO）的数据结构，<code>最上层的Stack Frame</code>即<code>当前线程执行的方法</code></li>
+<li>方法<code>从调用到执行完成</code>，对应着<code>Stack Frame</code>在<code>VM Stack</code>中<code>从入栈到出栈</code>的过程</li>
+<li>由于<code>VM Stack</code>的空间有限，当递归调用的深度过大，有可能会抛出<code>StackOverflowError</code></li>
+</ol>
+<h2 id="Heap-OutOfMemoryError"><a href="#Heap-OutOfMemoryError" class="headerlink" title="Heap - OutOfMemoryError"></a>Heap - OutOfMemoryError</h2><h3 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HeapOOM</span> &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">OOMObject</span> &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">_1_MB</span> <span class="operator">=</span> <span class="number">1</span> * <span class="number">1024</span> * <span class="number">1024</span>;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">byte</span>[] body = <span class="keyword">new</span> <span class="title class_">byte</span>[_1_MB];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// JDK ➔ 7</span></span><br><span class="line">    <span class="comment">// JVM Args ➔ -Xms10M -Xmx10M -XX:+HeapDumpOnOutOfMemoryError -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC</span></span><br><span class="line">    <span class="comment">// -Xms ➔ 初始堆内存大小</span></span><br><span class="line">    <span class="comment">// -Xmx ➔ 最大堆内存大小</span></span><br><span class="line">    <span class="comment">// -XX:+HeapDumpOnOutOfMemoryError ➔ 当发生OutOfMemoryError，生成Heap Dump文件，便于MAT等工具进分析</span></span><br><span class="line">    <span class="comment">// -XX:+PrintGCDetails ➔ 打印GC日志</span></span><br><span class="line">    <span class="comment">// -XX:+UseSerialGC ➔ 新生代采用Serial收集器，老年代采用Serial Old收集器</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        List&lt;OOMObject&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">            list.add(<span class="keyword">new</span> <span class="title class_">OOMObject</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行结果-1"><a href="#运行结果-1" class="headerlink" title="运行结果"></a>运行结果</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[GC[DefNew: 2542K-&gt;320K(3072K), 0.0030860 secs] 2542K-&gt;1392K(9920K), 0.0031220 secs] [Times: user=0.00 sys=0.01, real=0.01 secs]</span><br><span class="line">[GC[DefNew: 2520K-&gt;0K(3072K), 0.0036840 secs] 3593K-&gt;3440K(9920K), 0.0037070 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]</span><br><span class="line">[GC[DefNew: 2094K-&gt;0K(3072K), 0.0024930 secs] 5534K-&gt;5489K(9920K), 0.0025120 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]</span><br><span class="line">[GC[DefNew: 2078K-&gt;2078K(3072K), 0.0000150 secs][Tenured: 5488K-&gt;6512K(6848K), 0.0062400 secs] 7567K-&gt;7537K(9920K), [Perm : 2973K-&gt;2973K(21248K)], 0.0062960 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]</span><br><span class="line">[Full GC[Tenured: 6512K-&gt;6512K(6848K), 0.0043250 secs] 8569K-&gt;8562K(9920K), [Perm : 2982K-&gt;2982K(21248K)], 0.0043490 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]</span><br><span class="line">[Full GC[Tenured: 6512K-&gt;6475K(6848K), 0.0054820 secs] 8562K-&gt;8525K(9920K), [Perm : 2982K-&gt;2981K(21248K)], 0.0055010 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]</span><br><span class="line">java.lang.OutOfMemoryError: Java heap space</span><br><span class="line">Dumping heap to java_pid96337.hprof ...</span><br><span class="line">Heap dump file created [9431959 bytes in 0.064 secs]</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.OutOfMemoryError: Java heap space</span><br><span class="line"></span><br><span class="line">Heap</span><br><span class="line"> def new generation   total 3072K, used 2214K [0x00000007fa400000, 0x00000007fa750000, 0x00000007fa750000)</span><br><span class="line">  eden space 2752K,  80% used [0x00000007fa400000, 0x00000007fa629bc8, 0x00000007fa6b0000)</span><br><span class="line">  from space 320K,   0% used [0x00000007fa700000, 0x00000007fa700000, 0x00000007fa750000)</span><br><span class="line">  to   space 320K,   0% used [0x00000007fa6b0000, 0x00000007fa6b0000, 0x00000007fa700000)</span><br><span class="line"> tenured generation   total 6848K, used 6475K [0x00000007fa750000, 0x00000007fae00000, 0x00000007fae00000)</span><br><span class="line">   the space 6848K,  94% used [0x00000007fa750000, 0x00000007fada2da0, 0x00000007fada2e00, 0x00000007fae00000)</span><br><span class="line"> compacting perm gen  total 21248K, used 3124K [0x00000007fae00000, 0x00000007fc2c0000, 0x0000000800000000)</span><br><span class="line">   the space 21248K,  14% used [0x00000007fae00000, 0x00000007fb10d130, 0x00000007fb10d200, 0x00000007fc2c0000)</span><br><span class="line">No shared spaces configured.</span><br></pre></td></tr></table></figure>
+
+<h3 id="MAT分析"><a href="#MAT分析" class="headerlink" title="MAT分析"></a>MAT分析</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/mat_oom_serialgc.png" width="500">
+1. 当线程运行main方法时，list是在的`VM Stack`的`Current Stack Frame`定义的`强引用(Strong Reference)`，且为`GC ROOT`，哪怕JVM堆内存不足的时候，触发`Full GC`，也不会将其回收，最后导致`OutOfMemoryError`
+2. 由GC日志可以看出，`新生代的Eden区`存有`2`个OOMObject对象，`老年代`存有`6`个OOMObject对象，已经无法再容纳新的OOMObject对象，抛出`OutOfMemoryError`
+
+<h2 id="Interned-Strings"><a href="#Interned-Strings" class="headerlink" title="Interned Strings"></a>Interned Strings</h2><p><code>Interned Strings</code>（字面量）在<code>JDK6</code>会存储在<code>PermGen</code>，从<code>JDK7</code>开始存储在<code>Java Heap</code>，减少<code>OOM</code>和<code>性能问题</code></p>
+<h3 id="JDK6-PermGen"><a href="#JDK6-PermGen" class="headerlink" title="JDK6 - PermGen"></a>JDK6 - PermGen</h3><h4 id="代码-2"><a href="#代码-2" class="headerlink" title="代码"></a>代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// JDK ➔ 6</span></span><br><span class="line"><span class="comment">// JVM Args ➔ -Xms60m -Xmx60m -XX:PermSize=50m -XX:MaxPermSize=50m -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC</span></span><br><span class="line"><span class="comment">// -XX:PermSize ➔ PermGen的初始大小</span></span><br><span class="line"><span class="comment">// -XX:MaxPermSize ➔ PermGen的最大值</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line"></span><br><span class="line">   <span class="type">BufferedReader</span> <span class="variable">reader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">   System.out.println(<span class="string">&quot;waiting for input...&quot;</span>);</span><br><span class="line">   reader.readLine();</span><br><span class="line">   <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">   List&lt;String&gt; strings = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;String&gt;();</span><br><span class="line">   <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">       <span class="comment">// 当前线程保持强引用，阻止被GC回收</span></span><br><span class="line">       strings.add(String.valueOf(i++).intern());</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行结果-2"><a href="#运行结果-2" class="headerlink" title="运行结果"></a>运行结果</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[GC [DefNew: 17587K-&gt;784K(18432K), 0.0078576 secs] 17587K-&gt;1928K(59392K), 0.0078864 secs] [Times: user=0.01 sys=0.00, real=0.01 secs]</span><br><span class="line">[GC [DefNew: 17168K-&gt;1764K(18432K), 0.0065362 secs] 18312K-&gt;2909K(59392K), 0.0065645 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]</span><br><span class="line">[GC [DefNew: 18148K-&gt;12K(18432K), 0.0087651 secs] 19293K-&gt;3794K(59392K), 0.0087963 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]</span><br><span class="line">[Full GC [Tenured: 3781K-&gt;3783K(40960K), 0.1019995 secs] 7657K-&gt;3783K(59392K), [Perm : 51199K-&gt;51199K(51200K)], 0.1033236 secs] [Times: user=0.10 sys=0.00, real=0.10 secs]</span><br><span class="line">[Full GC [Tenured: 3783K-&gt;3783K(40960K), 0.1647300 secs] 3783K-&gt;3783K(59392K), [Perm : 51199K-&gt;51199K(51200K)], 0.1659092 secs] [Times: user=0.16 sys=0.00, real=0.17 secs]</span><br><span class="line">[Full GC [Tenured: 3783K-&gt;1152K(40960K), 0.0483188 secs] 4020K-&gt;1152K(59392K), [Perm : 51199K-&gt;13270K(51200K)], 0.0497827 secs] [Times: user=0.05 sys=0.00, real=0.05 secs]</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.OutOfMemoryError: PermGen space</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/StringInternJDK6.png" width="500">
+
+<h4 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h4><ol>
+<li><code>String.valueOf(i++).intern()</code>会在<code>Heap</code>（<code>valueOf</code>）和<code>PermGen</code>（<code>intern</code>）中分配存储空间，并返回引用到<code>strings</code>进行保存（强引用，不会被GC回收）</li>
+<li>从GC日志可以看出，<code>Full GC</code>时，<code>PermGen</code>接近填满（<code>[Perm : 51199K-&gt;51199K(51200K)]</code>）</li>
+</ol>
+<h3 id="JDK8-Heap"><a href="#JDK8-Heap" class="headerlink" title="JDK8 - Heap"></a>JDK8 - Heap</h3><h4 id="代码-3"><a href="#代码-3" class="headerlink" title="代码"></a>代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// JDK ➔ 8</span></span><br><span class="line"><span class="comment">// JVM Args ➔ -Xms600m -Xmx600m -XX:MetaspaceSize=50m -XX:MaxMetaspaceSize=50m -verbose:gc -XX:+PrintGCDetails -XX:+UseSerialGC</span></span><br><span class="line"><span class="comment">// -XX:MetaspaceSize ➔ Metaspace的初始大小，在JDK8开始，PermGen已经被移除，采用Metaspace来替代</span></span><br><span class="line"><span class="comment">// -XX:MaxMetaspaceSize ➔ Metaspace的最大值</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line"></span><br><span class="line">   <span class="type">BufferedReader</span> <span class="variable">reader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">   System.out.println(<span class="string">&quot;waiting for input...&quot;</span>);</span><br><span class="line">   reader.readLine();</span><br><span class="line">   <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">   List&lt;String&gt; strings = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;String&gt;();</span><br><span class="line">   <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">       <span class="comment">// 当前线程保持强引用，阻止被GC回收</span></span><br><span class="line">       strings.add(String.valueOf(i++).intern());</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行结果-3"><a href="#运行结果-3" class="headerlink" title="运行结果"></a>运行结果</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[GC (Allocation Failure) [DefNew: 161762K-&gt;20480K(184320K), 0.4081917 secs] 161762K-&gt;108735K(593920K), 0.4082377 secs] [Times: user=0.31 sys=0.06, real=0.41 secs]</span><br><span class="line">[GC (Allocation Failure) [DefNew: 180388K-&gt;20480K(184320K), 0.5512956 secs] 268644K-&gt;242289K(593920K), 0.5513318 secs] [Times: user=0.44 sys=0.08, real=0.55 secs]</span><br><span class="line">[GC (Allocation Failure) [DefNew: 163946K-&gt;20480K(184320K), 0.5983332 secs] 385755K-&gt;362517K(593920K), 0.5983566 secs] [Times: user=0.46 sys=0.07, real=0.60 secs]</span><br><span class="line">[GC (Allocation Failure) [DefNew: 184320K-&gt;184320K(184320K), 0.0000114 secs][Tenured: 342037K-&gt;409599K(409600K), 2.0193780 secs] 526357K-&gt;497464K(593920K), [Metaspace: 9048K-&gt;9048K(1058816K)], 2.0194333 secs] [Times: user=1.89 sys=0.08, real=2.02 secs]</span><br><span class="line">[Full GC (Allocation Failure) [Tenured: 409599K-&gt;409599K(409600K), 2.0671005 secs] 546537K-&gt;542781K(593920K), [Metaspace: 9065K-&gt;9065K(1058816K)], 2.0671389 secs] [Times: user=1.95 sys=0.03, real=2.07 secs]</span><br><span class="line">[Full GC (Allocation Failure) [Tenured: 409599K-&gt;409599K(409600K), 2.1368935 secs] 542781K-&gt;542354K(593920K), [Metaspace: 9065K-&gt;9065K(1058816K)], 2.1370422 secs] [Times: user=2.08 sys=0.02, real=2.14 secs]</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.OutOfMemoryError: Java heap space</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/StringInternJDK8.png" width="500">
+
+<h4 id="分析-2"><a href="#分析-2" class="headerlink" title="分析"></a>分析</h4><ol>
+<li><code>String.valueOf(i++).intern()</code>会在<code>Heap</code>（<code>valueOf</code>）中分配存储空间，并返回引用到<code>strings</code>进行保存（强引用，不会被GC回收）</li>
+<li>从GC日志可以看出，<code>Full GC</code>时，<code>Old Gen</code>接近填满（<code>Tenured: 409599K-&gt;409599K(409600K)</code>）</li>
+</ol>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2016/06/25/jvm-virtualmachineerror/">https://blog.zhongmingmao.top/2016/06/25/jvm-virtualmachineerror/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/jvm/">JVM</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2016/06/27/jvm-object-layout-1/" title="JVM基础 -- Instrumentation + sa-jdi 工具构建"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">JVM基础 -- Instrumentation + sa-jdi 工具构建</div></div></a></div><div class="next-post pull-right"><a href="/2015/11/12/vim-file/" title="Vim -- 文件"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Vim -- 文件</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/02/22/jvm-bytecode-manipulation-asm-introduction/" title="ASM - Introduction"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-22</div><div class="title">ASM - Introduction</div></div></a></div><div><a href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="title">Bytecode Manipulation - Javassist</div></div></a></div><div><a href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-10</div><div class="title">Bytecode Manipulation - Java Agent Practice</div></div></a></div><div><a href="/2019/09/13/java-performance-jvm-heap-allocation/" title="Java性能 -- JVM堆内存分配"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-13</div><div class="title">Java性能 -- JVM堆内存分配</div></div></a></div><div><a href="/2019/09/11/java-performance-gc/" title="Java性能 -- GC"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-11</div><div class="title">Java性能 -- GC</div></div></a></div><div><a href="/2019/09/09/java-performance-jit/" title="Java性能 -- JIT"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-09</div><div class="title">Java性能 -- JIT</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#JVM%E5%8F%82%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">JVM参数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E4%BE%8B"><span class="toc-number">2.</span> <span class="toc-text">实例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#VM-Stack-StackOverflowError"><span class="toc-number">2.1.</span> <span class="toc-text">VM Stack - StackOverflowError</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.1.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="toc-number">2.1.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">2.1.3.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Heap-OutOfMemoryError"><span class="toc-number">2.2.</span> <span class="toc-text">Heap - OutOfMemoryError</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-1"><span class="toc-number">2.2.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-1"><span class="toc-number">2.2.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MAT%E5%88%86%E6%9E%90"><span class="toc-number">2.2.3.</span> <span class="toc-text">MAT分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Interned-Strings"><span class="toc-number">2.3.</span> <span class="toc-text">Interned Strings</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#JDK6-PermGen"><span class="toc-number">2.3.1.</span> <span class="toc-text">JDK6 - PermGen</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-2"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-2"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E6%9E%90-1"><span class="toc-number">2.3.1.3.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JDK8-Heap"><span class="toc-number">2.3.2.</span> <span class="toc-text">JDK8 - Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-3"><span class="toc-number">2.3.2.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-3"><span class="toc-number">2.3.2.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E6%9E%90-2"><span class="toc-number">2.3.2.3.</span> <span class="toc-text">分析</span></a></li></ol></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

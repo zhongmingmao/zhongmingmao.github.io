@@ -1,0 +1,447 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>MySQL -- 锁 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="全局锁 全局锁：对整个数据库实例加锁 加全局读锁：FLUSH TABLES WITH READ LOCK，阻塞其他线程的下列语句 数据更新语句（增删改） 数据定义语句（建表、修改表结构） 更新类事务的提交语句   主动解锁：UNLOCK TABLES 典型使用场景：全库逻辑备份 把整库每个表都SELECT出来，然后存成文本   缺点 如果在主库上执行逻辑备份，备份期间不能执行更新操作，导致业务停摆">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 锁">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/01/25/mysql-lock/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="全局锁 全局锁：对整个数据库实例加锁 加全局读锁：FLUSH TABLES WITH READ LOCK，阻塞其他线程的下列语句 数据更新语句（增删改） 数据定义语句（建表、修改表结构） 更新类事务的提交语句   主动解锁：UNLOCK TABLES 典型使用场景：全库逻辑备份 把整库每个表都SELECT出来，然后存成文本   缺点 如果在主库上执行逻辑备份，备份期间不能执行更新操作，导致业务停摆">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png">
+<meta property="article:published_time" content="2019-01-25T10:43:15.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.598Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/01/25/mysql-lock/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySQL -- 锁',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySQL -- 锁</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-01-25T10:43:15.000Z" title="Created 2019-01-25 18:43:15">2019-01-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/">Storage</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/">MySQL</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>8min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="全局锁"><a href="#全局锁" class="headerlink" title="全局锁"></a>全局锁</h2><ol>
+<li>全局锁：对整个<strong>数据库实例</strong>加锁</li>
+<li>加<strong>全局读锁</strong>：<code>FLUSH TABLES WITH READ LOCK</code>，阻塞其他线程的下列语句<ul>
+<li><strong>数据更新语句</strong>（增删改）</li>
+<li><strong>数据定义语句</strong>（建表、修改表结构）</li>
+<li><strong>更新类事务的提交语句</strong></li>
+</ul>
+</li>
+<li>主动解锁：<code>UNLOCK TABLES</code></li>
+<li>典型使用场景：<strong>全库逻辑备份</strong><ul>
+<li>把整库每个表都<strong>SELECT</strong>出来，然后存成<strong>文本</strong></li>
+</ul>
+</li>
+<li>缺点<ul>
+<li>如果在<strong>主库</strong>上执行<strong>逻辑备份</strong>，备份期间<strong>不能执行更新操作</strong>，导致<strong>业务停摆</strong></li>
+<li>如果在<strong>备库</strong>上执行<strong>逻辑备份</strong>，备份期间从库<strong>不能执行由主库同步过来的binlog</strong>，导致<strong>主从延时</strong></li>
+</ul>
+</li>
+<li>备份加全局锁的必要性<ul>
+<li>保证<strong>全局视图</strong>是<strong>逻辑一致</strong>的</li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h3 id="mysqldump"><a href="#mysqldump" class="headerlink" title="mysqldump"></a>mysqldump</h3><ol>
+<li><code>--single-transaction</code><ul>
+<li>导数据之前<strong>启动一个事务</strong>，确保拿到_<strong>一致性视图</strong>_</li>
+<li>由于<strong>MVCC</strong>的支持，在这个过程中是可以<strong>正常更新数据</strong>的</li>
+</ul>
+</li>
+<li>需要<strong>存储引擎</strong>支持_<strong>RR的事务隔离级别</strong>_<ul>
+<li>MyISAM不支持事务，如果备份过程中有更新，总是能取到最新的数据，破坏了备份的一致性</li>
+<li>因此MyISAM只能依赖于<code>FLUSH TABLES WITH READ LOCK</code>，不能使用<code>--single-transaction</code></li>
+</ul>
+</li>
+<li>针对<strong>全库逻辑备份</strong>的场景，<code>--single-transaction</code>只适用于<strong>所有的表都使用了事务引擎的库</strong><ul>
+<li>如果有的表使用了不支持事务的存储引擎，那么只能依赖于<code>FLUSH TABLES WITH READ LOCK</code></li>
+<li>这是MyISAM被InnoDB替代的一个重要原因</li>
+</ul>
+</li>
+<li>在逻辑备份时，如果全部库<strong>都使用InnoDB</strong>，建议使用<code>--single-transaction</code>参数，对应用更加友好</li>
+</ol>
+<h4 id="逻辑备份-DDL"><a href="#逻辑备份-DDL" class="headerlink" title="逻辑备份 + DDL"></a>逻辑备份 + DDL</h4><p>在<strong>备库</strong>用<code>--single-transaction</code>做<strong>逻辑备份</strong>的过程中，由<strong>主库的binlog</strong>传来了一个针对小表<code>t1</code>的<strong>DDL</strong>语句</p>
+<h5 id="备份关键语句"><a href="#备份关键语句" class="headerlink" title="备份关键语句"></a>备份关键语句</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 备份过程中的关键语句</span><br><span class="line">Q1:SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;</span><br><span class="line">Q2:START TRANSACTION WITH CONSISTENT SNAPSHOT;</span><br><span class="line">/* other tables */</span><br><span class="line">Q3:SAVEPOINT sp;</span><br><span class="line">/* 时刻 1 */</span><br><span class="line">Q4:SHOW CREATE TABLE `t1`;</span><br><span class="line">/* 时刻 2 */</span><br><span class="line">Q5:SELECT * FROM `t1`;</span><br><span class="line">/* 时刻 3 */</span><br><span class="line">Q6:ROLLBACK TO SAVEPOINT sp;</span><br><span class="line">/* 时刻 4 */</span><br><span class="line">/* other tables */</span><br></pre></td></tr></table></figure>
+<ol>
+<li>备份开始时，为了确保<strong>RR</strong>的隔离级别，再设置一次（Q1）</li>
+<li>启动事务，用<code>WITH CONSISTENT SNAPSHOT</code>确保可以得到一个<strong>一致性视图</strong>（Q2）</li>
+<li>设置一个保存点（Q3）</li>
+<li><code>SHOW CREATE TABLE</code>是为了拿到<strong>表结构</strong>（Q4）</li>
+<li><code>SELECT * FROM</code>是正式<strong>导数据</strong>（Q5）</li>
+<li><code>ROLLBACK TO SAVEPOINT</code>的作用是<strong>释放t1的MDL锁</strong>（Q6）</li>
+</ol>
+<h5 id="DDL到达时刻"><a href="#DDL到达时刻" class="headerlink" title="DDL到达时刻"></a>DDL到达时刻</h5><ol>
+<li>时刻1：备份拿到的是<strong>DDL后</strong>的表结构<ul>
+<li>现象为<strong>无影响</strong></li>
+</ul>
+</li>
+<li>时刻2：Q5执行时，报异常：<code>Table definition has changed, please retry transaction</code><ul>
+<li>现象为<strong>mysqldump终止</strong></li>
+</ul>
+</li>
+<li>在时刻2~时刻3之间（<strong>导数据期间</strong>）：mysqldump占据着t1的<strong>MDL读锁</strong>，因此<strong>binlog会被阻塞</strong>，直到Q6结束<ul>
+<li>现象为<strong>主从延时</strong></li>
+</ul>
+</li>
+<li>时刻4：mysqldump释放<strong>MDL读锁</strong>，备份拿到的是<strong>DDL前</strong>的表结构<ul>
+<li>现象为<strong>无影响</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="readonly"><a href="#readonly" class="headerlink" title="readonly"></a>readonly</h3><ol>
+<li><code>SET GLOBAL READONLY=true</code>也能让全库进入只读状态，推荐使用<code>FLUSH TABLES WITH READ LOCK</code></li>
+<li>在有些系统中，<code>readonly</code>的值会被用来做其他逻辑，因此修改<code>global</code>变量的方式<strong>影响面会比较大</strong></li>
+<li>异常处理机制不同<ul>
+<li>执行<code>FLUSH TABLES WITH READ LOCK</code>命令后，客户端发生异常，MySQL会<strong>自动释放全局锁</strong></li>
+<li>执行<code>SET GLOBAL READONLY=true</code>命令后，客户端发生异常，MySQL会<strong>一直保持readonly状态</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><ol>
+<li>表锁：<code>LOCK TABLES ... READ/WRITE</code></li>
+<li>解锁<ul>
+<li>主动解锁：<code>UNLOCK TABLES</code></li>
+<li>自动解锁：客户端发生异常，断开连接</li>
+</ul>
+</li>
+<li><code>LOCK TABLES</code>除了会限制<strong>其他线程</strong>的读写外，也会限制<strong>本线程</strong>接下来的操作<ul>
+<li>线程A执行<code>LOCK TABLES t1 READ, t2 WRITE</code>，在线程A执行<code>UNLOCK TABLES</code>之前</li>
+<li>其他线程允许的操作：<strong>读t1</strong></li>
+<li>线程A允许的操作：<strong>读t1</strong>，<strong>读写t2</strong>，同样_<strong>不允许写t1</strong>_</li>
+</ul>
+</li>
+<li>InnoDB支持<strong>行锁</strong>，所以一般不使用<code>LOCK TABLES</code>来进行并发控制</li>
+</ol>
+<h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><ol>
+<li>MDL是<strong>隐式使用</strong>的，在<strong>访问一个表</strong>的时候会被<strong>自动加上</strong></li>
+<li>MDL的作用：<strong>保证读写的正确性</strong>，从<strong>MySQL 5.5</strong>引入<ul>
+<li><em><strong>防止DDL与DML的并发冲突</strong></em></li>
+</ul>
+</li>
+<li>MDL读锁 + MDL写锁<ul>
+<li>对一个表做<strong>增删改查</strong>操作（<strong>DML</strong>）的时候，加<strong>MDL读锁</strong></li>
+<li>对<strong>表结构</strong>做<strong>变更</strong>操作（<strong>DDL</strong>）的时候，加<strong>MDL写锁</strong></li>
+<li>关系<ul>
+<li><strong>读锁之间不互斥</strong>：多线程可以并发对同一张表进行增删改查</li>
+<li><strong>读写锁之间，写锁之间互斥</strong>：用于保证变更表结构操作的安全性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="加字段的问题"><a href="#加字段的问题" class="headerlink" title="加字段的问题"></a>加字段的问题</h4><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-lock-add-column.jpg' width=450/>
+
+<ol>
+<li>session A先启动，对表t加上一个<strong>MDL读锁</strong></li>
+<li>session B需要的也是<strong>MDL读锁</strong>，不互斥，可以正常执行</li>
+<li>session C需要的是<strong>MDL写锁</strong>，session A的事务<strong>还未提交</strong>，<strong>持有的MDL读锁还未释放</strong>，session C会被阻塞</li>
+<li>session D只需要申请<strong>MDL读锁</strong>，但同样会<strong>被session C阻塞</strong><ul>
+<li>所有对表的增删改查都需要先<strong>申请MDL读锁</strong>，此时表现为<strong>完全不可读写</strong></li>
+<li>如果该表上的<strong>查询比较频繁</strong>，而且<strong>客户端</strong>恰好有<strong>重试机制</strong>（超时后再起一个session去请求）<ul>
+<li>那么<strong>数据库的线程</strong>很快就会被<strong>占满</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>事务中的<strong>MDL锁</strong>，在<strong>语句开始执行时申请</strong>，但会等到<strong>整个事务提交后再释放</strong></li>
+</ol>
+<h4 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h4><ol>
+<li>首先要解决<strong>长事务</strong>的影响，因为只要事务不提交，就会一直占用相关的MDL锁<ul>
+<li><code>INFORMATION_SCHEMA.INNODB_TRX</code>中的<code>trx_started</code>字段</li>
+<li>在做<strong>DDL</strong>变更之前，首先<strong>确认是否长事务在执行</strong>，如果有则先<strong>kill</strong>掉这个长事务</li>
+</ul>
+</li>
+<li>如果需要执行DDL的表是<strong>热点表</strong>，<strong>请求很频繁</strong>，kill长事务未必管用，因为很快就会有新的请求<ul>
+<li><code>ALTER TALE</code>语句设定<strong>等待时间</strong>，就算拿不到<strong>MDL写锁</strong>也不至于<strong>长时间阻塞后面的业务语句</strong></li>
+<li>目前<code>MariaDB</code>和<code>AliSQL</code>支持该功能</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> T [WAIT [n]<span class="operator">|</span>NO_WAIT] <span class="keyword">ADD</span> f <span class="type">INT</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="关系"><a href="#关系" class="headerlink" title="关系"></a>关系</h3><ol>
+<li>线程A在MyISAM表上更新一行数据，那么会加<strong>MDL读锁</strong>和<strong>表的写锁</strong></li>
+<li>线程B在同一个MyISAM表上更新另外一行数据，那么也会加<strong>MDL读锁</strong>和<strong>表的写锁</strong><ul>
+<li>线程B加<strong>MDL读锁</strong>成功，但加<strong>表的写锁</strong>失败</li>
+<li>表现：线程B被线程A阻塞</li>
+</ul>
+</li>
+<li>引申：如果有多种锁，必须<strong>全部锁不互斥</strong>才能<strong>并行</strong>，只要有一个锁互斥，就得等</li>
+</ol>
+<h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><ol>
+<li>MySQL的行锁是在<strong>存储引擎层</strong>实现的</li>
+<li>MyISAM不支持行锁，而InnoDB支持行锁，这是InnoDB替代MyISAM的一个重要原因</li>
+</ol>
+<h3 id="两阶段锁"><a href="#两阶段锁" class="headerlink" title="两阶段锁"></a>两阶段锁</h3><p>id为表t的主键，事务B的update语句会被阻塞，直到事务A执行commit之后，事务B才能继续执行<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-two-phase-commit.jpg' width=450/></p>
+<ol>
+<li>两阶段锁<ul>
+<li>在InnoDB事务中，行锁是在<strong>需要的时候</strong>加上</li>
+<li>但并不是在不需要了就立刻释放，而是要等待<strong>事务结束</strong>后才释放</li>
+</ul>
+</li>
+<li>如果事务需要<strong>锁定多行</strong>，要就把最可能<strong>造成锁冲突</strong>和<strong>影响并发度</strong>的锁尽可能<strong>往后放</strong></li>
+</ol>
+<h4 id="电影票业务"><a href="#电影票业务" class="headerlink" title="电影票业务"></a>电影票业务</h4><ol>
+<li>顾客A在电影院B购买电影票，涉及以下操作（同一事务）<ul>
+<li>update：从顾客A的账户余额中扣除电影票价</li>
+<li>update：给电影院B的账户余额增加电影票价</li>
+<li>insert：记录一条交易日志</li>
+</ul>
+</li>
+<li>假设此时顾客C也要在电影院B买票的，两个事务冲突的部分就是第2个语句（同一个电影院账户）<ul>
+<li>所有操作所需要的行锁都是在事务结束的时候才会释放</li>
+<li>将第2个语句放在最后，能最大程度地<strong>减少事务之间的锁等待</strong>，<strong>提升并发度</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p>假设电影院做活动，在活动开始的时候，CPU消耗接近100%，但整个库每秒执行不到100个事务<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src='https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-innodb-dead-lock.jpg' width=450/></p>
+<ol>
+<li>事务A在等待事务B释放id&#x3D;2的行锁，事务B在等待事务A释放id&#x3D;1的行锁，导致<strong>死锁</strong></li>
+<li>当出现死锁后，有2种处理策略<ul>
+<li><strong>等待</strong>，直至超时（不推荐）<ul>
+<li><strong>业务有损</strong>：业务会出现大量超时</li>
+</ul>
+</li>
+<li><strong>死锁检测</strong>（推荐）<ul>
+<li><strong>业务无损</strong>：业务设计不会将死锁当成严重错误，当出现死锁时可采取：_<strong>事务回滚+业务重试</strong>_</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="等待"><a href="#等待" class="headerlink" title="等待"></a>等待</h4><ol>
+<li>由参数<code>innodb_lock_wait_timeout</code>控制（MySQL 5.7.15引入）</li>
+<li>默认是50s，对于<strong>在线服务</strong>来说是无法接受的</li>
+<li>但也<strong>不能设置成很小的值</strong>，因为如果实际上并不是死锁，只是简单的锁等待，会出现很多<strong>误伤</strong></li>
+</ol>
+<h4 id="死锁检测（推荐）"><a href="#死锁检测（推荐）" class="headerlink" title="死锁检测（推荐）"></a>死锁检测（推荐）</h4><ol>
+<li>发现死锁后，<strong>主动回滚锁链条中的某一事务</strong>，让其他事务继续执行<ul>
+<li>需要设置参数<code>innodb_deadlock_detect</code></li>
+</ul>
+</li>
+<li>触发死锁检测：<strong>要加锁访问的行上有锁</strong><ul>
+<li><strong>一致性读不会加锁</strong></li>
+</ul>
+</li>
+<li>死锁检测并<strong>不需要扫描所有事务</strong><ul>
+<li>某个时刻，事务等待状态为：事务B等待事务A，事务D等待事务C</li>
+<li>新来事务E，事务E需要等待D，那么只会判断事务CDE是否会形成死锁</li>
+</ul>
+</li>
+<li>CPU消耗高<ul>
+<li>每个新来的线程发现自己<strong>要加锁访问的行上有锁</strong><ul>
+<li>会去判断会不会<strong>由于自己的加入而导致死锁</strong>，总体时间复杂度为**<code>O(N^2)</code>**</li>
+</ul>
+</li>
+<li>假设有1000个并发线程，最坏情况下死锁检测的操作量级为100W（1000^2）</li>
+</ul>
+</li>
+<li>解决方法<ul>
+<li>如果业务能确保一定不会出现死锁，可以<strong>临时关闭死锁检测</strong>，但存在一定的风险（超时）</li>
+<li>控制并发度，如果并发下降，那么死锁检测的成本就会降低，这需要在<strong>数据库服务端</strong>实现<ul>
+<li>如果有<strong>中间件</strong>，可以在中间件实现</li>
+<li>如果能修改<strong>MySQL源码</strong>，可以在MySQL内部实现</li>
+</ul>
+</li>
+<li>设计上的优化<ul>
+<li>将一行改成<strong>逻辑上的多行</strong>来<strong>减少锁冲突</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;%innodb_deadlock_detect%&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">------------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name          <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">------------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> innodb_deadlock_detect <span class="operator">|</span> <span class="keyword">ON</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">------------------------+-------+</span></span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;%innodb_lock_wait_timeout%&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name            <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> innodb_lock_wait_timeout <span class="operator">|</span> <span class="number">30</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------------------+-------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="更新无锁引字段"><a href="#更新无锁引字段" class="headerlink" title="更新无锁引字段"></a>更新无锁引字段</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># name字段没有索引</span><br><span class="line"><span class="keyword">UPDATE</span> t <span class="keyword">SET</span> t.name<span class="operator">=</span><span class="string">&#x27;abc&#x27;</span> <span class="keyword">WHERE</span> t.name<span class="operator">=</span><span class="string">&#x27;cde&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>InnoDB内部会根据<strong>聚簇索引</strong>，_<strong>逐行扫描，逐行加锁，事务提交后统一释放锁</strong>_</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/01/25/mysql-lock/">https://blog.zhongmingmao.top/2019/01/25/mysql-lock/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/storage/">Storage</a><a class="post-meta__tags" href="/tags/mysql/">MySQL</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/01/28/mysql-transaction-isolation-rr-rc/" title="MySQL -- RR隔离与RC隔离"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-20.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">MySQL -- RR隔离与RC隔离</div></div></a></div><div class="next-post pull-right"><a href="/2019/01/21/mysql-index/" title="MySQL -- 索引"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">MySQL -- 索引</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/03/19/mysql-self-increase-id-run-out/" title="MySQL -- 自增ID耗尽"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-19</div><div class="title">MySQL -- 自增ID耗尽</div></div></a></div><div><a href="/2019/03/17/mysql-partition-table/" title="MySQL -- 分区表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 分区表</div></div></a></div><div><a href="/2019/03/17/mysql-grant-flush-privileges/" title="MySQL -- 权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 权限</div></div></a></div><div><a href="/2019/03/16/mysql-copy-table/" title="MySQL -- 拷贝表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- 拷贝表</div></div></a></div><div><a href="/2019/03/16/mysql-insert-lock/" title="MySQL -- INSERT语句的锁"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- INSERT语句的锁</div></div></a></div><div><a href="/2019/03/15/mysql-auto-increment/" title="MySQL -- 自增主键"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-15</div><div class="title">MySQL -- 自增主键</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A8%E5%B1%80%E9%94%81"><span class="toc-number">1.</span> <span class="toc-text">全局锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mysqldump"><span class="toc-number">1.1.</span> <span class="toc-text">mysqldump</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%BB%E8%BE%91%E5%A4%87%E4%BB%BD-DDL"><span class="toc-number">1.1.1.</span> <span class="toc-text">逻辑备份 + DDL</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%A4%87%E4%BB%BD%E5%85%B3%E9%94%AE%E8%AF%AD%E5%8F%A5"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">备份关键语句</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#DDL%E5%88%B0%E8%BE%BE%E6%97%B6%E5%88%BB"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">DDL到达时刻</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#readonly"><span class="toc-number">1.2.</span> <span class="toc-text">readonly</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%A8%E7%BA%A7%E9%94%81"><span class="toc-number">2.</span> <span class="toc-text">表级锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E9%94%81"><span class="toc-number">2.1.</span> <span class="toc-text">表锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E9%94%81%EF%BC%88MDL%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">元数据锁（MDL）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A0%E5%AD%97%E6%AE%B5%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">2.2.1.</span> <span class="toc-text">加字段的问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="toc-number">2.2.2.</span> <span class="toc-text">解决办法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E7%B3%BB"><span class="toc-number">2.3.</span> <span class="toc-text">关系</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%8C%E9%94%81"><span class="toc-number">3.</span> <span class="toc-text">行锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E9%94%81"><span class="toc-number">3.1.</span> <span class="toc-text">两阶段锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%B5%E5%BD%B1%E7%A5%A8%E4%B8%9A%E5%8A%A1"><span class="toc-number">3.1.1.</span> <span class="toc-text">电影票业务</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%BB%E9%94%81"><span class="toc-number">3.2.</span> <span class="toc-text">死锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AD%89%E5%BE%85"><span class="toc-number">3.2.1.</span> <span class="toc-text">等待</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%AD%BB%E9%94%81%E6%A3%80%E6%B5%8B%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="toc-number">3.2.2.</span> <span class="toc-text">死锁检测（推荐）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E6%96%B0%E6%97%A0%E9%94%81%E5%BC%95%E5%AD%97%E6%AE%B5"><span class="toc-number">3.3.</span> <span class="toc-text">更新无锁引字段</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

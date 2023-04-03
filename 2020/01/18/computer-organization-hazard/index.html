@@ -1,0 +1,636 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>计算机组成 -- 冒险 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="冒险 流水线架构的CPU，是主动进行的冒险选择，期望通过冒险带来更高的回报 对于各种冒险可能造成的问题，都准备好了应对方案   分类 结构冒险（Structural Hazard） 数据冒险（Data Hazard） 控制冒险（Control Hazard）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机组成 -- 冒险">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2020/01/18/computer-organization-hazard/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="冒险 流水线架构的CPU，是主动进行的冒险选择，期望通过冒险带来更高的回报 对于各种冒险可能造成的问题，都准备好了应对方案   分类 结构冒险（Structural Hazard） 数据冒险（Data Hazard） 控制冒险（Control Hazard）">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png">
+<meta property="article:published_time" content="2020-01-17T16:55:09.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.573Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Computer Basics">
+<meta property="article:tag" content="Computer Organization">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2020/01/18/computer-organization-hazard/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '计算机组成 -- 冒险',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">计算机组成 -- 冒险</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2020-01-17T16:55:09.000Z" title="Created 2020-01-18 00:55:09">2020-01-18</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/computer-basics/">Computer Basics</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/computer-basics/computer-organization/">Computer Organization</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">5.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>17min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="冒险"><a href="#冒险" class="headerlink" title="冒险"></a>冒险</h2><ol>
+<li>流水线架构的CPU，是<strong>主动</strong>进行的冒险选择，期望通过冒险带来<strong>更高的回报</strong><ul>
+<li>对于各种冒险可能造成的问题，都准备好了<strong>应对方案</strong></li>
+</ul>
+</li>
+<li>分类<ul>
+<li><strong>结构冒险</strong>（<strong>Structural</strong> Hazard）</li>
+<li><strong>数据冒险</strong>（<strong>Data</strong> Hazard）</li>
+<li><strong>控制冒险</strong>（<strong>Control</strong> Hazard）</li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="结构冒险"><a href="#结构冒险" class="headerlink" title="结构冒险"></a>结构冒险</h2><ol>
+<li>结构冒险，本质上是一个<strong>硬件层面的资源竞争问题</strong></li>
+<li>CPU在<strong>同一个时钟周期</strong>，同时在运行<strong>两条计算机指令的不同阶段</strong>，但这两个不同的阶段可能会用到<strong>同样的硬件电路</strong></li>
+</ol>
+<h3 id="内存的数据访问"><a href="#内存的数据访问" class="headerlink" title="内存的数据访问"></a>内存的数据访问</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-mem-access.jpg" width=1000/>
+
+<ol>
+<li>第1条指令执行到<strong>访存</strong>（MEM）阶段的时候，流水线的第4条指令，在执行<strong>取指令</strong>（Fetch）操作</li>
+<li><strong>访存</strong>和<strong>取指令</strong>，都是要进行内存数据的读取，而<strong>内存只有一个地址译码器</strong>，只能在一个时钟周期内读取一条数据<ul>
+<li><strong>无法同时执行</strong>第1条指令的<strong>读取内存数据</strong>和第4条指令的<strong>读取指令代码</strong></li>
+</ul>
+</li>
+</ol>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
+<li>解决方案：<strong>增加资源</strong></li>
+<li><strong>哈佛架构</strong><ul>
+<li>把内存分成两部分，它们<strong>有各自的地址译码器</strong>，这两部分分别是<strong>存放指令的程序内存</strong>和<strong>存放数据的数据内存</strong></li>
+<li>缺点：<strong>无法</strong>根据实际情况去<strong>动态调整</strong></li>
+</ul>
+</li>
+<li><strong>普林斯顿架构 – 冯.诺依曼体系架构</strong><ul>
+<li>今天使用的CPU，仍然是冯.诺依曼体系架构，并没有把内存拆成程序内存和数据内存两部分</li>
+</ul>
+</li>
+<li><strong>混合架构</strong><ul>
+<li>现代CPU没有在内存层面进行对应的拆分，但在<strong>CPU内部的高速缓存</strong>部分进行了区分，分成了<strong>指令缓存</strong>和<strong>数据缓存</strong></li>
+<li>内存的访问速度远比CPU的速度慢，<strong>现代CPU并不会直接读取主内存</strong><ul>
+<li>会从主内存把<strong>指令</strong>和<strong>数据</strong>加载到<strong>高速缓存</strong>中，后续的访问都是访问高速缓存</li>
+</ul>
+</li>
+<li>指令缓存和数据缓存的拆分，使得CPU在进行<strong>数据访问</strong>和<strong>取指令</strong>的时候，不会再发生资源冲突的情况</li>
+</ul>
+</li>
+</ol>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-structural-solution.jpg" width=600/>
+
+<h2 id="数据冒险"><a href="#数据冒险" class="headerlink" title="数据冒险"></a>数据冒险</h2><ol>
+<li><strong>结构冒险</strong>是<strong>硬件层面</strong>的问题，可以通过<strong>增加硬件资源</strong>的方式来解决；但还有很多冒险问题属于<strong>程序逻辑</strong>层面，最常见是<strong>数据冒险</strong></li>
+<li>数据冒险：<strong>同时在执行多个指令之间，有数据依赖的情况</strong></li>
+<li>依赖分类<ul>
+<li><strong>先写后读</strong>（Read After Write，<strong>RAW</strong>）</li>
+<li><strong>先读后写</strong>（Write After Read，<strong>WAR</strong>）</li>
+<li><strong>写后再写</strong>（Write After Write，<strong>WAW</strong>）</li>
+</ul>
+</li>
+</ol>
+<h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><h4 id="写-gt-读"><a href="#写-gt-读" class="headerlink" title="写 -&gt; 读"></a>写 -&gt; 读</h4><figure class="highlight c"><figcaption><span>raw.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> a = <span class="number">1</span>;</span><br><span class="line">    <span class="type">int</span> b = <span class="number">2</span>;</span><br><span class="line">    a = a + <span class="number">2</span>;</span><br><span class="line">    b = a + <span class="number">3</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c raw.c</span><br><span class="line">$ objdump -d -M intel -S raw.o</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:    55                   	push   rbp</span><br><span class="line">   1:    48 89 e5             	mov    rbp,rsp</span><br><span class="line">    int a = 1;</span><br><span class="line">   4:    c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">    int b = 2;</span><br><span class="line">   b:    c7 45 f8 02 00 00 00 	mov    DWORD PTR [rbp-0x8],0x2</span><br><span class="line">    a = a + 2;</span><br><span class="line">  12:    83 45 fc 02          	add    DWORD PTR [rbp-0x4],0x2</span><br><span class="line">    b = a + 3;</span><br><span class="line">  16:    8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]</span><br><span class="line">  19:    83 c0 03             	add    eax,0x3</span><br><span class="line">  1c:    89 45 f8             	mov    DWORD PTR [rbp-0x8],eax</span><br><span class="line">&#125;</span><br><span class="line">  1f:    5d                   	pop    rbp</span><br><span class="line">  20:    c3                   	ret</span><br></pre></td></tr></table></figure>
+<ol>
+<li>内存地址12的机器码，把0x2添加到<code>rbp-0x4</code>对应的<strong>内存地址</strong></li>
+<li>内存地址16的机器码，从<code>rbp-0x4</code>这个<strong>内存地址</strong>里面读取，把值把写入到<code>eax</code>这个<strong>寄存器</strong>里面</li>
+<li>必须保证：在内存地址16的指令读取<code>rbp-0x4</code>里面的值之前，内存地址12的指令写入到<code>rbp-0x4</code>的操作已经完成</li>
+<li><strong>写 -&gt; 读</strong>的依赖关系，一般称为<strong>数据依赖</strong>，即Data Dependency</li>
+<li>简单理解：<strong>先写入，才能读</strong></li>
+</ol>
+<h4 id="读-gt-写"><a href="#读-gt-写" class="headerlink" title="读 -&gt; 写"></a>读 -&gt; 写</h4><figure class="highlight c"><figcaption><span>war.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">int</span> a = <span class="number">1</span>;</span><br><span class="line">  <span class="type">int</span> b = <span class="number">2</span>;</span><br><span class="line">  a = b + a;</span><br><span class="line">  b = a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c war.c</span><br><span class="line">$ objdump -d -M intel -S war.o</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:    55                   	push   rbp</span><br><span class="line">   1:    48 89 e5             	mov    rbp,rsp</span><br><span class="line">    int a = 1;</span><br><span class="line">   4:    c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">    int b = 2;</span><br><span class="line">   b:    c7 45 f8 02 00 00 00 	mov    DWORD PTR [rbp-0x8],0x2</span><br><span class="line">    a = b + a;</span><br><span class="line">  12:    8b 45 f8             	mov    eax,DWORD PTR [rbp-0x8]</span><br><span class="line">  15:    01 45 fc             	add    DWORD PTR [rbp-0x4],eax</span><br><span class="line">    b = a + b;</span><br><span class="line">  18:    8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]</span><br><span class="line">  1b:    01 45 f8             	add    DWORD PTR [rbp-0x8],eax</span><br><span class="line">&#125;</span><br><span class="line">  1e:    5d                   	pop    rbp</span><br><span class="line">  1f:    c3                   	ret</span><br></pre></td></tr></table></figure>
+<ol>
+<li>内存地址15的指令，要把<code>eax</code>寄存器里面的值读出来，再加到<code>rbp-0x4</code>的内存地址</li>
+<li>内存地址18的指令，要更新<code>eax</code>寄存器</li>
+<li>如果内存地址18的<code>eax</code>的写入先完成，在内存地址为15的代码里面取出<code>eax</code>才发生，程序就会出错</li>
+</ol>
+<ul>
+<li>同样要保证对于<code>eax</code>的<strong>先读后写</strong>的操作顺序</li>
+</ul>
+<ol start="4">
+<li><strong>读 -&gt; 写</strong>的依赖关系，一般称为<strong>反依赖</strong>，即Anti Dependency</li>
+<li>简单理解：<strong>前一个读操作取出来的数据用于其它运算，后一个写操作就不能先执行完成</strong></li>
+</ol>
+<h4 id="写-gt-写"><a href="#写-gt-写" class="headerlink" title="写 -&gt; 写"></a>写 -&gt; 写</h4><figure class="highlight c"><figcaption><span>waw.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">int</span> a = <span class="number">1</span>;</span><br><span class="line">  a = <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -c waw.c</span><br><span class="line">$ objdump -d -M intel -S waw.o</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">int main() &#123;</span><br><span class="line">   0:    55                   	push   rbp</span><br><span class="line">   1:    48 89 e5             	mov    rbp,rsp</span><br><span class="line">    int a = 1;</span><br><span class="line">   4:    c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1</span><br><span class="line">    a = 2;</span><br><span class="line">   b:    c7 45 fc 02 00 00 00 	mov    DWORD PTR [rbp-0x4],0x2</span><br><span class="line">&#125;</span><br><span class="line">  12:    5d                   	pop    rbp</span><br><span class="line">  13:    c3                   	ret</span><br></pre></td></tr></table></figure>
+<ol>
+<li>内存地址4的指令和内存地址b的指令，都是将对应的数据写入到<code>rbp-0x4</code>  的内存地址里面</li>
+<li>必须保证：内存地址4的指令的写入，在内存地址b的指令的写入之前完成</li>
+<li><strong>写 -&gt; 写</strong>的依赖关系，一般称为<strong>输出依赖</strong>，即Output Dependency</li>
+<li>简单理解：<strong>覆盖写</strong></li>
+</ol>
+<h3 id="解决方案-–-流水线停顿"><a href="#解决方案-–-流水线停顿" class="headerlink" title="解决方案 – 流水线停顿"></a>解决方案 – 流水线停顿</h3><ol>
+<li>除了<strong>读 -&gt; 读</strong>，对于<strong>同一个</strong>寄存器或者内存地址的操作，都有<strong>明确强制的顺序要求</strong></li>
+<li>解决数据冒险的简单方案：<strong>流水线停顿</strong>（Pipeline Stall）、别称：<strong>流水线冒泡</strong>（Pipeline Bubbling）</li>
+</ol>
+<ul>
+<li>这是一种<strong>以牺牲CPU性能为代价</strong>的方案，在最坏的情况下，<strong>流水线架构的CPU会退化成单指令周期的CPU！！</strong></li>
+</ul>
+<ol start="3">
+<li>在进行<strong>指令译码</strong>的时候，会拿到对应指令<strong>所需要访问的寄存器和内存地址</strong></li>
+</ol>
+<ul>
+<li>此时能判断这个指令是否会触发数据冒险，如果会触发数据冒险，可以决定让整个流水线<strong>停顿一个或多个周期</strong></li>
+</ul>
+<ol start="4">
+<li>时钟信号会<strong>不停地</strong>在0和1之间<strong>自动切换</strong>，并<strong>没有办法真的停顿下来</strong></li>
+</ol>
+<ul>
+<li>在实践过程中，并不是让流水线停下来，而是在执行后面的操作步骤前<strong>插入</strong>一个<strong>NOP</strong>（No Option）操作</li>
+<li>好像在一个水管里面，进了一个<strong>空气泡</strong>，因此也叫<strong>流水线冒泡</strong></li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-pipeline-stall.jpg" width=1000/>
+
+<h2 id="操作数前推"><a href="#操作数前推" class="headerlink" title="操作数前推"></a>操作数前推</h2><h3 id="流水线对齐"><a href="#流水线对齐" class="headerlink" title="流水线对齐"></a>流水线对齐</h3><h4 id="五级流水线"><a href="#五级流水线" class="headerlink" title="五级流水线"></a>五级流水线</h4><p><strong>取指令（IF） -&gt; 指令译码（ID） -&gt; 指令执行（EX） -&gt; 内存访问（MEM） -&gt; 数据写回（WB）</strong><br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-5-stage.jpg" width=1000/></p>
+<h4 id="MIPS指令"><a href="#MIPS指令" class="headerlink" title="MIPS指令"></a>MIPS指令</h4><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips.jpg" width=1000/>
+
+<ol>
+<li>在MIPS的体系结构下，<strong>不同类型的指令，会在流水线的不同阶段进行不同的操作</strong></li>
+<li><strong>LOAD</strong>：从<strong>内存</strong>里<strong>读取</strong>数据到<strong>寄存器</strong></li>
+</ol>
+<ul>
+<li>需要经历5个完整的流水线</li>
+</ul>
+<ol start="3">
+<li><strong>STORE</strong>：从<strong>寄存器</strong>往<strong>内存</strong>里<strong>写入</strong>数据</li>
+</ol>
+<ul>
+<li>不需要有<strong>写回寄存器</strong>的操作，即没有<strong>数据写回</strong>（WB）的流水线阶段</li>
+</ul>
+<ol start="4">
+<li><strong>ADD</strong>、<strong>SUB</strong></li>
+</ol>
+<ul>
+<li>加减法指令，<strong>所有操作</strong>都在<strong>寄存器</strong>完成，没有实际的<strong>内存访问</strong>（MEM）操作</li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-store-r.jpg" width=1000/>
+
+<ol>
+<li>有些指令没有对应的流水线阶段，但<strong>不能跳过对应的阶段</strong>直接执行下一阶段</li>
+<li>如果先后执行一条LOAD指令和一条ADD指令，LOAD指令的WB阶段和ADD指令的WB阶段，在<strong>同一个时钟周期</strong>发生</li>
+</ol>
+<ul>
+<li>相当于触发了一个<strong>结构冒险</strong>事件，产生了<strong>资源竞争</strong></li>
+</ul>
+<ol start="3">
+<li>在实践中，各个指令不需要的阶段，<strong>不会直接跳过</strong>，而是会运行一次<strong>NOP</strong>操作</li>
+</ol>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-load-add.jpg" width=800/>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop.jpg" width=1000/>
+
+<h3 id="操作数前推-1"><a href="#操作数前推-1" class="headerlink" title="操作数前推"></a>操作数前推</h3><ol>
+<li>通过<strong>NOP</strong>操作进行对齐，在流水线里，就不会遇到<strong>资源竞争</strong>产生的<strong>结构冒险</strong>问题</li>
+</ol>
+<ul>
+<li>NOP操作，即<strong>流水线停顿</strong>插入的对应操作</li>
+</ul>
+<ol start="2">
+<li>插入过多的<strong>NOP</strong>操作，意味着CPU<strong>空转</strong>增多</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// s1 s2 t0都是寄存器</span></span><br><span class="line">add $t0, $s2,$s1 <span class="comment">// s1 + s2 -&gt; t0</span></span><br><span class="line">add $s2, $s1,$t0 <span class="comment">// s1 + t0 -&gt; s2</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>后一条add指令，依赖寄存器t0的值，而t0里面的值，又来自于前一条add指令的计算结果</li>
+</ol>
+<ul>
+<li>因此后一条add指令，需要等待前一条add指令的<strong>数据写回</strong>（WB）阶段完成之后才能执行</li>
+</ul>
+<ol start="2">
+<li>这是一个<strong>数据冒险</strong>：<strong>数据依赖</strong>类型（<strong>写 -&gt; 读</strong>），上面的方案是通过<strong>流水线停顿</strong>来解决这个问题</li>
+<li>要在第二条指令的<strong>译码</strong>阶段之后，插入对应的NOP指令，直到前一条指令的数据写回完成之后，才能继续执行</li>
+<li>这虽然解决了数据冒险的问题，但也<strong>浪费了两个时钟周期</strong></li>
+</ol>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-nop-2-add.jpg" width=1000/>
+
+<ol>
+<li>第二条指令的执行，未必需要等待第一条指令写回完成才能进行</li>
+<li>如果能够把第一条指令的执行结果<strong>作为输入直接传输</strong>到第二条指令的执行阶段</li>
+</ol>
+<ul>
+<li>那第二条指令就不用再从<strong>寄存器</strong>里面，把数据再单独读取出来才能执行代码</li>
+<li>可以在第一条指令的<strong>执行（EX）阶段完成</strong>之后，直接将结果数据传输到下一条指令的<strong>ALU</strong><ul>
+<li>这样，下一条指令不再需要再插入两个NOP阶段，就可以正常走到执行阶段</li>
+</ul>
+</li>
+</ul>
+<ol start="3">
+<li>上面的方案就是<strong>操作数前推</strong>（Operand <strong>Forwarding</strong>）、<strong>操作数旁路</strong>（Operand <strong>Bypassing</strong>）</li>
+</ol>
+<ul>
+<li>Forwarding：<strong>逻辑</strong>含义，第一条指令的执行结果<strong>作为输入直接转发</strong>给第二条指令的ALU</li>
+<li>Bypassing：<strong>硬件</strong>含义，为了实现Forwarding，在CPU的硬件层面，需要<strong>单独</strong>拉出一根信号传输的线路<ul>
+<li>使得ALU的计算结果能够<strong>重新回到</strong>ALU的输入</li>
+<li>越过了<strong>写入寄存器</strong>，再<strong>从寄存器读出来</strong>的过程，可以<strong>节省两个时钟周期</strong></li>
+</ul>
+</li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-2-add.jpg" width=1000/>
+
+<ol>
+<li><strong>操作数前推</strong>的解决方案可以和<strong>流水线停顿</strong>一起使用</li>
+</ol>
+<ul>
+<li>虽然可以把操作数转发到下一条指令，但下一条指令仍然需要停顿一个时钟周期</li>
+</ul>
+<ol start="2">
+<li>先执行一条LOAD指令，再执行ADD指令</li>
+</ol>
+<ul>
+<li>LOAD指令在访存阶段才能把数据读取出来，下一条指令的执行阶段，需要等上一阶段的访存阶段完成之后，才能进行</li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-mips-operand-forwarding-load-add.jpg" width=1000/>
+
+<p><strong>操作数前推并不能减少所有冒泡</strong>，只能去掉其中一部分，仍然需要通过插入一些<strong>NOP</strong>来解决<strong>数据冒险</strong>问题</p>
+<h2 id="乱序执行"><a href="#乱序执行" class="headerlink" title="乱序执行"></a>乱序执行</h2><ol>
+<li><strong>结构冒险</strong></li>
+</ol>
+<ul>
+<li>限制来源：<strong>在同一时钟周期内，不同的指令的不同流水线阶段，要访问相同的硬件资源</strong></li>
+<li>解决方案：_<strong>增加资源</strong>_</li>
+</ul>
+<ol start="2">
+<li><strong>数据冒险</strong></li>
+</ol>
+<ul>
+<li>限制来源：<strong>数据之间的各种依赖</strong></li>
+<li>解决方案：_<strong>流水线停顿</strong>、<strong>操作数前推</strong>_</li>
+</ul>
+<ol start="3">
+<li>即便综合运用这三个技术，仍然会遇到<strong>不得不停下整个流水线</strong>，等待前面的指令完成的情况</li>
+</ol>
+<h3 id="填补空闲的NOP"><a href="#填补空闲的NOP" class="headerlink" title="填补空闲的NOP"></a>填补空闲的NOP</h3><ol>
+<li>无论是<strong>流水线停顿</strong>，还是<strong>操作数前推</strong>，只要前面指令的特定阶段还没有执行完成，后面的指令就会被<strong>阻塞</strong></li>
+<li>虽然<strong>代码生成</strong>的指令是<strong>顺序</strong>的，如果后面的指令<strong>不需要依赖</strong>前面指令的执行结果，完全可以<strong>不必等待</strong>前面的指令执行完成</li>
+</ol>
+<ul>
+<li>这样的解决方案，在计算机组成里面，被称为<strong>乱序执行</strong>（<strong>Out-of-Order</strong> Execution，OoOE）</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a = b + c</span><br><span class="line">d = a * e</span><br><span class="line">x = y * z</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-3-command.jpg" width=1000/>
+
+<h3 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-oooe.jpg" width=1000/>
+
+<ol>
+<li><strong>取指令</strong>和<strong>指令译码</strong>阶段，乱序执行的CPU和使用流水线架构的CPU是一样的，会<strong>一级一级顺序进行</strong></li>
+<li>指令译码完成后，CPU<strong>不会直接进行指令执行</strong>，而是进行一次<strong>指令分发</strong></li>
+</ol>
+<ul>
+<li>指令分发：把指令分发到<strong>保留站</strong>（Reservation Stations，RS）<ul>
+<li>类比：<strong>保留站 -&gt; 火车站</strong>，<strong>指令 -&gt; 火车</strong></li>
+</ul>
+</li>
+<li>这些<strong>指令不会立即执行</strong>，而是等待它们<strong>所依赖的数据</strong>，传递给它们之后才会执行<ul>
+<li>类比：<strong>数据 -&gt; 乘客</strong>，火车需要等乘客</li>
+</ul>
+</li>
+</ul>
+<ol start="3">
+<li>一旦指令依赖的数据到齐了，指令就可以交到后面的<strong>功能单元</strong>（Function Unit，FU，本质是<strong>ALU</strong>）去执行了</li>
+</ol>
+<ul>
+<li>很多功能单元是可以<strong>并行运行</strong>的，但<strong>不同的功能单元能够支持执行的指令是不相同的</strong></li>
+</ul>
+<ol start="4">
+<li>指令执行阶段完成后，我们并<strong>不能立即把结果写回到寄存器</strong>里面，而是把结果先存放到<strong>重排序缓冲区</strong>（ReOrder Buffer，ROB）</li>
+<li>在<strong>重排序缓冲区</strong>里，我们的CPU会按照<strong>取指令的顺序</strong>，对指令的计算结果重新排序</li>
+</ol>
+<ul>
+<li>只有<strong>排在前面的指令</strong>都已经<strong>完成</strong>了，才会<strong>提交指令</strong>，完成整个指令的运算结果</li>
+</ul>
+<ol start="6">
+<li>实际的指令计算结果数据，并<strong>不是直接写到内存或者高速缓存</strong>，而是先写入<strong>存储缓冲区</strong>（Store Buffer）</li>
+</ol>
+<ul>
+<li><strong>最终才会写入内存和高速缓存</strong></li>
+</ul>
+<ol start="7">
+<li>在乱序执行的情况下，只有<strong>CPU内部指令的执行层面</strong>，可能是<strong>乱序</strong>的</li>
+</ol>
+<ul>
+<li>只要能在<strong>指令译码</strong>阶段<strong>正确地分析出指令之间的数据依赖关系</strong>，『乱序』就只会在<strong>相互没有影响</strong>的指令之间发生<ul>
+<li>相互没有影响 ≈ <strong>不破坏数据依赖</strong></li>
+</ul>
+</li>
+<li>即便指令的执行过程是乱序的，在指令的计算结果<strong>最终写入到寄存器和内存之前</strong>，依然会进行一次<strong>排序</strong><ul>
+<li>以确保<strong>所有指令</strong>在<strong>外部看来</strong>仍然是<strong>有序完成</strong>的</li>
+</ul>
+</li>
+</ul>
+<h3 id="回到样例"><a href="#回到样例" class="headerlink" title="回到样例"></a>回到样例</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a = b + c</span><br><span class="line">d = a * e</span><br><span class="line">x = y * z</span><br></pre></td></tr></table></figure>
+<ol>
+<li>d依赖于a的计算结果，不会在a的计算完成之前执行</li>
+<li><code>x = y * z</code>的指令同样会被分发到<strong>保留站</strong>，x所依赖的y和z的数据是准备好的，这里的乘法运算不会等待d的计算结果</li>
+<li>如果只有一个FU能够计算乘法，那么这个FU并不会因为d要等待a的计算结果而被限制，会先被拿来计算x</li>
+<li>x计算完成后，d也等来了a的计算结果，此时，唯一的乘法FU会去计算d的结果</li>
+<li>在<strong>重排序缓冲区</strong>里，把对应的计算结果的提交顺序，仍然设置为<strong>a-&gt;d-&gt;x</strong>，但实际计算完成的顺序是<strong>x-&gt;a-&gt;d</strong></li>
+<li>整个过程中，计算乘法的FU<strong>没有被闲置</strong>，意味着<strong>CPU的吞吐率最大化</strong></li>
+</ol>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><ol>
+<li>整个乱序执行技术，类似于在<strong>指令的执行阶段</strong>提供了一个<strong>线程池</strong>，<strong>FU</strong>就是<strong>线程</strong></li>
+</ol>
+<ul>
+<li>指令不再是顺序执行的，而是根据线程池所<strong>拥有的资源</strong>，各个任务<strong>是否可以进行执行</strong>，进行<strong>动态调度</strong></li>
+<li>在执行完成之后，又重新把结果放在一个<strong>队列</strong>里面，<strong>按照指令的分发顺序重新排序</strong></li>
+<li>即使内部是『乱序』的，但<strong>外部看来</strong>，仍然是<strong>顺序执行</strong>的</li>
+</ul>
+<ol start="2">
+<li>乱序执行，<strong>极大地提高了CPU的运行效率</strong></li>
+</ol>
+<ul>
+<li>核心原因：<strong>CPU的运行速度比访问主内存的速度快很多</strong></li>
+<li>如果采用<strong>顺序执行</strong>的方式，很多时间会被浪费在前面指令<strong>等待获取内存数据</strong><ul>
+<li>为此，CPU不得不加入<strong>NOP</strong>操作进行<strong>空转</strong></li>
+</ul>
+</li>
+<li>乱序执行充分利用了<strong>较深流水线</strong>带来的<strong>并发性</strong>，可以充分利用CPU的性能</li>
+</ul>
+<h2 id="控制冒险"><a href="#控制冒险" class="headerlink" title="控制冒险"></a>控制冒险</h2><ol>
+<li>在<strong>结构冒险</strong>和<strong>数据冒险</strong>中，所有的<strong>流水线停顿</strong>都要从<strong>指令执行</strong>（EX）阶段开始</li>
+</ol>
+<ul>
+<li>流水线的前两个阶段，即<strong>取指令</strong>（IF）和<strong>指令译码</strong>（ID），是不需要停顿的</li>
+<li>基于一个基本假设：所有的指令代码都是<strong>顺序加载执行</strong>的<ul>
+<li>不成立的情况：在执行的代码中，遇到<strong>if&#x2F;else</strong>条件分支，或者<strong>for&#x2F;while</strong>循环</li>
+</ul>
+</li>
+</ul>
+<ol start="2">
+<li>jne指令发生的时候，CPU可能会跳转去执行其它指令</li>
+</ol>
+<ul>
+<li>jne后的那一条指令是否应该顺序加载执行，在流水线里进行<strong>取指令</strong>的时候，是<strong>无法知道</strong>的</li>
+<li>要等到<strong>jne指令执行完成</strong>，更新了<strong>PC寄存器</strong>后，才能知道是否执行下一条指令，还是跳转到另一个内存地址，去取别的指令</li>
+</ul>
+<ol start="3">
+<li>为了确保能<strong>取到正确的指令</strong>，不得不进行<strong>等待延迟</strong>的情况，这就是<strong>控制冒险</strong></li>
+</ol>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-if.jpg" width=1000/>
+
+<h3 id="缩短分支延迟"><a href="#缩短分支延迟" class="headerlink" title="缩短分支延迟"></a>缩短分支延迟</h3><ol>
+<li><strong>条件跳转指令</strong>实际上进行了两种电路操作：<strong>条件比较</strong> + <strong>实际跳转</strong></li>
+<li><strong>条件跳转</strong></li>
+</ol>
+<ul>
+<li>根据<strong>指令的opcode</strong>，就能确认<strong>对应的条件码寄存器</strong></li>
+</ul>
+<ol start="3">
+<li><strong>实际跳转</strong></li>
+</ol>
+<ul>
+<li>把要<strong>跳转的地址</strong>写入到<strong>PC寄存器</strong></li>
+</ul>
+<ol start="4">
+<li>无论是<strong>指令的opcode</strong>，还是<strong>对应的条件码寄存器</strong>，还是<strong>跳转的地址</strong>，都是在<strong>指令译码</strong>阶段就能获得的</li>
+</ol>
+<ul>
+<li>对应的<strong>条件码比较电路</strong>，只需要<strong>简单的逻辑门电路</strong>即可，并不需要一个完整而复杂的ALU</li>
+<li>可以将<strong>条件判断</strong>、<strong>地址跳转</strong>，都提前到<strong>指令译码</strong>阶段进行，而不需要放在<strong>指令执行</strong>阶段</li>
+<li>在CPU里面设计对应的<strong>旁路</strong>，在<strong>指令译码</strong>阶段，就提供对应的<strong>判断比较的电路</strong></li>
+</ul>
+<ol start="5">
+<li>这种方式，本质上和前面<strong>数据冒险</strong>的<strong>操作数前推</strong>的解决方案类似，就是在<strong>硬件电路层面</strong>，把一些计算结果<strong>更早地反馈</strong>到流水线中</li>
+</ol>
+<ul>
+<li>这样反馈会变得更快，后面的指令需要<strong>等待的时间</strong>就会<strong>变短</strong></li>
+</ul>
+<ol start="6">
+<li>只是<strong>改造硬件</strong>，并<strong>不能彻底解决问题</strong></li>
+</ol>
+<ul>
+<li>跳转指令的比较结果，仍然要在<strong>指令执行</strong>完成后才能知道</li>
+<li>在流水线里，第一条指令进行<strong>指令译码</strong>的时钟周期里，其实就要<strong>取下一条指令</strong>了<ul>
+<li>但由于第一条指令还没开始指令执行阶段，此时并不知道比较的结果，自然也就无法准确知道要取哪一条指令了</li>
+</ul>
+</li>
+</ul>
+<h3 id="分支预测"><a href="#分支预测" class="headerlink" title="分支预测"></a>分支预测</h3><h4 id="静态预测"><a href="#静态预测" class="headerlink" title="静态预测"></a>静态预测</h4><ol>
+<li>CPU预测：条件跳转<strong>一定不发生</strong></li>
+<li>如果<strong>预测成功</strong>，可以<strong>节省</strong>本来需要停顿下来<strong>等待的时间</strong></li>
+<li>如果<strong>预测失败</strong>，需要<strong>丢弃</strong>后面已经取出指令且已经执行的部分</li>
+</ol>
+<ul>
+<li>这个丢弃的操作，在流水线里面叫作<strong>Zap</strong>或者<strong>Flush</strong></li>
+<li>CPU不仅要执行后面的指令，对于已经在流水线里面<strong>执行到一半</strong>的指令，还需要做对应的<strong>清除</strong>操作<ul>
+<li>例如清空已经使用的<strong>寄存器</strong>里面的数据，而这些清除操作，有一定的<strong>开销</strong></li>
+</ul>
+</li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-static-prediction.jpg" width=1000/>
+
+<h4 id="动态预测"><a href="#动态预测" class="headerlink" title="动态预测"></a>动态预测</h4><ol>
+<li><strong>一级分支预测</strong>（One Level Branch Prediction）、<strong>1比特饱和计数</strong>（1-bit saturating counter）</li>
+</ol>
+<ul>
+<li>用<strong>1Bit</strong>，记录当前分支的比较情况，<strong>直接用当前分支的比较情况来预测下一次分支的比较情况</strong></li>
+</ul>
+<ol start="2">
+<li><strong>状态机</strong>（State Machine）</li>
+</ol>
+<ul>
+<li>如果状态机总共有<strong>4个状态</strong>，需要2个比特来记录对应的状态，这样的策略叫作<strong>2比特饱和计数</strong>或者<strong>双模态预测器</strong></li>
+</ul>
+<h4 id="循环嵌套"><a href="#循环嵌套" class="headerlink" title="循环嵌套"></a>循环嵌套</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BranchPrediction</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String args[])</span> &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">start</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; <span class="number">1000</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">0</span>; k &lt; <span class="number">10000</span>; k++) &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">long</span> <span class="variable">end</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;Time spent is &quot;</span> + (end - start));</span><br><span class="line"></span><br><span class="line">        start = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; <span class="number">1000</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">0</span>; k &lt; <span class="number">100</span>; k++) &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        end = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;Time spent is &quot;</span> + (end - start) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Time spent is 4</span><br><span class="line">Time spent is 19ms</span><br></pre></td></tr></table></figure>
+<ol>
+<li>循环其实也是利用<strong>cmp</strong>和<strong>jle</strong>指令来实现的</li>
+<li>每一次循环都有一个<strong>cmp</strong>和<strong>jle</strong>指令</li>
+</ol>
+<ul>
+<li>每一个<strong>jle</strong>都意味着要<strong>比较条件码寄存器的状态</strong>，来决定是<strong>顺序执行</strong>代码，还是要<strong>跳转</strong>到另外的地址</li>
+<li>每一次<strong>循环发生</strong>的时候，都会有一次『<strong>分支</strong>』</li>
+</ul>
+<ol start="3">
+<li>分支预测策略最简单的方式：假设分支<strong>不发生</strong></li>
+</ol>
+<ul>
+<li>对应循环，就是<strong>循环始终进行下去</strong></li>
+</ul>
+<ol start="4">
+<li>上面第一段代码<strong>分支预测错误</strong>的情况<strong>比较少</strong></li>
+</ol>
+<ul>
+<li>更多的计算机指令，在流水线里顺序运行下去了，而不是把运行到一半的指令丢弃掉，再去重新加载新的指令执行</li>
+</ul>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://computer-composition-1253868755.cos.ap-guangzhou.myqcloud.com/computer-organization-hazard-prediction-loop.jpg" width=800/>
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100026001">深入浅出计算机组成原理</a></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2020/01/18/computer-organization-hazard/">https://blog.zhongmingmao.top/2020/01/18/computer-organization-hazard/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/computer-basics/">Computer Basics</a><a class="post-meta__tags" href="/tags/computer-organization/">Computer Organization</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2020/01/19/computer-organization-superscalar-vliw/" title="计算机组成 -- Superscalar + VLIW"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">计算机组成 -- Superscalar + VLIW</div></div></a></div><div class="next-post pull-right"><a href="/2020/01/17/computer-organization-instruction-pipeline/" title="计算机组成 -- 指令流水线"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">计算机组成 -- 指令流水线</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2020/02/05/computer-organization-disruptor/" title="计算机组成 -- Disruptor"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-02-05</div><div class="title">计算机组成 -- Disruptor</div></div></a></div><div><a href="/2020/02/04/computer-organization-dmp/" title="计算机组成 -- DMP"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-02-04</div><div class="title">计算机组成 -- DMP</div></div></a></div><div><a href="/2020/02/03/computer-organization-dma/" title="计算机组成 -- DMA"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-02-03</div><div class="title">计算机组成 -- DMA</div></div></a></div><div><a href="/2020/02/02/computer-organization-ssd/" title="计算机组成 -- SSD"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-02-02</div><div class="title">计算机组成 -- SSD</div></div></a></div><div><a href="/2020/02/01/computer-organization-hdd/" title="计算机组成 -- HDD"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-02-01</div><div class="title">计算机组成 -- HDD</div></div></a></div><div><a href="/2020/01/31/computer-organization-io-wait/" title="计算机组成 -- IO_WAIT"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-01-31</div><div class="title">计算机组成 -- IO_WAIT</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%92%E9%99%A9"><span class="toc-number">1.</span> <span class="toc-text">冒险</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E6%9E%84%E5%86%92%E9%99%A9"><span class="toc-number">2.</span> <span class="toc-text">结构冒险</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E7%9A%84%E6%95%B0%E6%8D%AE%E8%AE%BF%E9%97%AE"><span class="toc-number">2.1.</span> <span class="toc-text">内存的数据访问</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">2.2.</span> <span class="toc-text">解决方案</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%86%92%E9%99%A9"><span class="toc-number">3.</span> <span class="toc-text">数据冒险</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96"><span class="toc-number">3.1.</span> <span class="toc-text">依赖</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%86%99-gt-%E8%AF%BB"><span class="toc-number">3.1.1.</span> <span class="toc-text">写 -&gt; 读</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%BB-gt-%E5%86%99"><span class="toc-number">3.1.2.</span> <span class="toc-text">读 -&gt; 写</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%86%99-gt-%E5%86%99"><span class="toc-number">3.1.3.</span> <span class="toc-text">写 -&gt; 写</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-%E2%80%93-%E6%B5%81%E6%B0%B4%E7%BA%BF%E5%81%9C%E9%A1%BF"><span class="toc-number">3.2.</span> <span class="toc-text">解决方案 – 流水线停顿</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E5%89%8D%E6%8E%A8"><span class="toc-number">4.</span> <span class="toc-text">操作数前推</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%81%E6%B0%B4%E7%BA%BF%E5%AF%B9%E9%BD%90"><span class="toc-number">4.1.</span> <span class="toc-text">流水线对齐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%94%E7%BA%A7%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="toc-number">4.1.1.</span> <span class="toc-text">五级流水线</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MIPS%E6%8C%87%E4%BB%A4"><span class="toc-number">4.1.2.</span> <span class="toc-text">MIPS指令</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E5%89%8D%E6%8E%A8-1"><span class="toc-number">4.2.</span> <span class="toc-text">操作数前推</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%B1%E5%BA%8F%E6%89%A7%E8%A1%8C"><span class="toc-number">5.</span> <span class="toc-text">乱序执行</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A1%AB%E8%A1%A5%E7%A9%BA%E9%97%B2%E7%9A%84NOP"><span class="toc-number">5.1.</span> <span class="toc-text">填补空闲的NOP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E8%BF%87%E7%A8%8B"><span class="toc-number">5.2.</span> <span class="toc-text">实现过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9B%9E%E5%88%B0%E6%A0%B7%E4%BE%8B"><span class="toc-number">5.3.</span> <span class="toc-text">回到样例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">5.4.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%A7%E5%88%B6%E5%86%92%E9%99%A9"><span class="toc-number">6.</span> <span class="toc-text">控制冒险</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%A9%E7%9F%AD%E5%88%86%E6%94%AF%E5%BB%B6%E8%BF%9F"><span class="toc-number">6.1.</span> <span class="toc-text">缩短分支延迟</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%94%AF%E9%A2%84%E6%B5%8B"><span class="toc-number">6.2.</span> <span class="toc-text">分支预测</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9D%99%E6%80%81%E9%A2%84%E6%B5%8B"><span class="toc-number">6.2.1.</span> <span class="toc-text">静态预测</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E9%A2%84%E6%B5%8B"><span class="toc-number">6.2.2.</span> <span class="toc-text">动态预测</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BE%AA%E7%8E%AF%E5%B5%8C%E5%A5%97"><span class="toc-number">6.2.3.</span> <span class="toc-text">循环嵌套</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">7.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

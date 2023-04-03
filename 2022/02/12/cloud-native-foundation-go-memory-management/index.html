@@ -1,0 +1,419 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Cloud Native Foundation - Go Memory Management | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="堆内存管理Linux 进程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cloud Native Foundation - Go Memory Management">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/02/12/cloud-native-foundation-go-memory-management/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="堆内存管理Linux 进程">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp">
+<meta property="article:published_time" content="2022-02-11T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.569Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/02/12/cloud-native-foundation-go-memory-management/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Cloud Native Foundation - Go Memory Management',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Cloud Native Foundation - Go Memory Management</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-02-11T16:06:25.000Z" title="Created 2022-02-12 00:06:25">2022-02-12</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/go/">Go</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>5min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="堆内存管理"><a href="#堆内存管理" class="headerlink" title="堆内存管理"></a>堆内存管理</h1><h2 id="Linux-进程"><a href="#Linux-进程" class="headerlink" title="Linux 进程"></a>Linux 进程</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220207221016045.png" alt="image-20220207221016045"></p>
+<span id="more"></span>
+
+<h2 id="管理过程"><a href="#管理过程" class="headerlink" title="管理过程"></a>管理过程</h2><ol>
+<li>Allocator 的职责：通过<strong>系统调用</strong>向 <strong>OS</strong> 申请内存（<strong>MB&#x2F;GB</strong>）；响应 Mutator（即应用） 的内存申请（<strong>KB</strong>）</li>
+<li>Collector：交还给 Allocator，再由 Allocator 决定是否释放并归还给 OS</li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220209233237928.png" alt="image-20220209233237928"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220209233405928.png" alt="image-20220209233405928"></p>
+<ol>
+<li>初始化<strong>连续内存块</strong>为<strong>堆</strong></li>
+<li>在内存申请的时候，Allocator 从堆内存的<strong>未分配区域</strong>分割小内存块</li>
+<li>用<strong>链表</strong>将<strong>已分配内存</strong>连接起来</li>
+<li>需要信息描述每个内存块的<strong>元数据</strong>（<strong>对象头</strong>）：大小、是否使用、下一个内存块的地址</li>
+</ol>
+<blockquote>
+<p>Example: <em>Ruby allocates memory from the memory allocator, which in turn allocates from the kernel</em></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/ruby_memory_alloc_interactions.png" alt="ruby_memory_alloc_interactions"></p>
+<h2 id="面临挑战"><a href="#面临挑战" class="headerlink" title="面临挑战"></a>面临挑战</h2><ol>
+<li>内存分配需要<strong>系统调用</strong>，在频繁分配内存的时候，系统性能较低<ul>
+<li>C 的每次 <code>malloc</code> 是需要<strong>系统调用</strong>的</li>
+<li>Java 的 Allocator 可以直接一次性申请大内存，然后在<strong>用户态</strong>再慢慢分配</li>
+</ul>
+</li>
+<li><strong>多线程</strong>共享相同的内存空间，同时申请内存，需要<strong>加锁</strong>，或者采用类似 JVM 中的 <strong>TLAB</strong> 来缓解竞争</li>
+<li>经过不断地内存分配和回收，<strong>内存碎片</strong>会比较严重，<strong>内存使用率低</strong></li>
+</ol>
+<h1 id="TCMalloc"><a href="#TCMalloc" class="headerlink" title="TCMalloc"></a>TCMalloc</h1><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220212153356342.png" alt="image-20220212153356342"></p>
+<ol>
+<li><strong>Thread Cache ≈ JVM TLAB</strong></li>
+<li>Go <strong>预先申请</strong>的大内存，会先放在 <strong>PageHeap</strong></li>
+<li>下一级向上一级别申请内存的时候，上一级都是按<strong>一定规格</strong>分配，<strong>减少加锁的频率</strong></li>
+<li>Page：内存页，<strong>8K</strong>；Go 与 OS 之间的内存申请和释放，都是以 Page 为单位</li>
+<li>Span：<strong>连续</strong>内存块，<strong>Span N &#x3D; Page × N</strong></li>
+<li><strong>Size Class</strong><ul>
+<li>应用申请内存的大小规格，单位 Byte<ul>
+<li>每个 Span 都有属性 Size Class，Span 内部的的 Page 会按照 Size Class 被<strong>预先格式化</strong></li>
+</ul>
+</li>
+<li>举例<ul>
+<li>如针对 Size Class &#x3D; 8，对应的 Page 会被切分成1024份</li>
+<li>如果此时应用申请 <strong>≤</strong> 8（<strong>最佳适配</strong>原则）的内存空间，会分配上面被切分的1024份之一</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Object：对象，用来存储一个变量数据的内存空间<ul>
+<li>分配流程<ul>
+<li>小对象：<strong>0 ~ 256KB</strong><ul>
+<li><strong>ThreadCache -&gt; CentralCache -&gt; HeapPage</strong>，大部分情况下 ThreadCache 是足够的，不需要加锁</li>
+</ul>
+</li>
+<li>中对象：<strong>258KB ~ 1MB</strong><ul>
+<li>直接在 <strong>HeapPage</strong> 中选择适当大小即可</li>
+</ul>
+</li>
+<li>大对象：<strong>＞ 1MB</strong><ul>
+<li>从 <strong>Large Span Set</strong> 中<strong>选择合适数量的 Page 来组成 Span</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="Go"><a href="#Go" class="headerlink" title="Go"></a>Go</h1><blockquote>
+<p>与 Java 不同的是，Go 在大部分情况，不需要 GC 调优，相对于 Java，在 GC 方面比较省心</p>
+</blockquote>
+<h2 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220212162357641.png" alt="image-20220212162357641"></p>
+<ol>
+<li>Go 的内存分配机制是从 TCMalloc 衍生，两者都是来自于 Google</li>
+<li>增强 1（加快 <strong>GC 效率</strong>，利用<strong>栈上分配</strong>）：<strong>Span Class</strong> 为 <strong>134</strong> 个，<strong>Size Class</strong> 为 <strong>67</strong> 个<ul>
+<li>一个 Size Class 对应两个 Span Class，一个存<strong>指针</strong>，一个存<strong>直接引用</strong><ul>
+<li>存<strong>直接引用</strong>的 Span 无需 <strong>GC 扫描</strong> – 栈上分配</li>
+<li>指针：指针本质上是存放变量地址的一个<strong>变量</strong>，逻辑上是<strong>独立</strong>的，可以被改变，分配在<strong>堆</strong>上，<strong>GC 是针对堆的</strong></li>
+<li>直接引用：是一个<strong>别名</strong>，逻辑上是<strong>不独立</strong>的，具有依附性，分配在<strong>栈</strong>上</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>增强 2（加快<strong>分配效率</strong>）：Span Class 也维护了两个 <strong>Span 列表</strong>，<strong>Empty</strong> 和 <strong>Non Empty</strong><ul>
+<li>Empty 语义：是否有<strong>可分配</strong>空间，true &#x3D; 没有</li>
+<li>Empty：Span 双向链表，包括<strong>没有空闲对象</strong>的 Span 和 mcache 中的 Span<ul>
+<li>当 Empty 中的 Span 被释放时，Span 将被移动到 Non Empty</li>
+</ul>
+</li>
+<li>Non Empty：<strong>有空闲对象</strong>的 Span 双向链表<ul>
+<li>从 mcentral 请求新 Span，先尝试从 Non Empty 获取 Span 并移动到 Empty</li>
+<li>如果 mcentral 没有可用的 Span，则 mcentral 向 mheap 申请新页</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>增强 3：mheap 中的 Span 是按<strong>树</strong>来组织的（TCMalloc#PageHeap是按<strong>链表</strong>来组织的）<ul>
+<li><strong>free</strong>：空闲 + 不是来自于 GC</li>
+<li><strong>scav</strong>：来自于 GC</li>
+</ul>
+</li>
+</ol>
+<h2 id="内存回收"><a href="#内存回收" class="headerlink" title="内存回收"></a>内存回收</h2><blockquote>
+<p>Go 使用的 GC 算法是 <strong>Mark-Sweep</strong>，会存在 <strong>STW</strong></p>
+</blockquote>
+<h3 id="mspan"><a href="#mspan" class="headerlink" title="mspan"></a>mspan</h3><ol>
+<li><strong>bitmap</strong><ul>
+<li><strong>allocBits</strong>：记录每块内存的<strong>分配</strong>情况</li>
+<li><strong>gcmarkBits</strong>：记录每块内存的<strong>引用</strong>情况</li>
+</ul>
+</li>
+<li>标记结束后进行回收，回收时，<strong>将 allocBits 指向 gcmarkBits</strong><ul>
+<li>标记阶段：活跃标记为1，不活跃标记为0</li>
+<li>标记过则继续存在，未进行标记则进行回收</li>
+</ul>
+</li>
+<li><strong>回收对象：Span 中的元素</strong></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220212184724384.png" alt="image-20220212184724384"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220212184734842.png" alt="image-20220212184734842"></p>
+<h3 id="GC-过程"><a href="#GC-过程" class="headerlink" title="GC 过程"></a>GC 过程</h3><blockquote>
+<p>类似于 JVM 的 <strong>CMS</strong></p>
+</blockquote>
+<h4 id="三色标记"><a href="#三色标记" class="headerlink" title="三色标记"></a>三色标记</h4><blockquote>
+<p>白色：垃圾<br>黑色：存活 + 所有孩子已经扫描<br><strong>灰色</strong>：存活 + 还有孩子未扫描</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/go/image-20220212200920341.png" alt="image-20220212200920341"></p>
+<ol>
+<li><strong>图遍历</strong><ul>
+<li>GC 开始时，认为所有 Object 都是白色（即垃圾）</li>
+<li>从 Root 区开始遍历，被触达的 Object 置为灰色</li>
+<li>遍历所有灰色 Object， 将他们内部引用的变量置为灰色（加入<strong>灰色队列</strong>），然后将自己置为黑色（已经完成扫描工作）</li>
+<li>最终只会剩下两种颜色，<strong>黑色（存活）或白色（垃圾）</strong></li>
+</ul>
+</li>
+<li><strong>并发</strong>标记<ul>
+<li>对于<strong>黑色</strong> Object，如果在标记期间发生了<strong>写</strong>操作，<strong>写屏障</strong>会在真正赋值前将新对象标记为<strong>灰色</strong>（重新入队，再次扫描确认）</li>
+<li><strong>新分配</strong>的 Object，会先标记为<strong>黑色</strong>再返回</li>
+</ul>
+</li>
+</ol>
+<h4 id="详细过程"><a href="#详细过程" class="headerlink" title="详细过程"></a>详细过程</h4><blockquote>
+<p>Go GC 的大部分处理是和<strong>用户代码</strong>是<strong>并发</strong>的</p>
+</blockquote>
+<ol>
+<li><strong>Mark</strong><ul>
+<li><strong>Mark Prepare</strong><ul>
+<li>STW：初始化 GC 任务，包括开启写屏障、<strong>统计 Root 对象的数量</strong></li>
+</ul>
+</li>
+<li><strong>GC Drains</strong><ul>
+<li>并发：扫描所有 Root 对象（全局指针和 G 栈上的指针），将其加入到<strong>灰色队列</strong>，并循环处理灰色队列的对象，直到灰色队列为空 – <strong>图遍历</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Mark Termination</strong><ul>
+<li>STW：完成标记工作，<strong>重新扫描</strong>全局指针和 G 栈</li>
+</ul>
+</li>
+<li><strong>Sweep</strong><ul>
+<li>并发：按照标记结果回收所有白色 Object</li>
+</ul>
+</li>
+<li><strong>Sweep Termination</strong><ul>
+<li>对未清扫的 Span 进行清扫，只有完成上一轮 GC 的清理工作后才可以开始新一轮的 GC</li>
+</ul>
+</li>
+</ol>
+<p>简单类比</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Go</th>
+<th>Java CMS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>STW</td>
+<td><strong>Mark Prepare</strong></td>
+<td>Initial Mark</td>
+</tr>
+<tr>
+<td></td>
+<td>GC Drains</td>
+<td>Concurrent Mark</td>
+</tr>
+<tr>
+<td>STW</td>
+<td><strong>Mark Termination</strong></td>
+<td>Final Remark</td>
+</tr>
+<tr>
+<td></td>
+<td>Sweep</td>
+<td>Concurrent Sweep</td>
+</tr>
+<tr>
+<td></td>
+<td>Sweep Termination</td>
+<td>Concurrent Reset</td>
+</tr>
+</tbody></table>
+<h3 id="触发机制"><a href="#触发机制" class="headerlink" title="触发机制"></a>触发机制</h3><ol>
+<li>内存分配量达到<strong>阈值</strong><ul>
+<li><strong>每次内存分配</strong>都会检查当前内存分配量是否已经达到阈值，达到则启动 GC</li>
+<li>阈值 &#x3D; <strong>上次 GC 内存分配量 * 内存增长率</strong>（默认是100%，由 <code>GOGC</code> 控制） – 类似于 Ruby GC</li>
+</ul>
+</li>
+<li><strong>定期</strong>触发：默认<strong>2分钟</strong></li>
+<li><strong>手动</strong>触发：<code>runtime.GC()</code> – 类似于 Java <code>System.gc()</code></li>
+</ol>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/02/12/cloud-native-foundation-go-memory-management/">https://blog.zhongmingmao.top/2022/02/12/cloud-native-foundation-go-memory-management/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/go/">Go</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/02/13/cloud-native-foundation-go-engineering/" title="Cloud Native Foundation - Go Engineering"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Cloud Native Foundation - Go Engineering</div></div></a></div><div class="next-post pull-right"><a href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Bytecode Manipulation - Javassist</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/05/15/cloud-native-foundation-go-core-list-ring/" title="Go Core - List + Ring"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-9.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - List + Ring</div></div></a></div><div><a href="/2022/05/15/cloud-native-foundation-go-core-array-slice/" title="Go Core - Array + Slice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - Array + Slice</div></div></a></div><div><a href="/2022/05/15/cloud-native-foundation-go-core-entity/" title="Go Core - Entity"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-15</div><div class="title">Go Core - Entity</div></div></a></div><div><a href="/2022/05/03/cloud-native-foundation-go-engineering-foundation-cli/" title="Go Engineering - Foundation - CLI"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-03</div><div class="title">Go Engineering - Foundation - CLI</div></div></a></div><div><a href="/2022/05/02/cloud-native-foundation-go-engineering-foundation-log-package/" title="Go Engineering - Foundation - Log - Package"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-02</div><div class="title">Go Engineering - Foundation - Log - Package</div></div></a></div><div><a href="/2022/05/01/cloud-native-foundation-go-engineering-foundation-log-design/" title="Go Engineering - Foundation - Log - Design"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-01</div><div class="title">Go Engineering - Foundation - Log - Design</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A0%86%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">堆内存管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux-%E8%BF%9B%E7%A8%8B"><span class="toc-number">1.1.</span> <span class="toc-text">Linux 进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%A1%E7%90%86%E8%BF%87%E7%A8%8B"><span class="toc-number">1.2.</span> <span class="toc-text">管理过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%A2%E4%B8%B4%E6%8C%91%E6%88%98"><span class="toc-number">1.3.</span> <span class="toc-text">面临挑战</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#TCMalloc"><span class="toc-number">2.</span> <span class="toc-text">TCMalloc</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Go"><span class="toc-number">3.</span> <span class="toc-text">Go</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="toc-number">3.1.</span> <span class="toc-text">内存分配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%9B%9E%E6%94%B6"><span class="toc-number">3.2.</span> <span class="toc-text">内存回收</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mspan"><span class="toc-number">3.2.1.</span> <span class="toc-text">mspan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#GC-%E8%BF%87%E7%A8%8B"><span class="toc-number">3.2.2.</span> <span class="toc-text">GC 过程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%89%E8%89%B2%E6%A0%87%E8%AE%B0"><span class="toc-number">3.2.2.1.</span> <span class="toc-text">三色标记</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%A6%E7%BB%86%E8%BF%87%E7%A8%8B"><span class="toc-number">3.2.2.2.</span> <span class="toc-text">详细过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A6%E5%8F%91%E6%9C%BA%E5%88%B6"><span class="toc-number">3.2.3.</span> <span class="toc-text">触发机制</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

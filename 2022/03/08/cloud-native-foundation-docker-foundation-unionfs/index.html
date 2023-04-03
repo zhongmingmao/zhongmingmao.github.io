@@ -1,0 +1,328 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Docker Foundation - Union FS | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="Union FS Docker 的创新在文件系统：通过镜像解决容器分发的问题   将不同目录挂载到同一个虚拟文件系统下的文件系统 支持为每一个成员目录（类似于 Git Branch）设定权限：readonly、readwrite、whiteout-able 文件系统分层，对 readonly 权限的 Branch 可以逻辑上进行修改（增量、不影响 readonly 部分） 用途 将多个 Disk">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker Foundation - Union FS">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/03/08/cloud-native-foundation-docker-foundation-unionfs/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="Union FS Docker 的创新在文件系统：通过镜像解决容器分发的问题   将不同目录挂载到同一个虚拟文件系统下的文件系统 支持为每一个成员目录（类似于 Git Branch）设定权限：readonly、readwrite、whiteout-able 文件系统分层，对 readonly 权限的 Branch 可以逻辑上进行修改（增量、不影响 readonly 部分） 用途 将多个 Disk">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png">
+<meta property="article:published_time" content="2022-03-07T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.567Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Container">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/03/08/cloud-native-foundation-docker-foundation-unionfs/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Docker Foundation - Union FS',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Docker Foundation - Union FS</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-03-07T16:06:25.000Z" title="Created 2022-03-08 00:06:25">2022-03-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/container/">Container</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/container/docker/">Docker</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>4min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="Union-FS"><a href="#Union-FS" class="headerlink" title="Union FS"></a>Union FS</h1><blockquote>
+<p>Docker 的创新在<strong>文件系统</strong>：通过<strong>镜像</strong>解决<strong>容器分发</strong>的问题</p>
+</blockquote>
+<ol>
+<li>将<strong>不同目录</strong>挂载到<strong>同一个虚拟文件系统</strong>下的文件系统</li>
+<li>支持为每一个<strong>成员目录</strong>（类似于 <strong>Git Branch</strong>）设定权限：<code>readonly</code>、<code>readwrite</code>、<code>whiteout-able</code></li>
+<li>文件系统分层，对 <code>readonly</code> 权限的 Branch 可以<strong>逻辑上</strong>进行修改（<strong>增量</strong>、不影响 <code>readonly</code> 部分）</li>
+<li>用途<ul>
+<li>将多个 Disk 挂在同一个目录下</li>
+<li>将一个 <code>readonly</code> 的 Branch 和一个 <code>writeable</code> 的 Branch 联合在一起</li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h1 id="Docker-镜像"><a href="#Docker-镜像" class="headerlink" title="Docker 镜像"></a>Docker 镜像</h1><blockquote>
+<p>层可以<strong>复用</strong>，增量分发</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308221506755.png" alt="image-20220308221506755"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker image inspect --format &#x27;&#123;&#123;.RootFS&#125;&#125;&#x27; centos:latest</span><br><span class="line">&#123;layers [sha256:74ddd0ec08fa43d09f32636ba91a0a3053b02cb4627c35051aff89f853606b59] &#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="镜像文件系统"><a href="#镜像文件系统" class="headerlink" title="镜像文件系统"></a>镜像文件系统</h1><ol>
+<li>bootfs<ul>
+<li>Bootloader <strong>引导加载 kernel</strong></li>
+<li>当 kernel 被加载到内存后，<strong>umount bootfs</strong></li>
+</ul>
+</li>
+<li>rootfs<ul>
+<li>rootfs：<code>/dev</code>、<code>/proc</code> 等<strong>标准目录和文件</strong></li>
+</ul>
+</li>
+<li>不同的 Linux 发行版，<strong>bootfs 基本一致，而 rootfs 会有差异</strong>，<strong>容器关心的只是 kernel</strong></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308224259859.png" alt="image-20220308224259859"></p>
+<h1 id="容器运行态"><a href="#容器运行态" class="headerlink" title="容器运行态"></a>容器运行态</h1><blockquote>
+<p>容器是 Linux 上的一个进程，<strong>没有 bootfs（复用宿主机的 kernel），只有 rootfs</strong><br>容器需要借助 <strong>mnt namespace</strong> 进行隔离，可见的是镜像的 <strong>rootfs</strong></p>
+</blockquote>
+<ol>
+<li>Linux<ul>
+<li>在启动时，先将 <strong>rootfs</strong> 设置为 <strong>readonly</strong>，在进行一系列检查后，将其切换成 <strong>readwrite</strong> 供用户使用</li>
+</ul>
+</li>
+<li>Docker 启动<ul>
+<li>初始化时，同样将 <strong>rootfs</strong> 以 <strong>readonly</strong> 的方式加载并检查</li>
+<li>然后利用 <strong>Union FS</strong> 的方式将一个 <strong>readwrite</strong> 文件系统挂载在 <strong>readonly</strong> 的 <strong>rootfs</strong> 之上</li>
+<li>再次将<strong>下层的 FS</strong> 设为 <strong>readonly</strong>，并向上叠加 – <strong>迭代</strong></li>
+<li>这样构成了 <strong>container</strong> 的运行态：<strong>N 个 readonly FS 层 + 1 个 writeable FS 层</strong></li>
+</ul>
+</li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308225758225.png" alt="image-20220308225758225"></p>
+<h1 id="写操作"><a href="#写操作" class="headerlink" title="写操作"></a>写操作</h1><blockquote>
+<p>镜像是共享的，容器对<strong>可写层</strong>的操作依赖于<strong>存储驱动</strong>提供的<strong>写时复制</strong>和<strong>用时分配</strong>机制 – 提高存储和内存资源的<strong>利用率</strong></p>
+</blockquote>
+<ol>
+<li><strong>写时复制</strong><ul>
+<li>当需要修改镜像的文件时，从镜像的文件系统<strong>复制</strong>一份到容器的可写层进行修改，镜像里的文件不会改变<ul>
+<li>同一个镜像可以对应多个容器，<strong>对应的镜像文件只会有一份</strong>，内容不同的是各自容器的可写层</li>
+<li>不同容器对文件的修改是<strong>互不影响</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>用时分配</strong>：当一个文件<strong>被创建</strong>出来后，才会<strong>分配</strong>空间</li>
+</ol>
+<h1 id="容器存储驱动"><a href="#容器存储驱动" class="headerlink" title="容器存储驱动"></a>容器存储驱动</h1><blockquote>
+<p>主流：OverlayFS</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308231845539.png" alt="image-20220308231845539"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308232731280.png" alt="image-20220308232731280"></p>
+<h1 id="OverlayFS"><a href="#OverlayFS" class="headerlink" title="OverlayFS"></a>OverlayFS</h1><ol>
+<li>OverlayFS 是一种 <strong>Union FS</strong>，属于<strong>文件级</strong>的存储驱动（<code>BtrFS</code> 和 <code>ZFS</code> 都是<strong>块级别</strong>的存储驱动）</li>
+<li>Overlay 只有两层：<strong>Lower</strong> 层代表<strong>镜像层</strong>，<strong>Upper</strong> 层代表<strong>容器可写层</strong></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220308233522162.png" alt="image-20220308233522162"></p>
+<blockquote>
+<p>work 是临时工作目录，以 merged 为准</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"># mkdir upper lower merged work</span><br><span class="line"># echo &quot;from lower&quot; &gt; lower/in_lower.txt</span><br><span class="line"># echo &quot;from upper&quot; &gt; upper/in_upper.txt</span><br><span class="line"># echo &quot;from lower&quot; &gt; lower/in_both.txt</span><br><span class="line"># echo &quot;from upper&quot; &gt; upper/in_both.txt</span><br><span class="line"># tree</span><br><span class="line">.</span><br><span class="line">├── lower</span><br><span class="line">│   ├── in_both.txt</span><br><span class="line">│   └── in_lower.txt</span><br><span class="line">├── merged</span><br><span class="line">├── upper</span><br><span class="line">│   ├── in_both.txt</span><br><span class="line">│   └── in_upper.txt</span><br><span class="line">└── work</span><br><span class="line"></span><br><span class="line"># mount -t overlay overlay -o lowerdir=`pwd`/lower,upperdir=`pwd`/upper,workdir=`pwd`/work `pwd`/merged</span><br><span class="line"># tree</span><br><span class="line">.</span><br><span class="line">├── lower</span><br><span class="line">│   ├── in_both.txt</span><br><span class="line">│   └── in_lower.txt</span><br><span class="line">├── merged</span><br><span class="line">│   ├── in_both.txt</span><br><span class="line">│   ├── in_lower.txt</span><br><span class="line">│   └── in_upper.txt</span><br><span class="line">├── upper</span><br><span class="line">│   ├── in_both.txt</span><br><span class="line">│   └── in_upper.txt</span><br><span class="line">└── work</span><br><span class="line">    └── work</span><br><span class="line">    </span><br><span class="line"># cat merged/in_lower.txt </span><br><span class="line">from lower</span><br><span class="line"></span><br><span class="line"># cat merged/in_upper.txt </span><br><span class="line">from upper</span><br><span class="line"></span><br><span class="line"># cat merged/in_both.txt </span><br><span class="line">from upper</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># docker inspect --format &#x27;&#123;&#123;.GraphDriver.Name&#125;&#125;&#x27; 4201f70592fb</span><br><span class="line">overlay2</span><br><span class="line"></span><br><span class="line"># docker inspect --format &#x27;&#123;&#123;.GraphDriver.Data&#125;&#125;&#x27; 4201f70592fb</span><br><span class="line">map[</span><br><span class="line">  LowerDir:/var/lib/docker/overlay2/107d1c12b28e3fabb3e3786958511781538314871aa811d3c67167369ab34868-init/diff:/var/lib/docker/overlay2/f16880bc8754bf4782daa4849d0e2f41c56ec5c5e8bf8718efce67ca38a853de/diff </span><br><span class="line">  MergedDir:/var/lib/docker/overlay2/107d1c12b28e3fabb3e3786958511781538314871aa811d3c67167369ab34868/merged </span><br><span class="line">  UpperDir:/var/lib/docker/overlay2/107d1c12b28e3fabb3e3786958511781538314871aa811d3c67167369ab34868/diff </span><br><span class="line">  WorkDir:/var/lib/docker/overlay2/107d1c12b28e3fabb3e3786958511781538314871aa811d3c67167369ab34868/work</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"># ls /var/lib/docker/overlay2/107d1c12b28e3fabb3e3786958511781538314871aa811d3c67167369ab34868/merged </span><br><span class="line">bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var</span><br></pre></td></tr></table></figure>
+
+<h1 id="OCI"><a href="#OCI" class="headerlink" title="OCI"></a>OCI</h1><blockquote>
+<p>Open Container Initiative – Google 主导</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Specification</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Image</strong> Specification</td>
+<td>定义应用如何打包</td>
+</tr>
+<tr>
+<td><strong>Distribution</strong> Specification</td>
+<td>定义如何分发容器镜像</td>
+</tr>
+<tr>
+<td><strong>Runtime</strong> Specification</td>
+<td>定义如何<strong>解压</strong>应用包并<strong>运行</strong></td>
+</tr>
+</tbody></table>
+<h1 id="Docker-引擎架构"><a href="#Docker-引擎架构" class="headerlink" title="Docker 引擎架构"></a>Docker 引擎架构</h1><blockquote>
+<p>containerd 是一个单纯的 daemon，fork 出来的子进程的父进程是一个 <strong>shim</strong>（shim 的父进程是 systemd），这样 containerd 重启时不会影响其他进程</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/image-20220309000951365.png" alt="image-20220309000951365"></p>
+<blockquote>
+<p>6469 就是 shim</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># docker inspect --format &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27; 4201f70592fb</span><br><span class="line">6491</span><br><span class="line"></span><br><span class="line"># ps -ef | grep 6491                                              </span><br><span class="line">root        6491    6469  0 15:58 pts/0    00:00:00 bash</span><br><span class="line"></span><br><span class="line"># ps -ef | grep 6469    </span><br><span class="line">root        6469       1  0 15:58 ?        00:00:00 /usr/bin/containerd-shim-runc-v2 ...</span><br><span class="line">root        6491    6469  0 15:58 pts/0    00:00:00 bash</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>容器内的 1 号进程，是 <strong>EntryPoint</strong> 进程，并非宿主机上的 systemd</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it 4201f70592fb ps -ef</span><br><span class="line">UID          PID    PPID  C STIME TTY          TIME CMD</span><br><span class="line">root           1       0  0 15:58 pts/0    00:00:00 bash</span><br><span class="line">root          15       0  0 16:23 pts/1    00:00:00 ps -ef</span><br></pre></td></tr></table></figure>
+
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/03/08/cloud-native-foundation-docker-foundation-unionfs/">https://blog.zhongmingmao.top/2022/03/08/cloud-native-foundation-docker-foundation-unionfs/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/container/">Container</a><a class="post-meta__tags" href="/tags/docker/">Docker</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/03/14/cloud-native-foundation-go-engineering-iam/" title="Go Engineering - IAM"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Go Engineering - IAM</div></div></a></div><div class="next-post pull-right"><a href="/2022/03/07/cloud-native-foundation-docker-foundation-namespace-cgroup/" title="Docker Foundation - Namespace + Cgroup"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Docker Foundation - Namespace + Cgroup</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-01</div><div class="title">Kubernetes - Container Interconnection</div></div></a></div><div><a href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-26</div><div class="title">Kubernetes - Docker Hub</div></div></a></div><div><a href="/2022/09/19/kubernetes-dockerfile/" title="Kubernetes - Dockerfile"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-02.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-19</div><div class="title">Kubernetes - Dockerfile</div></div></a></div><div><a href="/2022/09/18/kubernetes-containerization/" title="Kubernetes - Containerization"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-01.png.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-18</div><div class="title">Kubernetes - Containerization</div></div></a></div><div><a href="/2022/09/16/kubernetes-docker-nature/" title="Kubernetes - Docker Nature"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-geek.jpeg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-16</div><div class="title">Kubernetes - Docker Nature</div></div></a></div><div><a href="/2022/09/15/kubernetes-docker-architecture/" title="Kubernetes - Docker Architecture"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-15</div><div class="title">Kubernetes - Docker Architecture</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Union-FS"><span class="toc-number">1.</span> <span class="toc-text">Union FS</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Docker-%E9%95%9C%E5%83%8F"><span class="toc-number">2.</span> <span class="toc-text">Docker 镜像</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="toc-number">3.</span> <span class="toc-text">镜像文件系统</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%80%81"><span class="toc-number">4.</span> <span class="toc-text">容器运行态</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="toc-number">5.</span> <span class="toc-text">写操作</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%B9%E5%99%A8%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8"><span class="toc-number">6.</span> <span class="toc-text">容器存储驱动</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OverlayFS"><span class="toc-number">7.</span> <span class="toc-text">OverlayFS</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OCI"><span class="toc-number">8.</span> <span class="toc-text">OCI</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Docker-%E5%BC%95%E6%93%8E%E6%9E%B6%E6%9E%84"><span class="toc-number">9.</span> <span class="toc-text">Docker 引擎架构</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

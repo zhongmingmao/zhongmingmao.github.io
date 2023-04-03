@@ -1,0 +1,854 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>MySQL -- RR的行锁 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="本文环境12345678910111213mysql&gt; SELECT VERSION();+-----------+| version() |+-----------+| 8.0.12    |+-----------+mysql&gt; SHOW VARIABLES LIKE &amp;#x27;%transaction_isolation%&amp;#x27;;+--------------------">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- RR的行锁">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/02/15/mysql-rr-row-lock/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="本文环境12345678910111213mysql&gt; SELECT VERSION();+-----------+| version() |+-----------+| 8.0.12    |+-----------+mysql&gt; SHOW VARIABLES LIKE &amp;#x27;%transaction_isolation%&amp;#x27;;+--------------------">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg">
+<meta property="article:published_time" content="2019-02-14T16:22:33.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.600Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/02/15/mysql-rr-row-lock/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySQL -- RR的行锁',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySQL -- RR的行锁</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-02-14T16:22:33.000Z" title="Created 2019-02-15 00:22:33">2019-02-15</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/">Storage</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/">MySQL</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">4.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>24min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="本文环境"><a href="#本文环境" class="headerlink" title="本文环境"></a>本文环境</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> VERSION();</span><br><span class="line"><span class="operator">+</span><span class="comment">-----------+</span></span><br><span class="line"><span class="operator">|</span> version() <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------+</span></span><br><span class="line"><span class="operator">|</span> <span class="number">8.0</span><span class="number">.12</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------+</span></span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;%transaction_isolation%&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------------+-----------------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name         <span class="operator">|</span> <span class="keyword">Value</span>           <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------------+-----------------+</span></span><br><span class="line"><span class="operator">|</span> transaction_isolation <span class="operator">|</span> REPEATABLE<span class="operator">-</span>READ <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------------+-----------------+</span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h2 id="加锁规则"><a href="#加锁规则" class="headerlink" title="加锁规则"></a>加锁规则</h2><ol>
+<li>基本原则<ul>
+<li>加锁的<strong>基本单位</strong>是<code>Next-Key Lock</code></li>
+<li>遍历过程中<strong>被访问到的对象</strong>才有可能被加锁</li>
+</ul>
+</li>
+<li>等值查询的优化<ul>
+<li>如果遍历的是<strong>唯一索引</strong>（聚簇索引）且能<strong>等值命中</strong>，<code>Next-Key Lock</code>会降级为<code>Row Lock</code></li>
+<li>向<strong>右</strong>遍历到<strong>第一个不满足等值条件</strong>的时候，<code>Next-Key Lock</code>会降级为<code>Gap Lock</code></li>
+</ul>
+</li>
+<li>bug<ul>
+<li>在<strong>唯一索引</strong>（聚簇索引）上的<strong>范围查询</strong>，会访问到<strong>不满足条件的第一个值</strong>为止</li>
+</ul>
+</li>
+</ol>
+<h2 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `t` (</span><br><span class="line">  `id` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  `c` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  `d` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`id`),</span><br><span class="line">  KEY `c` (`c`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>),(<span class="number">5</span>,<span class="number">5</span>,<span class="number">5</span>),(<span class="number">10</span>,<span class="number">10</span>,<span class="number">10</span>),(<span class="number">15</span>,<span class="number">15</span>,<span class="number">15</span>),(<span class="number">20</span>,<span class="number">20</span>,<span class="number">20</span>),(<span class="number">25</span>,<span class="number">25</span>,<span class="number">25</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="唯一索引"><a href="#唯一索引" class="headerlink" title="唯一索引"></a>唯一索引</h2><h3 id="等值查询-–-不命中降级"><a href="#等值查询-–-不命中降级" class="headerlink" title="等值查询 – 不命中降级"></a>等值查询 – 不命中降级</h3><p><code>Next-Key Lock</code>降级为<code>Gap Lock</code></p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;7;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES(1,1,1);<br/>(Query OK)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES(8,8,8);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;5;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Query OK)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X,GAP              <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A持有的锁：<code>PRIMARY:Gap Lock:(5,10)</code></p>
+<h3 id="范围查询-–-起点降级"><a href="#范围查询-–-起点降级" class="headerlink" title="范围查询 – 起点降级"></a>范围查询 – 起点降级</h3><p><code>Next-Key Lock</code>降级为<code>Row Lock</code></p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT * FROM t WHERE id&gt;&#x3D;10 AND id&lt;11 FOR UPDATE;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (8,8,8);<br/>(Query OK)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (13,13,13);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;15;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- sission C Blocked 1</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- sission C Blocked 2</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>条件会拆分成<code>=10</code>（<code>Row Lock</code>）和<code>&gt;10 &amp; &lt;11</code>，session A持有的锁：：<code>PRIMARY:X Lock:10</code>+<code>PRIMARY:Next-Key Lock:(10,15]</code></p>
+<h3 id="范围查询-–-尾点延伸"><a href="#范围查询-–-尾点延伸" class="headerlink" title="范围查询 – 尾点延伸"></a>范围查询 – 尾点延伸</h3><p>直到遍历到<strong>第一个不满足的值</strong>为止</p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT * FROM t WHERE id&gt;10 AND id&lt;&#x3D;15 FOR UPDATE;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (16,16,16);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;20;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- sission C Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A持有的锁：<code>PRIMARY:Next-Key Lock:(10,15]</code>+<code>PRIMARY:Next-Key Lock:(15,20]</code></p>
+<h2 id="非唯一索引"><a href="#非唯一索引" class="headerlink" title="非唯一索引"></a>非唯一索引</h2><h3 id="等值查询-–-LOCK-IN-SHARE-MODE"><a href="#等值查询-–-LOCK-IN-SHARE-MODE" class="headerlink" title="等值查询 – LOCK IN SHARE MODE"></a>等值查询 – LOCK IN SHARE MODE</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT id FROM t WHERE c&#x3D;5 LOCK IN SHARE MODE;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (7,7,7);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;5;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE c&#x3D;10;<br/>(Query OK)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Using index：覆盖索引</span></span><br><span class="line">mysql<span class="operator">&gt;</span> EXPLAIN <span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">5</span> LOCK <span class="keyword">IN</span> SHARE MODE;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------------+</span></span><br><span class="line"><span class="operator">|</span> id <span class="operator">|</span> select_type <span class="operator">|</span> <span class="keyword">table</span> <span class="operator">|</span> partitions <span class="operator">|</span> type <span class="operator">|</span> possible_keys <span class="operator">|</span> key  <span class="operator">|</span> key_len <span class="operator">|</span> <span class="keyword">ref</span>   <span class="operator">|</span> <span class="keyword">rows</span> <span class="operator">|</span> filtered <span class="operator">|</span> Extra       <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">1</span> <span class="operator">|</span> SIMPLE      <span class="operator">|</span> t     <span class="operator">|</span> <span class="keyword">NULL</span>       <span class="operator">|</span> <span class="keyword">ref</span>  <span class="operator">|</span> c             <span class="operator">|</span> c    <span class="operator">|</span> <span class="number">5</span>       <span class="operator">|</span> const <span class="operator">|</span>    <span class="number">1</span> <span class="operator">|</span>   <span class="number">100.00</span> <span class="operator">|</span> <span class="keyword">Using</span> index <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> S,GAP              <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A持有的锁：<code>c:Next-Key Lock:(0,5]</code>+<code>c:Gap Lock:(5,10)</code></p>
+<h3 id="等值查询-–-FOR-UPDATE"><a href="#等值查询-–-FOR-UPDATE" class="headerlink" title="等值查询 – FOR UPDATE"></a>等值查询 – FOR UPDATE</h3><p><code>LOCK IN SHARE MODE</code>只会锁住<strong>覆盖索引</strong>，而<code>FOR UPDATE</code>会同时给<strong>聚簇索引</strong>上<strong>满足条件的行</strong>加上<strong>X Lock</strong></p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT id FROM t WHERE c&#x3D;5 FOR UPDATE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;5;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A持有的锁：<code>c:Next-Key Lock:(0,5]</code>+<code>c:Gap Lock:(5,10)</code>+<code>PRIMARY:X Lock:5</code></p>
+<h3 id="等值查询-–-绕过覆盖索引"><a href="#等值查询-–-绕过覆盖索引" class="headerlink" title="等值查询 – 绕过覆盖索引"></a>等值查询 – 绕过覆盖索引</h3><p>无法利用覆盖索引，就必须<strong>回表</strong>，与上面<code>FOR UPDATE</code>的情况一致</p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT d FROM t WHERE c&#x3D;5 LOCK IN SHARE MODE</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;5;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Extra=NULL：绕过覆盖索引，需要回表</span></span><br><span class="line">mysql<span class="operator">&gt;</span> EXPLAIN <span class="keyword">SELECT</span> d <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">5</span> LOCK <span class="keyword">IN</span> SHARE MODE;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------+</span></span><br><span class="line"><span class="operator">|</span> id <span class="operator">|</span> select_type <span class="operator">|</span> <span class="keyword">table</span> <span class="operator">|</span> partitions <span class="operator">|</span> type <span class="operator">|</span> possible_keys <span class="operator">|</span> key  <span class="operator">|</span> key_len <span class="operator">|</span> <span class="keyword">ref</span>   <span class="operator">|</span> <span class="keyword">rows</span> <span class="operator">|</span> filtered <span class="operator">|</span> Extra <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">1</span> <span class="operator">|</span> SIMPLE      <span class="operator">|</span> t     <span class="operator">|</span> <span class="keyword">NULL</span>       <span class="operator">|</span> <span class="keyword">ref</span>  <span class="operator">|</span> c             <span class="operator">|</span> c    <span class="operator">|</span> <span class="number">5</span>       <span class="operator">|</span> const <span class="operator">|</span>    <span class="number">1</span> <span class="operator">|</span>   <span class="number">100.00</span> <span class="operator">|</span> <span class="keyword">NULL</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+------+---------------+------+---------+-------+------+----------+-------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- sission B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A持有的锁：<code>c:Next-Key Lock:(0,5]</code>+<code>c:Gap Lock:(5,10)</code>+<code>PRIMARY:S Lock:5</code></p>
+<h3 id="等值查询-–-相同的值"><a href="#等值查询-–-相同的值" class="headerlink" title="等值查询 – 相同的值"></a>等值查询 – 相同的值</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- c=10有两行，两行之间也存在Gap</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">30</span>,<span class="number">10</span>,<span class="number">30</span>);</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-index-c.png" width=500/>
+
+<p><code>DELETE</code>语句的加锁逻辑与<code>SELECT...FOR UPDTAE</code>是类似的</p>
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>DELETE FROM t WHERE c&#x3D;10;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (12,12,12);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE c&#x3D;5;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE c&#x3D;15;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;5;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;15;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;30;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X,GAP              <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session C Blocked 1</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session C Blocked 2</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>session A在二级索引c上的加锁效果如下所示<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-secondary-index-eq.png" width=500/></p>
+<p>session A持有的锁</p>
+<ul>
+<li><code>c:Next-Key Lock:((c=5,id=5),(c=10,id=10)]</code>+<code>c:Gap Lock:((c=10,id=10),(c=15,id=15))</code></li>
+<li><code>PRIMARY:X Lock:10</code>+<code>PRIMARY:X Lock:30</code></li>
+</ul>
+<h3 id="等值查询-–-LIMIT"><a href="#等值查询-–-LIMIT" class="headerlink" title="等值查询 – LIMIT"></a>等值查询 – LIMIT</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 与上面“相同的值”一样</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">30</span>,<span class="number">10</span>,<span class="number">30</span>);</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>DELETE FROM t WHERE c&#x3D;10 LIMIT 2;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (12,12,12);<br/>(Query OK)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;30;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session C Blocked 1</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session C Blocked 2</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>在遍历到<code>(c=10,id=30)</code>这一行记录后，已经有两行记录满足条件，<strong>循环结束</strong>，session A在二级索引c上的加锁效果如下所示<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-locking-rule-limit.png" width=500/></p>
+<p>session A持有的锁</p>
+<ul>
+<li><code>c:Next-Key Lock:((c=5,id=5),(c=10,id=10)]</code>+<code>c:Next-Key Lock:((c=10,id=10),(c=10,id=30)]</code></li>
+<li><code>PRIMARY:X Lock:10</code>+<code>PRIMARY:X Lock:30</code></li>
+</ul>
+<p>因此在删除数据时，尽量加上<code>LIMIT</code>，可以<strong>控制删除数据的条数</strong>，也可以<strong>减少加锁的范围</strong></p>
+<h3 id="等值查询-–-Gap-Lock死锁"><a href="#等值查询-–-Gap-Lock死锁" class="headerlink" title="等值查询 – Gap Lock死锁"></a>等值查询 – Gap Lock死锁</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT id FROM t WHERE c&#x3D;10 LOCK IN SHARE MODE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE c&#x3D;10;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td>INSERT INTO t values (8,8,8);</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting transaction</td>
+</tr>
+</tbody></table>
+<p>由于二级索引<code>c</code>是<strong>非唯一索引</strong>，因此没法降级为<strong>行锁</strong><br>session A持有的锁</p>
+<ul>
+<li><code>c:Next-Key Lock:(5,10]</code>+<code>c:Next-Key Lock:(10,15]</code></li>
+<li><code>PRIMARY:S Lock:10</code></li>
+</ul>
+<p>session B首先尝试持有<code>c:Next-Key Lock:(5,10]</code>，分<strong>两阶段</strong></p>
+<ul>
+<li><code>c:Gap Lock:(5,10)</code>，加锁成功</li>
+<li><code>c:X Lock:10</code>，加锁失败，被阻塞，session B被session A阻塞</li>
+</ul>
+<p>session A尝试插入<code>(8,8,8)</code>，被session B的<code>c:Gap Lock:(5,10)</code>阻塞，系统检测到死锁并回滚session B</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="范围查询"><a href="#范围查询" class="headerlink" title="范围查询"></a>范围查询</h3><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+<th>session C</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT * FROM t WHERE c&gt;&#x3D;10 AND c&lt;11 FOR UPDATE;</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (8,8,8);<br/>(Blocked)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE c&#x3D;15;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session C Blocked 1</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session C Blocked 2</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<p>由于二级索引<code>c</code>是<strong>非唯一索引</strong>，因此没法降级为<strong>行锁</strong><br>session A持有的锁</p>
+<ul>
+<li><code>c:Next-Key Lock:(5,10]</code>+<code>c:Next-Key Lock:(10,15]</code></li>
+<li><code>PRIMARY:X Lock:10</code></li>
+</ul>
+<h2 id="ORDE-BY-DESC"><a href="#ORDE-BY-DESC" class="headerlink" title="ORDE BY DESC"></a>ORDE BY DESC</h2><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;<br/>SELECT * FROM t WHERE c&gt;&#x3D;15 AND c &lt;&#x3D;20 ORDER BY c DESC LOCK IN SHARE MODE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (6,6,6);<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td>INSERT INTO t VALUES (21,21,21);<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;10;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;25;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;15;<br/>(Blocked)</td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET d&#x3D;d+1 WHERE id&#x3D;20;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked 1</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session B Blocked 2</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> S,GAP              <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session B Blocked 3</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- session B Blocked 4</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X                 <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>ORDE BY DESC</code>，首先找到第一个满足<code>c=20</code>的行，session A持有锁：<code>c:Next-Key Lock:(15,20]</code></li>
+<li>由于二级索引<code>c</code>是<strong>非唯一索引</strong>，继续向<strong>右</strong>遍历，session A持有锁：<code>c:Gap Key Lock:(20,25)</code></li>
+<li>向<strong>左</strong>遍历，<code>c=15</code>，session A持有锁：<code>c:Next-Key Lock:(10,15]</code></li>
+<li>继续向<strong>左</strong>遍历，<code>c=10</code>，session A持有锁：<code>c:Next-Key Lock:(5,10]</code></li>
+<li>上述过程中，满足条件的主键为<code>id=15</code>和<code>id=20</code>，session A持有<strong>聚簇索引</strong>上对应行的<code>S Lock</code></li>
+<li>总结，session A持有的锁<ul>
+<li><code>c:Next-Key Lock:(5,10]</code>+<code>c:Next-Key Lock:(10,15]</code>+<code>c:Next-Key Lock:(15,20]</code>+<code>c:Gap Key Lock:(20,25)</code></li>
+<li><code>PRIMARY:S Lock:15</code>+<code>PRIMARY:S Lock:20</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="等值-VS-遍历"><a href="#等值-VS-遍历" class="headerlink" title="等值 VS 遍历"></a>等值 VS 遍历</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> id<span class="operator">&gt;</span><span class="number">9</span> <span class="keyword">AND</span> id<span class="operator">&lt;</span><span class="number">12</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> id <span class="keyword">DESC</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>利用上面的加锁规则，加锁范围如下<ul>
+<li><code>PRIMARY:Next-Key Lock:(0,5]</code></li>
+<li><code>PRIMARY:Next-Key Lock:(5,10]</code></li>
+<li><code>PRIMARY:Gap Lock:(10,15)</code></li>
+</ul>
+</li>
+<li>加锁动作是发生在语句执行过程中<ul>
+<li><code>ORDER BY DESC</code>，优化器必须先找到<strong>第一个id&lt;12的值</strong></li>
+<li>这个过程是通过<strong>索引树的搜索过程</strong>得到的，其实是在引擎内部查找<code>id=12</code></li>
+<li>只是最终没找到，而找到了<code>(10,15)</code>这个间隙</li>
+<li>然后<strong>向左遍历</strong>，在这个遍历过程，就不是等值查询了</li>
+</ul>
+</li>
+<li>在执行过程中，通过<strong>树搜索</strong>的方式定位记录的过程，用的是<strong>等值查询</strong></li>
+</ol>
+<h2 id="IN"><a href="#IN" class="headerlink" title="IN"></a>IN</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c <span class="keyword">IN</span> (<span class="number">5</span>,<span class="number">20</span>,<span class="number">10</span>) LOCK <span class="keyword">IN</span> SHARE MODE;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- Using index：使用了覆盖索引</span></span><br><span class="line"><span class="comment">-- key=c：使用了索引c</span></span><br><span class="line"><span class="comment">-- rows=3：三个值都是通过树搜索定位的</span></span><br><span class="line">mysql<span class="operator">&gt;</span> EXPLAIN <span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c <span class="keyword">IN</span> (<span class="number">5</span>,<span class="number">20</span>,<span class="number">10</span>) LOCK <span class="keyword">IN</span> SHARE MODE;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span> id <span class="operator">|</span> select_type <span class="operator">|</span> <span class="keyword">table</span> <span class="operator">|</span> partitions <span class="operator">|</span> type  <span class="operator">|</span> possible_keys <span class="operator">|</span> key  <span class="operator">|</span> key_len <span class="operator">|</span> <span class="keyword">ref</span>  <span class="operator">|</span> <span class="keyword">rows</span> <span class="operator">|</span> filtered <span class="operator">|</span> Extra                    <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+--------------------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">1</span> <span class="operator">|</span> SIMPLE      <span class="operator">|</span> t     <span class="operator">|</span> <span class="keyword">NULL</span>       <span class="operator">|</span> <span class="keyword">range</span> <span class="operator">|</span> c             <span class="operator">|</span> c    <span class="operator">|</span> <span class="number">5</span>       <span class="operator">|</span> <span class="keyword">NULL</span> <span class="operator">|</span>    <span class="number">3</span> <span class="operator">|</span>   <span class="number">100.00</span> <span class="operator">|</span> <span class="keyword">Using</span> <span class="keyword">where</span>; <span class="keyword">Using</span> index <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+--------------------------+</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>查找<code>c=5</code><ul>
+<li><code>c:Next-Key Lock:(0,5]</code>+<code>c:Gap Lock:(5,10)</code></li>
+</ul>
+</li>
+<li>查找<code>c=10</code><ul>
+<li><code>c:Next-Key Lock:(5,10]</code>+<code>c:Gap Lock:(10,15)</code></li>
+</ul>
+</li>
+<li>查找<code>c=20</code><ul>
+<li><code>c:Next-Key Lock:(15,20]</code>+<code>c:Gap Lock:(20,25)</code></li>
+</ul>
+</li>
+<li>锁是在执行过程中是<strong>一个一个</strong>加的</li>
+</ol>
+<h3 id="ORDER-BY-DESC"><a href="#ORDER-BY-DESC" class="headerlink" title="ORDER BY DESC"></a>ORDER BY DESC</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c <span class="keyword">IN</span> (<span class="number">5</span>,<span class="number">20</span>,<span class="number">10</span>) <span class="keyword">ORDER</span> <span class="keyword">BY</span> c <span class="keyword">DESC</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> EXPLAIN <span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c <span class="keyword">IN</span> (<span class="number">5</span>,<span class="number">20</span>,<span class="number">10</span>) <span class="keyword">ORDER</span> <span class="keyword">BY</span> c <span class="keyword">DESC</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> id <span class="operator">|</span> select_type <span class="operator">|</span> <span class="keyword">table</span> <span class="operator">|</span> partitions <span class="operator">|</span> type  <span class="operator">|</span> possible_keys <span class="operator">|</span> key  <span class="operator">|</span> key_len <span class="operator">|</span> <span class="keyword">ref</span>  <span class="operator">|</span> <span class="keyword">rows</span> <span class="operator">|</span> filtered <span class="operator">|</span> Extra                                         <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">1</span> <span class="operator">|</span> SIMPLE      <span class="operator">|</span> t     <span class="operator">|</span> <span class="keyword">NULL</span>       <span class="operator">|</span> <span class="keyword">range</span> <span class="operator">|</span> c             <span class="operator">|</span> c    <span class="operator">|</span> <span class="number">5</span>       <span class="operator">|</span> <span class="keyword">NULL</span> <span class="operator">|</span>    <span class="number">3</span> <span class="operator">|</span>   <span class="number">100.00</span> <span class="operator">|</span> <span class="keyword">Using</span> <span class="keyword">where</span>; Backward index scan; <span class="keyword">Using</span> index <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>ORDER BY DESC</code>：先锁<code>c=20</code>，再锁<code>c=10</code>，最后锁<code>c=5</code></li>
+<li><strong>加锁资源相同</strong>，但<strong>加锁顺序相反</strong>，如果语句是并发执行的，可能会出现<strong>死锁</strong></li>
+</ol>
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;</td>
+<td></td>
+</tr>
+<tr>
+<td>SELECT id FROM t WHERE c&#x3D;5 LOCK IN SHARE MODE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>BEGIN;</td>
+</tr>
+<tr>
+<td></td>
+<td>SELECT id FROM t WHERE c&#x3D;20 FOR UPDATE;</td>
+</tr>
+<tr>
+<td>SELECT id FROM t WHERE c&#x3D;20 LOCK IN SHARE MODE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>SELECT id FROM t WHERE c&#x3D;5 FOR UPDATE;</td>
+</tr>
+<tr>
+<td>Deadlock found when trying to get lock; try restarting transaction</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>MySQL只保留<strong>最后一个死锁的现场</strong>，并且这个现场还不完备</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> ENGINE INNODB STATUS\G;</span><br><span class="line"><span class="comment">------------------------</span></span><br><span class="line">LATEST DETECTED DEADLOCK</span><br><span class="line"><span class="comment">------------------------</span></span><br><span class="line"><span class="number">2019</span><span class="number">-03</span><span class="number">-03</span> <span class="number">20</span>:<span class="number">49</span>:<span class="number">40</span> <span class="number">0x700006a43000</span></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">1</span>) TRANSACTION:</span><br><span class="line">TRANSACTION <span class="number">281479811602240</span>, ACTIVE <span class="number">35</span> sec starting index read</span><br><span class="line">mysql tables <span class="keyword">in</span> use <span class="number">1</span>, locked <span class="number">1</span></span><br><span class="line">LOCK WAIT <span class="number">4</span> lock struct(s), heap size <span class="number">1136</span>, <span class="number">3</span> <span class="type">row</span> lock(s)</span><br><span class="line">MySQL thread id <span class="number">15</span>, OS thread handle <span class="number">123145414946816</span>, query id <span class="number">283</span> localhost root Sending data</span><br><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">20</span> LOCK <span class="keyword">IN</span> SHARE MODE</span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">1</span>) WAITING <span class="keyword">FOR</span> THIS LOCK <span class="keyword">TO</span> BE GRANTED:</span><br><span class="line">RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">281479811602240</span> lock mode S waiting</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">6</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">2</span>) TRANSACTION:</span><br><span class="line">TRANSACTION <span class="number">6407220</span>, ACTIVE <span class="number">25</span> sec starting index read, thread declared inside InnoDB <span class="number">5000</span></span><br><span class="line">mysql tables <span class="keyword">in</span> use <span class="number">1</span>, locked <span class="number">1</span></span><br><span class="line"><span class="number">5</span> lock struct(s), heap size <span class="number">1136</span>, <span class="number">4</span> <span class="type">row</span> lock(s)</span><br><span class="line">MySQL thread id <span class="number">16</span>, OS thread handle <span class="number">123145413734400</span>, query id <span class="number">284</span> localhost root Sending data</span><br><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">5</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">2</span>) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407220</span> lock_mode X</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">6</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">2</span>) WAITING <span class="keyword">FOR</span> THIS LOCK <span class="keyword">TO</span> BE GRANTED:</span><br><span class="line">RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407220</span> lock_mode X waiting</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">3</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000005</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000005</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> WE ROLL BACK TRANSACTION (<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>(1) TRANSACTION</code>：第一个事务的信息</li>
+<li><code>(2) TRANSACTION</code>：第二个事务的信息</li>
+<li><code>WE ROLL BACK TRANSACTION (1)</code>：最终的处理结果是回滚第一个事务</li>
+</ol>
+<h3 id="第一个事务"><a href="#第一个事务" class="headerlink" title="第一个事务"></a>第一个事务</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">20</span> LOCK <span class="keyword">IN</span> SHARE MODE</span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">1</span>) WAITING <span class="keyword">FOR</span> THIS LOCK <span class="keyword">TO</span> BE GRANTED:</span><br><span class="line">RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">281479811602240</span> lock mode S waiting</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">6</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>(1) WAITING FOR THIS LOCK TO BE GRANTED</code>：表示第一个事务在等待的锁的信息</li>
+<li><code>index c of table test.t</code>：表示等待表<code>t</code>的索引<code>c</code>上的锁</li>
+<li><code>lock mode S waiting</code>：表示正在执行的语句要加一个<code>S Lock</code>，当前状态为<strong>等待中</strong></li>
+<li><code>Record lock</code>：表示这是一个<strong>记录锁</strong>（行数）</li>
+<li><code>n_fields 2</code>：表示这个记录有2列（二级索引），即字段<code>c</code>和主键字段<code>id</code></li>
+<li><code>0: len 4; hex 80000014; asc     ;;</code>：第一个字段<code>c</code><ul>
+<li><code>asc</code>：表示接下来要打印值里面的<strong>可打印字符</strong>，20不是可打印字符，因此显示<strong>空格</strong></li>
+</ul>
+</li>
+<li><code>1: len 4; hex 80000014; asc     ;;</code>：第二个字段<code>id</code></li>
+<li>第一个事务在等待<code>(c=20,id=20)</code>这一行的行锁</li>
+<li>但并没有打印出第一个事务本身所占有的锁，可以通过第二个事务反向推导出来</li>
+</ol>
+<h3 id="第二个事务"><a href="#第二个事务" class="headerlink" title="第二个事务"></a>第二个事务</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> id <span class="keyword">FROM</span> t <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">5</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span></span><br><span class="line"><span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">2</span>) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407220</span> lock_mode X</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">6</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000014</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line"></span><br><span class="line"> <span class="operator">*</span><span class="operator">*</span><span class="operator">*</span> (<span class="number">2</span>) WAITING <span class="keyword">FOR</span> THIS LOCK <span class="keyword">TO</span> BE GRANTED:</span><br><span class="line"> RECORD LOCKS space id <span class="number">77</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407220</span> lock_mode X waiting</span><br><span class="line"> Record lock, heap <span class="keyword">no</span> <span class="number">3</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line">  <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">80000005</span>; <span class="keyword">asc</span>     ;;</span><br><span class="line">  <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">80000005</span>; <span class="keyword">asc</span>     ;;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>(2) HOLDS THE LOCK(S)</code>：表示第二个事务持有的锁的信息</li>
+<li><code>index c of table test.t</code>：表示锁是加在表<code>t</code>的索引<code>c</code>上</li>
+<li><code>0: len 4; hex 80000014; asc     ;;</code>+<code>1: len 4; hex 80000014; asc     ;;</code><ul>
+<li>第二个事务持有<code>(c=20,id=20)</code>这一行的行锁（<code>X Lock</code>）</li>
+</ul>
+</li>
+<li><code>(2) WAITING FOR THIS LOCK TO BE GRANTED</code><ul>
+<li>第二个事务等待<code>(c=5,id=5)</code>只一行的行锁</li>
+</ul>
+</li>
+</ol>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><ol>
+<li>锁是<strong>一个一个</strong>加的，为了避免死锁，对<strong>同一组资源</strong>，尽量按照<strong>相同的顺序</strong>访问</li>
+<li>在发生死锁的时候，<code>FOR UPDATE</code>占用的资源更多，<strong>回滚成本更大</strong>，因此选择回滚<code>LOCK IN SHARE MODE</code></li>
+</ol>
+<h2 id="锁等待"><a href="#锁等待" class="headerlink" title="锁等待"></a>锁等待</h2><table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>BEGIN;</td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td>SELECT * FROM t WHERE id&gt;10 AND id&lt;&#x3D;15 FOR UPDATE;</td>
+<td></td>
+</tr>
+<tr>
+<td>T3</td>
+<td></td>
+<td>DELETE FROM t WHERE id&#x3D;10;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td>T4</td>
+<td></td>
+<td>INSERT INTO t VALUES (10,10,10);<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">PRIMARY</span>      <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> X                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> ENGINE INNODB STATUS\G;</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line">TRANSACTIONS</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line"><span class="comment">---TRANSACTION 6407254, ACTIVE 3 sec inserting</span></span><br><span class="line">mysql tables <span class="keyword">in</span> use <span class="number">1</span>, locked <span class="number">1</span></span><br><span class="line">LOCK WAIT <span class="number">2</span> lock struct(s), heap size <span class="number">1136</span>, <span class="number">1</span> <span class="type">row</span> lock(s)</span><br><span class="line">MySQL thread id <span class="number">16</span>, OS thread handle <span class="number">123145413734400</span>, query id <span class="number">319</span> localhost root <span class="keyword">update</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">10</span>,<span class="number">10</span>,<span class="number">10</span>)</span><br><span class="line"><span class="comment">------- TRX HAS BEEN WAITING 3 SEC FOR THIS LOCK TO BE GRANTED:</span></span><br><span class="line">RECORD LOCKS space id <span class="number">78</span> page <span class="keyword">no</span> <span class="number">4</span> n bits <span class="number">80</span> index <span class="keyword">PRIMARY</span> <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407254</span> lock_mode X locks gap before rec <span class="keyword">insert</span> intention waiting</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">5</span> PHYSICAL RECORD: n_fields <span class="number">5</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">8000000</span>f; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">6</span>; hex <span class="number">00000061</span>c44a; <span class="keyword">asc</span>    a J;;</span><br><span class="line"> <span class="number">2</span>: len <span class="number">7</span>; hex <span class="number">810000008</span>f0137; <span class="keyword">asc</span>       <span class="number">7</span>;;</span><br><span class="line"> <span class="number">3</span>: len <span class="number">4</span>; hex <span class="number">8000000</span>f; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">4</span>: len <span class="number">4</span>; hex <span class="number">8000000</span>f; <span class="keyword">asc</span>     ;;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>时刻<code>T2</code>，session A持有的锁如下<ul>
+<li><code>PRIMARY:Next-Key Lock:(10,15]</code>+<code>PRIMARY:Next-Key Lock:(15,20]</code></li>
+</ul>
+</li>
+<li>因此在时刻<code>T3</code>，session B能直接删除<code>id=10</code>这一行</li>
+<li><code>index PRIMARY of table test.t</code>：语句被锁住是因为表<code>t</code>的主键上的某一个锁</li>
+<li><code>lock_mode X locks gap before rec insert intention waiting</code><ul>
+<li><code>insert intention</code>：表示当前线程准备插入一个记录，是一个<strong>插入意向锁</strong></li>
+<li><code>gap before rec</code>：表示这是一个<code>Gap Lock</code>，而不是<code>Record Lock</code></li>
+</ul>
+</li>
+<li><code>n_fields 5</code>：表示这一记录有5列（聚簇索引）<ul>
+<li><code>0: len 4; hex 8000000f; asc     ;;</code>：表示主键<code>id</code>字段，即<code>id=15</code><ul>
+<li>因此<code>gap before rec</code>里面的<code>rec</code>指的就是<code>id=15</code>这一行</li>
+<li>又因为<code>id=10</code>这一行已经不存在了，因此这个<code>gap</code>就是<code>(5,15)</code></li>
+</ul>
+</li>
+<li><code>1: len 6; hex 00000061c44a; asc    a J;;</code>：表示6字节的<strong>事务ID</strong></li>
+<li><code>2: len 7; hex 810000008f0137; asc       7;;</code>：表示7字节的<strong>回滚段信息</strong></li>
+<li><code>3: len 4; hex 8000000f; asc     ;;</code>：表示字段<code>c</code></li>
+<li><code>4: len 4; hex 8000000f; asc     ;;</code>：表示字段<code>d</code></li>
+</ul>
+</li>
+<li>原来session A持有的<code>PRIMARY:Next-Key Lock:(10,15]</code>膨胀成了<code>PRIMARY:Next-Key Lock:(5,15]</code><ul>
+<li><strong>间隙的本质</strong>：由间隙<strong>右边的记录</strong>来定义的</li>
+</ul>
+</li>
+</ol>
+<h2 id="Gap-Lock"><a href="#Gap-Lock" class="headerlink" title="Gap Lock"></a>Gap Lock</h2><table>
+<thead>
+<tr>
+<th>session A</th>
+<th>session B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN;</td>
+<td></td>
+</tr>
+<tr>
+<td>SELECT c FROM t WHERE c&gt;5 LOCK IN SHARE MODE;</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET c&#x3D;1 WHERE c&#x3D;5;<br/>(Query OK)</td>
+</tr>
+<tr>
+<td></td>
+<td>UPDATE t SET c&#x3D;5 WHERE c&#x3D;1;<br/>(Blocked)</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- session B Blocked</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> locked_index,locked_type,waiting_lock_mode,blocking_lock_mode <span class="keyword">FROM</span> sys.innodb_lock_waits <span class="keyword">WHERE</span> locked_table<span class="operator">=</span><span class="string">&#x27;`test`.`t`&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> locked_index <span class="operator">|</span> locked_type <span class="operator">|</span> waiting_lock_mode <span class="operator">|</span> blocking_lock_mode <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> c            <span class="operator">|</span> RECORD      <span class="operator">|</span> X,GAP             <span class="operator">|</span> S                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">--------------+-------------+-------------------+--------------------+</span></span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> engine innodb status\G;</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line">TRANSACTIONS</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line"><span class="comment">---TRANSACTION 6407282, ACTIVE 5 sec updating or deleting</span></span><br><span class="line">mysql tables <span class="keyword">in</span> use <span class="number">1</span>, locked <span class="number">1</span></span><br><span class="line">LOCK WAIT <span class="number">5</span> lock struct(s), heap size <span class="number">1136</span>, <span class="number">4</span> <span class="type">row</span> lock(s), undo log entries <span class="number">1</span></span><br><span class="line">MySQL thread id <span class="number">16</span>, OS thread handle <span class="number">123145413734400</span>, query id <span class="number">337</span> localhost root updating</span><br><span class="line"><span class="keyword">UPDATE</span> t <span class="keyword">SET</span> c<span class="operator">=</span><span class="number">5</span> <span class="keyword">WHERE</span> c<span class="operator">=</span><span class="number">1</span></span><br><span class="line"><span class="comment">------- TRX HAS BEEN WAITING 5 SEC FOR THIS LOCK TO BE GRANTED:</span></span><br><span class="line">RECORD LOCKS space id <span class="number">79</span> page <span class="keyword">no</span> <span class="number">5</span> n bits <span class="number">80</span> index c <span class="keyword">of</span> <span class="keyword">table</span> `test`.`t` trx id <span class="number">6407282</span> lock_mode X locks gap before rec <span class="keyword">insert</span> intention waiting</span><br><span class="line">Record lock, heap <span class="keyword">no</span> <span class="number">4</span> PHYSICAL RECORD: n_fields <span class="number">2</span>; compact format; info bits <span class="number">0</span></span><br><span class="line"> <span class="number">0</span>: len <span class="number">4</span>; hex <span class="number">8000000</span>a; <span class="keyword">asc</span>     ;;</span><br><span class="line"> <span class="number">1</span>: len <span class="number">4</span>; hex <span class="number">8000000</span>a; <span class="keyword">asc</span>     ;;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>session A持有的锁如下<ul>
+<li><code>c:Next-Key Lock:(5,10]</code></li>
+<li><code>c:Next-Key Lock:(10,15]</code></li>
+<li><code>c:Next-Key Lock:(15,20]</code></li>
+<li><code>c:Next-Key Lock:(20,25]</code></li>
+<li><code>c:Next-Key Lock:(25,supremum]</code></li>
+</ul>
+</li>
+<li>依据<code>c&gt;5</code>查找到的第一个记录是<code>c=10</code>，因此不包含<code>c:Next-Key Lock:(0,5]</code></li>
+<li><code>UPDATE t SET c=1 WHERE c=5</code>等价于两步<ul>
+<li>插入<code>(c=1,id=5)</code>这个记录</li>
+<li>删除<code>(c=5,id=5)</code>这个记录</li>
+</ul>
+</li>
+<li>执行完上面两步，session A持有的<code>c:Next-Key Lock:(5,10]</code>会膨胀为<code>c:Next-Key Lock:(1,10]</code></li>
+<li><code>UPDATE t SET c=5 WHERE c=1</code>等价于两步<ul>
+<li>插入<code>(c=5,id=5)</code>这个记录</li>
+<li>删除<code>(c=1,id=5)</code>这个记录</li>
+</ul>
+</li>
+<li>在试图执行第一步的时候，会被session A持有的<code>c:Next-Key Lock:(1,10]</code>所阻塞</li>
+</ol>
+<h2 id="RR与RC"><a href="#RR与RC" class="headerlink" title="RR与RC"></a>RR与RC</h2><ol>
+<li>RR隔离级别<ul>
+<li>遵守<strong>两阶段</strong>协议，所有<strong>加锁的资源</strong>都是在事务<strong>提交</strong>或<strong>回滚</strong>时才释放</li>
+</ul>
+</li>
+<li>RC隔离级别<ul>
+<li>执行过程加上的<strong>行锁</strong>，在<strong>语句执行完成后</strong>，就要把<strong>“不满足条件的行”上的行锁直接释放</strong>，无需等待事务提交或回滚</li>
+<li><strong>锁范围更小</strong>，<strong>锁定时间更短</strong>，这是很多业务选择RC的一个原因</li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/02/15/mysql-rr-row-lock/">https://blog.zhongmingmao.top/2019/02/15/mysql-rr-row-lock/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/storage/">Storage</a><a class="post-meta__tags" href="/tags/mysql/">MySQL</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/02/20/mysql-short-conn-slow-query/" title="MySQL -- 短连接 + 慢查询"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">MySQL -- 短连接 + 慢查询</div></div></a></div><div class="next-post pull-right"><a href="/2019/02/14/mysql-phantom/" title="MySQL -- 幻读"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-20.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">MySQL -- 幻读</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/03/19/mysql-self-increase-id-run-out/" title="MySQL -- 自增ID耗尽"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-19</div><div class="title">MySQL -- 自增ID耗尽</div></div></a></div><div><a href="/2019/03/17/mysql-partition-table/" title="MySQL -- 分区表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 分区表</div></div></a></div><div><a href="/2019/03/17/mysql-grant-flush-privileges/" title="MySQL -- 权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 权限</div></div></a></div><div><a href="/2019/03/16/mysql-copy-table/" title="MySQL -- 拷贝表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- 拷贝表</div></div></a></div><div><a href="/2019/03/16/mysql-insert-lock/" title="MySQL -- INSERT语句的锁"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- INSERT语句的锁</div></div></a></div><div><a href="/2019/03/15/mysql-auto-increment/" title="MySQL -- 自增主键"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-15</div><div class="title">MySQL -- 自增主键</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E6%96%87%E7%8E%AF%E5%A2%83"><span class="toc-number">1.</span> <span class="toc-text">本文环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E9%94%81%E8%A7%84%E5%88%99"><span class="toc-number">2.</span> <span class="toc-text">加锁规则</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">3.</span> <span class="toc-text">表初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%94%AF%E4%B8%80%E7%B4%A2%E5%BC%95"><span class="toc-number">4.</span> <span class="toc-text">唯一索引</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-%E4%B8%8D%E5%91%BD%E4%B8%AD%E9%99%8D%E7%BA%A7"><span class="toc-number">4.1.</span> <span class="toc-text">等值查询 – 不命中降级</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2-%E2%80%93-%E8%B5%B7%E7%82%B9%E9%99%8D%E7%BA%A7"><span class="toc-number">4.2.</span> <span class="toc-text">范围查询 – 起点降级</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2-%E2%80%93-%E5%B0%BE%E7%82%B9%E5%BB%B6%E4%BC%B8"><span class="toc-number">4.3.</span> <span class="toc-text">范围查询 – 尾点延伸</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%9E%E5%94%AF%E4%B8%80%E7%B4%A2%E5%BC%95"><span class="toc-number">5.</span> <span class="toc-text">非唯一索引</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-LOCK-IN-SHARE-MODE"><span class="toc-number">5.1.</span> <span class="toc-text">等值查询 – LOCK IN SHARE MODE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-FOR-UPDATE"><span class="toc-number">5.2.</span> <span class="toc-text">等值查询 – FOR UPDATE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-%E7%BB%95%E8%BF%87%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95"><span class="toc-number">5.3.</span> <span class="toc-text">等值查询 – 绕过覆盖索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-%E7%9B%B8%E5%90%8C%E7%9A%84%E5%80%BC"><span class="toc-number">5.4.</span> <span class="toc-text">等值查询 – 相同的值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-LIMIT"><span class="toc-number">5.5.</span> <span class="toc-text">等值查询 – LIMIT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%89%E5%80%BC%E6%9F%A5%E8%AF%A2-%E2%80%93-Gap-Lock%E6%AD%BB%E9%94%81"><span class="toc-number">5.6.</span> <span class="toc-text">等值查询 – Gap Lock死锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2"><span class="toc-number">5.7.</span> <span class="toc-text">范围查询</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ORDE-BY-DESC"><span class="toc-number">6.</span> <span class="toc-text">ORDE BY DESC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AD%89%E5%80%BC-VS-%E9%81%8D%E5%8E%86"><span class="toc-number">7.</span> <span class="toc-text">等值 VS 遍历</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IN"><span class="toc-number">8.</span> <span class="toc-text">IN</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ORDER-BY-DESC"><span class="toc-number">8.1.</span> <span class="toc-text">ORDER BY DESC</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%BB%E9%94%81"><span class="toc-number">9.</span> <span class="toc-text">死锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AA%E4%BA%8B%E5%8A%A1"><span class="toc-number">9.1.</span> <span class="toc-text">第一个事务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E4%B8%AA%E4%BA%8B%E5%8A%A1"><span class="toc-number">9.2.</span> <span class="toc-text">第二个事务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">9.3.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E7%AD%89%E5%BE%85"><span class="toc-number">10.</span> <span class="toc-text">锁等待</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Gap-Lock"><span class="toc-number">11.</span> <span class="toc-text">Gap Lock</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RR%E4%B8%8ERC"><span class="toc-number">12.</span> <span class="toc-text">RR与RC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">13.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

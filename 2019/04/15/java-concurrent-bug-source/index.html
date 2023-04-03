@@ -1,0 +1,318 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Java并发 -- 问题源头 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="CPU、内存、IO设备 核心矛盾：三者的_速度差异_ 为了合理利用CPU的高性能，平衡三者的速度差异，计算机体系结构、操作系统和编译程序都做出了贡献 计算机体系结构：CPU增加了缓存、以均衡CPU与内存的速度差异 操作系统：增加了进程、线程，分时复用CPU，以平衡CPU和IO设备的速度差异 编译程序：优化指令执行次序，使得缓存能够得到更加合理地利用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java并发 -- 问题源头">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/04/15/java-concurrent-bug-source/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="CPU、内存、IO设备 核心矛盾：三者的_速度差异_ 为了合理利用CPU的高性能，平衡三者的速度差异，计算机体系结构、操作系统和编译程序都做出了贡献 计算机体系结构：CPU增加了缓存、以均衡CPU与内存的速度差异 操作系统：增加了进程、线程，分时复用CPU，以平衡CPU和IO设备的速度差异 编译程序：优化指令执行次序，使得缓存能够得到更加合理地利用">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png">
+<meta property="article:published_time" content="2019-04-15T10:50:40.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.579Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Java Concurrent">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/04/15/java-concurrent-bug-source/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java并发 -- 问题源头',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Java并发 -- 问题源头</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-04-15T10:50:40.000Z" title="Created 2019-04-15 18:50:40">2019-04-15</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/concurrent/">Concurrent</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>5min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="CPU、内存、IO设备"><a href="#CPU、内存、IO设备" class="headerlink" title="CPU、内存、IO设备"></a>CPU、内存、IO设备</h2><ol>
+<li>核心矛盾：三者的_<strong>速度差异</strong>_</li>
+<li>为了合理利用CPU的高性能，平衡三者的速度差异，计算机体系结构、操作系统和编译程序都做出了贡献<ul>
+<li>计算机体系结构：CPU增加了<strong>缓存</strong>、以均衡<strong>CPU与内存</strong>的速度差异</li>
+<li>操作系统：增加了<strong>进程、线程</strong>，分时复用CPU，以平衡<strong>CPU和IO设备</strong>的速度差异</li>
+<li>编译程序：优化<strong>指令执行次序</strong>，使得缓存能够得到更加合理地利用</li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="CPU缓存-gt-可见性问题"><a href="#CPU缓存-gt-可见性问题" class="headerlink" title="CPU缓存 -&gt; 可见性问题"></a>CPU缓存 -&gt; 可见性问题</h2><h3 id="单核"><a href="#单核" class="headerlink" title="单核"></a>单核</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-single-core.png" width=800/>
+
+<ol>
+<li>在单核时代，所有的线程都在一颗CPU上执行，CPU缓存与内存的<strong>数据一致性</strong>很容易解决</li>
+<li>因为所有线程操作的都是同一个CPU的缓存，一个线程对CPU缓存的写，对另外一个线程来说一定是<strong>可见</strong>的</li>
+<li><strong>可见性</strong>：一个线程对<strong>共享变量</strong>的修改，另一个线程能够<strong>立即看到</strong></li>
+</ol>
+<h3 id="多核"><a href="#多核" class="headerlink" title="多核"></a>多核</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-multi-core.png" width=800/>
+
+<ol>
+<li>在多核时代，每颗CPU都有自己的缓存，此时CPU缓存与内存的<strong>数据一致性</strong>就没那么容易解决了</li>
+<li>当多个线程在不同的CPU上执行时，操作的是不同的CPU缓存</li>
+<li>线程A操作的是CPU-1上的缓存，线程B操作的是CPU-2上的缓存，此时线程A对变量V的操作对于线程B而言<strong>不具备可见性</strong></li>
+</ol>
+<h4 id="代码验证"><a href="#代码验证" class="headerlink" title="代码验证"></a>代码验证</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VisibilityTest</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">MAX</span> <span class="operator">=</span> <span class="number">100_000_000</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">long</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">idx</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (idx++ &lt; MAX) &#123;</span><br><span class="line">            count += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">calc</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="comment">// 创建两个线程，执行 add() 操作</span></span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="built_in">this</span>::add);</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="built_in">this</span>::add);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 启动两个线程</span></span><br><span class="line">        t1.start();</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 等待两个线程执行结束</span></span><br><span class="line">        t1.join();</span><br><span class="line">        t2.join();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// count=100_004_429 ≈ 100_000_000</span></span><br><span class="line">        System.out.println(<span class="string">&quot;count=&quot;</span> + count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-visibility-multi-core-count.png" width=800/>
+
+<ol>
+<li>假设线程A和线程B同时开始执行，那么第一次都会将count&#x3D;0读到各自的CPU缓存中</li>
+<li>之后由于各自的CPU缓存里都有了count的值，两个线程都是<strong>基于CPU缓存里的count值来进行计算</strong>的</li>
+<li>所以导致最终count的值小于2MAX，这就是<strong>CPU缓存导致的可见性问题</strong></li>
+</ol>
+<h2 id="线程切换-gt-原子性问题"><a href="#线程切换-gt-原子性问题" class="headerlink" title="线程切换 -&gt; 原子性问题"></a>线程切换 -&gt; 原子性问题</h2><h3 id="分时复用"><a href="#分时复用" class="headerlink" title="分时复用"></a>分时复用</h3><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-atomic-thread-switch.png" width=800/>
+
+<ol>
+<li>由于<strong>IO太慢</strong>，早期的操作系统发明了<strong>多进程</strong>，并支持<strong>分时复用</strong>（时间片）</li>
+<li>在一个时间片内，如果进程进行一个IO操作，例如读文件，该进程可以把自己标记为<strong>休眠状态</strong>并让出CPU的使用权<ul>
+<li>待文件读进内存后，操作系统会把这个休眠的进程<strong>唤醒</strong>，唤醒后的进程就有机会重新获得CPU的使用权了</li>
+</ul>
+</li>
+<li>进程在等待IO时释放CPU的使用权，可以让CPU在这段等待时间里执行其他任务，_<strong>提高CPU的使用率</strong>_</li>
+<li>另外，如果此时另外一个进程也在读文件，而读文件的操作会先<strong>排队</strong><ul>
+<li>磁盘驱动在完成一个进程的读操作后，发现有其他任务在排队，会立即启动下一个读操作，_<strong>提高磁盘IO的使用率</strong>_</li>
+</ul>
+</li>
+</ol>
+<h3 id="线程切换"><a href="#线程切换" class="headerlink" title="线程切换"></a>线程切换</h3><ol>
+<li>早期的操作系统基于进程来调度CPU，<strong>不同进程间是不共享内存空间的</strong>，进程切换需要_<strong>切换内存映射地址</strong>_</li>
+<li>一个进程创建的所有线程，都是<strong>共享</strong>同一个内存空间的，因此线程切换的成本很低</li>
+<li>现代的操作系统都是基于更轻量的线程来调度的，而Java并发程序都是基于<strong>多线程</strong>的</li>
+</ol>
+<h4 id="count-x3D-1"><a href="#count-x3D-1" class="headerlink" title="count+&#x3D;1"></a>count+&#x3D;1</h4><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-atomic-thread-switch-count.png" width=800/>
+
+<ol>
+<li>线程切换的时机大多在<strong>时间片结束</strong>的时候，而高级语言里的一条语句往往需要<strong>多条CPU指令</strong>完成，如<code>count+=1</code><ul>
+<li>把变量count从内存加载到CPU的寄存器</li>
+<li>在寄存器中执行+1操作</li>
+<li>将结果写入<strong>CPU缓存</strong>（最终会回写到内存）</li>
+</ul>
+</li>
+<li>操作系统做线程切换，可以发生在任何一条<strong>CPU指令</strong>（而非高级语言的语句）执行完</li>
+<li>按照上图执行，线程A和线程B都执行了<code>count+=1</code>，但得到的结果却是1，而不是2，因为Java中的+1操作<strong>不具有原子性</strong></li>
+<li><strong>原子性</strong>：一个或多个操作在CPU执行的过程中<strong>不被中断</strong>的特性</li>
+<li>CPU能保证的原子操作是<strong>CPU指令级别</strong>的，而不是高级语言的操作符</li>
+</ol>
+<h2 id="编译优化-gt-有序性问题"><a href="#编译优化-gt-有序性问题" class="headerlink" title="编译优化 -&gt; 有序性问题"></a>编译优化 -&gt; 有序性问题</h2><ol>
+<li><strong>有序性</strong>：程序按照代码的先后顺序执行</li>
+<li>编译器为了优化性能，有时会改变程序中语句的先后顺序</li>
+</ol>
+<h3 id="双重检查"><a href="#双重检查" class="headerlink" title="双重检查"></a>双重检查</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Singleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 双重检查</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="literal">null</span>)</span><br><span class="line">                    instance = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-concurrent-1253868755.cos.ap-guangzhou.myqcloud.com/java-concurrent-bug-order-double-check.png" width=800/>
+
+<ol>
+<li>直觉<ul>
+<li>线程A和B同时调用getInstance()方法，同时发现instance&#x3D;&#x3D;null，同时对Singleton.class加锁</li>
+<li>此时JVM保证只有一个线程能够加锁成功（假设是线程A），另一个线程则会进入等待状态（假设线程B）</li>
+<li>线程A会创建一个Singleton实例，然后释放锁，线程B被唤醒并再次尝试加锁，此时加锁成功</li>
+<li>线程B检查instance&#x3D;&#x3D;null，发现已经创建过Singleton实例了，不会再创建Singleton实例了</li>
+</ul>
+</li>
+<li>直觉上的new操作<ul>
+<li>分配一块内存M</li>
+<li>在内存M上初始化Singleton对象</li>
+<li>将M的地址赋值给instance变量</li>
+</ul>
+</li>
+<li>编译器优化后的new操作可能是<ul>
+<li>分配一块内存M</li>
+<li>将M的地址赋值给instance变量</li>
+<li>在内存M上初始化Singleton对象</li>
+</ul>
+</li>
+<li>因此，实际情况可能是<ul>
+<li>假设线程A先执行getInstance()方法，当执行完指令2时恰好发生了<strong>线程切换</strong>，切换到线程B</li>
+<li>线程B也在执行getInstance()方法，线程B会执行第一个判断，发现instance!&#x3D;null，直接返回instance</li>
+<li>但此时返回的instance是<strong>没有初始化过</strong>的，如果此时访问instance的成员变量就有可能触发_<strong>空指针异常</strong>_</li>
+</ul>
+</li>
+</ol>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ol>
+<li><em><strong>CPU缓存 -&gt; 可见性问题，线程切换 -&gt; 原子性问题，编译优化 -&gt; 有序性问题</strong></em></li>
+<li>CPU缓存、线程和编译优化的目的与并发程序的目一致，都是为了<strong>提高程序性能</strong><ul>
+<li>但技术在解决一个问题的同时，必然会带来另一个问题，因此需要权衡</li>
+</ul>
+</li>
+</ol>
+<!-- indicate-the-source -->
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100023901">Java并发编程实战</a></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/04/15/java-concurrent-bug-source/">https://blog.zhongmingmao.top/2019/04/15/java-concurrent-bug-source/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/java-concurrent/">Java Concurrent</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/04/15/java-concurrent-memory-model/" title="Java并发 -- Java内存模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Java并发 -- Java内存模型</div></div></a></div><div class="next-post pull-right"><a href="/2019/04/10/java-concurrent-overview/" title="Java并发 -- 概述"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Java并发 -- 概述</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/06/12/java-concurrent-csp/" title="Java并发 -- CSP模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-24.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-12</div><div class="title">Java并发 -- CSP模型</div></div></a></div><div><a href="/2019/06/08/java-concurrent-coroutine/" title="Java并发 -- 协程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-08</div><div class="title">Java并发 -- 协程</div></div></a></div><div><a href="/2019/06/06/java-concurrent-stm/" title="Java并发 -- 软件事务内存"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-06</div><div class="title">Java并发 -- 软件事务内存</div></div></a></div><div><a href="/2019/06/04/java-concurrent-actor/" title="Java并发 -- Actor模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-04</div><div class="title">Java并发 -- Actor模型</div></div></a></div><div><a href="/2019/05/31/java-concurrent-disruptor/" title="Java并发 -- Disruptor"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-31</div><div class="title">Java并发 -- Disruptor</div></div></a></div><div><a href="/2019/05/30/java-concurrent-netty/" title="Java并发 -- Netty线程模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-30</div><div class="title">Java并发 -- Netty线程模型</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#CPU%E3%80%81%E5%86%85%E5%AD%98%E3%80%81IO%E8%AE%BE%E5%A4%87"><span class="toc-number">1.</span> <span class="toc-text">CPU、内存、IO设备</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CPU%E7%BC%93%E5%AD%98-gt-%E5%8F%AF%E8%A7%81%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">CPU缓存 -&gt; 可见性问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8D%95%E6%A0%B8"><span class="toc-number">2.1.</span> <span class="toc-text">单核</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E6%A0%B8"><span class="toc-number">2.2.</span> <span class="toc-text">多核</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E9%AA%8C%E8%AF%81"><span class="toc-number">2.2.1.</span> <span class="toc-text">代码验证</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2-gt-%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">3.</span> <span class="toc-text">线程切换 -&gt; 原子性问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%97%B6%E5%A4%8D%E7%94%A8"><span class="toc-number">3.1.</span> <span class="toc-text">分时复用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2"><span class="toc-number">3.2.</span> <span class="toc-text">线程切换</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#count-x3D-1"><span class="toc-number">3.2.1.</span> <span class="toc-text">count+&#x3D;1</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96-gt-%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">4.</span> <span class="toc-text">编译优化 -&gt; 有序性问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%8C%E9%87%8D%E6%A3%80%E6%9F%A5"><span class="toc-number">4.1.</span> <span class="toc-text">双重检查</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>

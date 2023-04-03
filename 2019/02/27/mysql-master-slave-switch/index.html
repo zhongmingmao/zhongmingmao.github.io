@@ -1,0 +1,342 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>MySQL -- 主从切换 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="一主多从">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL -- 主从切换">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2019/02/27/mysql-master-slave-switch/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="一主多从">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png">
+<meta property="article:published_time" content="2019-02-26T17:10:39.000Z">
+<meta property="article:modified_time" content="2023-04-03T10:04:59.598Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/02/27/mysql-master-slave-switch/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySQL -- 主从切换',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-03 18:04:59'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySQL -- 主从切换</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-02-26T17:10:39.000Z" title="Created 2019-02-27 01:10:39">2019-02-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/">Storage</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/storage/mysql/">MySQL</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>8min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="一主多从"><a href="#一主多从" class="headerlink" title="一主多从"></a>一主多从</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-multi-slave.png" width=500/>
+
+
+<span id="more"></span>
+
+<ol>
+<li>虚线箭头为<strong>主从关系</strong>，<code>A</code>和<code>A&#39;</code>互为主从，<code>B</code>、<code>C</code>、<code>D</code>指向主库<code>A</code></li>
+<li>一主多从的设置，一般用于<strong>读写分离</strong>，主库负责<strong>所有的写入</strong>和<strong>一部分读</strong>，其它读请求由从库分担</li>
+</ol>
+<h2 id="主库故障切换"><a href="#主库故障切换" class="headerlink" title="主库故障切换"></a>主库故障切换</h2><p><code>A&#39;</code>成为新的主库，<code>B</code>、<code>C</code>、<code>D</code>指向主库<code>A&#39;</code><br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://mysql-1253868755.cos.ap-guangzhou.myqcloud.com/mysql-master-crash-switch.png" width=500/></p>
+<h2 id="基于位点的切换"><a href="#基于位点的切换" class="headerlink" title="基于位点的切换"></a>基于位点的切换</h2><p><code>B</code>原先是<code>A</code>的从库，本地记录的也是<code>A</code>的位点，但<strong>相同的日志</strong>，<code>A</code>的位点与<code>A&#39;</code>的位点是<strong>不同</strong>的</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 节点B设置为节点A&#x27;的从库</span></span><br><span class="line">CHANGE MASTER <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST<span class="operator">=</span>$host_name</span><br><span class="line">MASTER_PORT<span class="operator">=</span>$port</span><br><span class="line">MASTER_USER<span class="operator">=</span>$user_name</span><br><span class="line">MASTER_PASSWORD<span class="operator">=</span>$password</span><br><span class="line">MASTER_LOG_FILE<span class="operator">=</span>$master_log_name</span><br><span class="line">MASTER_LOG_POS<span class="operator">=</span>$master_log_pos</span><br></pre></td></tr></table></figure>
+
+<h3 id="寻找位点"><a href="#寻找位点" class="headerlink" title="寻找位点"></a>寻找位点</h3><ol>
+<li><em><strong>很难精确，只能大概获取一个位置</strong></em></li>
+<li>由于在切换过程中<strong>不能丢数据</strong>，在寻找位点的时候，总是找一个<strong>稍微往前的位点</strong>，跳过那些已经在<code>B</code>执行过的事务</li>
+</ol>
+<h4 id="常规步骤"><a href="#常规步骤" class="headerlink" title="常规步骤"></a>常规步骤</h4><ol>
+<li>等待新主库<code>A&#39;</code>将所有<code>relaylog</code>全部执行完</li>
+<li>在<code>A&#39;</code>上执行<code>SHOW MASTER STATUS</code>，得到<code>A&#39;</code>上最新的<code>File</code>和<code>Position</code></li>
+<li>获取原主库<code>A</code>发生故障的时刻<code>T</code></li>
+<li>使用<code>mysqlbinlog</code>解析<code>A&#39;</code>的<code>File</code>，得到时刻<code>T</code>的位点</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- end_log_pos=123，表示在时刻T，A&#x27;写入新binlog的位置，作为B的CHANGE MASTER TO命令的MASTER_LOG_POS参数</span></span><br><span class="line">$ mysqlbinlog <span class="operator">/</span>var<span class="operator">/</span>lib<span class="operator">/</span>mysql<span class="operator">/</span>slave<span class="operator">-</span>bin<span class="number">.000009</span> <span class="comment">--start-datetime=&#x27;2019-02-26 17:44:00&#x27; --stop-datetime=&#x27;2019-02-26 17:45:00&#x27; | grep end_log_pos</span></span><br><span class="line">#<span class="number">190226</span> <span class="number">17</span>:<span class="number">42</span>:<span class="number">01</span> server id <span class="number">2</span>  end_log_pos <span class="number">123</span> CRC32 <span class="number">0x5b852e9b</span>     <span class="keyword">Start</span>: binlog v <span class="number">4</span>, server v <span class="number">5.7</span><span class="number">.25</span><span class="operator">-</span>log created <span class="number">190226</span> <span class="number">17</span>:<span class="number">42</span>:<span class="number">01</span> <span class="keyword">at</span> startup</span><br></pre></td></tr></table></figure>
+
+<h4 id="位点不精确"><a href="#位点不精确" class="headerlink" title="位点不精确"></a>位点不精确</h4><ol>
+<li>假设在时刻<code>T</code>，原主库<code>A</code>已经执行完成了一个<code>INSERT</code>语句，插入一行记录<code>R</code><ul>
+<li>并且已经将<code>binlog</code>传给<code>A&#39;</code>和B，然后原主库<code>A</code>掉电</li>
+</ul>
+</li>
+<li>在<code>B</code>上，由于已经同步了<code>binlog</code>，<code>R</code>这一行是已经存在的</li>
+<li>在新主库<code>A&#39;</code>上，<code>R</code>这一行也是存在的，日志写在了<code>123</code>这个位置之后</li>
+<li>在<code>B</code>上执行<code>CHANGE MASTER TO</code>，执行<code>A&#39;</code>的<code>File</code>文件的<code>123</code>位置<ul>
+<li>就会把插入<code>R</code>这一行数据的<code>binlog</code>又同步到<code>B</code>去执行</li>
+<li><code>B</code>的同步线程会报<strong>重复主键</strong>错误，然后停止同步</li>
+</ul>
+</li>
+</ol>
+<h5 id="跳过错误"><a href="#跳过错误" class="headerlink" title="跳过错误"></a>跳过错误</h5><p>方式1：主动跳过一个事务，需要<strong>持续观察</strong>，每次碰到这些错误，就执行一次跳过命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> sql_slave_skip_counter<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">START</span> SLAVE;</span><br></pre></td></tr></table></figure>
+<p>方式1：设置<code>slave_skip_errors=1032,1062</code>，<code>1032</code>错误是删除数据时<strong>找不到行</strong>，<code>1062</code>错误是插入数据时报<strong>唯一键冲突</strong><br>在<strong>主从切换过程</strong>中，直接跳过<code>1032</code>和<code>1062</code>是<strong>无损</strong>的，等主从间的同步关系建立完成后，需要将<code>slave_skip_errors</code>恢复为<code>OFF</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;%slave_skip_errors%&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name     <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-------+</span></span><br><span class="line"><span class="operator">|</span> slave_skip_errors <span class="operator">|</span> OFF   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-------+</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="基于GTID的切换"><a href="#基于GTID的切换" class="headerlink" title="基于GTID的切换"></a>基于GTID的切换</h2><ol>
+<li>GTID: Global Transaction Identifier，<strong>全局事务ID</strong></li>
+<li>在事务<strong>提交</strong>时生成，是事务的唯一标识，组成<code>GTID = server_uuid:gno</code><ul>
+<li><code>server_uuid</code>是实例第一次<strong>启动</strong>时自动生成的，是一个<strong>全局唯一</strong> 的值</li>
+<li><code>gno</code>是一个整数，初始值为<code>1</code>，每次<strong>提交事务</strong>时分配，<code>+1</code></li>
+</ul>
+</li>
+<li>官方定义：<code>GTID = source_id:transaction_id</code><ul>
+<li><code>source_id</code>即<code>server_uuid</code></li>
+<li><code>transaction_id</code>容易造成误解<ul>
+<li><code>transaction_id</code>一般指事务ID，是在事务<strong>执行过程</strong>中分配的，即使事务<strong>回滚</strong>了，事务ID也会<strong>递增</strong></li>
+<li>而<code>gno</code>只有在事务<strong>提交</strong>时才会分配，因此<code>GTID</code>往往是<strong>连续</strong>的</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>开启<code>GTID</code>模式，添加启动参数<code>gtid_mode=ON</code>和<code>enforce_gtid_consistency=ON</code></li>
+<li>在<code>GTID</code>模式下，每个事务都会跟一个<code>GTID</code>一一对应，生成<code>GTID</code>的方式由参数<code>gtid_next</code>（Session）控制</li>
+<li>每个MySQL实例都维护了一个<code>GTID</code>集合，用于表示：_<strong>实例执行过的所有事务</strong>_</li>
+</ol>
+<h3 id="gtid-next"><a href="#gtid-next" class="headerlink" title="gtid_next"></a>gtid_next</h3><ol>
+<li><code>gtid_next=AUTOMATIC</code>，MySQL会将<code>server_uuid:gno</code>分配给该事务<ul>
+<li>记录<code>binlog</code>时，会先记录一行<code>SET @@SESSION.GTID_NEXT=server_uuid:gno</code>，将该<code>GTID</code>加入到本实例的<code>GTID</code>集合</li>
+</ul>
+</li>
+<li><code>gtid_next=UUID:NUMBER</code>，通过<code>SET @@SESSION.GTID_NEXT=current_gtid</code>执行<ul>
+<li>如果<code>current_gtid</code>已经<strong>存在</strong>于实例的<code>GTID</code>集合中，那么接下来执行的这个事务会直接被系统<strong>忽略</strong></li>
+<li>如果<code>current_gtid</code>并<strong>没有存在</strong>于实例的<code>GTID</code>集合中，那么接下来执行的这个事务会被分配为<code>current_gtid</code></li>
+<li><code>current_gtid</code>只能给<strong>一个事务</strong>使用，如果执行下一个事务，需要把<code>gtid_next</code>设置成另一个<code>GTID</code>或者<code>AUTOMATIC</code></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- gtid_next=AUTOMATIC</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> BINLOG EVENTS <span class="keyword">IN</span> <span class="string">&#x27;master-bin.000003&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> Log_name          <span class="operator">|</span> Pos <span class="operator">|</span> Event_type     <span class="operator">|</span> Server_id <span class="operator">|</span> End_log_pos <span class="operator">|</span> Info                                                                                                                                       <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span>   <span class="number">4</span> <span class="operator">|</span> Format_desc    <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">123</span> <span class="operator">|</span> Server ver: <span class="number">5.7</span><span class="number">.25</span><span class="operator">-</span>log, Binlog ver: <span class="number">4</span>                                                                                                      <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span> <span class="number">123</span> <span class="operator">|</span> Previous_gtids <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">194</span> <span class="operator">|</span> b8502fe3<span class="number">-3</span>b4a<span class="number">-11e9</span><span class="number">-9562</span><span class="number">-0242</span>ac110002:<span class="number">1</span><span class="number">-5</span>                                                                                                   <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span> <span class="number">194</span> <span class="operator">|</span> Gtid           <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">259</span> <span class="operator">|</span> <span class="keyword">SET</span> @<span class="variable">@SESSION</span>.GTID_NEXT<span class="operator">=</span> <span class="string">&#x27;b8502fe3-3b4a-11e9-9562-0242ac110002:6&#x27;</span>                                                                          <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span> <span class="number">259</span> <span class="operator">|</span> Query          <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">484</span> <span class="operator">|</span> <span class="keyword">GRANT</span> REPLICATION SLAVE <span class="keyword">ON</span> <span class="operator">*</span>.<span class="operator">*</span> <span class="keyword">TO</span> <span class="string">&#x27;replication&#x27;</span>@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">WITH</span> <span class="string">&#x27;mysql_native_password&#x27;</span> <span class="keyword">AS</span> <span class="string">&#x27;*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9&#x27;</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span> <span class="number">484</span> <span class="operator">|</span> Gtid           <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">549</span> <span class="operator">|</span> <span class="keyword">SET</span> @<span class="variable">@SESSION</span>.GTID_NEXT<span class="operator">=</span> <span class="string">&#x27;b8502fe3-3b4a-11e9-9562-0242ac110002:7&#x27;</span>                                                                          <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000003</span> <span class="operator">|</span> <span class="number">549</span> <span class="operator">|</span> Query          <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">643</span> <span class="operator">|</span> <span class="keyword">CREATE</span> DATABASE test                                                                                                                       <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="表初始化"><a href="#表初始化" class="headerlink" title="表初始化"></a>表初始化</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `t` (</span><br><span class="line">  `id` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  `c` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`id`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t <span class="keyword">VALUES</span> (<span class="number">1</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="对应的binlog"><a href="#对应的binlog" class="headerlink" title="对应的binlog"></a>对应的binlog</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> MASTER STATUS;</span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> File              <span class="operator">|</span> Position <span class="operator">|</span> Binlog_Do_DB <span class="operator">|</span> Binlog_Ignore_DB <span class="operator">|</span> Executed_Gtid_Set                         <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span>      <span class="number">877</span> <span class="operator">|</span>              <span class="operator">|</span>                  <span class="operator">|</span> b8502fe3<span class="number">-3</span>b4a<span class="number">-11e9</span><span class="number">-9562</span><span class="number">-0242</span>ac110002:<span class="number">1</span><span class="number">-12</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+-------------------------------------------+</span></span><br><span class="line"></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> BINLOG EVENTS <span class="keyword">IN</span> <span class="string">&#x27;master-bin.000004&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> Log_name          <span class="operator">|</span> Pos <span class="operator">|</span> Event_type     <span class="operator">|</span> Server_id <span class="operator">|</span> End_log_pos <span class="operator">|</span> Info                                                               <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span>   <span class="number">4</span> <span class="operator">|</span> Format_desc    <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">123</span> <span class="operator">|</span> Server ver: <span class="number">5.7</span><span class="number">.25</span><span class="operator">-</span>log, Binlog ver: <span class="number">4</span>                              <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">123</span> <span class="operator">|</span> Previous_gtids <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">194</span> <span class="operator">|</span> b8502fe3<span class="number">-3</span>b4a<span class="number">-11e9</span><span class="number">-9562</span><span class="number">-0242</span>ac110002:<span class="number">1</span><span class="number">-9</span>                           <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">194</span> <span class="operator">|</span> Gtid           <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">259</span> <span class="operator">|</span> <span class="keyword">SET</span> @<span class="variable">@SESSION</span>.GTID_NEXT<span class="operator">=</span> <span class="string">&#x27;b8502fe3-3b4a-11e9-9562-0242ac110002:10&#x27;</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">259</span> <span class="operator">|</span> Query          <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">373</span> <span class="operator">|</span> use `test`; <span class="keyword">DROP</span> <span class="keyword">TABLE</span> `t` <span class="comment">/* generated by server */</span>               <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">373</span> <span class="operator">|</span> Gtid           <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">438</span> <span class="operator">|</span> <span class="keyword">SET</span> @<span class="variable">@SESSION</span>.GTID_NEXT<span class="operator">=</span> <span class="string">&#x27;b8502fe3-3b4a-11e9-9562-0242ac110002:11&#x27;</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">438</span> <span class="operator">|</span> Query          <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">620</span> <span class="operator">|</span> use `test`; <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `t` (</span><br><span class="line">  `id` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  `c` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`id`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">620</span> <span class="operator">|</span> Gtid           <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">685</span> <span class="operator">|</span> <span class="keyword">SET</span> @<span class="variable">@SESSION</span>.GTID_NEXT<span class="operator">=</span> <span class="string">&#x27;b8502fe3-3b4a-11e9-9562-0242ac110002:12&#x27;</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">685</span> <span class="operator">|</span> Query          <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">757</span> <span class="operator">|</span> <span class="keyword">BEGIN</span>                                                              <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">757</span> <span class="operator">|</span> Table_map      <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">802</span> <span class="operator">|</span> table_id: <span class="number">109</span> (test.t)                                             <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">802</span> <span class="operator">|</span> Write_rows     <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">846</span> <span class="operator">|</span> table_id: <span class="number">109</span> flags: STMT_END_F                                    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span> <span class="number">846</span> <span class="operator">|</span> Xid            <span class="operator">|</span>         <span class="number">1</span> <span class="operator">|</span>         <span class="number">877</span> <span class="operator">|</span> <span class="keyword">COMMIT</span> <span class="comment">/* xid=27 */</span>                                                <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+-----+----------------+-----------+-------------+--------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>事务<code>BEGIN</code>之前有一条<code>SET @@SESSION.GTID_NEXT</code></li>
+<li>如果实例X有从库Z，那么将<code>CREATE TABLE</code>和<code>INSERT</code>语句的<code>binlog</code>同步到从库Z执行<ul>
+<li>执行事务之前，会先执行两个<code>SET</code>命令，这样两个<code>GTID</code>就会被加入到从库Z的<code>GTID</code>集合</li>
+</ul>
+</li>
+</ol>
+<h4 id="主键冲突"><a href="#主键冲突" class="headerlink" title="主键冲突"></a>主键冲突</h4><ol>
+<li>如果实例X是实例Y的从库，之前实例Y上执行<code>INSERT INTO t VALUES (1,1)</code><ul>
+<li>对应的<code>GTID</code>为<code>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12</code></li>
+<li>实例X需要同步该事务过来执行，会报<strong>主键冲突</strong>的错误，实例X的同步线程停止，处理方法如下</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 实例X提交一个空事务，将该GTID加到实例X的GTID集合中</span></span><br><span class="line"><span class="keyword">SET</span> gtid_next<span class="operator">=</span><span class="string">&#x27;aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12&#x27;</span>;</span><br><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"><span class="comment">-- 实例X的Executed_Gtid_Set已经包含了aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12</span></span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SHOW</span> MASTER STATUS;</span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> File              <span class="operator">|</span> Position <span class="operator">|</span> Binlog_Do_DB <span class="operator">|</span> Binlog_Ignore_DB <span class="operator">|</span> Executed_Gtid_Set                                                                  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> master<span class="operator">-</span>bin<span class="number">.000004</span> <span class="operator">|</span>     <span class="number">1087</span> <span class="operator">|</span>              <span class="operator">|</span>                  <span class="operator">|</span> aaaaaaaa<span class="operator">-</span>bbbb<span class="operator">-</span>cccc<span class="operator">-</span>dddd<span class="operator">-</span>eeeeeeeeeeee:<span class="number">12</span>,b8502fe3<span class="number">-3</span>b4a<span class="number">-11e9</span><span class="number">-9562</span><span class="number">-0242</span>ac110002:<span class="number">1</span><span class="number">-12</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+----------+--------------+------------------+------------------------------------------------------------------------------------+</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 恢复GTID的默认分配行为</span></span><br><span class="line"><span class="keyword">SET</span> gtid_next<span class="operator">=</span>AUTOMATIC;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 实例X还是会继续执行实例Y传过来的事务</span></span><br><span class="line"><span class="comment">-- 但由于实例X的GTID集合已经包含了aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee:12，因此实例X会直接跳过该事务</span></span><br><span class="line"><span class="keyword">START</span> SLAVE;</span><br></pre></td></tr></table></figure>
+
+<h3 id="主从切换"><a href="#主从切换" class="headerlink" title="主从切换"></a>主从切换</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CHANGE MASTER TO</span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$password</span><br><span class="line">master_auto_position=1</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>master_auto_position=1</code>：主从关系使用的是<code>GTID</code>协议，不再需要指定<code>MASTER_LOG_FILE</code>和<code>MASTER_LOG_POS</code></li>
+<li>实例<code>A&#39;</code>的<code>GTID</code>集合记为<code>set_a</code>，实例<code>B</code>的<code>GTID</code>集合记为<code>set_b</code></li>
+<li>实例<code>B</code>执行<code>START SLAVE</code>，取<code>binlog</code>的逻辑如下</li>
+</ol>
+<h4 id="START-SLAVE"><a href="#START-SLAVE" class="headerlink" title="START SLAVE"></a>START SLAVE</h4><ol>
+<li>实例<code>B</code>指定新主库<code>A&#39;</code>，基于<strong>主从协议</strong>建立连接</li>
+<li>实例<code>B</code>把<code>set_b</code>发送给<code>A&#39;</code></li>
+<li>实例<code>A&#39;</code>计算出<code>seb_a</code>和<code>set_b</code>的<code>GTID</code>差集（存在于<code>set_a</code>，但不存在于<code>set_b</code>的<code>GTID</code>集合）<ul>
+<li>判断实例<code>A&#39;</code>本地是否包含了<strong>差集需要的所有<code>binlog</code>事务</strong></li>
+<li>如果<strong>没有全部包含</strong>，说明实例<code>A&#39;</code>已经把实例<code>B</code>所需要的<code>binlog</code>删除掉了，直接返回错误</li>
+<li>如果<strong>全部包含</strong>，实例<code>A&#39;</code>从自己的<code>binlog</code>文件里面，找到第1个不在<code>set_b</code>的事务，发送给实例<code>B</code><ul>
+<li>然后从该事务开始，往后读文件，按顺序读取<code>binlog</code>，发给实例<code>B</code>去执行</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="位点-VS-GTID"><a href="#位点-VS-GTID" class="headerlink" title="位点 VS GTID"></a>位点 VS GTID</h4><ol>
+<li>基于<code>GTID</code>的主从关系里面，系统认为只要<strong>建立了主从关系</strong>，就必须保证<strong>主库发给从库的日志是完整</strong>的</li>
+<li>如果实例<code>B</code>需要的日志已经不存在了，那么实例<code>A&#39;</code>就拒绝将日志发送给实例<code>B</code></li>
+<li>基于<strong>位点</strong>的协议，是由<strong>从库决定</strong>的，从库指定哪个位点，主库就发送什么位点，不做<strong>日志完整性</strong>的判断</li>
+<li>基于<code>GTID</code>的协议，主从切换<strong>不再需要找位点</strong>，而找位点的工作在实例<code>A&#39;</code>内部<strong>自动完成</strong></li>
+</ol>
+<h4 id="日志格式"><a href="#日志格式" class="headerlink" title="日志格式"></a>日志格式</h4><ol>
+<li>切换前<ul>
+<li>实例<code>B</code>的<code>GTID</code>集合：<code>server_uuid_of_A:1-N</code></li>
+</ul>
+</li>
+<li>新主库<code>A&#39;</code>自己生成的<code>binlog</code>对应的<code>GTID</code>集合：<code>server_uuid_of_A&#39;:1-M</code></li>
+<li>切换后<ul>
+<li>实例<code>B</code>的<code>GTID</code>集合：<code>server_uuid_of_A:1-N,server_uuid_of_A&#39;:1-M</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>《MySQL实战45讲》</p>
+<!-- indicate-the-source -->
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/02/27/mysql-master-slave-switch/">https://blog.zhongmingmao.top/2019/02/27/mysql-master-slave-switch/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/storage/">Storage</a><a class="post-meta__tags" href="/tags/mysql/">MySQL</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/03/02/mysql-read-write-separation/" title="MySQL -- 读写分离"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">MySQL -- 读写分离</div></div></a></div><div class="next-post pull-right"><a href="/2019/02/25/mysql-slave-parallel-replication/" title="MySQL -- 从库并行复制"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">MySQL -- 从库并行复制</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/03/19/mysql-self-increase-id-run-out/" title="MySQL -- 自增ID耗尽"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-14.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-19</div><div class="title">MySQL -- 自增ID耗尽</div></div></a></div><div><a href="/2019/03/17/mysql-partition-table/" title="MySQL -- 分区表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 分区表</div></div></a></div><div><a href="/2019/03/17/mysql-grant-flush-privileges/" title="MySQL -- 权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-17</div><div class="title">MySQL -- 权限</div></div></a></div><div><a href="/2019/03/16/mysql-copy-table/" title="MySQL -- 拷贝表"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- 拷贝表</div></div></a></div><div><a href="/2019/03/16/mysql-insert-lock/" title="MySQL -- INSERT语句的锁"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-16</div><div class="title">MySQL -- INSERT语句的锁</div></div></a></div><div><a href="/2019/03/15/mysql-auto-increment/" title="MySQL -- 自增主键"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-03-15</div><div class="title">MySQL -- 自增主键</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">389</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">116</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">58</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%BB%E5%A4%9A%E4%BB%8E"><span class="toc-number">1.</span> <span class="toc-text">一主多从</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E5%BA%93%E6%95%85%E9%9A%9C%E5%88%87%E6%8D%A2"><span class="toc-number">2.</span> <span class="toc-text">主库故障切换</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E4%BD%8D%E7%82%B9%E7%9A%84%E5%88%87%E6%8D%A2"><span class="toc-number">3.</span> <span class="toc-text">基于位点的切换</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%BB%E6%89%BE%E4%BD%8D%E7%82%B9"><span class="toc-number">3.1.</span> <span class="toc-text">寻找位点</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B8%B8%E8%A7%84%E6%AD%A5%E9%AA%A4"><span class="toc-number">3.1.1.</span> <span class="toc-text">常规步骤</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%8D%E7%82%B9%E4%B8%8D%E7%B2%BE%E7%A1%AE"><span class="toc-number">3.1.2.</span> <span class="toc-text">位点不精确</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%B7%B3%E8%BF%87%E9%94%99%E8%AF%AF"><span class="toc-number">3.1.2.1.</span> <span class="toc-text">跳过错误</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8EGTID%E7%9A%84%E5%88%87%E6%8D%A2"><span class="toc-number">4.</span> <span class="toc-text">基于GTID的切换</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#gtid-next"><span class="toc-number">4.1.</span> <span class="toc-text">gtid_next</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">4.2.</span> <span class="toc-text">表初始化</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E5%BA%94%E7%9A%84binlog"><span class="toc-number">4.2.1.</span> <span class="toc-text">对应的binlog</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BB%E9%94%AE%E5%86%B2%E7%AA%81"><span class="toc-number">4.2.2.</span> <span class="toc-text">主键冲突</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2"><span class="toc-number">4.3.</span> <span class="toc-text">主从切换</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#START-SLAVE"><span class="toc-number">4.3.1.</span> <span class="toc-text">START SLAVE</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%8D%E7%82%B9-VS-GTID"><span class="toc-number">4.3.2.</span> <span class="toc-text">位点 VS GTID</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E6%A0%BC%E5%BC%8F"><span class="toc-number">4.3.3.</span> <span class="toc-text">日志格式</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">5.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Container Interconnection"/></a><div class="content"><a class="title" href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection">Kubernetes - Container Interconnection</a><time datetime="2022-09-30T16:06:25.000Z" title="Created 2022-10-01 00:06:25">2022-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Docker Hub"/></a><div class="content"><a class="title" href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub">Kubernetes - Docker Hub</a><time datetime="2022-09-25T16:06:25.000Z" title="Created 2022-09-26 00:06:25">2022-09-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - HA + Monitoring"/></a><div class="content"><a class="title" href="/2022/09/25/microservices-governance-config-apollo-ha-monitoring/" title="Apollo - HA + Monitoring">Apollo - HA + Monitoring</a><time datetime="2022-09-24T16:06:25.000Z" title="Created 2022-09-25 00:06:25">2022-09-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Architecture"/></a><div class="content"><a class="title" href="/2022/09/24/microservices-governance-config-apollo-architecture/" title="Apollo - Architecture">Apollo - Architecture</a><time datetime="2022-09-23T16:06:25.000Z" title="Created 2022-09-24 00:06:25">2022-09-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/apollo/apollo-logao.awebp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Apollo - Core Concept"/></a><div class="content"><a class="title" href="/2022/09/23/microservices-governance-config-apollo-core-concept/" title="Apollo - Core Concept">Apollo - Core Concept</a><time datetime="2022-09-22T16:06:25.000Z" title="Created 2022-09-23 00:06:25">2022-09-23</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
