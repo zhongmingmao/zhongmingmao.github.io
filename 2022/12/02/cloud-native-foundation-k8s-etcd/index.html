@@ -1,0 +1,1104 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Kubernetes - etcd | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="概述 CoreOS 基于 Raft 开发的分布式 KV 存储，可用于服务发现、共享配置和一致性保障（Leader 选举、分布式锁）   A distributed, reliable key-value store for the most critical data of a distributed system     Key Desc    KV 存储 将数据存储在分层组织的目录中，类似于标">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes - etcd">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/12/02/cloud-native-foundation-k8s-etcd/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="概述 CoreOS 基于 Raft 开发的分布式 KV 存储，可用于服务发现、共享配置和一致性保障（Leader 选举、分布式锁）   A distributed, reliable key-value store for the most critical data of a distributed system     Key Desc    KV 存储 将数据存储在分层组织的目录中，类似于标">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png">
+<meta property="article:published_time" content="2022-12-01T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-06-11T16:23:29.665Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Cloud Native Foundation">
+<meta property="article:tag" content="etcd">
+<meta property="article:tag" content="raft">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/12/02/cloud-native-foundation-k8s-etcd/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Kubernetes - etcd',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-06-12 00:23:29'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">411</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Kubernetes - etcd</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-12-01T16:06:25.000Z" title="Created 2022-12-02 00:06:25">2022-12-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/kubernetes/">Kubernetes</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">12.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>65min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><blockquote>
+<p><code>CoreOS</code> 基于 <code>Raft</code> 开发的分布式 <code>KV</code> 存储，可用于<code>服务发现</code>、<code>共享配置</code>和<code>一致性保障</code>（Leader 选举、分布式锁）</p>
+</blockquote>
+<blockquote>
+<p>A distributed, reliable key-value store for the most <code>critical data</code> of a <code>distributed system</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>KV</code> 存储</td>
+<td>将数据存储在<code>分层组织</code>的目录中，类似于标准的<code>文件系统</code></td>
+</tr>
+<tr>
+<td><code>监测变更</code></td>
+<td>监测特定的 Key 或者目录以进行变更，并对值的更改做出反应</td>
+</tr>
+<tr>
+<td>简单</td>
+<td>curl: HTTP + JSON</td>
+</tr>
+<tr>
+<td>安全</td>
+<td>TLS 客户端证书认证，有一套完备的授权认证体系，但 Kubernetes 并没有使用</td>
+</tr>
+<tr>
+<td>快速</td>
+<td><code>单实例：1000 TPS、2000 QPS</code></td>
+</tr>
+<tr>
+<td>可靠</td>
+<td>使用 <code>Raft</code> 算法保证<code>分布式一致性</code></td>
+</tr>
+</tbody></table>
+<span id="more"></span>
+
+<blockquote>
+<p>主要功能</p>
+</blockquote>
+<ol>
+<li>基本的 <code>KV</code> 存储 - Kubernetes 使用最多</li>
+<li><code>监听</code>机制</li>
+<li>Key 的<code>过期</code>和<code>续约</code>机制，用于<code>监控</code>和<code>服务发现</code></li>
+<li>原生支持 <code>Compare And Swap</code> 和 <code>Compare And Delete</code>，用于 <code>Leader 选举</code>和<code>分布式锁</code></li>
+</ol>
+<blockquote>
+<p><code>KV</code> 存储</p>
+</blockquote>
+<ol>
+<li>KV 存储，一般都会比关系型数据库<code>快</code></li>
+<li>支持<code>动态</code>存储（<code>内存</code>，用于<code>索引</code>，基于 <code>B Tree</code>）和<code>静态</code>存储（<code>磁盘</code>，基于 <code>B+ Tree</code>）</li>
+<li><code>分布式存储</code>，可构成<code>多节点集群</code><ul>
+<li>高可用的 Kubernetes 集群，依赖于<code>高可用的 etcd 集群</code></li>
+</ul>
+</li>
+<li>存储方式：类似<code>目录结构</code>（<code>B+ Tree</code>）<ul>
+<li>只有<code>叶子节点</code>才能真正<code>存储数据</code>，相当于<code>文件</code></li>
+<li><code>非叶子节点</code>是<code>目录</code>（不能存储数据）</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>服务注册与发现</p>
+</blockquote>
+<ol>
+<li><code>强一致性</code>、<code>高可用</code>的服务存储目录<ul>
+<li>基于 <code>Raft</code> 算法</li>
+</ul>
+</li>
+<li>服务<code>注册</code> + 服务<code>健康监控</code><ul>
+<li>在 etcd 中注册服务，并对注册的服务配置 <code>Key TTL</code>，保持<code>心跳</code>以完成 Key 的<code>续约</code></li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>消息发布与订阅：<code>List &amp; Watch</code></p>
+</blockquote>
+<ol>
+<li>应用在启动时，主动从 etcd 获取一次配置信息，同时在 etcd 节点上注册一个 <code>Watcher</code> 并等待</li>
+<li>后续配置变更，etcd 会<code>实时通知</code>订阅者</li>
+</ol>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><blockquote>
+<p>下载解压</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ETCD_VER=v3.4.26</span><br><span class="line">DOWNLOAD_URL=https://github.com/etcd-io/etcd/releases/download</span><br><span class="line">rm -f /tmp/etcd-$&#123;ETCD_VER&#125;-linux-arm64.tar.gz</span><br><span class="line">rm -rf /tmp/etcd-download-test &amp;&amp; mkdir -p /tmp/etcd-download-test</span><br><span class="line">curl -L $&#123;DOWNLOAD_URL&#125;/$&#123;ETCD_VER&#125;/etcd-$&#123;ETCD_VER&#125;-linux-arm64.tar.gz -o /tmp/etcd-$&#123;ETCD_VER&#125;-linux-arm64.tar.gz</span><br><span class="line">tar xzvf /tmp/etcd-$&#123;ETCD_VER&#125;-linux-arm64.tar.gz -C /tmp/etcd-download-test --strip-components=1</span><br><span class="line">rm -f /tmp/etcd-$&#123;ETCD_VER&#125;-linux-arm64.tar.gz</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">export ETCD_UNSUPPORTED_ARCH=arm64</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcd --version</span><br><span class="line">WARNING: Package &quot;github.com/golang/protobuf/protoc-gen-go/generator&quot; is deprecated.</span><br><span class="line">    A future release of golang/protobuf will delete this package,</span><br><span class="line">    which has long been excluded from the compatibility promise.</span><br><span class="line"></span><br><span class="line">running etcd on unsupported architecture &quot;arm64&quot; since ETCD_UNSUPPORTED_ARCH is set</span><br><span class="line">etcd Version: 3.4.26</span><br><span class="line">Git SHA: a603c0798</span><br><span class="line">Go Version: go1.19.9</span><br><span class="line">Go OS/Arch: linux/arm64</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl version</span><br><span class="line">etcdctl version: 3.4.26</span><br><span class="line">API version: 3.4</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>本地启动</p>
+</blockquote>
+<ol>
+<li><p><code>listen-client-urls</code> and <code>listen-peer-urls</code></p>
+<ul>
+<li>specify the local addresses etcd server binds to for <code>accepting incoming connections</code>.</li>
+</ul>
+</li>
+<li><p><code>advertise-client-urls</code> and <code>initial-advertise-peer-urls</code></p>
+<ul>
+<li>specify the addresses <code>etcd clients</code> or other <code>etcd members</code> should use to contact the <code>etcd server</code>.</li>
+<li>The <code>advertise addresses</code> must be <code>reachable</code> from the <code>remote machines</code>.</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcd \</span><br><span class="line"> --listen-client-urls &#x27;http://localhost:12379&#x27; \</span><br><span class="line"> --advertise-client-urls &#x27;http://localhost:12379&#x27; \</span><br><span class="line"> --listen-peer-urls &#x27;http://localhost:12380&#x27; \</span><br><span class="line"> --initial-advertise-peer-urls &#x27;http://localhost:12380&#x27; \</span><br><span class="line"> --initial-cluster &#x27;default=http://localhost:12380&#x27;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>简单使用</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 member list --write-out=table</span><br><span class="line">+------------------+---------+---------+------------------------+------------------------+------------+</span><br><span class="line">|        ID        | STATUS  |  NAME   |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |</span><br><span class="line">+------------------+---------+---------+------------------------+------------------------+------------+</span><br><span class="line">| c9ac9fc89eae9cf7 | started | default | http://localhost:12380 | http://localhost:12379 |      false |</span><br><span class="line">+------------------+---------+---------+------------------------+------------------------+------------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k1 v1</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k2 v2</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get --prefix /</span><br><span class="line">/k1</span><br><span class="line">v1</span><br><span class="line">/k2</span><br><span class="line">v2</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get --prefix / --keys-only</span><br><span class="line">/k1</span><br><span class="line"></span><br><span class="line">/k2</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get /k1 --write-out=json | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 17478742799590500000,</span><br><span class="line">    &quot;member_id&quot;: 14532165781622268000,</span><br><span class="line">    &quot;revision&quot;: 3,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;L2sx&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 2,</span><br><span class="line">      &quot;version&quot;: 1,</span><br><span class="line">      &quot;value&quot;: &quot;djE=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ echo -n &#x27;L2sx&#x27; | base64 -d</span><br><span class="line">/k1</span><br><span class="line"></span><br><span class="line">$ echo -n &#x27;djE=&#x27; | base64 -d</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 watch --prefix /</span><br><span class="line">PUT</span><br><span class="line">/k1</span><br><span class="line">v1.1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k v1</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k v2</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k v3</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put /k v4</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get /k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 17478742799590500000,</span><br><span class="line">    &quot;member_id&quot;: 14532165781622268000,</span><br><span class="line">    &quot;revision&quot;: 8,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;L2s=&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 5,</span><br><span class="line">      &quot;mod_revision&quot;: 8,</span><br><span class="line">      &quot;version&quot;: 4,</span><br><span class="line">      &quot;value&quot;: &quot;djQ=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 watch --prefix / --rev 4</span><br><span class="line">PUT</span><br><span class="line">/k1</span><br><span class="line">v1.1</span><br><span class="line">PUT</span><br><span class="line">/k</span><br><span class="line">v1</span><br><span class="line">PUT</span><br><span class="line">/k</span><br><span class="line">v2</span><br><span class="line">PUT</span><br><span class="line">/k</span><br><span class="line">v3</span><br><span class="line">PUT</span><br><span class="line">/k</span><br><span class="line">v4</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>etcdctl --debug</code> 类似于 <code>kubectl -v 9</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get --prefix / --keys-only --debug</span><br><span class="line">ETCDCTL_CACERT=</span><br><span class="line">ETCDCTL_CERT=</span><br><span class="line">ETCDCTL_COMMAND_TIMEOUT=5s</span><br><span class="line">ETCDCTL_DEBUG=true</span><br><span class="line">ETCDCTL_DIAL_TIMEOUT=2s</span><br><span class="line">ETCDCTL_DISCOVERY_SRV=</span><br><span class="line">ETCDCTL_DISCOVERY_SRV_NAME=</span><br><span class="line">ETCDCTL_ENDPOINTS=[localhost:12379]</span><br><span class="line">ETCDCTL_HEX=false</span><br><span class="line">ETCDCTL_INSECURE_DISCOVERY=true</span><br><span class="line">ETCDCTL_INSECURE_SKIP_TLS_VERIFY=false</span><br><span class="line">ETCDCTL_INSECURE_TRANSPORT=true</span><br><span class="line">ETCDCTL_KEEPALIVE_TIME=2s</span><br><span class="line">ETCDCTL_KEEPALIVE_TIMEOUT=6s</span><br><span class="line">ETCDCTL_KEY=</span><br><span class="line">ETCDCTL_PASSWORD=</span><br><span class="line">ETCDCTL_USER=</span><br><span class="line">ETCDCTL_WRITE_OUT=simple</span><br><span class="line">WARNING: 2022/06/10 02:34:55 Adjusting keepalive ping interval to minimum period of 10s</span><br><span class="line">WARNING: 2022/06/10 02:34:55 Adjusting keepalive ping interval to minimum period of 10s</span><br><span class="line">INFO: 2022/06/10 02:34:55 parsed scheme: &quot;endpoint&quot;</span><br><span class="line">INFO: 2022/06/10 02:34:55 ccResolverWrapper: sending new addresses to cc: [&#123;localhost:12379  &lt;nil&gt; 0 &lt;nil&gt;&#125;]</span><br><span class="line">/k</span><br><span class="line"></span><br><span class="line">/k1</span><br><span class="line"></span><br><span class="line">/k2</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Kubernetes 使用 etcd：&#x2F;api&#x2F;v1&#x2F;namespaces&#x2F;default 在 etcd 中的 Key 是<code>一致</code>的，Value 为 API 对象的 <code>Protobuf</code> 值</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ k get ns default -v 9</span><br><span class="line">I0530 02:24:43.050391   90886 loader.go:372] Config loaded from file:  /home/zhongmingmao/.kube/config</span><br><span class="line">I0530 02:24:43.057041   90886 round_trippers.go:435] curl -v -XGET  -H &quot;Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json&quot; -H &quot;User-Agent: kubectl/v1.22.2 (linux/arm64) kubernetes/8b5a191&quot; &#x27;https://192.168.191.138:6443/api/v1/namespaces/default&#x27;</span><br><span class="line">I0530 02:24:43.063279   90886 round_trippers.go:454] GET https://192.168.191.138:6443/api/v1/namespaces/default 200 OK in 6 milliseconds</span><br><span class="line">I0530 02:24:43.063301   90886 round_trippers.go:460] Response Headers:</span><br><span class="line">I0530 02:24:43.063305   90886 round_trippers.go:463]     Content-Type: application/json</span><br><span class="line">I0530 02:24:43.063308   90886 round_trippers.go:463]     X-Kubernetes-Pf-Flowschema-Uid: 2f005305-d15e-4252-bad1-edba0045f54d</span><br><span class="line">I0530 02:24:43.063310   90886 round_trippers.go:463]     X-Kubernetes-Pf-Prioritylevel-Uid: e2605faa-93d6-4d86-9ed5-dfd861e777f6</span><br><span class="line">I0530 02:24:43.063313   90886 round_trippers.go:463]     Content-Length: 1658</span><br><span class="line">I0530 02:24:43.063315   90886 round_trippers.go:463]     Date: Tue, 30 May 2022 02:24:43 GMT</span><br><span class="line">I0530 02:24:43.063318   90886 round_trippers.go:463]     Audit-Id: a5648a40-0205-44aa-a386-5b8e0775b8c9</span><br><span class="line">I0530 02:24:43.063320   90886 round_trippers.go:463]     Cache-Control: no-cache, private</span><br><span class="line">I0530 02:24:43.063452   90886 request.go:1181] Response Body: &#123;&quot;kind&quot;:&quot;Table&quot;,&quot;apiVersion&quot;:&quot;meta.k8s.io/v1&quot;,&quot;metadata&quot;:&#123;&quot;resourceVersion&quot;:&quot;192&quot;&#125;,&quot;columnDefinitions&quot;:[&#123;&quot;name&quot;:&quot;Name&quot;,&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;name&quot;,&quot;description&quot;:&quot;Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names&quot;,&quot;priority&quot;:0&#125;,&#123;&quot;name&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;&quot;,&quot;description&quot;:&quot;The status of the namespace&quot;,&quot;priority&quot;:0&#125;,&#123;&quot;name&quot;:&quot;Age&quot;,&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;&quot;,&quot;description&quot;:&quot;CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata&quot;,&quot;priority&quot;:0&#125;],&quot;rows&quot;:[&#123;&quot;cells&quot;:[&quot;default&quot;,&quot;Active&quot;,&quot;35m&quot;],&quot;object&quot;:&#123;&quot;kind&quot;:&quot;PartialObjectMetadata&quot;,&quot;apiVersion&quot;:&quot;meta.k8s.io/v1&quot;,&quot;metadata&quot;:&#123;&quot;name&quot;:&quot;default&quot;,&quot;uid&quot;:&quot;c3b0eddd-c1de-4ea6-87ac-079b96ea14a5&quot;,&quot;resourceVersion&quot;:&quot;192&quot;,&quot;creationTimestamp&quot;:&quot;2022-05-30T01:48:56Z&quot;,&quot;labels&quot;:&#123;&quot;kubernetes.io/metadata.name&quot;:&quot;default&quot;&#125;,&quot;managedFields&quot;:[&#123;&quot;manager&quot;:&quot;kube-apiserver&quot;,&quot;operation&quot;:&quot;Update&quot;,&quot;apiVersion&quot;:&quot;v1&quot;,&quot;time&quot;:&quot;2022-05-30T01:48:56Z&quot;,&quot;fieldsType&quot;:&quot;FieldsV1&quot;,&quot;fieldsV1&quot;:&#123;&quot;f:metadata&quot;:&#123;&quot;f:labels&quot;:&#123;&quot;.&quot;:&#123;&#125;,&quot;f:kubernetes.io/metadata.name&quot;:&#123;&#125;&#125;&#125;&#125;&#125;]&#125;&#125;&#125;]&#125;</span><br><span class="line">NAME      STATUS   AGE</span><br><span class="line">default   Active   35m</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>双向 TLS 认证</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--name</code></td>
+<td>mac-k8s</td>
+</tr>
+<tr>
+<td><code>--initial-cluster</code></td>
+<td>mac-k8s&#x3D;<a target="_blank" rel="noopener" href="https://192.168.191.138:2380/">https://192.168.191.138:2380</a></td>
+</tr>
+<tr>
+<td><code>--listen-client-urls</code></td>
+<td><a href="https://127.0.0.1:2379,https://192.168.191.138:2379">https://127.0.0.1:2379,https://192.168.191.138:2379</a></td>
+</tr>
+<tr>
+<td><code>--listen-peer-urls</code></td>
+<td><a target="_blank" rel="noopener" href="https://192.168.191.138:2380/">https://192.168.191.138:2380</a></td>
+</tr>
+<tr>
+<td><code>--advertise-client-urls</code></td>
+<td><a target="_blank" rel="noopener" href="https://192.168.191.138:2379/">https://192.168.191.138:2379</a></td>
+</tr>
+<tr>
+<td><code>--initial-advertise-peer-urls</code></td>
+<td><a target="_blank" rel="noopener" href="https://192.168.191.138:2380/">https://192.168.191.138:2380</a></td>
+</tr>
+<tr>
+<td><code>--cert-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;server.crt</td>
+</tr>
+<tr>
+<td><code>--key-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;server.key</td>
+</tr>
+<tr>
+<td><code>--trusted-ca-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;ca.crt</td>
+</tr>
+<tr>
+<td><code>--peer-cert-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;peer.crt</td>
+</tr>
+<tr>
+<td><code>--peer-key-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;peer.key</td>
+</tr>
+<tr>
+<td><code>--peer-trusted-ca-file</code></td>
+<td>&#x2F;etc&#x2F;kubernetes&#x2F;pki&#x2F;etcd&#x2F;ca.crt</td>
+</tr>
+<tr>
+<td><code>--data-dir</code></td>
+<td>&#x2F;var&#x2F;lib&#x2F;etcd</td>
+</tr>
+<tr>
+<td><code>--snapshot-count</code></td>
+<td>10000</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">$ ps -ef | grep etcd</span><br><span class="line">etcd \</span><br><span class="line">--advertise-client-urls=https://192.168.191.138:2379 \</span><br><span class="line">--cert-file=/etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--client-cert-auth=true \</span><br><span class="line">--data-dir=/var/lib/etcd \</span><br><span class="line">--initial-advertise-peer-urls=https://192.168.191.138:2380 \</span><br><span class="line">--initial-cluster=mac-k8s=https://192.168.191.138:2380 \</span><br><span class="line">--key-file=/etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">--listen-client-urls=https://127.0.0.1:2379,https://192.168.191.138:2379 \</span><br><span class="line">--listen-metrics-urls=http://127.0.0.1:2381 \</span><br><span class="line">--listen-peer-urls=https://192.168.191.138:2380 \</span><br><span class="line">--name=mac-k8s \</span><br><span class="line">--peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt \</span><br><span class="line">--peer-client-cert-auth=true \</span><br><span class="line">--peer-key-file=/etc/kubernetes/pki/etcd/peer.key \</span><br><span class="line">--peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--snapshot-count=10000 \</span><br><span class="line">--trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt</span><br><span class="line"></span><br><span class="line">$ ll /etc/kubernetes/pki/etcd/</span><br><span class="line">total 32</span><br><span class="line">-rw-r--r-- 1 root root 1086 May 30 01:48 ca.crt</span><br><span class="line">-rw------- 1 root root 1679 May 30 01:48 ca.key</span><br><span class="line">-rw-r--r-- 1 root root 1159 May 30 01:48 healthcheck-client.crt</span><br><span class="line">-rw------- 1 root root 1675 May 30 01:48 healthcheck-client.key</span><br><span class="line">-rw-r--r-- 1 root root 1196 May 30 01:48 peer.crt</span><br><span class="line">-rw------- 1 root root 1675 May 30 01:48 peer.key</span><br><span class="line">-rw-r--r-- 1 root root 1196 May 30 01:48 server.crt</span><br><span class="line">-rw------- 1 root root 1679 May 30 01:48 server.key</span><br><span class="line"></span><br><span class="line">$ docker ps | grep etcd</span><br><span class="line">250b4938c5a5   2252d5eb703b                                        &quot;etcd --advertise-cl…&quot;   11 days ago   Up 11 days             k8s_etcd_etcd-mac-k8s_kube-system_bd32b743a6c609b1adf9b9de12339239_0</span><br><span class="line">eacf4687ae2b   registry.aliyuncs.com/google_containers/pause:3.5   &quot;/pause&quot;                 11 days ago   Up 11 days             k8s_POD_etcd-mac-k8s_kube-system_bd32b743a6c609b1adf9b9de12339239_0</span><br><span class="line"></span><br><span class="line">$ docker inspect --format=&quot;&#123;&#123;.State.Pid&#125;&#125;&quot; 250b4938c5a5</span><br><span class="line">8737</span><br><span class="line"></span><br><span class="line">$ sudo nsenter -t 8737 -n ls -l /var/lib/etcd/member/</span><br><span class="line">total 8</span><br><span class="line">drwx------ 2 root root 4096 Jun 10 06:31 snap</span><br><span class="line">drwx------ 2 root root 4096 May 30 01:48 wal</span><br><span class="line"></span><br><span class="line">$ k get po -n kube-system etcd-mac-k8s -oyaml</span><br><span class="line">...</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">  ...</span><br><span class="line">    volumeMounts:</span><br><span class="line">    - mountPath: /var/lib/etcd</span><br><span class="line">      name: etcd-data</span><br><span class="line">  volumes:</span><br><span class="line">    ....</span><br><span class="line">  - hostPath:</span><br><span class="line">      path: /var/lib/etcd</span><br><span class="line">      type: DirectoryOrCreate</span><br><span class="line">    name: etcd-data</span><br><span class="line"></span><br><span class="line">$ sudo ls -l /var/lib/etcd/member</span><br><span class="line">total 8</span><br><span class="line">drwx------ 2 root root 4096 Jun 10 12:06 snap</span><br><span class="line">drwx------ 2 root root 4096 May 30 01:48 wal</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>etcd 的数据不能存储在容器中</code>，因为容器的 <code>rootfs</code> 是基于 <code>Overlay</code>，本身<code>性能很低</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--cacert</code></td>
+<td>verify certificates of TLS-enabled secure servers using this CA bundle</td>
+</tr>
+<tr>
+<td><code>--cert</code></td>
+<td>identify secure client using this TLS certificate file</td>
+</tr>
+<tr>
+<td><code>--key</code></td>
+<td>identify secure client using this TLS key file</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints https://192.168.191.138:2379 \</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">member list -wtable</span><br><span class="line">+------------------+---------+---------+------------------------------+------------------------------+------------+</span><br><span class="line">|        ID        | STATUS  |  NAME   |          PEER ADDRS          |         CLIENT ADDRS         | IS LEARNER |</span><br><span class="line">+------------------+---------+---------+------------------------------+------------------------------+------------+</span><br><span class="line">| 1d6b54ee7ec32989 | started | mac-k8s | https://192.168.191.138:2380 | https://192.168.191.138:2379 |      false |</span><br><span class="line">+------------------+---------+---------+------------------------------+------------------------------+------------+</span><br><span class="line"></span><br><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints https://192.168.191.138:2379 \</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">get --prefix /registry/namespaces --keys-only</span><br><span class="line">/registry/namespaces/calico-apiserver</span><br><span class="line"></span><br><span class="line">/registry/namespaces/calico-system</span><br><span class="line"></span><br><span class="line">/registry/namespaces/default</span><br><span class="line"></span><br><span class="line">/registry/namespaces/kube-node-lease</span><br><span class="line"></span><br><span class="line">/registry/namespaces/kube-public</span><br><span class="line"></span><br><span class="line">/registry/namespaces/kube-system</span><br><span class="line"></span><br><span class="line">/registry/namespaces/tigera-operator</span><br><span class="line"></span><br><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints https://192.168.191.138:2379 \</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">get /registry/namespaces/default -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 12875449911175959000,</span><br><span class="line">    &quot;member_id&quot;: 2119881432913619500,</span><br><span class="line">    &quot;revision&quot;: 32955,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;L3JlZ2lzdHJ5L25hbWVzcGFjZXMvZGVmYXVsdA==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 192,</span><br><span class="line">      &quot;mod_revision&quot;: 192,</span><br><span class="line">      &quot;version&quot;: 1,</span><br><span class="line">      &quot;value&quot;: &quot;azhzAAoPCgJ2MRIJTmFtZXNwYWNlEogCCu0BCgdkZWZhdWx0EgAaACIAKiRjM2IwZWRkZC1jMWRlLTRlYTYtODdhYy0wNzliOTZlYTE0YTUyADgAQggIiKzVowYQAFomChtrdWJlcm5ldGVzLmlvL21ldGFkYXRhLm5hbWUSB2RlZmF1bHR6AIoBfQoOa3ViZS1hcGlzZXJ2ZXISBlVwZGF0ZRoCdjEiCAiIrNWjBhAAMghGaWVsZHNWMTpJCkd7ImY6bWV0YWRhdGEiOnsiZjpsYWJlbHMiOnsiLiI6e30sImY6a3ViZXJuZXRlcy5pby9tZXRhZGF0YS5uYW1lIjp7fX19fUIAEgwKCmt1YmVybmV0ZXMaCAoGQWN0aXZlGgAiAA==&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ echo -n &#x27;azhzAAoPCgJ2MRIJTmFtZXNwYWNlEogCCu0BCgdkZWZhdWx0EgAaACIAKiRjM2IwZWRkZC1jMWRlLTRlYTYtODdhYy0wNzliOTZlYTE0YTUyADgAQggIiKzVowYQAFomChtrdWJlcm5ldGVzLmlvL21ldGFkYXRhLm5hbWUSB2RlZmF1bHR6AIoBfQoOa3ViZS1hcGlzZXJ2ZXISBlVwZGF0ZRoCdjEiCAiIrNWjBhAAMghGaWVsZHNWMTpJCkd7ImY6bWV0YWRhdGEiOnsiZjpsYWJlbHMiOnsiLiI6e30sImY6a3ViZXJuZXRlcy5pby9tZXRhZGF0YS5uYW1lIjp7fX19fUIAEgwKCmt1YmVybmV0ZXMaCAoGQWN0aXZlGgAiAA==&#x27; | base64 -d</span><br><span class="line">k8s</span><br><span class="line"></span><br><span class="line">v1    Namespace�</span><br><span class="line">�</span><br><span class="line">default&quot;*$c3b0eddd-c1de-4ea6-87ac-079b96ea14a52��գZ&amp;</span><br><span class="line"></span><br><span class="line">kube-apiserverUpdatev��գFieldsV1:I</span><br><span class="line">G&#123;&quot;f:metadata&quot;:&#123;&quot;f:labels&quot;:&#123;&quot;.&quot;:&#123;&#125;,&quot;f:kubernetes.io/metadata.name&quot;:&#123;&#125;&#125;&#125;&#125;B</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">kubernetes</span><br><span class="line">Active&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="TTL-amp-CAS"><a href="#TTL-amp-CAS" class="headerlink" title="TTL &amp; CAS"></a>TTL &amp; CAS</h1><ol>
+<li><code>TTL</code> – Kubernetes 中用的比较少<ul>
+<li>常用于<code>分布式锁</code>，用于保证锁的<code>实时有效性</code></li>
+</ul>
+</li>
+<li><code>CAS</code> – 由 <code>CPU</code> 架构保证<code>原子性</code><ul>
+<li>在对 Key <code>赋值</code>时，<code>客户端</code>需要提供一些<code>条件</code>，当<code>条件满足</code>时，才能赋值成功</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>常用条件</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>prevExist</code></td>
+<td>Key 当前<code>是否存在</code></td>
+</tr>
+<tr>
+<td><code>prevValue</code></td>
+<td>Key 当前的<code>值</code></td>
+</tr>
+<tr>
+<td><code>prevIndex</code></td>
+<td>Key 当前的 <code>Index</code></td>
+</tr>
+</tbody></table>
+<h1 id="Raft"><a href="#Raft" class="headerlink" title="Raft"></a>Raft</h1><blockquote>
+<p>Raft 基于 <code>Quorum</code> 机制，即<code>多数同意原则</code>，任何的变更都需要<code>超过半数</code>的成员确认</p>
+</blockquote>
+<blockquote>
+<p>日志模块一开始将数据记录到本地，尚未确认，一致性模块得到<code>超过半数</code>的成员确认后，才会将数据<code>持久化</code>到状态机</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610145751934.png" alt="image-20230610145751934"></p>
+<h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="http://thesecretlivesofdata.com/raft/">http://thesecretlivesofdata.com/raft/</a></p>
+</blockquote>
+<blockquote>
+<p>Raft is a protocol for implementing <code>distributed consensus</code></p>
+</blockquote>
+<blockquote>
+<p>节点可以有 3 种状态：Follower、Candidate、Leader</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Follower</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>Candidate</code></td>
+<td>参与<code>选举</code>和<code>投票</code></td>
+</tr>
+<tr>
+<td><code>Leader</code></td>
+<td></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>与 <code>ZAB</code> 协议类似：<code>Leader Election</code> -&gt; <code>Log Replication</code></p>
+</blockquote>
+<h3 id="An-Example"><a href="#An-Example" class="headerlink" title="An Example"></a>An Example</h3><h4 id="Leader-Election"><a href="#Leader-Election" class="headerlink" title="Leader Election"></a>Leader Election</h4><blockquote>
+<p>所有节点的初始状态为 <code>Follower</code>，等待 <code>Leader</code> 的心跳</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164945195.png" alt="image-20230610164945195"></p>
+<blockquote>
+<p>节点启动时，设置<code>随机</code>的 <code>Election Timeout</code>，即处于 Follower 状态的超时时间<br>一旦超过这个时长都没有收到 <code>Leader</code> 的心跳，会变成 <code>Candidate</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164927240.png" alt="image-20230610164927240"></p>
+<blockquote>
+<p>Follower 变成 Candidate 后，会去向其他节点发起 <code>拉票</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164846620.png" alt="image-20230610164846620"></p>
+<blockquote>
+<p>其他节点此时也没有跟从的 Leader，所以可以<code>接收拉票</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164810657.png" alt="image-20230610164810657"></p>
+<blockquote>
+<p>A 想当 Leader，B 和 C 此时没有 Leader，<code>直接同意</code>，超过<code>半数</code>，A 成为了 Leader</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164712434.png" alt="image-20230610164712434"></p>
+<h4 id="Log-Replication"><a href="#Log-Replication" class="headerlink" title="Log Replication"></a>Log Replication</h4><blockquote>
+<p><code>选主</code>完成后，所有的<code>变更</code>都需要经过 <code>Leader</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164640877.png" alt="image-20230610164640877"></p>
+<blockquote>
+<p>每个变更都会先在 <code>Leader</code> 上新增一个 <code>Log entry</code>，但此时的 <code>Log entry</code> 是<code>尚未确认</code>，所以不会变更<code>状态机</code></p>
+</blockquote>
+<blockquote>
+<p>如果此时 A <code>宕机</code>，对应的 Log entry 也会<code>丢失</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610164609144.png" alt="image-20230610164609144"></p>
+<blockquote>
+<p>通过<code>心跳</code>，将未经确认的 Log entry <code>传播</code>到其他 Follower（也是写入到 Log entry）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610165100549.png" alt="image-20230610165100549"></p>
+<blockquote>
+<p>Leader 会等待<code>超过半数</code>的成员确认，然后才会<code>确认</code>本地的 Log entry，并提交到<code>状态机</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610165352509.png" alt="image-20230610165352509"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610165552989.png" alt="image-20230610165552989"></p>
+<blockquote>
+<p>Leader Commit 后，通过<code>心跳</code>通知 Follower 也可以 Commit（从 Log entry 提交到状态机）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610165757709.png" alt="image-20230610165757709"></p>
+<blockquote>
+<p>此时达成了<code>分布式共识</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610170650303.png" alt="image-20230610170650303"></p>
+<blockquote>
+<p>上述过程有点类似于 <code>Two-stage confirmation</code>，主要区别<br>We use Raft to get <code>high availability</code> by replicating the data on multiple servers, where all servers do the same thing.<br>This differs from <code>two-phase commit</code> in that 2PC <code>does not help with availability</code>, and all the <code>participant</code> servers here <code>perform different operations</code>.</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/2pc.png" alt="2pc"></p>
+<h3 id="Detail"><a href="#Detail" class="headerlink" title="Detail"></a>Detail</h3><h4 id="Leader-Election-1"><a href="#Leader-Election-1" class="headerlink" title="Leader Election"></a>Leader Election</h4><blockquote>
+<p>The election timeout is the amount of time a follower waits until <code>becoming a candidate</code>.<br>The election timeout is randomized to be between <code>150ms</code> and <code>300ms</code>.</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610184909346.png" alt="image-20230610184909346"></p>
+<blockquote>
+<p>Follower 变成 Candidate 后，首先<code>给自己投票</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610184941889.png" alt="image-20230610184941889"></p>
+<blockquote>
+<p>然后请求其它节点给自己投票</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185020258.png" alt="image-20230610185020258"></p>
+<blockquote>
+<p>如果其它节点在这个 Term 内未投票，会直接给 Candidate 投票</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185045622.png" alt="image-20230610185045622"></p>
+<blockquote>
+<p>完成投票后，其它节点会重置自身的 election timeout（不会变成 Candidate）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185123440.png" alt="image-20230610185123440"></p>
+<blockquote>
+<p>得到超过半数的成员投票后，Candidate 成为了 Leader</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185144867.png" alt="image-20230610185144867"></p>
+<h4 id="Log-Replication-1"><a href="#Log-Replication-1" class="headerlink" title="Log Replication"></a>Log Replication</h4><blockquote>
+<p>Leader 通过<code>心跳</code> （<code>heartbeat timeout</code> ）发送它本身的 <code>Append Entries</code> 到其它 Follower</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185201353.png" alt="image-20230610185201353"></p>
+<blockquote>
+<p>Follower 会响应每个 <code>Append Entries</code> 消息</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185226841.png" alt="image-20230610185226841"></p>
+<blockquote>
+<p>只要 Follower 能按时收到 Leader 的心跳，就会维持当前的选举周期（认可当前的 Leader），不会变成 Candidate</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185305543.png" alt="image-20230610185305543"></p>
+<blockquote>
+<p>停掉 Leader 后，会发生重新选举</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185345604.png" alt="image-20230610185345604"></p>
+<blockquote>
+<p>其它节点因为没有收到 Leader 的心跳，变成了 Candidate，发起新一轮的选举</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185427299.png" alt="image-20230610185427299"></p>
+<blockquote>
+<p>存活节点超过半数，能成功选举</p>
+</blockquote>
+<blockquote>
+<p>Requiring a <code>majority</code> of votes <code>guarantees</code> that <code>only one leader</code> can be elected <code>per term</code>.</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610185904508.png" alt="image-20230610185904508"></p>
+<blockquote>
+<p>如果在同一个选举任期内，两个节点同时变成 Candidate，有可能会发生<code>投票分裂</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610190240337.png" alt="image-20230610190240337"></p>
+<blockquote>
+<p>票数相等，但没有超过半数，选举失败</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610190510048.png" alt="image-20230610190510048"></p>
+<blockquote>
+<p><code>随机</code>等待一段时间后，继续下一轮选举，直到票数超过半数</p>
+</blockquote>
+<blockquote>
+<p>因此选择<code>奇数</code>个节点，尽快完成选举，选举成功之前，集群是<code>不可写</code>的</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610190717642.png" alt="image-20230610190717642"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610190909297.png" alt="image-20230610190909297"></p>
+<blockquote>
+<p>Leader 需要将<code>所有变更</code>通过<code>心跳</code>（Append Entries message）传播到所有 Follower</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610191445258.png" alt="image-20230610191445258"></p>
+<blockquote>
+<p>客户端向 Leader 发送请求，Leader 会记录 Log entry，此时尚未提交到<code>状态机</code>（持久化的状态）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610191720497.png" alt="image-20230610191720497"></p>
+<blockquote>
+<p>在<code>下一个心跳</code>，Leader 会将 Log entry 发送给 Follower </p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610191904403.png" alt="image-20230610191904403"></p>
+<blockquote>
+<p>得到超过半数（<code>包括 Leader 自己</code>）的成员确认已经写入了日志，Leader 会完成提交（<code>状态机</code>）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610192027316.png" alt="image-20230610192027316"></p>
+<blockquote>
+<p><code>Leader 完成提交</code>后，此时可以<code>响应客户端</code><br>等待<code>下个心跳</code>，告知 Follower，该 Log entry 已提交，Follower 也可以完成提交了</p>
+</blockquote>
+<blockquote>
+<p>在 etcd 中是一个配置参数（默认是<code>弱一致性</code>，能满足绝大部分场景）<br><code>弱一致性</code>：只要 <code>Leader</code> 提交后，就响应客户端；<code>强一致性</code>：等待<code>超过半数的 Follow</code> 也提交后，才响应客户端</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610192146944.png" alt="image-20230610192146944"></p>
+<blockquote>
+<p>即便在发生<code>网络分区</code>时，Raft 协议依然能保持<code>一致性</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610192729472.png" alt="image-20230610192729472"></p>
+<blockquote>
+<p>出现网络分区，原有的 Leader 在一个<code>少于半数</code>的分区，另一个<code>多于半数</code>的分区完成了<code>新一轮的选举</code>（选举任期更大）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610193047687.png" alt="image-20230610193047687"></p>
+<blockquote>
+<p><code>少于半数</code>的分区，<code>可读不可写</code>，处于<code>只读</code>状态，且<code>任期更低</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610193632516.png" alt="image-20230610193632516"></p>
+<blockquote>
+<p><code>多于半数</code>的分区，<code>可读可写</code>，且<code>任期更高</code>，优先级更高</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610194137472.png" alt="image-20230610194137472"></p>
+<blockquote>
+<p>网络分区恢复后，以<code>高选举任期</code>的 Leader 为准，低选举任期的 Leader <code>降级</code>为 Follower</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610194212805.png" alt="image-20230610194212805"></p>
+<blockquote>
+<p>发生网络分区时<code>少于半数</code>的分区，会<code>放弃</code>尚未提交的 Log entry，接收并提交新 Leader 的日志，最后集群<code>恢复一致</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610194418407.png" alt="image-20230610194418407"></p>
+<h2 id="Learner"><a href="#Learner" class="headerlink" title="Learner"></a>Learner</h2><blockquote>
+<p>Raft <code>4.2.1</code> 引入 Learner：Learner <code>只接收数据</code>，但<code>不参与投票</code>，集群的 <code>Quorum</code>（大多数） 不会发生变化</p>
+</blockquote>
+<blockquote>
+<p>新启动的节点与 Leader 差异很大，默认以 Learner 身份启动，只有当 Learner <code>完成数据同步</code>后，才有可能成为 Follower</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610194816703.png" alt="image-20230610194816703"></p>
+<h2 id="安全性"><a href="#安全性" class="headerlink" title="安全性"></a>安全性</h2><blockquote>
+<p>保证每个节点都执行<code>相同的序列</code></p>
+</blockquote>
+<ol>
+<li><code>选举安全性</code><ul>
+<li>每个选举任期，只能选举出 1 个 Leader</li>
+</ul>
+</li>
+<li><code>Leader 日志完整性</code><ul>
+<li>日志在某个任期被提交后，<code>后续任期</code>的 Leader 都必须包含该日志</li>
+<li>选举阶段：Candidate 本身的<code>偏移</code>必须超过半数成员，才能赢得选举<ul>
+<li>Follower 只会投票给（<code>&lt;Term,Index&gt;</code>）<code>不比自己小</code>的 Candidate，否则拒绝该投票请求</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="WAL"><a href="#WAL" class="headerlink" title="WAL"></a>WAL</h2><blockquote>
+<p>Write-<code>ahead</code> logging</p>
+</blockquote>
+<blockquote>
+<p>WAL 为二进制，可以通过<code>etcd-dump-logs</code>工具分析，数据结构为 LogEntry<br>由 4 部分组成：<code>type</code>、<code>term</code>、<code>index</code>、<code>data</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>0 - <code>Normal</code><br />1 - <code>ConfChange</code>：<code>etcd 本身的配置</code>发生变更，如有新节点加入</td>
+</tr>
+<tr>
+<td>term</td>
+<td>选举任期</td>
+</tr>
+<tr>
+<td>index</td>
+<td><code>变更序号</code>，严格<code>递增</code></td>
+</tr>
+<tr>
+<td>data</td>
+<td>二进制，为 <code>protobuf</code> 格式<br />Raft 本身不关心 data，Raft 关注的只是<code>分布式一致性</code></td>
+</tr>
+</tbody></table>
+<h2 id="Store-V3"><a href="#Store-V3" class="headerlink" title="Store V3"></a>Store V3</h2><blockquote>
+<p>etcd 为 KV 存储，只需要处理好 <code>Key 的索引</code> 即可</p>
+</blockquote>
+<blockquote>
+<p>内存：kvindex - <code>&lt;Key,List&lt;Reversion&gt;&gt;</code> ；磁盘：boltdb - <code>&lt;Reversion,Key-Value&gt;</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230610203339949.png" alt="image-20230610203339949"></p>
+<ol>
+<li>Store 分为两部分<ul>
+<li><code>kvindex</code><ul>
+<li>在<code>内存</code>中的<code>索引</code>，基于 <code>B Tree</code>，由 Google 开源，用 Go 实现</li>
+</ul>
+</li>
+<li><code>boltdb</code><ul>
+<li>在<code>磁盘</code>上的<code>存储</code>，基于 <code>B+ Tree</code>，是 <code>backend</code> 的一种实现（<code>backend</code> 可以对接多种存储实现）</li>
+<li>boltdb 是一个<code>单机的支持事务的 KV 存储</code>，etcd 的事务是基于 boltdb 的事务实现的<ul>
+<li>etcd 在 boltdb 中存储的 <code>Key</code> 是 <code>reversion</code>，<code>Value</code> 为 etcd 自己的 <code>KV 组合</code><ul>
+<li>reversion 组成：<code>main rev</code>（事务） + <code>sub rev</code>（事务内的操作）</li>
+</ul>
+</li>
+<li>etcd 会在 boltdb 中<code>存储每一个版本</code>，从而实现<code>多版本</code>机制<ul>
+<li>etcd 支持设置 <code>compact</code>，用来控制某个 Key 的<code>历史版本数量</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>内存中的 kvindex 保存的是 <code>Key</code> 和 <code>Reversion</code> 的映射关系，用于加速查询</li>
+<li><code>WatchableStore</code>：支持<code>监听</code>机制；<code>lessor</code>：支持 <code>TTL</code></li>
+</ol>
+<h2 id="写入"><a href="#写入" class="headerlink" title="写入"></a>写入</h2><blockquote>
+<p>etcd 对 Raft 协议的实现</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-raft-impl.png"></p>
+<ol>
+<li>第 3 步，一致性模块接收到 <code>Propose</code> 请求后，会放入内存中 raftLog 的 <code>unstable</code> 区域</li>
+<li>第 4 步，<code>同时</code>发生：<code>WAL</code> + <code>RPC</code><ul>
+<li>WAL 需要通过周期性的 <code>fsync</code> 持久化到磁盘上</li>
+<li>WAL 无法通过 ectdctl 读取，只能通过 <code>etcd-dump-logs</code> 工具获取</li>
+<li>Follower 接收到请求后，执行的操作也是类似的：<code>raftLog</code> + <code>WAL</code></li>
+</ul>
+</li>
+<li>第 5 步，收到超过半数的成员确认<ul>
+<li>从 raftLog 中的 <code>unstable</code> 区域，移动到 <code>committed</code> 区域</li>
+<li>将 <code>WAL</code> 提交到<code>状态机</code>（<code>MVCC</code> 模块）</li>
+<li>MVCC - 最终的状态机<ul>
+<li>etcd 是<code>多读少写</code><ul>
+<li>TreeIndex + BoltDB - 加快读</li>
+<li>Leader + Follower - 支持读</li>
+</ul>
+</li>
+<li><code>TreeIndex</code> - <code>内存 B tree</code><ul>
+<li>Key 为用户写入的 <code>Key</code>，Value 为 <code>Reversion</code></li>
+<li><code>modified:&lt;4,0&gt;</code> - 事务 ID 为 4，事务中的第 1 个操作，为当前的 Reversion</li>
+<li><code>generations</code> - 历史变更记录</li>
+</ul>
+</li>
+<li><code>BoltDB</code> - <code>磁盘 B+Tree</code><ul>
+<li>Key 为 <code>Reversion</code>，Value 为 <code>Key-Value</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>在 Leader 提交到 MVCC 成功后，会更新 <code>MatchIndex</code><ul>
+<li>该 MatchIndex 会在<code>下一次心跳</code>传播到 Follower ，Follower 也会将 WAL 提交到 MVCC</li>
+<li>集群达成了<code>分布式共识</code>，时间上差了一个<code>心跳</code></li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>数据一致性（多数确认），<code>MatchIndex</code></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611131420391.png" alt="image-20230611131420391"></p>
+<blockquote>
+<p>revision 为<code>全局变量</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put k v1</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 17478742799590500000,</span><br><span class="line">    &quot;member_id&quot;: 14532165781622268000,</span><br><span class="line">    &quot;revision&quot;: 2,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;aw==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 2,</span><br><span class="line">      &quot;version&quot;: 1,</span><br><span class="line">      &quot;value&quot;: &quot;djE=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ echo -n &#x27;aw==&#x27; | base64 -d</span><br><span class="line">k</span><br><span class="line"></span><br><span class="line">$ echo -n &#x27;djE=&#x27; | base64 -d</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 put k v2</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 17478742799590500000,</span><br><span class="line">    &quot;member_id&quot;: 14532165781622268000,</span><br><span class="line">    &quot;revision&quot;: 3,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;aw==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 3,</span><br><span class="line">      &quot;version&quot;: 2,</span><br><span class="line">      &quot;value&quot;: &quot;djI=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get k --rev=0</span><br><span class="line">k</span><br><span class="line">v2</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get k --rev=2</span><br><span class="line">k</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints=localhost:12379 get k --rev=3</span><br><span class="line">k</span><br><span class="line">v2</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>resourceVersion</code> 即 etcd 中的 <code>mod_revision</code><br><code>乐观锁</code>：多个 <code>Controller</code> 修改同一个 API 对象</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">$ k get po -n kube-system etcd-mac-k8s -oyaml | grep resourceVersion</span><br><span class="line">  resourceVersion: &quot;448&quot;</span><br><span class="line"></span><br><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints https://192.168.191.138:2379 \</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">get --prefix /registry/pods --keys-only | grep etcd</span><br><span class="line">/registry/pods/kube-system/etcd-mac-k8s</span><br><span class="line"></span><br><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints https://192.168.191.138:2379 \</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">get /registry/pods/kube-system/etcd-mac-k8s -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 12875449911175959000,</span><br><span class="line">    &quot;member_id&quot;: 2119881432913619500,</span><br><span class="line">    &quot;revision&quot;: 10746,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;L3JlZ2lzdHJ5L3BvZHMva3ViZS1zeXN0ZW0vZXRjZC1tYWMtazhz&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 235,</span><br><span class="line">      &quot;mod_revision&quot;: 448,</span><br><span class="line">      &quot;version&quot;: 6,</span><br><span class="line">      &quot;value&quot;: &quot;xxxx&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Watch"><a href="#Watch" class="headerlink" title="Watch"></a>Watch</h2><ol>
+<li>Watcher 分类<ul>
+<li><code>KeyWatcher</code>：监听<code>固定</code>的 Key</li>
+<li><code>RangeWatcher</code>：监听<code>范围</code>的 Key</li>
+</ul>
+</li>
+<li>WatcherGroup 分类<ul>
+<li><code>synced</code>：Watcher 数据已经完成同步</li>
+<li><code>unsynced</code>：Watcher 数据同步中</li>
+</ul>
+</li>
+<li>etcd 发起请求，携带了 <code>revision</code> 参数<ul>
+<li>revision 参数 <code>&gt;</code> etcd 当前的 revision<ul>
+<li>将该 Watcher 放置于 <code>synced</code> 的 WatcherGroup</li>
+</ul>
+</li>
+<li>revision 参数 <code>&lt;</code> etcd 当前的 revision<ul>
+<li>将该 Watcher 放置于 <code>unsynced</code> 的 WatcherGroup</li>
+<li>在 etcd 后端启动一个 <code>goroutine</code> 从 <code>BoltDB</code> 读取数据<ul>
+<li>完成同步后，将 Watcher 迁移到 <code>synced</code> 的 WatcherGroup，并将数据发给客户端</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="灾备"><a href="#灾备" class="headerlink" title="灾备"></a>灾备</h1><blockquote>
+<p>etcdctl <code>snapshot save</code> + etcdctl <code>snapshot restore</code></p>
+</blockquote>
+<h1 id="容量"><a href="#容量" class="headerlink" title="容量"></a>容量</h1><ol>
+<li>单个对象不超过 <code>1.5M</code></li>
+<li>默认容量 <code>2G</code>，不超过 <code>8G</code> - 因为<code>内存</code>有限制<ul>
+<li>直接访问磁盘上的 <code>BoltDB</code> 是非常低效的， 将 <code>BoltDB</code> 通过 <code>mmap</code> 的方式直接<code>映射到内存</code></li>
+<li><code>TreeIndex</code> 本身也要占用内存</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>设置 ectd 存储大小：<code>--quota-backend-bytes</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcd --listen-client-urls &#x27;http://localhost:12379&#x27; \</span><br><span class="line"> --advertise-client-urls &#x27;http://localhost:12379&#x27; \</span><br><span class="line"> --listen-peer-urls &#x27;http://localhost:12380&#x27; \</span><br><span class="line"> --initial-advertise-peer-urls &#x27;http://localhost:12380&#x27; \</span><br><span class="line"> --initial-cluster &#x27;default=http://localhost:12380&#x27; \</span><br><span class="line"> --quota-backend-bytes=$((16*1024*1024))</span><br><span class="line"> </span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 endpoint status -wtable</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br><span class="line">|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br><span class="line">| http://localhost:12379 | c9ac9fc89eae9cf7 |  3.4.26 |   20 kB |      true |      false |         2 |          4 |                  4 |        |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 alarm list</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put k v1</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 get k</span><br><span class="line">k</span><br><span class="line">v1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>写满 ectd：<code>etcdserver: mvcc: database space exceeded</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line">$ while [ 1 ]; do dd if=/dev/urandom bs=1024 count=1024 | ETCDCTL_API=3 /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put key || break; done</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0221458 s, 47.3 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0178969 s, 58.6 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0131086 s, 80.0 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0169962 s, 61.7 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0102694 s, 102 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0127638 s, 82.2 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0170057 s, 61.7 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0252865 s, 41.5 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0158758 s, 66.0 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.012092 s, 86.7 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0134426 s, 78.0 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.010848 s, 96.7 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.010219 s, 103 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.011172 s, 93.9 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.00987527 s, 106 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.00964272 s, 109 MB/s</span><br><span class="line">OK</span><br><span class="line">1024+0 records in</span><br><span class="line">1024+0 records out</span><br><span class="line">1048576 bytes (1.0 MB, 1.0 MiB) copied, 0.0196146 s, 53.5 MB/s</span><br><span class="line">&#123;&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:&quot;2022-06-11T07:08:11.751634Z&quot;,&quot;caller&quot;:&quot;clientv3/retry_interceptor.go:62&quot;,&quot;msg&quot;:&quot;retrying of unary invoker failed&quot;,&quot;target&quot;:&quot;endpoint://client-74c1ff1a-cb7e-45ea-b7dd-2c6523ee0e1b/localhost:12379&quot;,&quot;attempt&quot;:0,&quot;error&quot;:&quot;rpc error: code = ResourceExhausted desc = etcdserver: mvcc: database space exceeded&quot;&#125;</span><br><span class="line">Error: etcdserver: mvcc: database space exceeded</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>可读不可写</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 get k</span><br><span class="line">k</span><br><span class="line">v1</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put k v2</span><br><span class="line">&#123;&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:&quot;2022-06-11T07:09:56.959955Z&quot;,&quot;caller&quot;:&quot;clientv3/retry_interceptor.go:62&quot;,&quot;msg&quot;:&quot;retrying of unary invoker failed&quot;,&quot;target&quot;:&quot;endpoint://client-d7d9269b-6342-463a-a07d-2bfd6aa216dd/localhost:12379&quot;,&quot;attempt&quot;:0,&quot;error&quot;:&quot;rpc error: code = ResourceExhausted desc = etcdserver: mvcc: database space exceeded&quot;&#125;</span><br><span class="line">Error: etcdserver: mvcc: database space exceeded</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>告警：<code>NOSPACE</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 alarm list</span><br><span class="line">memberID:14532165781622267127 alarm:NOSPACE</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 endpoint status -wtable</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX |             ERRORS             |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">| http://localhost:12379 | c9ac9fc89eae9cf7 |  3.4.26 |   22 MB |      true |      false |         2 |         25 |                 25 |  memberID:14532165781622267127 |</span><br><span class="line">|                        |                  |         |         |           |            |           |            |                    |                 alarm:NOSPACE  |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>清理碎片，依然无法解决</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 defrag</span><br><span class="line">Finished defragmenting etcd member[http://localhost:12379]</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 endpoint status -wtable</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX |             ERRORS             |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">| http://localhost:12379 | c9ac9fc89eae9cf7 |  3.4.26 |   17 MB |      true |      false |         2 |         25 |                 25 |  memberID:14532165781622267127 |</span><br><span class="line">|                        |                  |         |         |           |            |           |            |                    |                 alarm:NOSPACE  |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put k v2</span><br><span class="line">&#123;&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:&quot;2022-06-11T07:18:29.213165Z&quot;,&quot;caller&quot;:&quot;clientv3/retry_interceptor.go:62&quot;,&quot;msg&quot;:&quot;retrying of unary invoker failed&quot;,&quot;target&quot;:&quot;endpoint://client-33c22919-1bd8-4964-bf10-a8b2092e35cb/localhost:12379&quot;,&quot;attempt&quot;:0,&quot;error&quot;:&quot;rpc error: code = ResourceExhausted desc = etcdserver: mvcc: database space exceeded&quot;&#125;</span><br><span class="line">Error: etcdserver: mvcc: database space exceeded</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 alarm list</span><br><span class="line">memberID:14532165781622267127 alarm:NOSPACE</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>压缩历史版本数量</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 get key -wjson | jq &#x27;.header.revision&#x27;</span><br><span class="line">18</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 compact 18</span><br><span class="line">compacted revision 18</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 defrag</span><br><span class="line">Finished defragmenting etcd member[http://localhost:12379]</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 endpoint status -wtable</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX |             ERRORS             |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line">| http://localhost:12379 | c9ac9fc89eae9cf7 |  3.4.26 |  1.1 MB |      true |      false |         2 |         52 |                 52 |  memberID:14532165781622267127 |</span><br><span class="line">|                        |                  |         |         |           |            |           |            |                    |                 alarm:NOSPACE  |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------------------------------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put k v2</span><br><span class="line">&#123;&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:&quot;2022-06-11T07:24:40.719917Z&quot;,&quot;caller&quot;:&quot;clientv3/retry_interceptor.go:62&quot;,&quot;msg&quot;:&quot;retrying of unary invoker failed&quot;,&quot;target&quot;:&quot;endpoint://client-914df447-c2c2-4fba-9446-71d696ca2ba5/localhost:12379&quot;,&quot;attempt&quot;:0,&quot;error&quot;:&quot;rpc error: code = ResourceExhausted desc = etcdserver: mvcc: database space exceeded&quot;&#125;</span><br><span class="line">Error: etcdserver: mvcc: database space exceeded</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 alarm disarm</span><br><span class="line">memberID:14532165781622267127 alarm:NOSPACE</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 alarm list</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 put k v2</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl --endpoints http://localhost:12379 get k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 17478742799590500000,</span><br><span class="line">    &quot;member_id&quot;: 14532165781622268000,</span><br><span class="line">    &quot;revision&quot;: 19,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;aw==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 19,</span><br><span class="line">      &quot;version&quot;: 2,</span><br><span class="line">      &quot;value&quot;: &quot;djI=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>etcd 启动参数，自动压缩，保存一小时的历史：<code>--auto-compaction-retention=1</code></p>
+</blockquote>
+<h1 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h1><blockquote>
+<p>集群 + 备份（容灾）</p>
+</blockquote>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><blockquote>
+<p>cfssl</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install golang-cfssl</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>tls certs</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir -p $GOPATH/github.com/etcd-io</span><br><span class="line">$ cd $GOPATH/github.com/etcd-io</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git clone https://github.com/etcd-io/etcd.git</span><br><span class="line">$ cd etcd/hack/tls-setup</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>req-csr.json - <code>Certificate Signing Requests</code></p>
+</blockquote>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;CN&quot;</span><span class="punctuation">:</span> <span class="string">&quot;etcd&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;hosts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="string">&quot;localhost&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;127.0.0.1&quot;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;key&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;algo&quot;</span><span class="punctuation">:</span> <span class="string">&quot;rsa&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;size&quot;</span><span class="punctuation">:</span> <span class="number">2048</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;names&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;O&quot;</span><span class="punctuation">:</span> <span class="string">&quot;autogenerated&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;OU&quot;</span><span class="punctuation">:</span> <span class="string">&quot;etcd cluster&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;L&quot;</span><span class="punctuation">:</span> <span class="string">&quot;the internet&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>certs</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ export infra0=127.0.0.1</span><br><span class="line">$ export infra1=127.0.0.1</span><br><span class="line">$ export infra2=127.0.0.1</span><br><span class="line"></span><br><span class="line">$ make</span><br><span class="line"></span><br><span class="line">$ ll certs</span><br><span class="line">total 36</span><br><span class="line">-rw------- 1 zhongmingmao zhongmingmao 1679 Jun 11 08:15 127.0.0.1-key.pem</span><br><span class="line">-rw-r--r-- 1 zhongmingmao zhongmingmao 1041 Jun 11 08:15 127.0.0.1.csr</span><br><span class="line">-rw-rw-r-- 1 zhongmingmao zhongmingmao 1513 Jun 11 08:15 127.0.0.1.pem</span><br><span class="line">-rw------- 1 zhongmingmao zhongmingmao 1679 Jun 11 08:15 ca-key.pem</span><br><span class="line">-rw-r--r-- 1 zhongmingmao zhongmingmao 1098 Jun 11 08:15 ca.csr</span><br><span class="line">-rw-rw-r-- 1 zhongmingmao zhongmingmao 1505 Jun 11 08:15 ca.pem</span><br><span class="line">-rw------- 1 zhongmingmao zhongmingmao 1679 Jun 11 08:15 peer-127.0.0.1-key.pem</span><br><span class="line">-rw-r--r-- 1 zhongmingmao zhongmingmao 1041 Jun 11 08:15 peer-127.0.0.1.csr</span><br><span class="line">-rw-rw-r-- 1 zhongmingmao zhongmingmao 1513 Jun 11 08:15 peer-127.0.0.1.pem</span><br><span class="line"></span><br><span class="line">$ mkdir /tmp/etcd-certs &amp;&amp; mv certs /tmp/etcd-certs</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>start etcd</p>
+</blockquote>
+<figure class="highlight bash"><figcaption><span>start-all.sh</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra0 \</span><br><span class="line">--data-dir=/tmp/etcd/infra0 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:3380 \</span><br><span class="line">--initial-advertise-peer-urls https://127.0.0.1:3380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:3379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:3379 \</span><br><span class="line">--initial-cluster-token etcd-cluster-1 \</span><br><span class="line">--initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">--initial-cluster-state new \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra0.<span class="built_in">log</span> &amp;</span><br><span class="line"></span><br><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra1 \</span><br><span class="line">--data-dir=/tmp/etcd/infra1 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:4380 \</span><br><span class="line">--initial-advertise-peer-urls https://127.0.0.1:4380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:4379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:4379 \</span><br><span class="line">--initial-cluster-token etcd-cluster-1 \</span><br><span class="line">--initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">--initial-cluster-state new \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra1.<span class="built_in">log</span> &amp;</span><br><span class="line"></span><br><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra2 \</span><br><span class="line">--data-dir=/tmp/etcd/infra2 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:5380 \</span><br><span class="line">--initial-advertise-peer-urls https://127.0.0.1:5380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:5379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:5379 \</span><br><span class="line">--initial-cluster-token etcd-cluster-1 \</span><br><span class="line">--initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">--initial-cluster-state new \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra2.<span class="built_in">log</span> &amp;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">$ sh start-all.sh</span><br><span class="line"></span><br><span class="line">$ ps | grep etcd</span><br><span class="line">  42919 pts/4    00:00:00 etcd</span><br><span class="line">  42920 pts/4    00:00:00 etcd</span><br><span class="line">  42921 pts/4    00:00:00 etcd</span><br><span class="line"></span><br><span class="line">$ netstat -tunpl</span><br><span class="line">(Not all processes could be identified, non-owned process info</span><br><span class="line"> will not be shown, you would have to be root to see it all.)</span><br><span class="line">Active Internet connections (only servers)</span><br><span class="line">Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name</span><br><span class="line">tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      -</span><br><span class="line">tcp        0      0 127.0.0.1:3379          0.0.0.0:*               LISTEN      42919/etcd</span><br><span class="line">tcp        0      0 127.0.0.1:3380          0.0.0.0:*               LISTEN      42919/etcd</span><br><span class="line">tcp        0      0 127.0.0.1:5379          0.0.0.0:*               LISTEN      42921/etcd</span><br><span class="line">tcp        0      0 127.0.0.1:5380          0.0.0.0:*               LISTEN      42921/etcd</span><br><span class="line">tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -</span><br><span class="line">tcp        0      0 127.0.0.1:4379          0.0.0.0:*               LISTEN      42920/etcd</span><br><span class="line">tcp        0      0 127.0.0.1:4380          0.0.0.0:*               LISTEN      42920/etcd</span><br><span class="line">tcp6       0      0 :::22                   :::*                    LISTEN      -</span><br><span class="line">udp        0      0 127.0.0.53:53           0.0.0.0:*                           -</span><br><span class="line">udp        0      0 192.168.191.140:68      0.0.0.0:*                           -</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">member list -wtable</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line">|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line">| 1701f7e3861531d4 | started | infra0 | https://127.0.0.1:3380 | https://127.0.0.1:3379 |      false |</span><br><span class="line">| 6a58b5afdcebd95d | started | infra1 | https://127.0.0.1:4380 | https://127.0.0.1:4379 |      false |</span><br><span class="line">| 84a1a2f39cda4029 | started | infra2 | https://127.0.0.1:5380 | https://127.0.0.1:5379 |      false |</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">put k v1</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">put k v2</span><br><span class="line">OK</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">get k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 14081100589508862000,</span><br><span class="line">    &quot;member_id&quot;: 1657878694428226000,</span><br><span class="line">    &quot;revision&quot;: 3,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;aw==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 3,</span><br><span class="line">      &quot;version&quot;: 2,</span><br><span class="line">      &quot;value&quot;: &quot;djI=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">endpoint status -wtable</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br><span class="line">|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br><span class="line">| https://127.0.0.1:3379 | 1701f7e3861531d4 |  3.4.26 |   20 kB |     false |      false |         2 |         10 |                 10 |        |</span><br><span class="line">+------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>backup，<code>snapshot</code> 是<code>全量</code>的</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">snapshot save snapshot.db</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686472830.083478,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:119&quot;,&quot;msg&quot;:&quot;created temporary db file&quot;,&quot;path&quot;:&quot;snapshot.db.part&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:&quot;2022-06-11T08:40:30.089025Z&quot;,&quot;caller&quot;:&quot;clientv3/maintenance.go:200&quot;,&quot;msg&quot;:&quot;opened snapshot stream; downloading&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686472830.0891407,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:127&quot;,&quot;msg&quot;:&quot;fetching snapshot&quot;,&quot;endpoint&quot;:&quot;https://127.0.0.1:3379&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:&quot;2022-06-11T08:40:30.090231Z&quot;,&quot;caller&quot;:&quot;clientv3/maintenance.go:208&quot;,&quot;msg&quot;:&quot;completed snapshot read; closing&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686472830.090827,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:142&quot;,&quot;msg&quot;:&quot;fetched snapshot&quot;,&quot;endpoint&quot;:&quot;https://127.0.0.1:3379&quot;,&quot;size&quot;:&quot;20 kB&quot;,&quot;took&quot;:0.007207632&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686472830.09087,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:152&quot;,&quot;msg&quot;:&quot;saved&quot;,&quot;path&quot;:&quot;snapshot.db&quot;&#125;</span><br><span class="line">Snapshot saved at snapshot.db</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>delete data + kill etcd</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ rm -rf /tmp/etcd</span><br><span class="line"></span><br><span class="line">$ kill process of infra0 infra1 infra2</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">member list -wtable</span><br><span class="line">&#123;&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:&quot;2022-06-11T08:54:30.291653Z&quot;,&quot;caller&quot;:&quot;clientv3/retry_interceptor.go:62&quot;,&quot;msg&quot;:&quot;retrying of unary invoker failed&quot;,&quot;target&quot;:&quot;endpoint://client-f61939fb-55dd-4da6-a116-ded49335f594/127.0.0.1:3379&quot;,&quot;attempt&quot;:0,&quot;error&quot;:&quot;rpc error: code = DeadlineExceeded desc = latest balancer error: all SubConns are in TransientFailure, latest connection error: connection error: desc = \&quot;transport: Error while dialing dial tcp 127.0.0.1:3379: connect: connection refused\&quot;&quot;&#125;</span><br><span class="line">Error: context deadline exceeded</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>restore</p>
+</blockquote>
+<figure class="highlight bash"><figcaption><span>restore.sh</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> ETCDCTL_API=3</span><br><span class="line"></span><br><span class="line">/tmp/etcd-download-test/etcdctl snapshot restore snapshot.db \</span><br><span class="line">  --name infra0 \</span><br><span class="line">  --data-dir=/tmp/etcd/infra0 \</span><br><span class="line">  --initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">  --initial-cluster-token etcd-cluster-1 \</span><br><span class="line">  --initial-advertise-peer-urls https://127.0.0.1:3380</span><br><span class="line"></span><br><span class="line">/tmp/etcd-download-test/etcdctl snapshot restore snapshot.db \</span><br><span class="line">    --name infra1 \</span><br><span class="line">    --data-dir=/tmp/etcd/infra1 \</span><br><span class="line">    --initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">    --initial-cluster-token etcd-cluster-1 \</span><br><span class="line">    --initial-advertise-peer-urls https://127.0.0.1:4380</span><br><span class="line"></span><br><span class="line">/tmp/etcd-download-test/etcdctl snapshot restore snapshot.db \</span><br><span class="line">  --name infra2 \</span><br><span class="line">  --data-dir=/tmp/etcd/infra2 \</span><br><span class="line">  --initial-cluster infra0=https://127.0.0.1:3380,infra1=https://127.0.0.1:4380,infra2=https://127.0.0.1:5380 \</span><br><span class="line">  --initial-cluster-token etcd-cluster-1 \</span><br><span class="line">  --initial-advertise-peer-urls https://127.0.0.1:5380</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ sh ./restore.sh</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4626496,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:296&quot;,&quot;msg&quot;:&quot;restoring snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra0/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra0&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra0/member/snap&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4671628,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;1701f7e3861531d4&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:3380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4673116,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;6a58b5afdcebd95d&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:4380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4673269,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;84a1a2f39cda4029&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:5380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4704263,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:309&quot;,&quot;msg&quot;:&quot;restored snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra0/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra0&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra0/member/snap&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4789834,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:296&quot;,&quot;msg&quot;:&quot;restoring snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra1/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra1&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra1/member/snap&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4806437,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;1701f7e3861531d4&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:3380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4807384,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;6a58b5afdcebd95d&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:4380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4807668,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;84a1a2f39cda4029&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:5380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.484783,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:309&quot;,&quot;msg&quot;:&quot;restored snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra1/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra1&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra1/member/snap&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4969661,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:296&quot;,&quot;msg&quot;:&quot;restoring snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra2/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra2&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra2/member/snap&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4990554,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;1701f7e3861531d4&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:3380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4991322,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;6a58b5afdcebd95d&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:4380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.4991415,&quot;caller&quot;:&quot;membership/cluster.go:392&quot;,&quot;msg&quot;:&quot;added member&quot;,&quot;cluster-id&quot;:&quot;c36a1e619c38211b&quot;,&quot;local-member-id&quot;:&quot;0&quot;,&quot;added-peer-id&quot;:&quot;84a1a2f39cda4029&quot;,&quot;added-peer-peer-urls&quot;:[&quot;https://127.0.0.1:5380&quot;]&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1686474755.5067184,&quot;caller&quot;:&quot;snapshot/v3_snapshot.go:309&quot;,&quot;msg&quot;:&quot;restored snapshot&quot;,&quot;path&quot;:&quot;snapshot.db&quot;,&quot;wal-dir&quot;:&quot;/tmp/etcd/infra2/member/wal&quot;,&quot;data-dir&quot;:&quot;/tmp/etcd/infra2&quot;,&quot;snap-dir&quot;:&quot;/tmp/etcd/infra2/member/snap&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>restart 不需要指定 <code>--initial-cluster</code>，在 restore 阶段已指定</p>
+</blockquote>
+<figure class="highlight bash"><figcaption><span>restart.sh</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra0 \</span><br><span class="line">--data-dir=/tmp/etcd/infra0 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:3380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:3379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:3379 \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra0.<span class="built_in">log</span> &amp;</span><br><span class="line"></span><br><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra1 \</span><br><span class="line">--data-dir=/tmp/etcd/infra1 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:4380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:4379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:4379 \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra1.<span class="built_in">log</span> &amp;</span><br><span class="line"></span><br><span class="line"><span class="built_in">nohup</span> /tmp/etcd-download-test/etcd --name infra2 \</span><br><span class="line">--data-dir=/tmp/etcd/infra2 \</span><br><span class="line">--listen-peer-urls https://127.0.0.1:5380 \</span><br><span class="line">--listen-client-urls https://127.0.0.1:5379 \</span><br><span class="line">--advertise-client-urls https://127.0.0.1:5379 \</span><br><span class="line">--client-cert-auth --trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--peer-client-cert-auth --peer-trusted-ca-file=/tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">--peer-cert-file=/tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--peer-key-file=/tmp/etcd-certs/certs/127.0.0.1-key.pem 2&gt;&amp;1 &gt; /tmp/log/infra2.<span class="built_in">log</span> &amp;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">$ sh ./restart.sh</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">member list -wtable</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line">|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line">| 1701f7e3861531d4 | started | infra0 | https://127.0.0.1:3380 | https://127.0.0.1:3379 |      false |</span><br><span class="line">| 6a58b5afdcebd95d | started | infra1 | https://127.0.0.1:4380 | https://127.0.0.1:4379 |      false |</span><br><span class="line">| 84a1a2f39cda4029 | started | infra2 | https://127.0.0.1:5380 | https://127.0.0.1:5379 |      false |</span><br><span class="line">+------------------+---------+--------+------------------------+------------------------+------------+</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">get k -wjson | jq</span><br><span class="line">&#123;</span><br><span class="line">  &quot;header&quot;: &#123;</span><br><span class="line">    &quot;cluster_id&quot;: 14081100589508862000,</span><br><span class="line">    &quot;member_id&quot;: 1657878694428226000,</span><br><span class="line">    &quot;revision&quot;: 3,</span><br><span class="line">    &quot;raft_term&quot;: 2</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;kvs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;key&quot;: &quot;aw==&quot;,</span><br><span class="line">      &quot;create_revision&quot;: 2,</span><br><span class="line">      &quot;mod_revision&quot;: 3,</span><br><span class="line">      &quot;version&quot;: 2,</span><br><span class="line">      &quot;value&quot;: &quot;djI=&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ],</span><br><span class="line">  &quot;count&quot;: 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ /tmp/etcd-download-test/etcdctl \</span><br><span class="line">--endpoints https://127.0.0.1:3379 \</span><br><span class="line">--cert /tmp/etcd-certs/certs/127.0.0.1.pem \</span><br><span class="line">--key /tmp/etcd-certs/certs/127.0.0.1-key.pem \</span><br><span class="line">--cacert /tmp/etcd-certs/certs/ca.pem \</span><br><span class="line">put k v3</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<h2 id="社区"><a href="#社区" class="headerlink" title="社区"></a>社区</h2><h3 id="etcd-operator"><a href="#etcd-operator" class="headerlink" title="etcd operator"></a>etcd operator</h3><blockquote>
+<p><a target="_blank" rel="noopener" href="https://github.com/coreos/etcd-operator">https://github.com/coreos/etcd-operator</a></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611175928892.png" alt="image-20230611175928892"></p>
+<ol>
+<li>CRD - <code>etcdCluster</code> + <code>etcdRestoreResource</code><ul>
+<li>etcd-operator 监听到 <code>etcdCluster</code>：<code>创建</code> etcd Pod</li>
+<li>etcd-operator 监听到 <code>etcdRestoreResource</code>：<code>恢复</code> etcd Pod</li>
+</ul>
+</li>
+<li>etcd Pod 包含两个容器：<code>etcd</code> + <code>backup</code><ul>
+<li>etcd 要<code>外挂存储</code></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ sudo cat /etc/kubernetes/manifests/etcd.yaml</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    ...</span><br><span class="line">    volumeMounts:</span><br><span class="line">    - mountPath: /var/lib/etcd</span><br><span class="line">      name: etcd-data</span><br><span class="line">        ...</span><br><span class="line">  volumes:</span><br><span class="line">    ...</span><br><span class="line">  - hostPath:</span><br><span class="line">      path: /var/lib/etcd</span><br><span class="line">      type: DirectoryOrCreate</span><br><span class="line">    name: etcd-data</span><br></pre></td></tr></table></figure>
+
+<h3 id="Statefulset"><a href="#Statefulset" class="headerlink" title="Statefulset"></a>Statefulset</h3><blockquote>
+<p>Helm</p>
+</blockquote>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://bitnami.com/stack/etcd/helm">https://bitnami.com/stack/etcd/helm</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/bitnami/charts/tree/main/bitnami/etcd">https://github.com/bitnami/charts/tree/main/bitnami/etcd</a></li>
+</ol>
+<h1 id="Kubernetes"><a href="#Kubernetes" class="headerlink" title="Kubernetes"></a>Kubernetes</h1><ol>
+<li>etcd 是 Kubernetes 的<code>后端存储</code></li>
+<li>对于每一个 <code>API 对象</code>，都有对应的 <code>storage.go</code> 负责对象的存储操作</li>
+<li>API Server 在启动脚本中指定 etcd 集群</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ sudo cat /etc/kubernetes/manifests/kube-apiserver.yaml</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">  - command:</span><br><span class="line">    - kube-apiserver</span><br><span class="line">        ...</span><br><span class="line">    - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt</span><br><span class="line">    - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt</span><br><span class="line">    - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key</span><br><span class="line">    - --etcd-servers=https://127.0.0.1:2379</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>API 对象在 etcd 中的存储路径</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">$ ps -ef | grep etcd</span><br><span class="line">root        8737    8625  1 09:11 ?        00:02:06 etcd --advertise-client-urls=https://192.168.191.138:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --initial-advertise-peer-urls=https://192.168.191.138:2380 --initial-cluster=mac-k8s=https://192.168.191.138:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://192.168.191.138:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://192.168.191.138:2380 --name=mac-k8s --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt</span><br><span class="line"></span><br><span class="line">$ sudo /tmp/etcd-download-test/etcdctl --endpoints 192.168.191.138:2379 \                                          ─╯</span><br><span class="line">--cacert /etc/kubernetes/pki/etcd/ca.crt \</span><br><span class="line">--cert /etc/kubernetes/pki/etcd/server.crt \</span><br><span class="line">--key /etc/kubernetes/pki/etcd/server.key \</span><br><span class="line">get --prefix / --keys-only</span><br><span class="line">...</span><br><span class="line">/registry/namespaces/default</span><br><span class="line">/registry/networkpolicies/calico-apiserver/allow-apiserver</span><br><span class="line">/registry/operator.tigera.io/tigerastatuses/apiserver</span><br><span class="line">/registry/pods/calico-apiserver/calico-apiserver-79869b6f4f-8kz9k</span><br><span class="line">/registry/pods/default/nginx-deployment-6799fc88d8-4ppnm</span><br><span class="line">/registry/roles/kube-system/system:controller:token-cleaner</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">$ k -n kube-system get role system:controller:token-cleaner -owide -v 9</span><br><span class="line">I0611 11:21:23.344515  214569 loader.go:372] Config loaded from file:  /home/zhongmingmao/.kube/config</span><br><span class="line">I0611 11:21:23.348602  214569 round_trippers.go:435] curl -v -XGET  -H &quot;Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json&quot; -H &quot;User-Agent: kubectl/v1.22.2 (linux/arm64) kubernetes/8b5a191&quot; &#x27;https://192.168.191.138:6443/apis/rbac.authorization.k8s.io/v1/namespaces/kube-system/roles/system:controller:token-cleaner&#x27;</span><br><span class="line">I0611 11:21:23.354558  214569 round_trippers.go:454] GET https://192.168.191.138:6443/apis/rbac.authorization.k8s.io/v1/namespaces/kube-system/roles/system:controller:token-cleaner 200 OK in 5 milliseconds</span><br><span class="line">I0611 11:21:23.354583  214569 round_trippers.go:460] Response Headers:</span><br><span class="line">I0611 11:21:23.354586  214569 round_trippers.go:463]     X-Kubernetes-Pf-Prioritylevel-Uid: e2605faa-93d6-4d86-9ed5-dfd861e777f6</span><br><span class="line">I0611 11:21:23.354588  214569 round_trippers.go:463]     Content-Length: 1832</span><br><span class="line">I0611 11:21:23.354590  214569 round_trippers.go:463]     Date: Sun, 11 Jun 2022 11:21:23 GMT</span><br><span class="line">I0611 11:21:23.354592  214569 round_trippers.go:463]     Audit-Id: b0b8bf59-f305-4d56-ab65-66e6cbc0ac0d</span><br><span class="line">I0611 11:21:23.354594  214569 round_trippers.go:463]     Cache-Control: no-cache, private</span><br><span class="line">I0611 11:21:23.354596  214569 round_trippers.go:463]     Content-Type: application/json</span><br><span class="line">I0611 11:21:23.354598  214569 round_trippers.go:463]     X-Kubernetes-Pf-Flowschema-Uid: 2f005305-d15e-4252-bad1-edba0045f54d</span><br><span class="line">I0611 11:21:23.354624  214569 request.go:1181] Response Body: &#123;&quot;kind&quot;:&quot;Table&quot;,&quot;apiVersion&quot;:&quot;meta.k8s.io/v1&quot;,&quot;metadata&quot;:&#123;&quot;resourceVersion&quot;:&quot;181&quot;&#125;,&quot;columnDefinitions&quot;:[&#123;&quot;name&quot;:&quot;Name&quot;,&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;name&quot;,&quot;description&quot;:&quot;Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names&quot;,&quot;priority&quot;:0&#125;,&#123;&quot;name&quot;:&quot;Created At&quot;,&quot;type&quot;:&quot;date&quot;,&quot;format&quot;:&quot;&quot;,&quot;description&quot;:&quot;CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata&quot;,&quot;priority&quot;:0&#125;],&quot;rows&quot;:[&#123;&quot;cells&quot;:[&quot;system:controller:token-cleaner&quot;,&quot;2022-05-30T01:48:56Z&quot;],&quot;object&quot;:&#123;&quot;kind&quot;:&quot;PartialObjectMetadata&quot;,&quot;apiVersion&quot;:&quot;meta.k8s.io/v1&quot;,&quot;metadata&quot;:&#123;&quot;name&quot;:&quot;system:controller:token-cleaner&quot;,&quot;namespace&quot;:&quot;kube-system&quot;,&quot;uid&quot;:&quot;b74bf1d2-d5c3-4fce-8e71-7e34ff70b94f&quot;,&quot;resourceVersion&quot;:&quot;181&quot;,&quot;creationTimestamp&quot;:&quot;2022-05-30T01:48:56Z&quot;,&quot;labels&quot;:&#123;&quot;kubernetes.io/bootstrapping&quot;:&quot;rbac-defaults&quot;&#125;,&quot;annotations&quot;:&#123;&quot;rbac.authorization.kubernetes.io/autoupdate&quot;:&quot;true&quot;&#125;,&quot;managedFields&quot;:[&#123;&quot;manager&quot;:&quot;kube-apiserver&quot;,&quot;operation&quot;:&quot;Update&quot;,&quot;apiVersion&quot;:&quot;rbac.authorization.k8s.io/v1&quot;,&quot;time&quot;:&quot;2022-05-30T01:48:56Z&quot;,&quot;fieldsType&quot;:&quot;FieldsV1&quot;,&quot;fieldsV1&quot;:&#123;&quot;f:metadata&quot;:&#123;&quot;f:annotations&quot;:&#123;&quot;.&quot;:&#123;&#125;,&quot;f:rbac.authorization.kubernetes.io/autoupdate&quot;:&#123;&#125;&#125;,&quot;f:labels&quot;:&#123;&quot;.&quot;:&#123;&#125;,&quot;f:kubernetes.io/bootstrapping&quot;:&#123;&#125;&#125;&#125;,&quot;f:rules&quot;:&#123;&#125;&#125;&#125;]&#125;&#125;&#125;]&#125;</span><br><span class="line">NAME                              CREATED AT</span><br><span class="line">system:controller:token-cleaner   2022-05-30T01:48:56Z</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>架构</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611192629014.png" alt="image-20230611192629014"></p>
+<blockquote>
+<p>API Server 通过 <code>--etcd-servers-overrides</code> 指定<code>辅助 etcd 集群</code>，增强<code>主 etcd 集群</code>的<code>稳定性</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/bin/kube-apiserver \</span><br><span class="line">--etcd_servers=https://localhost:4001 \</span><br><span class="line">--etcd-cafile=/etc/ssl/kubernetes/ca.crt \</span><br><span class="line">--storage-backend=etcd3 \</span><br><span class="line">--etcd-servers-overrides=/events#https://localhost:4002</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>堆叠</code>式 etcd 集群：至少 <code>3</code> 个节点</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611193505001.png" alt="image-20230611193505001"></p>
+<blockquote>
+<p>外部 etcd 集群：至少 <code>6</code> 个节点</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611193633670.png" alt="image-20230611193633670"></p>
+<h1 id="经验"><a href="#经验" class="headerlink" title="经验"></a>经验</h1><blockquote>
+<p>高可用</p>
+</blockquote>
+<ol>
+<li><code>5</code> 个 peer，一般<code>不需要弹性扩容</code>，但多 peer 不一定能提升<code>读性能</code><ul>
+<li>API  Server 配置了所有的 etcd peers，但只有在当前连接的 etcd member <code>异常</code>时，才会<code>切换</code></li>
+</ul>
+</li>
+<li>高效通信<ul>
+<li>API  Server 和 etcd 部署在同一个节点 - <code>堆叠</code></li>
+<li>API  Server 和 etcd 之间的通信是基于 <code>gRPC</code>，而 <code>gRPC</code> 是基于 <code>HTTP/2</code><ul>
+<li>HTTP&#x2F;2 中的 <code>Stream</code> 是<code>共享 TCP Connection</code>，并没有解决 TCP <code>队头阻塞</code>的问题</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>存储</p>
+</blockquote>
+<ol>
+<li>最佳实践：<code>Local SSD</code> + <code>Local volume</code></li>
+</ol>
+<blockquote>
+<p>安全</p>
+</blockquote>
+<ol>
+<li>peer 之间的通信是<code>加密</code>的</li>
+<li>Kubernetes 的 <code>Secret</code> 对象，是对数据<code>加密后再存入 etcd</code></li>
+</ol>
+<blockquote>
+<p>事件分离</p>
+</blockquote>
+<ol>
+<li><code>--etcd-servers-overrides</code></li>
+</ol>
+<blockquote>
+<p>网络延迟</p>
+</blockquote>
+<ol>
+<li>etcd 集群尽量<code>同 Region 部署</code></li>
+</ol>
+<blockquote>
+<p>日志大小 - <code>创建 Snapshot</code> + <code>移除 WAL</code></p>
+</blockquote>
+<ol>
+<li>etcd <code>周期性创建 Snapshot</code> 保存系统的当前状态，并<code>移除 WAL</code></li>
+<li>指定 <code>--snapshot-count</code>（默认 <code>10,000</code>），即到一定的<code>修改次数</code>，etcd 会创建 Snapshot</li>
+</ol>
+<blockquote>
+<p>合理的储存配额（8G）</p>
+</blockquote>
+<ol>
+<li><code>没有存储配额</code>，etcd 可以利用<code>整个磁盘</code>，性能在大存储空间时<code>严重下降</code>，且<code>耗完</code>磁盘空间后，<code>分险不可预测</code></li>
+<li><code>存储配额太小</code>，容易超出配额，使得集群处于<code>维护</code>模式（只接收<code>读</code>和<code>删除</code>请求）</li>
+</ol>
+<blockquote>
+<p>自动压缩历史版本</p>
+</blockquote>
+<ol>
+<li>压缩历史版本：<code>丢弃</code>某个 Key <code>在给定版本之前</code>的所有信息</li>
+<li>etcd 支持<code>自动压缩</code>，单位为<code>小时</code>：<code>--auto-compaction</code></li>
+</ol>
+<blockquote>
+<p>定期消除碎片</p>
+</blockquote>
+<ol>
+<li><code>压缩</code>历史版本：<code>离散</code>地抹除 etcd 存储空间中的数据，将会出现<code>碎片</code></li>
+<li>碎片：无法被利用，但依然占用存储空间</li>
+</ol>
+<blockquote>
+<p>备份与恢复</p>
+</blockquote>
+<ol>
+<li>snapshot <code>save</code> + snapshot <code>restore</code></li>
+<li>对 etcd 的影响<ul>
+<li>做 snapshot save 时，会<code>锁住当前数据</code></li>
+<li><code>并发的写操作</code>需要<code>开辟新空间</code>进行<code>增量写</code>，磁盘会增长</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>增量备份</p>
+</blockquote>
+<ol>
+<li>wal - 记录数据变化的过程，提交前，都需要写入到 wal</li>
+<li>snap - 生成 snap 后，wal 会被<code>删除</code></li>
+<li>完整恢复 - <code>restore snap + replay wal</code></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230611203750505.png" alt="image-20230611203750505"></p>
+<blockquote>
+<p>Heatbeat Interval + Election Timeout</p>
+</blockquote>
+<ol>
+<li>所有节点的配置都应该一致</li>
+</ol>
+<blockquote>
+<p>ResourceVersion</p>
+</blockquote>
+<ol>
+<li><code>单个对象</code>的 ResourceVersion：对象<code>最后修改</code>的 ResourceVersion</li>
+<li><code>List 对象</code>的 ResourceVersion：<code>生成 List Response 时</code>的 ResourceVersion</li>
+</ol>
+<blockquote>
+<p>List 行为</p>
+</blockquote>
+<ol>
+<li><code>无 ResourceVersion</code>，需要 <code>Most Recent</code> 数据，请求会<code>击穿 API Server 缓存</code>，直接到 etcd</li>
+<li>API Server 通过 Label 过滤查询对象时，实际的<code>过滤动作</code>在 <code>API Server</code>，需要向 etcd 发起<code>全量查询</code></li>
+</ol>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/12/02/cloud-native-foundation-k8s-etcd/">https://blog.zhongmingmao.top/2022/12/02/cloud-native-foundation-k8s-etcd/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/kubernetes/">Kubernetes</a><a class="post-meta__tags" href="/tags/cloud-native-foundation/">Cloud Native Foundation</a><a class="post-meta__tags" href="/tags/etcd/">etcd</a><a class="post-meta__tags" href="/tags/raft/">raft</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Kubernetes - Architectural principles</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-01</div><div class="title">Kubernetes - Architectural principles</div></div></a></div><div><a href="/2022/10/16/cloud-native-foundation-docker/" title="Cloud Native Foundation - Docker"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/docker/Docker-build.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-16</div><div class="title">Cloud Native Foundation - Docker</div></div></a></div><div><a href="/2022/10/01/kubernetes-container-interconnection/" title="Kubernetes - Container Interconnection"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-04.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-01</div><div class="title">Kubernetes - Container Interconnection</div></div></a></div><div><a href="/2022/09/26/kubernetes-docker-hub/" title="Kubernetes - Docker Hub"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-hub.jpeg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-26</div><div class="title">Kubernetes - Docker Hub</div></div></a></div><div><a href="/2022/09/19/kubernetes-dockerfile/" title="Kubernetes - Dockerfile"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-02.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-19</div><div class="title">Kubernetes - Dockerfile</div></div></a></div><div><a href="/2022/09/18/kubernetes-containerization/" title="Kubernetes - Containerization"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://kubernetes-1253868755.cos.ap-guangzhou.myqcloud.com/docker/docker-01.png.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-18</div><div class="title">Kubernetes - Containerization</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">411</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85"><span class="toc-number">2.</span> <span class="toc-text">安装</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#TTL-amp-CAS"><span class="toc-number">3.</span> <span class="toc-text">TTL &amp; CAS</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Raft"><span class="toc-number">4.</span> <span class="toc-text">Raft</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%8F%E8%AE%AE"><span class="toc-number">4.1.</span> <span class="toc-text">协议</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#An-Example"><span class="toc-number">4.1.1.</span> <span class="toc-text">An Example</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Leader-Election"><span class="toc-number">4.1.1.1.</span> <span class="toc-text">Leader Election</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Log-Replication"><span class="toc-number">4.1.1.2.</span> <span class="toc-text">Log Replication</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Detail"><span class="toc-number">4.1.2.</span> <span class="toc-text">Detail</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Leader-Election-1"><span class="toc-number">4.1.2.1.</span> <span class="toc-text">Leader Election</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Log-Replication-1"><span class="toc-number">4.1.2.2.</span> <span class="toc-text">Log Replication</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Learner"><span class="toc-number">4.2.</span> <span class="toc-text">Learner</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E6%80%A7"><span class="toc-number">4.3.</span> <span class="toc-text">安全性</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-number">5.</span> <span class="toc-text">实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#WAL"><span class="toc-number">5.1.</span> <span class="toc-text">WAL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Store-V3"><span class="toc-number">5.2.</span> <span class="toc-text">Store V3</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E5%85%A5"><span class="toc-number">5.3.</span> <span class="toc-text">写入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Watch"><span class="toc-number">5.4.</span> <span class="toc-text">Watch</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%81%BE%E5%A4%87"><span class="toc-number">6.</span> <span class="toc-text">灾备</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%B9%E9%87%8F"><span class="toc-number">7.</span> <span class="toc-text">容量</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="toc-number">8.</span> <span class="toc-text">高可用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E8%B7%B5"><span class="toc-number">8.1.</span> <span class="toc-text">实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BE%E5%8C%BA"><span class="toc-number">8.2.</span> <span class="toc-text">社区</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#etcd-operator"><span class="toc-number">8.2.1.</span> <span class="toc-text">etcd operator</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Statefulset"><span class="toc-number">8.2.2.</span> <span class="toc-text">Statefulset</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Kubernetes"><span class="toc-number">9.</span> <span class="toc-text">Kubernetes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%8F%E9%AA%8C"><span class="toc-number">10.</span> <span class="toc-text">经验</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/12/02/cloud-native-foundation-k8s-etcd/" title="Kubernetes - etcd"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - etcd"/></a><div class="content"><a class="title" href="/2022/12/02/cloud-native-foundation-k8s-etcd/" title="Kubernetes - etcd">Kubernetes - etcd</a><time datetime="2022-12-01T16:06:25.000Z" title="Created 2022-12-02 00:06:25">2022-12-02</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Architectural principles"/></a><div class="content"><a class="title" href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles">Kubernetes - Architectural principles</a><time datetime="2022-11-30T16:06:25.000Z" title="Created 2022-12-01 00:06:25">2022-12-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/21/cloud-computing-serverless/" title="Cloud Computing - Serverless"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cloud-computing-1253868755.cos.ap-guangzhou.myqcloud.com/serverless.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Cloud Computing - Serverless"/></a><div class="content"><a class="title" href="/2022/10/21/cloud-computing-serverless/" title="Cloud Computing - Serverless">Cloud Computing - Serverless</a><time datetime="2022-10-20T16:06:25.000Z" title="Created 2022-10-21 00:06:25">2022-10-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/20/cloud-computing-container/" title="Cloud Computing - Container"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cloud-computing-1253868755.cos.ap-guangzhou.myqcloud.com/Xoriant-Modern-Container-Orchestration-Platform.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Cloud Computing - Container"/></a><div class="content"><a class="title" href="/2022/10/20/cloud-computing-container/" title="Cloud Computing - Container">Cloud Computing - Container</a><time datetime="2022-10-19T16:06:25.000Z" title="Created 2022-10-20 00:06:25">2022-10-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/19/cloud-computing-cloud-database/" title="Cloud Computing - Cloud database"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cloud-computing-1253868755.cos.ap-guangzhou.myqcloud.com/Cloud-Database-vs-Traditional-Database.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Cloud Computing - Cloud database"/></a><div class="content"><a class="title" href="/2022/10/19/cloud-computing-cloud-database/" title="Cloud Computing - Cloud database">Cloud Computing - Cloud database</a><time datetime="2022-10-18T16:06:25.000Z" title="Created 2022-10-19 00:06:25">2022-10-19</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
