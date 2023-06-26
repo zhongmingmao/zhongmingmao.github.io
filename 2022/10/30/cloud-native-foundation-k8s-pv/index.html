@@ -1,0 +1,303 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Kubernetes - PersistentVolume | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="概述PersistentVolume Pod 里的容器由镜像产生，镜像文件本身是只读的，进程要读写磁盘需要一个临时的存储空间 一旦 Pod 销毁，临时存储会被立即释放，数据也就丢失了   PersistentVolume 用来表示持久存储设备，隐藏了存储的底层实现 PersistentVolume 实际是一些存储设备和文件系统，如 Ceph、GlusterFS、NFS、本地磁盘 Persisten">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes - PersistentVolume">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/10/30/cloud-native-foundation-k8s-pv/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="概述PersistentVolume Pod 里的容器由镜像产生，镜像文件本身是只读的，进程要读写磁盘需要一个临时的存储空间 一旦 Pod 销毁，临时存储会被立即释放，数据也就丢失了   PersistentVolume 用来表示持久存储设备，隐藏了存储的底层实现 PersistentVolume 实际是一些存储设备和文件系统，如 Ceph、GlusterFS、NFS、本地磁盘 Persisten">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230625163632509.png">
+<meta property="article:published_time" content="2022-10-29T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-06-26T11:43:58.626Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Kubernetes">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230625163632509.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/10/30/cloud-native-foundation-k8s-pv/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Kubernetes - PersistentVolume',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-06-26 19:43:58'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">420</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230625163632509.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Kubernetes - PersistentVolume</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-10-29T16:06:25.000Z" title="Created 2022-10-30 00:06:25">2022-10-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/kubernetes/">Kubernetes</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">917</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>4min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="PersistentVolume"><a href="#PersistentVolume" class="headerlink" title="PersistentVolume"></a>PersistentVolume</h2><ol>
+<li>Pod 里的容器由镜像产生，镜像文件本身是只读的，进程要读写磁盘需要一个<code>临时的存储空间</code><ul>
+<li>一旦 Pod 销毁，临时存储会被<code>立即释放</code>，数据也就丢失了</li>
+</ul>
+</li>
+<li>PersistentVolume<ul>
+<li>用来表示<code>持久存储设备</code>，隐藏了存储的底层实现</li>
+<li>PersistentVolume 实际是一些<code>存储设备</code>和<code>文件系统</code>，如 Ceph、GlusterFS、NFS、本地磁盘</li>
+<li>PersistentVolume 是属于<code>集群</code>的系统资源，是和 <code>Node 平级</code>的对象，<code>Pod 只有使用权</code></li>
+</ul>
+</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="PersistentVolumeClaim-StorageClass"><a href="#PersistentVolumeClaim-StorageClass" class="headerlink" title="PersistentVolumeClaim + StorageClass"></a>PersistentVolumeClaim + StorageClass</h2><blockquote>
+<p>PersistentVolumeClaim 和 StorageClass 是 Pod 与 PersistentVolume 之间的<code>中间层</code></p>
+</blockquote>
+<ol>
+<li><code>Pod</code> 用 <code>PersistentVolumeClaim</code> 来向 Kubernetes <code>申请存储资源</code></li>
+<li><code>bind</code>：一旦资源申请成功，Kubernetes 会把 <code>PV</code> 和 <code>PVC</code> 关联在一起</li>
+<li>StorageClass 类似于 IngressClass，<code>抽象</code>了特定类型的存储系统<ul>
+<li>在 PVC 和 PV 之间充当<code>协调人</code>的角色，<code>帮助 PVC 找到合适的 PV</code></li>
+</ul>
+</li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230625212036873.png" alt="image-20230625212036873"></p>
+<h1 id="HostPath"><a href="#HostPath" class="headerlink" title="HostPath"></a>HostPath</h1><blockquote>
+<p><code>HostPath</code> 一般用于 <code>DaemonSet</code>，如 Fluentd 等</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ k api-resources --api-group=&quot;&quot;</span><br><span class="line">NAME                     SHORTNAMES   APIVERSION   NAMESPACED   KIND</span><br><span class="line">...</span><br><span class="line">persistentvolumeclaims   pvc          v1           true         PersistentVolumeClaim</span><br><span class="line">persistentvolumes        pv           v1           false        PersistentVolume</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h2 id="PersistentVolume-1"><a href="#PersistentVolume-1" class="headerlink" title="PersistentVolume"></a>PersistentVolume</h2><blockquote>
+<p>访问模式：由于<code>存储</code>是<code>系统级别</code>的概念，被限制的对象为 <code>Node</code>，而非 Pod</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ReadWriteOnce</code></td>
+<td>存储卷可读可写，但只能被一个 <code>Node</code> 上的 Pod 挂载</td>
+</tr>
+<tr>
+<td><code>ReadOnlyMany</code></td>
+<td>存储卷只读不可写，可以被任意 <code>Node</code> 上的 Pod 多次挂载</td>
+</tr>
+<tr>
+<td><code>ReadWriteMany</code></td>
+<td>存储卷可读可写，可以被任意 <code>Node</code> 上的 Pod 多次挂载</td>
+</tr>
+<tr>
+<td><code>ReadWriteOncePod</code></td>
+<td>Kubernetes 1.27<br />存储卷可读可写，但只能被一个 <code>Pod</code> 上的 Pod 挂载</td>
+</tr>
+</tbody></table>
+<figure class="highlight yaml"><figcaption><span>pv.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PersistentVolume</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">host-10m-pv</span></span><br><span class="line"></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">storageClassName:</span> <span class="string">host-test</span></span><br><span class="line">  <span class="attr">accessModes:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">ReadWriteOnce</span></span><br><span class="line">  <span class="attr">capacity:</span></span><br><span class="line">    <span class="attr">storage:</span> <span class="string">10Mi</span></span><br><span class="line">  <span class="attr">hostPath:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">/tmp/host-10m-pv</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f pv.yaml</span><br><span class="line">persistentvolume/host-10m-pv created</span><br><span class="line"></span><br><span class="line">$ k get pv -owide</span><br><span class="line">NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE   VOLUMEMODE</span><br><span class="line">host-10m-pv   10Mi       RWO            Retain           Available           host-test               40s   Filesystem</span><br></pre></td></tr></table></figure>
+
+<h2 id="PersistentVolumeClaim"><a href="#PersistentVolumeClaim" class="headerlink" title="PersistentVolumeClaim"></a>PersistentVolumeClaim</h2><blockquote>
+<p>Kubernetes 会根据 PVC 的描述，去找能够匹配 <code>StorageClass</code> 和 <code>Capacity</code> 等条件的 PV</p>
+</blockquote>
+<figure class="highlight yaml"><figcaption><span>pvc.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PersistentVolumeClaim</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">host-5m-pvc</span></span><br><span class="line"></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">storageClassName:</span> <span class="string">host-test</span></span><br><span class="line">  <span class="attr">accessModes:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">ReadWriteOnce</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">storage:</span> <span class="string">5Mi</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PVC 对象一旦创建成功，Kubernetes 会立即通过 StorageClass、resources 等条件在集群内<code>寻找并绑定</code>匹配的 PV</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f pvc.yaml</span><br><span class="line">persistentvolumeclaim/host-5m-pvc created</span><br><span class="line"></span><br><span class="line">$ k get pvc -owide</span><br><span class="line">NAME          STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   AGE   VOLUMEMODE</span><br><span class="line">host-5m-pvc   Bound    host-10m-pv   10Mi       RWO            host-test      70s   Filesystem</span><br><span class="line"></span><br><span class="line">$ k get pv -owide</span><br><span class="line">NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                 STORAGECLASS   REASON   AGE     VOLUMEMODE</span><br><span class="line">host-10m-pv   10Mi       RWO            Retain           Bound    default/host-5m-pvc   host-test               4m58s   Filesystem</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>修改 PVC 的预期为 100Mi，PVC 会一直处于 <code>Pending</code> 状态（因为没有找到符合要求的 PV）</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ k get pvc -owide</span><br><span class="line">NAME            STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE   VOLUMEMODE</span><br><span class="line">host-100m-pvc   Pending                                      host-test      4s    Filesystem</span><br><span class="line"></span><br><span class="line">$ k get pv -owide</span><br><span class="line">NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE   VOLUMEMODE</span><br><span class="line">host-10m-pv   10Mi       RWO            Retain           Available           host-test               22s   Filesystem</span><br></pre></td></tr></table></figure>
+
+<h2 id="Pod"><a href="#Pod" class="headerlink" title="Pod"></a>Pod</h2><figure class="highlight yaml"><figcaption><span>nginx.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">host-pvc-pod</span></span><br><span class="line"></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">host-pvc-vol</span></span><br><span class="line">    <span class="attr">persistentVolumeClaim:</span></span><br><span class="line">      <span class="attr">claimName:</span> <span class="string">host-5m-pvc</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx-pvc-pod</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">nginx:alpine</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">volumeMounts:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">host-pvc-vol</span></span><br><span class="line">      <span class="attr">mountPath:</span> <span class="string">/tmp</span></span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230626175201216.png" alt="image-20230626175201216"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f nginx.yaml</span><br><span class="line">pod/host-pvc-pod created</span><br><span class="line"></span><br><span class="line">$ k get po -owide</span><br><span class="line">NAME                                READY   STATUS    RESTARTS      AGE   IP           NODE         NOMINATED NODE   READINESS GATES</span><br><span class="line">host-pvc-pod                        1/1     Running   0             33s   10.10.1.55   mac-worker   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line">$ k exec -it host-pvc-pod -- sh</span><br><span class="line">/ # cd /tmp/</span><br><span class="line">/tmp # echo zhongmingmao &gt; name.txt</span><br><span class="line">/tmp # cat name.txt</span><br><span class="line">zhongmingmao</span><br><span class="line">/tmp # exit</span><br><span class="line"></span><br><span class="line">$ k get no -owide</span><br><span class="line">NAME         STATUS   ROLES                  AGE   VERSION   INTERNAL-IP       EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME</span><br><span class="line">mac-master   Ready    control-plane,master   9d    v1.23.3   192.168.191.144   &lt;none&gt;        Ubuntu 22.04.2 LTS   5.15.0-75-generic   docker://24.0.2</span><br><span class="line">mac-worker   Ready    &lt;none&gt;                 8d    v1.23.3   192.168.191.146   &lt;none&gt;        Ubuntu 22.04.2 LTS   5.15.0-75-generic   docker://20.10.24</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>登录 mac-worker</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cat /tmp/host-10m-pv/name.txt</span><br><span class="line">zhongmingmao</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>重建 Pod，当前集群只有一个 Worker 节点，能重新获取到之前的数据，实现了简单的<code>数据持久化</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ k delete -f nginx.yaml</span><br><span class="line">pod &quot;host-pvc-pod&quot; deleted</span><br><span class="line"></span><br><span class="line">$ k apply -f nginx.yaml</span><br><span class="line">pod/host-pvc-pod created</span><br><span class="line"></span><br><span class="line">$ k exec -it host-pvc-pod -- cat /tmp/name.txt</span><br><span class="line">zhongmingmao</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>emptyDir</code> 的生命周期与 <code>Pod</code> 相同（比容器长），<code>非持久化存储</code>，可以用作<code>缓存</code></p>
+</blockquote>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/10/30/cloud-native-foundation-k8s-pv/">https://blog.zhongmingmao.top/2022/10/30/cloud-native-foundation-k8s-pv/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/kubernetes/">Kubernetes</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Kubernetes - Architectural principles</div></div></a></div><div class="next-post pull-right"><a href="/2022/10/29/cloud-native-foundation-k8s-wp-v2/" title="Kubernetes - Another example"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/wordpress.gif" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Kubernetes - Another example</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/12/02/cloud-native-foundation-k8s-etcd/" title="Kubernetes - etcd"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-02</div><div class="title">Kubernetes - etcd</div></div></a></div><div><a href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-01</div><div class="title">Kubernetes - Architectural principles</div></div></a></div><div><a href="/2022/10/29/cloud-native-foundation-k8s-wp-v2/" title="Kubernetes - Another example"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/wordpress.gif" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-29</div><div class="title">Kubernetes - Another example</div></div></a></div><div><a href="/2022/10/28/cloud-native-foundation-k8s-ingress/" title="Kubernetes - Ingress"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/617fae2d495f2526b09ce6fd_k8s-ingress-01-100841247-large.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-28</div><div class="title">Kubernetes - Ingress</div></div></a></div><div><a href="/2022/10/27/cloud-native-foundation-k8s-service/" title="Kubernetes - Service"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/58-image-2.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-27</div><div class="title">Kubernetes - Service</div></div></a></div><div><a href="/2022/10/26/cloud-native-foundation-k8s-daemonset/" title="Kubernetes - Daemonset"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/DaemonSets.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-26</div><div class="title">Kubernetes - Daemonset</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">420</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolume"><span class="toc-number">1.1.</span> <span class="toc-text">PersistentVolume</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolumeClaim-StorageClass"><span class="toc-number">1.2.</span> <span class="toc-text">PersistentVolumeClaim + StorageClass</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#HostPath"><span class="toc-number">2.</span> <span class="toc-text">HostPath</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolume-1"><span class="toc-number">2.1.</span> <span class="toc-text">PersistentVolume</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolumeClaim"><span class="toc-number">2.2.</span> <span class="toc-text">PersistentVolumeClaim</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Pod"><span class="toc-number">2.3.</span> <span class="toc-text">Pod</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/12/02/cloud-native-foundation-k8s-etcd/" title="Kubernetes - etcd"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/etcd-5874937.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - etcd"/></a><div class="content"><a class="title" href="/2022/12/02/cloud-native-foundation-k8s-etcd/" title="Kubernetes - etcd">Kubernetes - etcd</a><time datetime="2022-12-01T16:06:25.000Z" title="Created 2022-12-02 00:06:25">2022-12-02</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/BLOG-Kubernets-1024x536.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Architectural principles"/></a><div class="content"><a class="title" href="/2022/12/01/cloud-native-foundation-k8s-architectural-principles/" title="Kubernetes - Architectural principles">Kubernetes - Architectural principles</a><time datetime="2022-11-30T16:06:25.000Z" title="Created 2022-12-01 00:06:25">2022-12-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/30/cloud-native-foundation-k8s-pv/" title="Kubernetes - PersistentVolume"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230625163632509.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - PersistentVolume"/></a><div class="content"><a class="title" href="/2022/10/30/cloud-native-foundation-k8s-pv/" title="Kubernetes - PersistentVolume">Kubernetes - PersistentVolume</a><time datetime="2022-10-29T16:06:25.000Z" title="Created 2022-10-30 00:06:25">2022-10-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/29/cloud-native-foundation-k8s-wp-v2/" title="Kubernetes - Another example"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/wordpress.gif" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Another example"/></a><div class="content"><a class="title" href="/2022/10/29/cloud-native-foundation-k8s-wp-v2/" title="Kubernetes - Another example">Kubernetes - Another example</a><time datetime="2022-10-28T16:06:25.000Z" title="Created 2022-10-29 00:06:25">2022-10-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/28/cloud-native-foundation-k8s-ingress/" title="Kubernetes - Ingress"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/617fae2d495f2526b09ce6fd_k8s-ingress-01-100841247-large.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Ingress"/></a><div class="content"><a class="title" href="/2022/10/28/cloud-native-foundation-k8s-ingress/" title="Kubernetes - Ingress">Kubernetes - Ingress</a><time datetime="2022-10-27T16:06:25.000Z" title="Created 2022-10-28 00:06:25">2022-10-28</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
