@@ -15,36 +15,900 @@ tags:
 
 # 概述
 
-1. 提供`集群管理`的 `REST API`，包括`认证授权`、`数据校验`、`集群状态变更`等
-2. 其它模块之间的`通信枢纽`（其它模块与 API Server 通信，只有 API Server 可以直接操作 `etcd`）
+> API Server
 
-> 访问控制
-
-![image-20230615082752079](/Users/zhongmingmao/data/typora/image-20230615082752079.png)
+1. 提供`集群管理`的 `REST API`
+2. 提供其它模块之间数据交互和通信的`枢纽`
+   - 其它模块通过 API Server 查询或者修改数据，只有 API Server 才能直接操作 `etcd`
 
 <!-- more -->
 
-|                        | Mutating | Validating |
-| ---------------------- | -------- | ---------- |
-| 是否可以`修改`对象     | 是       | 否         |
-| Webhook 是否可以`并行` | 否       | 是         |
+> 访问控制：`认证` + `鉴权` + `准入`
 
-> `impersonatation` - A 代替 B 执行某些动作
-> `max-in-flight` - 用于`限流`
-> `kube-aggregator` - 聚合其他 API Server
+> `Mutating Admission` 可以修改对象，而 `Validating Admission` 不可以修改对象
 
-# ![image-20230615083523021](/Users/zhongmingmao/data/typora/image-20230615083523021.png)认证
+![image-20230703213421651](/Users/zhongmingmao/data/typora/image-20230703213421651.png)
 
-1. 开启 `TLS` 时，`所有的请求`都首先经过`认证`
-2. Kubernetes 支持`多种`认证机制，并支持`同时开启`多个认证插件（只需要有`一个`认证`通过`即可）
-   - 认证成功，用户的 `username` 会传入授权模块，进行进一步的`鉴权`
-   - 认证失败，返回 HTTP 401
+![image-20230703213444656](/Users/zhongmingmao/data/typora/image-20230703213444656.png)
 
-## 插件
+# 认证
 
+1. 开启 `TLS` 时，`所有请求`都需要首先`认证`
+2. Kubernetes 支持多种认证机制，并支持`同时开启`多个认证插件（只需要有 `1` 个认证通过即可）
+3. 如果认证成功，进入鉴权模块，如果认证失败，则返回 401
 
+> 认证插件
+
+1. X509 证书
+   - 在 API Server `启动`时配置 `--client-ca-file`
+   - `CN 域`（CommonName）用作`用户名`，而`O 域`（Organization）则用作 `Group 名`
+2. 静态 Token 文件
+   - 在 API Server `启动`时配置 `--token-auth-file`
+   - 采用 `csv` 格式：`token,user,uid,[group...]`
+3. 引导 Token
+   - 目的：为了支持`平滑`地`启动引导新集群`
+   - 以 `Secret` 的形式保存在 `kube-system` 命名空间中，可以被`动态`管理和创建
+   - `TokenCleaner` 能够在引导 Token `过期`时将其删除
+   - 使用 kubeadm 部署 Kubernetes 时，可通过 `kubeadm token list` 查询
+4. 静态密码文件
+   - 在 API Server `启动`时配置 `--basic-auth-file`
+   - 采用 `csv` 格式：`password,user,uid,[group...]`
+5. ServiceAccount
+   - ServiceAccount 是由 Kubernetes `自动生成`的
+   - `自动挂载`在容器的 `/var/run/secrets/kubernetes.io/serviceaccount` 目录
+6. OpenID
+   - OAuth 2.0 的认证机制
+7. Webhook
+   - `--authentication-token-webhook-config-file`
+     - 描述如何访问远程的 Webhook 服务
+   - `--authentication-token-webhook-cache-ttl`
+     - 设定认证的缓存时间，默认为 2 分钟
+8. 匿名请求（一般禁止）
+   - `--anonymous-auth`
+
+## X509
+
+> API Server 本身是一个 `CA`（颁发证书，双向认证）
+
+```
+$ tree /etc/kubernetes/pki/
+/etc/kubernetes/pki/
+|-- apiserver.crt
+|-- apiserver-etcd-client.crt
+|-- apiserver-etcd-client.key
+|-- apiserver.key
+|-- apiserver-kubelet-client.crt
+|-- apiserver-kubelet-client.key
+|-- ca.crt
+|-- ca.key
+|-- etcd
+|   |-- ca.crt
+|   |-- ca.key
+|   |-- healthcheck-client.crt
+|   |-- healthcheck-client.key
+|   |-- peer.crt
+|   |-- peer.key
+|   |-- server.crt
+|   `-- server.key
+|-- front-proxy-ca.crt
+|-- front-proxy-ca.key
+|-- front-proxy-client.crt
+|-- front-proxy-client.key
+|-- sa.key
+`-- sa.pub
+```
+
+> 生成私钥和 CSR
+
+```
+$ openssl genrsa -out zhongmingmao.key 2048
+Generating RSA private key, 2048 bit long modulus (2 primes)
+..............................+++++
+..+++++
+e is 65537 (0x010001)
+
+$ openssl req -new -key zhongmingmao.key -out zhongmingmao.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:CN
+State or Province Name (full name) [Some-State]:GuangDong
+Locality Name (eg, city) []:ZhongShan
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Wechat
+Organizational Unit Name (eg, section) []:IT
+Common Name (e.g. server FQDN or YOUR name) []:zhongmingmao
+Email Address []:zhongmingmao@163.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+```
+
+> 编码 CSR
+
+```
+$ cat zhongmingmao.csr | base64 | tr -d "\n"
+LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQzFUQ0NBYjBDQVFBd2dZOHhDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJREFsSGRXRnVaMFJ2Ym1jeApFakFRQmdOVkJBY01DVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDZ3dHVjJWamFHRjBNUXN3Q1FZRFZRUUxEQUpKClZERVZNQk1HQTFVRUF3d01lbWh2Ym1kdGFXNW5iV0Z2TVNNd0lRWUpLb1pJaHZjTkFRa0JGaFI2YUc5dVoyMXAKYm1kdFlXOUFNVFl6TG1OdmJUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU9OVgpHaWZvKzBwMTJ5Z2RNQ2dnREFIVW5SN2JGTG01Mkp6Qnd3Mkp0YXNSUkNnMm1qZTRSamRzMVdhN1JvdHZKQ0l0CmlLeXMzRlNES1ZmZ0pvcWdsbXJhaVVJeDl0YVgyODU0S1h4Q3RBakdpUDRURzhjdVBEMWxtNFA0bW5VelBnVWoKRGw3N0R0NzU4MTA0Sjl0S1k4WWM0TGV0ellZYmJlSTRFUGJNUzAwdmVLS1Y2UytKNjhack1BOU9mb1lid01RYgp0dmlXam1nUjhMUVBGUWo1VWIrMVdYeFBGOERWUWVOZEZacjJQMVI3WG83d2FlLzI5WlJzLzFVRUpORW9tbnpCClgrbnJxQlVSOUxjbjdxN2s4b1greHhCeEFVUW13a1BQZGMzL1R0VCtnNVF3K1dHcWt2ZG9RVy96aGFsY2pwbEoKYjJRc3hKZW1rcDJoVm1tZzZGTUNBd0VBQWFBQU1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ1JsNXU1QjE3TwpFZ2Rxbk84NnVxVWNCcVJGSjhUTE9MVW9PQm1RMHdIWDR0RHo3WEhIdzVwTXZpTWo4WDdkczlQSkRHWEdJYjFsCmQ4Z3pzd00wVlZCdFFUUXdzTXRwaXJnSXhZWG1FckV1NzJPYmJONjBJK250YjZSKzV2czBLd0grQWN6YytWZE8KTHN6MHluaDBUSVNjaW5mQmFuckgwOE9aWWdISGlZQjdMeks4VGQyUWJQR1FMR204UUxLeHh4UGpPc2tZajJjbApLWm9JYlJ5QTNxd3ppZE5qdTg0dmxGeDdTVkZDNXU2YXhmdVVDMGJlRkErNEVpRVBqMlFkSlBIcmJJajdNVkQxClRVbm1OZ0hzRmdNUUhPekora3A2cDM3Z2pwQVp6RUQ3RVd2UVE1QnFtNDRMWGdoYS81ODFIbGFSeGFwVjIxSmEKU1NOS1NFUDdiWmliCi0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+```
+
+> 向 API Server 提交 CSR
+
+```
+$ cat <<EOF | kubectl apply -f -
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: zhongmingmao
+spec:
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQzFUQ0NBYjBDQVFBd2dZOHhDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJREFsSGRXRnVaMFJ2Ym1jeApFakFRQmdOVkJBY01DVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDZ3dHVjJWamFHRjBNUXN3Q1FZRFZRUUxEQUpKClZERVZNQk1HQTFVRUF3d01lbWh2Ym1kdGFXNW5iV0Z2TVNNd0lRWUpLb1pJaHZjTkFRa0JGaFI2YUc5dVoyMXAKYm1kdFlXOUFNVFl6TG1OdmJUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU9OVgpHaWZvKzBwMTJ5Z2RNQ2dnREFIVW5SN2JGTG01Mkp6Qnd3Mkp0YXNSUkNnMm1qZTRSamRzMVdhN1JvdHZKQ0l0CmlLeXMzRlNES1ZmZ0pvcWdsbXJhaVVJeDl0YVgyODU0S1h4Q3RBakdpUDRURzhjdVBEMWxtNFA0bW5VelBnVWoKRGw3N0R0NzU4MTA0Sjl0S1k4WWM0TGV0ellZYmJlSTRFUGJNUzAwdmVLS1Y2UytKNjhack1BOU9mb1lid01RYgp0dmlXam1nUjhMUVBGUWo1VWIrMVdYeFBGOERWUWVOZEZacjJQMVI3WG83d2FlLzI5WlJzLzFVRUpORW9tbnpCClgrbnJxQlVSOUxjbjdxN2s4b1greHhCeEFVUW13a1BQZGMzL1R0VCtnNVF3K1dHcWt2ZG9RVy96aGFsY2pwbEoKYjJRc3hKZW1rcDJoVm1tZzZGTUNBd0VBQWFBQU1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ1JsNXU1QjE3TwpFZ2Rxbk84NnVxVWNCcVJGSjhUTE9MVW9PQm1RMHdIWDR0RHo3WEhIdzVwTXZpTWo4WDdkczlQSkRHWEdJYjFsCmQ4Z3pzd00wVlZCdFFUUXdzTXRwaXJnSXhZWG1FckV1NzJPYmJONjBJK250YjZSKzV2czBLd0grQWN6YytWZE8KTHN6MHluaDBUSVNjaW5mQmFuckgwOE9aWWdISGlZQjdMeks4VGQyUWJQR1FMR204UUxLeHh4UGpPc2tZajJjbApLWm9JYlJ5QTNxd3ppZE5qdTg0dmxGeDdTVkZDNXU2YXhmdVVDMGJlRkErNEVpRVBqMlFkSlBIcmJJajdNVkQxClRVbm1OZ0hzRmdNUUhPekora3A2cDM3Z2pwQVp6RUQ3RVd2UVE1QnFtNDRMWGdoYS81ODFIbGFSeGFwVjIxSmEKU1NOS1NFUDdiWmliCi0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 8640000
+  usages:
+  - client auth
+EOF
+certificatesigningrequest.certificates.k8s.io/zhongmingmao created
+
+$ k get csr
+NAME           AGE   SIGNERNAME                                    REQUESTOR             REQUESTEDDURATION   CONDITION
+csr-fr7gf      48m   kubernetes.io/kube-apiserver-client-kubelet   system:node:mac-k8s   <none>              Approved,Issued
+zhongmingmao   39s   kubernetes.io/kube-apiserver-client           kubernetes-admin      100d                Pending
+```
+
+> 审批 CSR
+
+```
+$ k certificate approve zhongmingmao
+certificatesigningrequest.certificates.k8s.io/zhongmingmao approved
+
+$ k get csr
+NAME           AGE   SIGNERNAME                                    REQUESTOR             REQUESTEDDURATION   CONDITION
+csr-fr7gf      49m   kubernetes.io/kube-apiserver-client-kubelet   system:node:mac-k8s   <none>              Approved,Issued
+zhongmingmao   89s   kubernetes.io/kube-apiserver-client           kubernetes-admin      100d                Approved,Issued
+```
+
+> API Server 已颁发证书：`status.certificate`
+
+```
+$ k get csr zhongmingmao -oyaml
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"certificates.k8s.io/v1","kind":"CertificateSigningRequest","metadata":{"annotations":{},"name":"zhongmingmao"},"spec":{"expirationSeconds":8640000,"request":"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQzFUQ0NBYjBDQVFBd2dZOHhDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJREFsSGRXRnVaMFJ2Ym1jeApFakFRQmdOVkJBY01DVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDZ3dHVjJWamFHRjBNUXN3Q1FZRFZRUUxEQUpKClZERVZNQk1HQTFVRUF3d01lbWh2Ym1kdGFXNW5iV0Z2TVNNd0lRWUpLb1pJaHZjTkFRa0JGaFI2YUc5dVoyMXAKYm1kdFlXOUFNVFl6TG1OdmJUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU9OVgpHaWZvKzBwMTJ5Z2RNQ2dnREFIVW5SN2JGTG01Mkp6Qnd3Mkp0YXNSUkNnMm1qZTRSamRzMVdhN1JvdHZKQ0l0CmlLeXMzRlNES1ZmZ0pvcWdsbXJhaVVJeDl0YVgyODU0S1h4Q3RBakdpUDRURzhjdVBEMWxtNFA0bW5VelBnVWoKRGw3N0R0NzU4MTA0Sjl0S1k4WWM0TGV0ellZYmJlSTRFUGJNUzAwdmVLS1Y2UytKNjhack1BOU9mb1lid01RYgp0dmlXam1nUjhMUVBGUWo1VWIrMVdYeFBGOERWUWVOZEZacjJQMVI3WG83d2FlLzI5WlJzLzFVRUpORW9tbnpCClgrbnJxQlVSOUxjbjdxN2s4b1greHhCeEFVUW13a1BQZGMzL1R0VCtnNVF3K1dHcWt2ZG9RVy96aGFsY2pwbEoKYjJRc3hKZW1rcDJoVm1tZzZGTUNBd0VBQWFBQU1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ1JsNXU1QjE3TwpFZ2Rxbk84NnVxVWNCcVJGSjhUTE9MVW9PQm1RMHdIWDR0RHo3WEhIdzVwTXZpTWo4WDdkczlQSkRHWEdJYjFsCmQ4Z3pzd00wVlZCdFFUUXdzTXRwaXJnSXhZWG1FckV1NzJPYmJONjBJK250YjZSKzV2czBLd0grQWN6YytWZE8KTHN6MHluaDBUSVNjaW5mQmFuckgwOE9aWWdISGlZQjdMeks4VGQyUWJQR1FMR204UUxLeHh4UGpPc2tZajJjbApLWm9JYlJ5QTNxd3ppZE5qdTg0dmxGeDdTVkZDNXU2YXhmdVVDMGJlRkErNEVpRVBqMlFkSlBIcmJJajdNVkQxClRVbm1OZ0hzRmdNUUhPekora3A2cDM3Z2pwQVp6RUQ3RVd2UVE1QnFtNDRMWGdoYS81ODFIbGFSeGFwVjIxSmEKU1NOS1NFUDdiWmliCi0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=","signerName":"kubernetes.io/kube-apiserver-client","usages":["client auth"]}}
+  creationTimestamp: "2022-05-30T02:36:47Z"
+  name: zhongmingmao
+  resourceVersion: "5832"
+  uid: 88626338-2881-4f98-8570-64b3e47404e2
+spec:
+  expirationSeconds: 8640000
+  groups:
+  - system:masters
+  - system:authenticated
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQzFUQ0NBYjBDQVFBd2dZOHhDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJREFsSGRXRnVaMFJ2Ym1jeApFakFRQmdOVkJBY01DVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDZ3dHVjJWamFHRjBNUXN3Q1FZRFZRUUxEQUpKClZERVZNQk1HQTFVRUF3d01lbWh2Ym1kdGFXNW5iV0Z2TVNNd0lRWUpLb1pJaHZjTkFRa0JGaFI2YUc5dVoyMXAKYm1kdFlXOUFNVFl6TG1OdmJUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU9OVgpHaWZvKzBwMTJ5Z2RNQ2dnREFIVW5SN2JGTG01Mkp6Qnd3Mkp0YXNSUkNnMm1qZTRSamRzMVdhN1JvdHZKQ0l0CmlLeXMzRlNES1ZmZ0pvcWdsbXJhaVVJeDl0YVgyODU0S1h4Q3RBakdpUDRURzhjdVBEMWxtNFA0bW5VelBnVWoKRGw3N0R0NzU4MTA0Sjl0S1k4WWM0TGV0ellZYmJlSTRFUGJNUzAwdmVLS1Y2UytKNjhack1BOU9mb1lid01RYgp0dmlXam1nUjhMUVBGUWo1VWIrMVdYeFBGOERWUWVOZEZacjJQMVI3WG83d2FlLzI5WlJzLzFVRUpORW9tbnpCClgrbnJxQlVSOUxjbjdxN2s4b1greHhCeEFVUW13a1BQZGMzL1R0VCtnNVF3K1dHcWt2ZG9RVy96aGFsY2pwbEoKYjJRc3hKZW1rcDJoVm1tZzZGTUNBd0VBQWFBQU1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ1JsNXU1QjE3TwpFZ2Rxbk84NnVxVWNCcVJGSjhUTE9MVW9PQm1RMHdIWDR0RHo3WEhIdzVwTXZpTWo4WDdkczlQSkRHWEdJYjFsCmQ4Z3pzd00wVlZCdFFUUXdzTXRwaXJnSXhZWG1FckV1NzJPYmJONjBJK250YjZSKzV2czBLd0grQWN6YytWZE8KTHN6MHluaDBUSVNjaW5mQmFuckgwOE9aWWdISGlZQjdMeks4VGQyUWJQR1FMR204UUxLeHh4UGpPc2tZajJjbApLWm9JYlJ5QTNxd3ppZE5qdTg0dmxGeDdTVkZDNXU2YXhmdVVDMGJlRkErNEVpRVBqMlFkSlBIcmJJajdNVkQxClRVbm1OZ0hzRmdNUUhPekora3A2cDM3Z2pwQVp6RUQ3RVd2UVE1QnFtNDRMWGdoYS81ODFIbGFSeGFwVjIxSmEKU1NOS1NFUDdiWmliCi0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: kubernetes.io/kube-apiserver-client
+  usages:
+  - client auth
+  username: kubernetes-admin
+status:
+  certificate: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURVRENDQWppZ0F3SUJBZ0lSQVBOVmpTczBzaFFyL3YzQjZRa21GWkF3RFFZSktvWklodmNOQVFFTEJRQXcKRlRFVE1CRUdBMVVFQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBMU16QXdNak16TURaYUZ3MHlNekE1TURjdwpNak16TURaYU1Hb3hDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJRXdsSGRXRnVaMFJ2Ym1jeEVqQVFCZ05WCkJBY1RDVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDaE1HVjJWamFHRjBNUXN3Q1FZRFZRUUxFd0pKVkRFVk1CTUcKQTFVRUF4TU1lbWh2Ym1kdGFXNW5iV0Z2TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQwpBUUVBNDFVYUorajdTblhiS0Iwd0tDQU1BZFNkSHRzVXViblluTUhERFltMXF4RkVLRGFhTjdoR04yelZacnRHCmkyOGtJaTJJckt6Y1ZJTXBWK0FtaXFDV2F0cUpRakgyMXBmYnpuZ3BmRUswQ01hSS9oTWJ4eTQ4UFdXYmcvaWEKZFRNK0JTTU9YdnNPM3ZuelhUZ24yMHBqeGh6Z3Q2M05oaHR0NGpnUTlzeExUUzk0b3BYcEw0bnJ4bXN3RDA1KwpoaHZBeEJ1MitKYU9hQkh3dEE4VkNQbFJ2N1ZaZkU4WHdOVkI0MTBWbXZZL1ZIdGVqdkJwNy9iMWxHei9WUVFrCjBTaWFmTUZmNmV1b0ZSSDB0eWZ1cnVUeWhmN0hFSEVCUkNiQ1E4OTF6ZjlPMVA2RGxERDVZYXFTOTJoQmIvT0YKcVZ5T21VbHZaQ3pFbDZhU25hRldhYURvVXdJREFRQUJvMFl3UkRBVEJnTlZIU1VFRERBS0JnZ3JCZ0VGQlFjRApBakFNQmdOVkhSTUJBZjhFQWpBQU1COEdBMVVkSXdRWU1CYUFGRGUraDNqKzdQQ3JGV0g2Y1JxOUFRRnB6bzE2Ck1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUJzL1R2dUhOQ0RNNDNqL21LQmlVSUNDWDhIdmYyejdYKzJyUW4KQjJjTmFSK0VHd091aTdVK3VlbDJacFgxZk1xcDB5bUg5RE43bmhrNnpEdThUVVp2YTdVT3lxQmpKejUxQnptMApBRmp0RVhxVkt1QnhtdVdpbSs4WnY5T2IwTnd6TWpKZm9qL1l5eU5aM1BhN0NrVTJuMFdYb2lxZTJRdU9rWmtqCjMrdXg5MFJjeDdxb2R1MnVKa3Q5QmJyS285UEk3cjRWQ0oxRVJVbXNUV01ydGoxWDF5V3g5RWRoTGdVbW51REQKMHFkTVVBa3cyTnNQeXRscytjY1dtZGxVMEdJRjJvNXozaEZkSHA1SE16aGM4aVhmSGRkSDFmelVuNkFTL3FIWgpaVXV0R0UrbWRzR2FNNzNlTk1yNXU3ZFVwWEpwdFhCLzJrb3NRczNWeSswaUpTVTkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  conditions:
+  - lastTransitionTime: "2022-05-30T02:38:06Z"
+    lastUpdateTime: "2022-05-30T02:38:06Z"
+    message: This CSR was approved by kubectl certificate approve.
+    reason: KubectlApprove
+    status: "True"
+    type: Approved
+```
+
+> 提取证书
+
+```
+$ k get csr zhongmingmao -o jsonpath='{.status.certificate}' | base64 -d > zhongmingmao.crt
+
+$ cat zhongmingmao.crt
+-----BEGIN CERTIFICATE-----
+MIIDUDCCAjigAwIBAgIRAPNVjSs0shQr/v3B6QkmFZAwDQYJKoZIhvcNAQELBQAw
+FTETMBEGA1UEAxMKa3ViZXJuZXRlczAeFw0yMzA1MzAwMjMzMDZaFw0yMzA5MDcw
+MjMzMDZaMGoxCzAJBgNVBAYTAkNOMRIwEAYDVQQIEwlHdWFuZ0RvbmcxEjAQBgNV
+BAcTCVpob25nU2hhbjEPMA0GA1UEChMGV2VjaGF0MQswCQYDVQQLEwJJVDEVMBMG
+A1UEAxMMemhvbmdtaW5nbWFvMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
+AQEA41UaJ+j7SnXbKB0wKCAMAdSdHtsUubnYnMHDDYm1qxFEKDaaN7hGN2zVZrtG
+i28kIi2IrKzcVIMpV+AmiqCWatqJQjH21pfbzngpfEK0CMaI/hMbxy48PWWbg/ia
+dTM+BSMOXvsO3vnzXTgn20pjxhzgt63Nhhtt4jgQ9sxLTS94opXpL4nrxmswD05+
+hhvAxBu2+JaOaBHwtA8VCPlRv7VZfE8XwNVB410VmvY/VHtejvBp7/b1lGz/VQQk
+0SiafMFf6euoFRH0tyfuruTyhf7HEHEBRCbCQ891zf9O1P6DlDD5YaqS92hBb/OF
+qVyOmUlvZCzEl6aSnaFWaaDoUwIDAQABo0YwRDATBgNVHSUEDDAKBggrBgEFBQcD
+AjAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFDe+h3j+7PCrFWH6cRq9AQFpzo16
+MA0GCSqGSIb3DQEBCwUAA4IBAQABs/TvuHNCDM43j/mKBiUICCX8Hvf2z7X+2rQn
+B2cNaR+EGwOui7U+uel2ZpX1fMqp0ymH9DN7nhk6zDu8TUZva7UOyqBjJz51Bzm0
+AFjtEXqVKuBxmuWim+8Zv9Ob0NwzMjJfoj/YyyNZ3Pa7CkU2n0WXoiqe2QuOkZkj
+3+ux90Rcx7qodu2uJkt9BbrKo9PI7r4VCJ1ERUmsTWMrtj1X1yWx9EdhLgUmnuDD
+0qdMUAkw2NsPytls+ccWmdlU0GIF2o5z3hFdHp5HMzhc8iXfHddH1fzUn6AS/qHZ
+ZUutGE+mdsGaM73eNMr5u7dUpXJptXB/2kosQs3Vy+0iJSU9
+-----END CERTIFICATE-----
+```
+
+> 设置 Credential
+
+```
+$ k config set-credentials zhongmingmao --client-key=zhongmingmao.key --client-certificate=zhongmingmao.crt --embed-certs=true
+User "zhongmingmao" set.
+```
+
+```yaml ~/.kube/config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1EVXpNREF4TkRnME9Wb1hEVE16TURVeU56QXhORGcwT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnRrCjIvRERGSXpuNmhoOVl6RFVmRzJDcXRlSzBzbTVGVkIyK0lXaXpCWk5ZVnNQbFpuN3NLL0NVYm4wdGJpUGpmUEoKUUJpUkxJZ3FCS1AydWRJanhjbUhqQ0hlSVFnOGswT3RnYXRCUTNzOEkwVVdhWW1QSXNQZWxwMllrZlkxK3Q3KwpQdUVsaHl1cE13eHJlSGFLQThTMG9Dd2NRT2g1L3piN290aXNrTDFlZzNZTWZaWjU1MWJKenBsc3hRdGdsdGp3CnBmcUU3UDBoQ2VTQkpwVmNGb1BXd3RNd2wvOVRvc1lKSC9TWU9kNnV0ZUllWFlEa1F6U3czZ2lkMHBkTitoS2EKemE2MEcvN2Q2a01aamUrQmRLMVFjenZpcE9zZWUvSHVDZklUNERtLzRiOFZuS1EwVU94QWZHRVg3UUdHcUlEMApOR0xSbXhXbVU4SnUraXFaaDkwQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZEZStoM2orN1BDckZXSDZjUnE5QVFGcHpvMTZNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRXZsWEJGRHRpQzJyK2VqSFBERgozeUxzbjA4Sjd1bENnN0xwMGJRaUxPZzIzZStjTTRzRnN0UVJadnFNYW1MU3l0U2hlZHAvVExFMnR0RlZOYnAvCkJlNVJiRGtuNWRFdFg5ejRva09IVTJ3ekFlaWZ5NnhCZEloYUdGZC9WT3B1SldBZ040aU9DVkRUQTA1OWNuTDMKSmJvVHJCNkRBdUo0a2JWNis5NGZkK001RXY1TVhiWXA2L2ExYTliMmVpWnNxbjM3djUvOWZlWU51Q3JYS0xGagprKzhvUWV0UGNEbW5TdkRrdUlteUZ0TGxjRjN1MGw1RmdwU2FQQnlWekJUckZQb25jTlcyV1ZkWWxLZ3ArWWFqCithT3JkRFNzbEVTY055R0hxTEkyS0RsTHIwWlBDQWtYSjFyRDcrenI5cFVEZC9LL1B5VFBlM3JaVWd3cjh2NjIKdFlJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://192.168.191.138:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJVENDQWdtZ0F3SUJBZ0lJVWVlRlYzZjRCdjR3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBMU16QXdNVFE0TkRsYUZ3MHlOREExTWprd01UUTROVEZhTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXZQOVpSS09yMWE5YjhKV2wKeWVtVzNKZVp6MGtKTXc1ZjN6UFN5dkdzbDZod3FLaDNKNXNKTTJrWXJMWUtKK25vbldmTjBCekwwclF5QTdScQpPSkJFKytsa0E2d3B4bzhOSnVITyttRHBwMnhhdHFmTWpFSEhseGV4UnlmTUUveDlDZmZsVHhPV1BUcFRqbGllCkZDQlhROTBPZmZwV3RENnM2Z2JVZXZMQzJTMStyMFJyMmhRWmE2bkxpQW9RdWhmZnJtTGJ2ZVJmblp0ZDVlS08KOUQ5SXAybmhjRE5PeWlIQWNoRlU3OW5id3JzRS9XRks5SVVtL3g1cU52WUFjS2pSUmpKSFJseUNENVdFTzBldgpYUGJjSXRZcnlHSDBBTWNkcXU5ZTc0WEFCTUNYa3VjbGs0UndkUEl1UHBMTHFJNnFTQWwvek0vdFJyQm1kL1V1ClRKbXE2d0lEQVFBQm8xWXdWREFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RBWURWUjBUQVFIL0JBSXdBREFmQmdOVkhTTUVHREFXZ0JRM3ZvZDQvdXp3cXhWaCtuRWF2UUVCYWM2TgplakFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBdm1zQ3VXcWJ1ZlI2UHVFTUlrRXg5TDZFeU1zY2NhZzlqWER2CmNTY1hXNUVUSkllcW5ISmtzRVY4NEdCdDhlcGx0aGhUM1pFVUZvSURvR3FHNk1CVDFJdG5jaVlKRG5NUHZ5djAKWFBpVno4MFM3RFZhQjhwVjJvK3JjaFRmMHdSYVUvQWF4dWdtUWwzZHVUcEtYbU1DTThGQ3FpTVJYbm1veGJVUgpqTklsTGcwbjJzMXF0Tk1LVGRCSlB3dUVqdFJZMWVpU09GRGgwclFhYmZUc2dHa25SOGxCcHdDd28rWVdaMGs0CmlZaWtrT21ERnZsakZ6Z1VpcWpTRGdjRnNnUjlFWXZ1TGdtSHlJVnpxZG1NZURMandwL2NWM1VubGNoa3hsZEsKVDcyYWs5cnhzTGwrUFVGajlFZE92Y2tKanI0VFhZcWFJR2FwNWhyTDg1bEdNcTgyVXc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdlA5WlJLT3IxYTliOEpXbHllbVczSmVaejBrSk13NWYzelBTeXZHc2w2aHdxS2gzCko1c0pNMmtZckxZS0orbm9uV2ZOMEJ6TDByUXlBN1JxT0pCRSsrbGtBNndweG84Tkp1SE8rbURwcDJ4YXRxZk0KakVISGx4ZXhSeWZNRS94OUNmZmxUeE9XUFRwVGpsaWVGQ0JYUTkwT2ZmcFd0RDZzNmdiVWV2TEMyUzErcjBScgoyaFFaYTZuTGlBb1F1aGZmcm1MYnZlUmZuWnRkNWVLTzlEOUlwMm5oY0ROT3lpSEFjaEZVNzluYndyc0UvV0ZLCjlJVW0veDVxTnZZQWNLalJSakpIUmx5Q0Q1V0VPMGV2WFBiY0l0WXJ5R0gwQU1jZHF1OWU3NFhBQk1DWGt1Y2wKazRSd2RQSXVQcExMcUk2cVNBbC96TS90UnJCbWQvVXVUSm1xNndJREFRQUJBb0lCQURGR3BrQ21KOFFqMzJXLwpycVVST1JzMGo0Nmk3VG9aa2xlQWpJSUxOc09uMEErNU5LL24xU05KVUh5ZlRkQ1FST3pkUnFUdkRSbFhqLzYxClNFaU5ITjlOUDUxUmd1YlpIMFcyOUI4RnE0WFNVMmh5SVh1a0h1Uys4YUtxdHFPelhlcCticFFLZUU1b2FhYWcKWmo2N0crVit1aXVRWEpETUVvdEYwcHBudHZPbVhEUXBueE9EVHhwNkhmREdodERtdEkxb0FlSng3aXJlNFQ5Rwp3MWR1SHJDZWpuQWp5QTkwbmtnVEhNWWVSZHoxcmE4bVZqNzE5VnpYbWxyRFFYTkhDZzJFMFZ5b29GNGc4R29CCm1rTldLVTh6NUxqN05sVFEwbElsazlrbVZTZTE2V2g0MWR6dkRIbGxtdFZyVHdPWXZjNjdWY3UzVFE4Ly84bDcKbldwME9CRUNnWUVBKzlEL09nSmxoSnoyNnBTNG5mbWt3YTVUZ3NHVWJhSEttV1ZDeVBwUFNGZzRSeXNDc2U3NwpnaXV4UkxVK2F4aU9MTm5Jc1pmb1hZUzlVbXpacWFQRzRhVHhiT2RXY2RMUTdweThHZmJranVHcmlKb0FqRDZDCmFWYXRGN3k4VU5SNXg4eXZNcjgxWGRTYmdONUFuSUJ6QkZQVzFOV3VDcjVtQnE3c2tEUVpBZmtDZ1lFQXdDTXQKQW9xMmYyTGFtdWtYNUpnK3FHc3NoMG5rZzVrZ213ODVYSEJzcHFGT3B2TWhIa0RhWUtuZHBXTkVubXF3REY2UQp4Yi9aNVBWU3hGMElFS1ZhTVZ6N1N1ekk4MnBXeVlEWnNrelpwUU80d2x4a1F5Q0lwWHQzL1R4UUV3aGd6Y3A0ClJ1SDFmUVhiUURkSVpQV0FnSVY2U2lLTWwxUW0yZFp2eVVJZERRTUNnWUVBdGxxejZPdEJYdFpZVEtua1E2bzcKOEhId1Vka2pSbjBLZlNrQ1F3NVpDWmV4TVlCcEZEZHU5T1gxR2o5eDh4WTJKeTZURW1CaVNnN05GdnB5YVZHTAp2VzIzMDFoM2xqZkhTM1EvRjBKZVkwWHk5Um9vMldhUEEvOWJtN3YyVjBaMjVnUkl2eVFPWG1PUE5MUTk3OWRvCjh6SlBlWk0vMU5IcWlsNTBPejB1K3VrQ2dZQjVKM1VoVGpDSG9PRHhuNXVtVkczbUt6WjMxSnRZYy8xQWFWZ2wKTnVyOEkya0NFdnRHSldUT1lTNVhOSUkzVmxUT1orN29FdktsMGgrdm5HNFNlUUduY05jd1JxRHNCSmpYRlAydwoxWTdENDlYa0VQaFQ3N2JhaWtGK0dFTHh6VzJsTmsramVxWWVnTXZnOFRzZ0ZrSkNTR2gxU05YWU1vTVJCNHVUCm43SEwyd0tCZ1FDQlhCUWRlbWhhMmxMbDhhbEZ5Umd1dmJyOHJsbmVIc29RUEdOeEgwSVZNVVZPaWNnM1Y5bEoKZUNGdVl0dGxpRm5yRXppeHBsRTBzU1JZMzYxdkJtMzN3eXU5RXlmN2hBTy9TUTlsYWpUdDVMR0FZdkx3TDNvcgpGeFNEaFd1cVVTZGhqSGRLb0JTWXpjOEFXUkd2S2xrU0UyTjV0M2JRSFNZL2NBOUtsSDdSbEE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+- name: zhongmingmao
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURVRENDQWppZ0F3SUJBZ0lSQVBOVmpTczBzaFFyL3YzQjZRa21GWkF3RFFZSktvWklodmNOQVFFTEJRQXcKRlRFVE1CRUdBMVVFQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBMU16QXdNak16TURaYUZ3MHlNekE1TURjdwpNak16TURaYU1Hb3hDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJRXdsSGRXRnVaMFJ2Ym1jeEVqQVFCZ05WCkJBY1RDVnBvYjI1blUyaGhiakVQTUEwR0ExVUVDaE1HVjJWamFHRjBNUXN3Q1FZRFZRUUxFd0pKVkRFVk1CTUcKQTFVRUF4TU1lbWh2Ym1kdGFXNW5iV0Z2TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQwpBUUVBNDFVYUorajdTblhiS0Iwd0tDQU1BZFNkSHRzVXViblluTUhERFltMXF4RkVLRGFhTjdoR04yelZacnRHCmkyOGtJaTJJckt6Y1ZJTXBWK0FtaXFDV2F0cUpRakgyMXBmYnpuZ3BmRUswQ01hSS9oTWJ4eTQ4UFdXYmcvaWEKZFRNK0JTTU9YdnNPM3ZuelhUZ24yMHBqeGh6Z3Q2M05oaHR0NGpnUTlzeExUUzk0b3BYcEw0bnJ4bXN3RDA1KwpoaHZBeEJ1MitKYU9hQkh3dEE4VkNQbFJ2N1ZaZkU4WHdOVkI0MTBWbXZZL1ZIdGVqdkJwNy9iMWxHei9WUVFrCjBTaWFmTUZmNmV1b0ZSSDB0eWZ1cnVUeWhmN0hFSEVCUkNiQ1E4OTF6ZjlPMVA2RGxERDVZYXFTOTJoQmIvT0YKcVZ5T21VbHZaQ3pFbDZhU25hRldhYURvVXdJREFRQUJvMFl3UkRBVEJnTlZIU1VFRERBS0JnZ3JCZ0VGQlFjRApBakFNQmdOVkhSTUJBZjhFQWpBQU1COEdBMVVkSXdRWU1CYUFGRGUraDNqKzdQQ3JGV0g2Y1JxOUFRRnB6bzE2Ck1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUJzL1R2dUhOQ0RNNDNqL21LQmlVSUNDWDhIdmYyejdYKzJyUW4KQjJjTmFSK0VHd091aTdVK3VlbDJacFgxZk1xcDB5bUg5RE43bmhrNnpEdThUVVp2YTdVT3lxQmpKejUxQnptMApBRmp0RVhxVkt1QnhtdVdpbSs4WnY5T2IwTnd6TWpKZm9qL1l5eU5aM1BhN0NrVTJuMFdYb2lxZTJRdU9rWmtqCjMrdXg5MFJjeDdxb2R1MnVKa3Q5QmJyS285UEk3cjRWQ0oxRVJVbXNUV01ydGoxWDF5V3g5RWRoTGdVbW51REQKMHFkTVVBa3cyTnNQeXRscytjY1dtZGxVMEdJRjJvNXozaEZkSHA1SE16aGM4aVhmSGRkSDFmelVuNkFTL3FIWgpaVXV0R0UrbWRzR2FNNzNlTk1yNXU3ZFVwWEpwdFhCLzJrb3NRczNWeSswaUpTVTkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBNDFVYUorajdTblhiS0Iwd0tDQU1BZFNkSHRzVXViblluTUhERFltMXF4RkVLRGFhCk43aEdOMnpWWnJ0R2kyOGtJaTJJckt6Y1ZJTXBWK0FtaXFDV2F0cUpRakgyMXBmYnpuZ3BmRUswQ01hSS9oTWIKeHk0OFBXV2JnL2lhZFRNK0JTTU9YdnNPM3ZuelhUZ24yMHBqeGh6Z3Q2M05oaHR0NGpnUTlzeExUUzk0b3BYcApMNG5yeG1zd0QwNStoaHZBeEJ1MitKYU9hQkh3dEE4VkNQbFJ2N1ZaZkU4WHdOVkI0MTBWbXZZL1ZIdGVqdkJwCjcvYjFsR3ovVlFRazBTaWFmTUZmNmV1b0ZSSDB0eWZ1cnVUeWhmN0hFSEVCUkNiQ1E4OTF6ZjlPMVA2RGxERDUKWWFxUzkyaEJiL09GcVZ5T21VbHZaQ3pFbDZhU25hRldhYURvVXdJREFRQUJBb0lCQVFEQlY0MnBSOU1BM3YrSApQRnZLcEliUnY3dnBsRFlxUjA5YzhzWXJhMldnbWt5M1Rza1dmcGpwWnB5UWhOSllvQ3ZCRGF6aC94cGNuamk1ClRpQTVZcDdMUGhYaXdJL0lydHI0M09XYmt6ZC9CeXRYdTNTeWtEWVhtYVVNTnBGWEFEL05LcVY4VGxXMWVpdHEKcXVucTdYZXg5TG1DUGtVL3UzQlhKNHYxK29aSW0yN0tXNk5vYmlqTmF6bkdWSmMrdUZSdUE4T25pbHdCc1d0dAoxa2Z1RCtSbmM3Rm1EL29jTER4OVNPN3NzaHJrekNRa2ZxR1kxeXdlOW1HTVhNUjNWdlM4MUg1TE5IbmhEK2xpCkt0QWxCVVZLR3ZIRTF1b21RLy9jM09vSlI0WTIvU0dJY01QYVVaaUFCUitFUy9vWXdvMlZnUXNZcGl0U3V0QU8KWC9qWmhXc1JBb0dCQVBJVWtPekNrNGtwS1M0Nld4ekhLMHRlWEFjZW9PZnBtWjJYd3Qwc3YyaHZXSkI4Ti8yeApGQndyT1A4UjJtcGNrNTR1SXJQZjdpeThZYnFEUURZTW16ZGxJbStiQUViQVkwRnIxdGx2SFoxdlZLRW9raUt4CldWaTVKNXdlZjRTMTVmK2p3Wjg2SVBGcGt0bnpBVDhGaUxKYldiNld2RUJWR01nRTVpeFVLSVB0QW9HQkFQQm4KY2ptY3RsOW1zL3JBYU5WMmhTZFErRE1ld3V0SlYzK2VpNFRUcUJvOW5Sd1JxQXRXQVpMZ2MzaVdQVjhMc2l6bAppMk9ZT3FqQjF1ejBGMlF3bHV2dlF3ZCtwVUFrL1pPN043Z3dMd3hXNzlVVyswa3R4cUh0ODNJVDMvTDhwSWhjCkM2ODg0MVlPdEJJc051UnVTaUJZYno0TG1DQkcrTDBLdzVCVmJoVS9Bb0dBT3FoUkZZMXdRbVArM255MVp4dTcKbWQrYlhQNUc3dXJqbGhRWDI0L2tNV0lKaTdrTnVDTVlSRnNVekhsKyt4YkRqaWlQc0JZcW1CeHRjY3dyMnV6agpEMkVxSHZEbitEelYwQnhaU3dacG5xUkRWV21IUDNESnZYM2Y0eXhncWIrSm81QUNjcHFiTU9QcitYT3djWnpkCnFwb0gvTzU1WHYwL3EvZkQ3aW5XUjJFQ2dZQWYvWlFNcUpiNE1RR0lQNnh6bzNicW1YSzkwcjBiZEVJSmdINk8KYVYvNFJmU3ZOSVpKSStQSHVNaUU1bkU2UWFNdktFaVpNenV6RTBCWGZjL1RERWc1RXppM09ab2g1QW8rYTI1cAp1emUzaTZZVWxCOVNTSjRqRkRnT0dTajIrN21sVDZKYWFsN1NKOWk4aGxlenBCMkhHbDJMUXgyMlJkdDV4SUhyCnBnS2xId0tCZ0ZLaXhhdlBJL0dQeXN1bFcxd0ZoYnZ3Z1hxTDQwQXllK2hJNytRNmUzUC9PZldDOHBBQUJuYmoKU09ZRFhRVmYrM09VM2MzTkJEZDYrTCt5b3Uzdk10WWpJdkExT281UEhVQVpSdkZKQVBIK3dxWmNLYlJTb3FFVQoxR1JxOXNVMnJoYmZpSDRkVFZkVFR3T2pSdmFJU0ZqSE1kT20wdmVzVGc3K1lUbDBDWWVRCi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+```
+
+> 授权
+
+```
+$ k create role developer --verb=create --verb=get --verb=list --verb=update --verb=delete --resource=pods
+role.rbac.authorization.k8s.io/developer created
+
+$ k create rolebinding developer-binding-zhongmingmao --role=developer --user=zhongmingmao
+rolebinding.rbac.authorization.k8s.io/developer-binding-zhongmingmao created
+```
+
+```
+$ k get po --user zhongmingmao
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-6799fc88d8-4ppnm   1/1     Running   0          40d
+nginx-deployment-6799fc88d8-j5rnt   1/1     Running   0          40d
+nginx-deployment-6799fc88d8-ltc2g   1/1     Running   0          40d
+```
+
+## 静态 Token 文件
+
+> static-token.csv
+
+ ```
+ bob-token,bob,1000,"group1,group2,group3"
+ ```
+
+> 备份 API Server
+
+```
+$ cp /etc/kubernetes/manifests/kube-apiserver.yaml ~/kube-apiserver.yaml
+```
+
+> 修改 kube-apiserver.yaml
+
+```yaml kube-apiserver-static-token.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  ...
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    ...
+    - --token-auth-file=/etc/kubernetes/auth/static-token.csv
+    image: registry.aliyuncs.com/google_containers/kube-apiserver:v1.22.2
+    ...
+    volumeMounts:
+    ...
+    - mountPath: /etc/kubernetes/auth
+      name: auth-files
+      readOnly: true
+  ...
+  volumes:
+  ...
+  - hostPath:
+      path: /home/zhongmingmao/api-server/basic-auth/static-token
+      type: DirectoryOrCreate
+    name: auth-files
+```
+
+> API Server 重新启动
+
+```
+$ sudo cp ~/kube-apiserver-static-token.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
+
+$ k get po -n kube-system -owide
+NAME                              READY   STATUS    RESTARTS        AGE   IP                NODE      NOMINATED NODE   READINESS GATES
+...
+kube-apiserver-mac-k8s            1/1     Running   0               31s   192.168.191.138   mac-k8s   <none>           <none>
+...
+```
+
+> HTTP 请求，认证成功，但鉴权失败
+
+```
+$ k get ns -v 9
+I0709 14:48:36.258397  190678 loader.go:372] Config loaded from file:  /home/zhongmingmao/.kube/config
+I0709 14:48:36.261775  190678 round_trippers.go:435] curl -v -XGET  -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" -H "User-Agent: kubectl/v1.22.2 (linux/arm64) kubernetes/8b5a191" 'https://192.168.191.138:6443/api/v1/namespaces?limit=500'
+I0709 14:48:36.268819  190678 round_trippers.go:454] GET https://192.168.191.138:6443/api/v1/namespaces?limit=500 200 OK in 7 milliseconds
+I0709 14:48:36.268840  190678 round_trippers.go:460] Response Headers:
+I0709 14:48:36.268844  190678 round_trippers.go:463]     Audit-Id: f1f1160e-abf2-4a53-ab29-c90afc02bd41
+I0709 14:48:36.268848  190678 round_trippers.go:463]     Cache-Control: no-cache, private
+I0709 14:48:36.268850  190678 round_trippers.go:463]     Content-Type: application/json
+I0709 14:48:36.268852  190678 round_trippers.go:463]     X-Kubernetes-Pf-Flowschema-Uid: 2f005305-d15e-4252-bad1-edba0045f54d
+I0709 14:48:36.268855  190678 round_trippers.go:463]     X-Kubernetes-Pf-Prioritylevel-Uid: e2605faa-93d6-4d86-9ed5-dfd861e777f6
+I0709 14:48:36.268857  190678 round_trippers.go:463]     Date: Sun, 09 Jul 2022 14:48:36 GMT
+I0709 14:48:36.268909  190678 request.go:1181] Response Body: {"kind":"Table","apiVersion":"meta.k8s.io/v1","metadata":{"resourceVersion":"11118"},"columnDefinitions":[{"name":"Name","type":"string","format":"name","description":"Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names","priority":0},{"name":"Status","type":"string","format":"","description":"The status of the namespace","priority":0},{"name":"Age","type":"string","format":"","description":"CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata","priority":0}],"rows":[{"cells":["calico-apiserver","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"calico-apiserver","uid":"33a910d7-092f-4e78-9e1f-c50b68859197","resourceVersion":"1714","creationTimestamp":"2022-05-30T01:58:40Z","labels":{"kubernetes.io/metadata.name":"calico-apiserver","name":"calico-apiserver","pod-security.kubernetes.io/enforce":"privileged","pod-security.kubernetes.io/enforce-version":"latest"},"ownerReferences":[{"apiVersion":"operator.tigera.io/v1","kind":"APIServer","name":"default","uid":"c76efece-7a9b-4a53-a6cd-84e4ca42a86b","controller":true,"blockOwnerDeletion":true}],"managedFields":[{"manager":"operator","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:58:40Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{},"f:name":{},"f:pod-security.kubernetes.io/enforce":{},"f:pod-security.kubernetes.io/enforce-version":{}},"f:ownerReferences":{".":{},"k:{\"uid\":\"c76efece-7a9b-4a53-a6cd-84e4ca42a86b\"}":{}}}}}]}}},{"cells":["calico-system","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"calico-system","uid":"02b13986-afdf-479e-8feb-476f57aee42b","resourceVersion":"606","creationTimestamp":"2022-05-30T01:50:02Z","labels":{"kubernetes.io/metadata.name":"calico-system","name":"calico-system","pod-security.kubernetes.io/enforce":"privileged","pod-security.kubernetes.io/enforce-version":"latest"},"ownerReferences":[{"apiVersion":"operator.tigera.io/v1","kind":"Installation","name":"default","uid":"0d76a67f-5bf6-4a8e-8964-0ac1e31aa4b9","controller":true,"blockOwnerDeletion":true}],"managedFields":[{"manager":"operator","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:50:02Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{},"f:name":{},"f:pod-security.kubernetes.io/enforce":{},"f:pod-security.kubernetes.io/enforce-version":{}},"f:ownerReferences":{".":{},"k:{\"uid\":\"0d76a67f-5bf6-4a8e-8964-0ac1e31aa4b9\"}":{}}}}}]}}},{"cells":["default","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"default","uid":"c3b0eddd-c1de-4ea6-87ac-079b96ea14a5","resourceVersion":"192","creationTimestamp":"2022-05-30T01:48:56Z","labels":{"kubernetes.io/metadata.name":"default"},"managedFields":[{"manager":"kube-apiserver","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:48:56Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{}}}}}]}}},{"cells":["kube-node-lease","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"kube-node-lease","uid":"c803e423-a003-466d-a55f-9e6d6e0e2218","resourceVersion":"12","creationTimestamp":"2022-05-30T01:48:55Z","labels":{"kubernetes.io/metadata.name":"kube-node-lease"},"managedFields":[{"manager":"kube-apiserver","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:48:55Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{}}}}}]}}},{"cells":["kube-public","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"kube-public","uid":"864f84bb-b97a-4a75-9204-09e3b023bd45","resourceVersion":"10","creationTimestamp":"2022-05-30T01:48:55Z","labels":{"kubernetes.io/metadata.name":"kube-public"},"managedFields":[{"manager":"kube-apiserver","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:48:55Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{}}}}}]}}},{"cells":["kube-system","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"kube-system","uid":"fbc10fd8-1985-4be0-9684-2ddca0ae3e27","resourceVersion":"8","creationTimestamp":"2022-05-30T01:48:54Z","labels":{"kubernetes.io/metadata.name":"kube-system"},"managedFields":[{"manager":"kube-apiserver","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:48:54Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{}}}}}]}}},{"cells":["tigera-operator","Active","40d"],"object":{"kind":"PartialObjectMetadata","apiVersion":"meta.k8s.io/v1","metadata":{"name":"tigera-operator","uid":"5353e7cf-440d-493c-893d-1bea5eba3fdc","resourceVersion":"455","creationTimestamp":"2022-05-30T01:49:22Z","labels":{"kubernetes.io/metadata.name":"tigera-operator","name":"tigera-operator"},"managedFields":[{"manager":"kubectl-create","operation":"Update","apiVersion":"v1","time":"2022-05-30T01:49:22Z","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:kubernetes.io/metadata.name":{},"f:name":{}}}}}]}}}]}
+NAME               STATUS   AGE
+calico-apiserver   Active   40d
+calico-system      Active   40d
+default            Active   40d
+kube-node-lease    Active   40d
+kube-public        Active   40d
+kube-system        Active   40d
+tigera-operator    Active   40d
+
+$ curl -k -XGET -H 'Authorization: Bearer bob-token' 'https://192.168.191.138:6443/api/v1/namespaces?limit=500'
+{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "metadata": {
+
+  },
+  "status": "Failure",
+  "message": "namespaces is forbidden: User \"bob\" cannot list resource \"namespaces\" in API group \"\" at the cluster scope",
+  "reason": "Forbidden",
+  "details": {
+    "kind": "namespaces"
+  },
+  "code": 403
+}
+```
+
+> kubeconfig
+
+```yaml ~/.kube/config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1EVXpNREF4TkRnME9Wb1hEVE16TURVeU56QXhORGcwT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnRrCjIvRERGSXpuNmhoOVl6RFVmRzJDcXRlSzBzbTVGVkIyK0lXaXpCWk5ZVnNQbFpuN3NLL0NVYm4wdGJpUGpmUEoKUUJpUkxJZ3FCS1AydWRJanhjbUhqQ0hlSVFnOGswT3RnYXRCUTNzOEkwVVdhWW1QSXNQZWxwMllrZlkxK3Q3KwpQdUVsaHl1cE13eHJlSGFLQThTMG9Dd2NRT2g1L3piN290aXNrTDFlZzNZTWZaWjU1MWJKenBsc3hRdGdsdGp3CnBmcUU3UDBoQ2VTQkpwVmNGb1BXd3RNd2wvOVRvc1lKSC9TWU9kNnV0ZUllWFlEa1F6U3czZ2lkMHBkTitoS2EKemE2MEcvN2Q2a01aamUrQmRLMVFjenZpcE9zZWUvSHVDZklUNERtLzRiOFZuS1EwVU94QWZHRVg3UUdHcUlEMApOR0xSbXhXbVU4SnUraXFaaDkwQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZEZStoM2orN1BDckZXSDZjUnE5QVFGcHpvMTZNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRXZsWEJGRHRpQzJyK2VqSFBERgozeUxzbjA4Sjd1bENnN0xwMGJRaUxPZzIzZStjTTRzRnN0UVJadnFNYW1MU3l0U2hlZHAvVExFMnR0RlZOYnAvCkJlNVJiRGtuNWRFdFg5ejRva09IVTJ3ekFlaWZ5NnhCZEloYUdGZC9WT3B1SldBZ040aU9DVkRUQTA1OWNuTDMKSmJvVHJCNkRBdUo0a2JWNis5NGZkK001RXY1TVhiWXA2L2ExYTliMmVpWnNxbjM3djUvOWZlWU51Q3JYS0xGagprKzhvUWV0UGNEbW5TdkRrdUlteUZ0TGxjRjN1MGw1RmdwU2FQQnlWekJUckZQb25jTlcyV1ZkWWxLZ3ArWWFqCithT3JkRFNzbEVTY055R0hxTEkyS0RsTHIwWlBDQWtYSjFyRDcrenI5cFVEZC9LL1B5VFBlM3JaVWd3cjh2NjIKdFlJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://192.168.191.138:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+- context:
+    cluster: kubernetes
+    user: zhongmingmao
+  name: zhongmingmao@kubernetes
+- context:
+    cluster: kubernetes
+    user: bob
+  name: bob@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJVENDQWdtZ0F3SUJBZ0lJVWVlRlYzZjRCdjR3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBMU16QXdNVFE0TkRsYUZ3MHlOREExTWprd01UUTROVEZhTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXZQOVpSS09yMWE5YjhKV2wKeWVtVzNKZVp6MGtKTXc1ZjN6UFN5dkdzbDZod3FLaDNKNXNKTTJrWXJMWUtKK25vbldmTjBCekwwclF5QTdScQpPSkJFKytsa0E2d3B4bzhOSnVITyttRHBwMnhhdHFmTWpFSEhseGV4UnlmTUUveDlDZmZsVHhPV1BUcFRqbGllCkZDQlhROTBPZmZwV3RENnM2Z2JVZXZMQzJTMStyMFJyMmhRWmE2bkxpQW9RdWhmZnJtTGJ2ZVJmblp0ZDVlS08KOUQ5SXAybmhjRE5PeWlIQWNoRlU3OW5id3JzRS9XRks5SVVtL3g1cU52WUFjS2pSUmpKSFJseUNENVdFTzBldgpYUGJjSXRZcnlHSDBBTWNkcXU5ZTc0WEFCTUNYa3VjbGs0UndkUEl1UHBMTHFJNnFTQWwvek0vdFJyQm1kL1V1ClRKbXE2d0lEQVFBQm8xWXdWREFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RBWURWUjBUQVFIL0JBSXdBREFmQmdOVkhTTUVHREFXZ0JRM3ZvZDQvdXp3cXhWaCtuRWF2UUVCYWM2TgplakFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBdm1zQ3VXcWJ1ZlI2UHVFTUlrRXg5TDZFeU1zY2NhZzlqWER2CmNTY1hXNUVUSkllcW5ISmtzRVY4NEdCdDhlcGx0aGhUM1pFVUZvSURvR3FHNk1CVDFJdG5jaVlKRG5NUHZ5djAKWFBpVno4MFM3RFZhQjhwVjJvK3JjaFRmMHdSYVUvQWF4dWdtUWwzZHVUcEtYbU1DTThGQ3FpTVJYbm1veGJVUgpqTklsTGcwbjJzMXF0Tk1LVGRCSlB3dUVqdFJZMWVpU09GRGgwclFhYmZUc2dHa25SOGxCcHdDd28rWVdaMGs0CmlZaWtrT21ERnZsakZ6Z1VpcWpTRGdjRnNnUjlFWXZ1TGdtSHlJVnpxZG1NZURMandwL2NWM1VubGNoa3hsZEsKVDcyYWs5cnhzTGwrUFVGajlFZE92Y2tKanI0VFhZcWFJR2FwNWhyTDg1bEdNcTgyVXc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdlA5WlJLT3IxYTliOEpXbHllbVczSmVaejBrSk13NWYzelBTeXZHc2w2aHdxS2gzCko1c0pNMmtZckxZS0orbm9uV2ZOMEJ6TDByUXlBN1JxT0pCRSsrbGtBNndweG84Tkp1SE8rbURwcDJ4YXRxZk0KakVISGx4ZXhSeWZNRS94OUNmZmxUeE9XUFRwVGpsaWVGQ0JYUTkwT2ZmcFd0RDZzNmdiVWV2TEMyUzErcjBScgoyaFFaYTZuTGlBb1F1aGZmcm1MYnZlUmZuWnRkNWVLTzlEOUlwMm5oY0ROT3lpSEFjaEZVNzluYndyc0UvV0ZLCjlJVW0veDVxTnZZQWNLalJSakpIUmx5Q0Q1V0VPMGV2WFBiY0l0WXJ5R0gwQU1jZHF1OWU3NFhBQk1DWGt1Y2wKazRSd2RQSXVQcExMcUk2cVNBbC96TS90UnJCbWQvVXVUSm1xNndJREFRQUJBb0lCQURGR3BrQ21KOFFqMzJXLwpycVVST1JzMGo0Nmk3VG9aa2xlQWpJSUxOc09uMEErNU5LL24xU05KVUh5ZlRkQ1FST3pkUnFUdkRSbFhqLzYxClNFaU5ITjlOUDUxUmd1YlpIMFcyOUI4RnE0WFNVMmh5SVh1a0h1Uys4YUtxdHFPelhlcCticFFLZUU1b2FhYWcKWmo2N0crVit1aXVRWEpETUVvdEYwcHBudHZPbVhEUXBueE9EVHhwNkhmREdodERtdEkxb0FlSng3aXJlNFQ5Rwp3MWR1SHJDZWpuQWp5QTkwbmtnVEhNWWVSZHoxcmE4bVZqNzE5VnpYbWxyRFFYTkhDZzJFMFZ5b29GNGc4R29CCm1rTldLVTh6NUxqN05sVFEwbElsazlrbVZTZTE2V2g0MWR6dkRIbGxtdFZyVHdPWXZjNjdWY3UzVFE4Ly84bDcKbldwME9CRUNnWUVBKzlEL09nSmxoSnoyNnBTNG5mbWt3YTVUZ3NHVWJhSEttV1ZDeVBwUFNGZzRSeXNDc2U3NwpnaXV4UkxVK2F4aU9MTm5Jc1pmb1hZUzlVbXpacWFQRzRhVHhiT2RXY2RMUTdweThHZmJranVHcmlKb0FqRDZDCmFWYXRGN3k4VU5SNXg4eXZNcjgxWGRTYmdONUFuSUJ6QkZQVzFOV3VDcjVtQnE3c2tEUVpBZmtDZ1lFQXdDTXQKQW9xMmYyTGFtdWtYNUpnK3FHc3NoMG5rZzVrZ213ODVYSEJzcHFGT3B2TWhIa0RhWUtuZHBXTkVubXF3REY2UQp4Yi9aNVBWU3hGMElFS1ZhTVZ6N1N1ekk4MnBXeVlEWnNrelpwUU80d2x4a1F5Q0lwWHQzL1R4UUV3aGd6Y3A0ClJ1SDFmUVhiUURkSVpQV0FnSVY2U2lLTWwxUW0yZFp2eVVJZERRTUNnWUVBdGxxejZPdEJYdFpZVEtua1E2bzcKOEhId1Vka2pSbjBLZlNrQ1F3NVpDWmV4TVlCcEZEZHU5T1gxR2o5eDh4WTJKeTZURW1CaVNnN05GdnB5YVZHTAp2VzIzMDFoM2xqZkhTM1EvRjBKZVkwWHk5Um9vMldhUEEvOWJtN3YyVjBaMjVnUkl2eVFPWG1PUE5MUTk3OWRvCjh6SlBlWk0vMU5IcWlsNTBPejB1K3VrQ2dZQjVKM1VoVGpDSG9PRHhuNXVtVkczbUt6WjMxSnRZYy8xQWFWZ2wKTnVyOEkya0NFdnRHSldUT1lTNVhOSUkzVmxUT1orN29FdktsMGgrdm5HNFNlUUduY05jd1JxRHNCSmpYRlAydwoxWTdENDlYa0VQaFQ3N2JhaWtGK0dFTHh6VzJsTmsramVxWWVnTXZnOFRzZ0ZrSkNTR2gxU05YWU1vTVJCNHVUCm43SEwyd0tCZ1FDQlhCUWRlbWhhMmxMbDhhbEZ5Umd1dmJyOHJsbmVIc29RUEdOeEgwSVZNVVZPaWNnM1Y5bEoKZUNGdVl0dGxpRm5yRXppeHBsRTBzU1JZMzYxdkJtMzN3eXU5RXlmN2hBTy9TUTlsYWpUdDVMR0FZdkx3TDNvcgpGeFNEaFd1cVVTZGhqSGRLb0JTWXpjOEFXUkd2S2xrU0UyTjV0M2JRSFNZL2NBOUtsSDdSbEE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+- name: zhongmingmao
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSekNDQWkrZ0F3SUJBZ0lSQUp4QWk4UkwvLzhWb0FVdVphUHpmcXN3RFFZSktvWklodmNOQVFFTEJRQXcKRlRFVE1CRUdBMVVFQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBMU16QXdNak0zTkRKYUZ3MHlNekEyTURrdwpNak0zTkRKYU1HRXhDekFKQmdOVkJBWVRBa05PTVJJd0VBWURWUVFJRXdsSGRXRnVaMFJ2Ym1jeEVqQVFCZ05WCkJBY1RDVWQxWVc1bldtaHZkVEVQTUEwR0ExVUVDaE1HVjJWamFHRjBNUXN3Q1FZRFZRUUxFd0pKVkRFTU1Bb0cKQTFVRUF4TURTemhUTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUE4akJ1eU5ZTApBdHlzMStzM3N4TWxWSXpTVWFkZkhvY1poSVRXbE1rTGNpbnpWTjdmNThzRGwxays5ZmIyTHVXU3A5U0xSWDBoCko5KzAyVDNLYlRDTmcycVQ3bzRoZkJzTzBISGdVUXZDck95ZlhNQTAwOExNU0d5QVNvR3RiczEzQ3NLbWV3eXQKMFdnbHJCVFRudUJuS25JYzZTeldOcXVmREhrdlZ0K3lTWS9GTmtkZzZaK1ViQWhzcHhramsrRE5IRmxGZndQdApYQ3N6Q1prUmJIeTFyVU5RMmlPQzEwSzZPY2puSEQ1cWhSN3B3N1pvRHQ4cjNHUlFTeXFFajVjWUlqS2lYYk1ZCkl4MWNLb3pvTGw4djJ3Tms2QzB0UHZZS3Zoa0VxYnl1Lzl1Qmc5Y2ZTWjJOZkcrZG9rb3l1QTRXdlNXTnZ5algKVXlPVkYyaGdsOVF5aXdJREFRQUJvMFl3UkRBVEJnTlZIU1VFRERBS0JnZ3JCZ0VGQlFjREFqQU1CZ05WSFJNQgpBZjhFQWpBQU1COEdBMVVkSXdRWU1CYUFGRGUraDNqKzdQQ3JGV0g2Y1JxOUFRRnB6bzE2TUEwR0NTcUdTSWIzCkRRRUJDd1VBQTRJQkFRQ2tjUnhIZFQ4TTIxcmsvN1EyM1AraUZzSG9OeGdBSlROV29ZUUJZK3lyeFBWT2dOR1kKZkE2anlreVRUQ0cxN2gxbnEwYmw5L1BkM041VEo1OWRhN0hHc0I5TDBCaVBTclhpbHhuejZyVFZQZmJNS0svTQpocFVmbnY1eWUvR1AvWG1uQnN0SkFKYW1qb25pd0V6Ymk4N0g5dFZ6SEtNRGVFMmc2QWh4bzlzOVA0MW51bDY1ClQrdEw3UFJXbmdBTmIwMkFhZE5TanBpK1BWNHdkVkVUeG9vdVlBT1RGTFVXMzV0WTExbkpOY1FhQjFUVEQ4SGYKRS85aGppRFpuM3cwVFQ5M01MMmdoWXU0UzRibjVhOXdWVW9jU2pwbUdFMkVoL3UxOGJpWjNRSERhMmZSdzM2VQpBVGtEOWs2aGhudHZ1cXhSZUx6eFRBbGYyaVRSN0NWOGx6M1QKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBOGpCdXlOWUxBdHlzMStzM3N4TWxWSXpTVWFkZkhvY1poSVRXbE1rTGNpbnpWTjdmCjU4c0RsMWsrOWZiMkx1V1NwOVNMUlgwaEo5KzAyVDNLYlRDTmcycVQ3bzRoZkJzTzBISGdVUXZDck95ZlhNQTAKMDhMTVNHeUFTb0d0YnMxM0NzS21ld3l0MFdnbHJCVFRudUJuS25JYzZTeldOcXVmREhrdlZ0K3lTWS9GTmtkZwo2WitVYkFoc3B4a2prK0ROSEZsRmZ3UHRYQ3N6Q1prUmJIeTFyVU5RMmlPQzEwSzZPY2puSEQ1cWhSN3B3N1pvCkR0OHIzR1JRU3lxRWo1Y1lJaktpWGJNWUl4MWNLb3pvTGw4djJ3Tms2QzB0UHZZS3Zoa0VxYnl1Lzl1Qmc5Y2YKU1oyTmZHK2Rva295dUE0V3ZTV052eWpYVXlPVkYyaGdsOVF5aXdJREFRQUJBb0lCQUZ5TG0xbk5TTW5nTDRBVwpsdU1yOXNEWFN1cit6UDhxV3RyanMrZUk1NEhKZS8wN2FVMzJxcm1qMWNaQmg1TW1FS05uT1l6bElzMU0wNXVMCjNCVmJUMGdmYXNYbXMrN3JtLzZVOVVXaSs5SCtYV3NnMjA3c0Nnbkd4RU0wU0dTbHlNNW8wUnNHSGtsOXhaOTcKR2Q2Rkc0Y0JzZ0I4TEtNWmM1NWRsSFJhNkpMb3lmNFZQSnhtWXNBSVpDL0I0N2pWNTVpZ0ZJc1lQQ3BkRkRMaQo5WmZNQUl3aW1IYk1jR0dBbnhCemlaTCswWFZFenFxV1ZIM3NDc2cvTnM3S2thZUJKYlpGdUZBTW1UVjdOMk8yCm1YZDJwN3h0TWJqWmJoOVcwZFBrcmZ4aWdQTEo5WmRVWVFnamVPUk1SQXlJcjlseDAwWGdzR3VKUDA1eWxKQ3gKYnlyT05oa0NnWUVBL1BBNjZ6YVZadS9aVHJkWmR3eWZPTFdUZXBXWFkxUk92djcxbDVKVzNtNFJIUzBhZVhvUQp3SVhPSlFldXU2cW9pdXVKTHhXOStPdEZCWWsvMndSR1AzSXpab2lzRGlOWFBobmhwVzc5bm00dlEzcGxUclEwCjFOOFFTTG43SDd5RmJTN0FPelhmQnRTTzY4bGhWUUpRQjA5b0trdGFhbDRPZEhSaVk1N0JPSGNDZ1lFQTlSN2sKKytIdUZiNk9oOTZ5YTdpVlNXSkp6WjUwZlZRT2VkNWlWWFo3dnhtZ2s5QlFXS2p4ZkpIWE9ZaTI3clpBZW9NeQpub0tHRTZzbVd1dEliWTd0SlIzQUxRV3Y1b2xuZUNxTllQYmpPaWZPdmVuRVVvbkRoTnpmTzNzaVBXWWZ3NHFxCldIbDQrNHFPNXMvTFAyOVZiOHhtVjNCUVRaUGc4NzlVU3hjWDc0MENnWUVBamxKdUZLT2w5VUhJT0s2YVBJNXgKbU9zeWpLdFhmNkNVbm91L2pRWGVzMUdqZDVORmJrenMyQ2R5RXd2N21jVXhDTm4zV3ZNVTdkY1VBMFZ6RkwyVworV1E4MzlqUFZ6VXpoZEh5VWEvZUxTTTZuUEZseDU5R2l2RG9yTU5aTmtaUm5Wbk0rSVFiZGpCc0t1Z3BTRGdBCjU5d2FkSkhwMGlnU1loeUtzQnRJQllrQ2dZQmRuQUxPdnFWeDRHZ0dNMkhvQ1lIWm1KT2UxdGlkMURBREVvNXoKSE9COVJvZ3dhdW1FTW1DbXRmdC9tVnBqSjI3UVdySkdIb3Fka0VzQmhjRVBOZm9TcHAzeGs2NXRXQ1FQbkJDSgo2ejh6d21nTjF1eUdxTjNtSzRPRTc2MVB6V1JzQk5TeEhSSzYzVnRkZ2hXWWtDZ01uZjZuZmRqdEI0QnRGYkJYClRPWnpNUUtCZ1FDY2x3Szc2Q1FNd0dnMUI5QThtVzF3T0JkL0thZnFwVjM3ZmJTWnpTclNEWS9JL1dVVUY2cEEKUlYxZW9QZGJXWkhFbGJDa1I1WUFmZ0NtMGlDU2k5cVo1Qk9GYXZSR2pZUjV2TmpncVYrOTFPNXJrNS9ZaDdQego4RDg3bFYrSXgxZDJGYzRWQUhwbmFKYU8vNUpPbDc4VHRZTUxlSXF3WHFaMndOQUxjbENUL1E9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+- name: bob
+  user:
+    token: bob-token
+```
+
+```
+$ k --context bob@kubernetes get ns -v 9
+I0709 14:57:16.719670  200344 loader.go:372] Config loaded from file:  /home/zhongmingmao/.kube/config
+I0709 14:57:16.724036  200344 round_trippers.go:435] curl -v -XGET  -H "User-Agent: kubectl/v1.22.2 (linux/arm64) kubernetes/8b5a191" -H "Authorization: Bearer <masked>" -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" 'https://192.168.191.138:6443/api/v1/namespaces?limit=500'
+I0709 14:57:16.733048  200344 round_trippers.go:454] GET https://192.168.191.138:6443/api/v1/namespaces?limit=500 403 Forbidden in 8 milliseconds
+I0709 14:57:16.733063  200344 round_trippers.go:460] Response Headers:
+I0709 14:57:16.733067  200344 round_trippers.go:463]     Cache-Control: no-cache, private
+I0709 14:57:16.733069  200344 round_trippers.go:463]     Content-Type: application/json
+I0709 14:57:16.733071  200344 round_trippers.go:463]     X-Content-Type-Options: nosniff
+I0709 14:57:16.733076  200344 round_trippers.go:463]     X-Kubernetes-Pf-Flowschema-Uid: 84f57e61-82e8-4f42-8861-47bb3567f5a5
+I0709 14:57:16.733078  200344 round_trippers.go:463]     X-Kubernetes-Pf-Prioritylevel-Uid: 1cbf0b91-b742-402a-bcac-abf19ff1ed1a
+I0709 14:57:16.733080  200344 round_trippers.go:463]     Content-Length: 258
+I0709 14:57:16.733085  200344 round_trippers.go:463]     Date: Sun, 09 Jul 2022 14:57:16 GMT
+I0709 14:57:16.733087  200344 round_trippers.go:463]     Audit-Id: 737c4916-1c0e-456a-a91c-1e8b0a69fe31
+I0709 14:57:16.733103  200344 request.go:1181] Response Body: {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"namespaces is forbidden: User \"bob\" cannot list resource \"namespaces\" in API group \"\" at the cluster scope","reason":"Forbidden","details":{"kind":"namespaces"},"code":403}
+I0709 14:57:16.733298  200344 helpers.go:217] server response object: [{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "metadata": {},
+  "status": "Failure",
+  "message": "namespaces is forbidden: User \"bob\" cannot list resource \"namespaces\" in API group \"\" at the cluster scope",
+  "reason": "Forbidden",
+  "details": {
+    "kind": "namespaces"
+  },
+  "code": 403
+}]
+F0709 14:57:16.733324  200344 helpers.go:116] Error from server (Forbidden): namespaces is forbidden: User "bob" cannot list resource "namespaces" in API group "" at the cluster scope
+...
+```
+
+## ServiceAccount
+
+```
+$ k get serviceaccounts -owide
+NAME      SECRETS   AGE
+default   1         40d
+
+$ k describe serviceaccounts default
+Name:                default
+Namespace:           default
+Labels:              <none>
+Annotations:         <none>
+Image pull secrets:  <none>
+Mountable secrets:   default-token-tcwxj
+Tokens:              default-token-tcwxj
+Events:              <none>
+
+$ k get secrets
+NAME                  TYPE                                  DATA   AGE
+default-token-tcwxj   kubernetes.io/service-account-token   3      40d
+
+$ k get secrets default-token-tcwxj -oyaml
+apiVersion: v1
+data:
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1EVXpNREF4TkRnME9Wb1hEVE16TURVeU56QXhORGcwT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnRrCjIvRERGSXpuNmhoOVl6RFVmRzJDcXRlSzBzbTVGVkIyK0lXaXpCWk5ZVnNQbFpuN3NLL0NVYm4wdGJpUGpmUEoKUUJpUkxJZ3FCS1AydWRJanhjbUhqQ0hlSVFnOGswT3RnYXRCUTNzOEkwVVdhWW1QSXNQZWxwMllrZlkxK3Q3KwpQdUVsaHl1cE13eHJlSGFLQThTMG9Dd2NRT2g1L3piN290aXNrTDFlZzNZTWZaWjU1MWJKenBsc3hRdGdsdGp3CnBmcUU3UDBoQ2VTQkpwVmNGb1BXd3RNd2wvOVRvc1lKSC9TWU9kNnV0ZUllWFlEa1F6U3czZ2lkMHBkTitoS2EKemE2MEcvN2Q2a01aamUrQmRLMVFjenZpcE9zZWUvSHVDZklUNERtLzRiOFZuS1EwVU94QWZHRVg3UUdHcUlEMApOR0xSbXhXbVU4SnUraXFaaDkwQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZEZStoM2orN1BDckZXSDZjUnE5QVFGcHpvMTZNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRXZsWEJGRHRpQzJyK2VqSFBERgozeUxzbjA4Sjd1bENnN0xwMGJRaUxPZzIzZStjTTRzRnN0UVJadnFNYW1MU3l0U2hlZHAvVExFMnR0RlZOYnAvCkJlNVJiRGtuNWRFdFg5ejRva09IVTJ3ekFlaWZ5NnhCZEloYUdGZC9WT3B1SldBZ040aU9DVkRUQTA1OWNuTDMKSmJvVHJCNkRBdUo0a2JWNis5NGZkK001RXY1TVhiWXA2L2ExYTliMmVpWnNxbjM3djUvOWZlWU51Q3JYS0xGagprKzhvUWV0UGNEbW5TdkRrdUlteUZ0TGxjRjN1MGw1RmdwU2FQQnlWekJUckZQb25jTlcyV1ZkWWxLZ3ArWWFqCithT3JkRFNzbEVTY055R0hxTEkyS0RsTHIwWlBDQWtYSjFyRDcrenI5cFVEZC9LL1B5VFBlM3JaVWd3cjh2NjIKdFlJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  namespace: ZGVmYXVsdA==
+  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluSjNTRXcwUm1GUlExSXlVVVZFWjFKa1VqZFJkelYyV1hCU1h6VjFWVTFyVTFaVWNtVTBkblJQVGtVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUprWldaaGRXeDBJaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbVJsWm1GMWJIUXRkRzlyWlc0dGRHTjNlR29pTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWkdWbVlYVnNkQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJbU15TWpobU1tTXdMVFpsTjJFdE5HVmtNQzA1WkdSakxUQTROR05tWVRaalpqUm1ZaUlzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwa1pXWmhkV3gwT21SbFptRjFiSFFpZlEuZzJwX2xYVURHYTNPOGxPenNRb19OTS1GN0FtREtrQ1A2bG96TDAyR081QzR1R1RoM0UyMTZLRExNZWZpUzVlV3p6b2lKZGs3LVZrczdyUFBvN0RjQkp5VUxJOEVqVko3UTlyZEl6MV83WU1tTkZSWUFjZkJWYks2RnhpME5yZlR6a0FMSWlaeTNQSS1KTVg3OGpNMFFoQktOTDh0YWdPY3YwRkJLR2R0ZnV4QlZIa3VpdW51b3NFNHprVml1anFxOG52WDNEaXJwZ1EtT2lQREZLckZCaHkzcDhhelE2ZUpaSUlFZjRQUm84cUdOaVp6WERNOGw3VEtYUmhCUU5hR2pERFJ2LXRjQ3dFelpMd3ZzcFVJeVR6WWZKZWZWaHU2d3VLN0NXR0FuY2hadHhfOGp0LVpUbzh3V2lmWG85UzUyLXlSY2d2QlNWb2g3dFpJUmlaZFJn
+kind: Secret
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: default
+    kubernetes.io/service-account.uid: c228f2c0-6e7a-4ed0-9ddc-084cfa6cf4fb
+  creationTimestamp: "2022-05-30T01:49:12Z"
+  name: default-token-tcwxj
+  namespace: default
+  resourceVersion: "409"
+  uid: d08bd61f-4cbb-4060-bbec-9f3c902e9890
+type: kubernetes.io/service-account-token
+
+$ echo ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluSjNTRXcwUm1GUlExSXlVVVZFWjFKa1VqZFJkelYyV1hCU1h6VjFWVTFyVTFaVWNtVTBkblJQVGtVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUprWldaaGRXeDBJaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbVJsWm1GMWJIUXRkRzlyWlc0dGRHTjNlR29pTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWkdWbVlYVnNkQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJbU15TWpobU1tTXdMVFpsTjJFdE5HVmtNQzA1WkdSakxUQTROR05tWVRaalpqUm1ZaUlzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwa1pXWmhkV3gwT21SbFptRjFiSFFpZlEuZzJwX2xYVURHYTNPOGxPenNRb19OTS1GN0FtREtrQ1A2bG96TDAyR081QzR1R1RoM0UyMTZLRExNZWZpUzVlV3p6b2lKZGs3LVZrczdyUFBvN0RjQkp5VUxJOEVqVko3UTlyZEl6MV83WU1tTkZSWUFjZkJWYks2RnhpME5yZlR6a0FMSWlaeTNQSS1KTVg3OGpNMFFoQktOTDh0YWdPY3YwRkJLR2R0ZnV4QlZIa3VpdW51b3NFNHprVml1anFxOG52WDNEaXJwZ1EtT2lQREZLckZCaHkzcDhhelE2ZUpaSUlFZjRQUm84cUdOaVp6WERNOGw3VEtYUmhCUU5hR2pERFJ2LXRjQ3dFelpMd3ZzcFVJeVR6WWZKZWZWaHU2d3VLN0NXR0FuY2hadHhfOGp0LVpUbzh3V2lmWG85UzUyLXlSY2d2QlNWb2g3dFpJUmlaZFJn | base64 -d
+eyJhbGciOiJSUzI1NiIsImtpZCI6InJ3SEw0RmFRQ1IyUUVEZ1JkUjdRdzV2WXBSXzV1VU1rU1ZUcmU0dnRPTkUifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tdGN3eGoiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImMyMjhmMmMwLTZlN2EtNGVkMC05ZGRjLTA4NGNmYTZjZjRmYiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.g2p_lXUDGa3O8lOzsQo_NM-F7AmDKkCP6lozL02GO5C4uGTh3E216KDLMefiS5eWzzoiJdk7-Vks7rPPo7DcBJyULI8EjVJ7Q9rdIz1_7YMmNFRYAcfBVbK6Fxi0NrfTzkALIiZy3PI-JMX78jM0QhBKNL8tagOcv0FBKGdtfuxBVHkuiunuosE4zkViujqq8nvX3DirpgQ-OiPDFKrFBhy3p8azQ6eJZIIEf4PRo8qGNiZzXDM8l7TKXRhBQNaGjDDRv-tcCwEzZLwvspUIyTzYfJefVhu6wuK7CWGAnchZtx_8jt-ZTo8wWifXo9S52-yRcgvBSVoh7tZIRiZdRg
+```
+
+> 该 Token 由 Kubernetes 颁发，Kubernetes 本身能`验签`，即可以识别身份
+
+> JWT 对应的 Header
+
+```json
+{
+  "alg": "RS256",
+  "kid": "rwHL4FaQCR2QEDgRdR7Qw5vYpR_5uUMkSVTre4vtONE"
+}
+```
+
+> JWT 对应的 Payload
+
+```json
+{
+  "iss": "kubernetes/serviceaccount",
+  "kubernetes.io/serviceaccount/namespace": "default",
+  "kubernetes.io/serviceaccount/secret.name": "default-token-tcwxj",
+  "kubernetes.io/serviceaccount/service-account.name": "default",
+  "kubernetes.io/serviceaccount/service-account.uid": "c228f2c0-6e7a-4ed0-9ddc-084cfa6cf4fb",
+  "sub": "system:serviceaccount:default:default"
+}
+```
+
+```
+$ k get po nginx-deployment-6799fc88d8-4ppnm -oyaml
+apiVersion: v1
+kind: Pod
+metadata:
+  ...
+  name: nginx-deployment-6799fc88d8-4ppnm
+  namespace: default
+  ...
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: nginx
+    ...
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-b47dm
+      readOnly: true
+  ...
+  volumes:
+  - name: kube-api-access-b47dm
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+
+$ k exec -it nginx-deployment-6799fc88d8-4ppnm -- ls /var/run/secrets/kubernetes.io/serviceaccount
+ca.crt	namespace  token
+
+$ k exec -it nginx-deployment-6799fc88d8-4ppnm -- cat /var/run/secrets/kubernetes.io/serviceaccount/token
+eyJhbGciOiJSUzI1NiIsImtpZCI6InJ3SEw0RmFRQ1IyUUVEZ1JkUjdRdzV2WXBSXzV1VU1rU1ZUcmU0dnRPTkUifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzIwNDQyMTY1LCJpYXQiOjE2ODg5MDYxNjUsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0IiwicG9kIjp7Im5hbWUiOiJuZ2lueC1kZXBsb3ltZW50LTY3OTlmYzg4ZDgtNHBwbm0iLCJ1aWQiOiI3MjY3N2NiZC1lMmUxLTQ5MWItODllNS1iMzliYThjMTY0NjQifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImRlZmF1bHQiLCJ1aWQiOiJjMjI4ZjJjMC02ZTdhLTRlZDAtOWRkYy0wODRjZmE2Y2Y0ZmIifSwid2FybmFmdGVyIjoxNjg4OTA5NzcyfSwibmJmIjoxNjg4OTA2MTY1LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpkZWZhdWx0In0.hnH_AhovNOL7nOppNowTebOkmsCFXITfZvwhvTjoSL9tPuRNMUTfJrMmfOjLevs18pKNR_bDSRJrXNFTaNtzqVclLkPPC1m21_p6lsAXlOufVHuqANP97nEOfNGs8B7iL0_EIkQPsy0H1yh0850meAdNJqyoy0HpwxeKGC1-GhXYwTWIACbKUdb7yZ5o9sautdykkNU0zbTwWagdtjBjXZE1TI68KsoZrd-RGbRxBz_el6C4cbZ1z3S63Id8wB7k06IV7QRjxvG0jBip79yV32qvshdUvo4c4atHhT4tXO10kzualTPUh-dvYs0CwDuGswD6Ms1JVGiJ4donOhdggQ
+```
+
+## Webhook
+
+> 构建认证服务，用于认证 `TokenReview` Request
+
+> Input - spec
+
+```json
+{
+  "apiVersion": "authentication.k8s.io/v1",
+  "kind": "TokenReview",
+  "spec": {
+    "token": "(BEARERTOKEN)"
+  }
+}
+```
+
+> Output - status
+
+```json
+{
+  "apiVersion": "authentication.k8s.io/v1",
+  "kind": "TokenReview",
+  "status": {
+    "authenticated": true,
+    "user": {
+      "username": "xxx@qq.com",
+      "uid": "1",
+      "groups": [
+        "developer",
+        "qa"
+      ]
+    }
+  }
+}
+```
+
+> webhook
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
+	"log"
+	"net/http"
+
+	authentication "k8s.io/api/authentication/v1beta1"
+)
+
+func main() {
+	http.HandleFunc("/authenticate", func(w http.ResponseWriter, r *http.Request) {
+		// decoder fail
+		decoder := json.NewDecoder(r.Body)
+		var tr authentication.TokenReview
+		err := decoder.Decode(&tr)
+		if err != nil {
+			log.Println("[Error]", err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"apiVersion": "authentication.k8s.io/v1beta1",
+				"kind":       "TokenReview",
+				"status": authentication.TokenReviewStatus{
+					Authenticated: false,
+				},
+			})
+			return
+		}
+		log.Print("receiving request")
+
+		// oauth2 fail
+		client := github.NewClient(
+			oauth2.NewClient(context.Background(),
+				oauth2.StaticTokenSource(&oauth2.Token{
+					AccessToken: tr.Spec.Token,
+				})))
+		user, _, err := client.Users.Get(context.Background(), "")
+		if err != nil {
+			log.Println("[Error]", err.Error())
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"apiVersion": "authentication.k8s.io/v1beta1",
+				"kind":       "TokenReview",
+				"status": authentication.TokenReviewStatus{
+					Authenticated: false,
+				},
+			})
+			return
+		}
+
+		// oauth2 success
+		log.Printf("[Success] login as %s", *user.Login)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"apiVersion": "authentication.k8s.io/v1beta1",
+			"kind":       "TokenReview",
+			"status": authentication.TokenReviewStatus{
+				Authenticated: true,
+				User: authentication.UserInfo{
+					Username: *user.Login,
+					UID:      *user.Login,
+				},
+			},
+		})
+	})
+	log.Println(http.ListenAndServe(":3000", nil))
+}
+```
+
+```makefile
+build:
+	echo "building authn-webhook"
+	mkdir -p "bin/arm64"
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/arm64 .
+```
+
+```
+$ curl -s http://127.1:3000/authenticate | jq
+{
+  "apiVersion": "authentication.k8s.io/v1",
+  "kind": "TokenReview",
+  "status": {
+    "user": {}
+  }
+}
+```
+
+> webhook-config.json
+
+```json webhook-config.json
+{
+  "kind": "Config",
+  "apiVersion": "v1",
+  "preferences": {},
+  "clusters": [
+    {
+      "name": "github-authn",
+      "cluster": {
+        "server": "http://192.168.191.138:3000/authenticate"
+      }
+    }
+  ],
+  "users": [
+    {
+      "name": "authn-apiserver",
+      "user": {
+        "token": "secret"
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "name": "webhook",
+      "context": {
+        "cluster": "github-authn",
+        "user": "authn-apiserver"
+      }
+    }
+  ],
+  "current-context": "webhook"
+}
+```
+
+> kube-apiserver.yaml - `--authentication-token-webhook-config-file`
+
+```yaml /etc/kubernetes/manifests/kube-apiserver.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  ...
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    ...
+    - --authentication-token-webhook-config-file=/etc/config/webhook-config.json
+    ...
+    volumeMounts:
+    ...
+    - mountPath: /etc/config
+      name: authn-webhook
+      readOnly: true
+  ...
+  volumes:
+  ...
+  - hostPath:
+      path: /home/zhongmingmao/apiserver/auth/webhook
+      type: DirectoryOrCreate
+    name: authn-webhook
+```
+
+```
+k get po -n kube-system
+NAME                              READY   STATUS    RESTARTS       AGE
+...
+kube-apiserver-mac-k8s            1/1     Running   0              59s
+```
+
+> ~/.kube/config
+
+```yaml ~/.kube/config
+- name: github_token
+  user:
+    token: xxx
+```
+
+```
+$ k get po --user github_token
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-6799fc88d8-4ppnm   1/1     Running   0          41d
+nginx-deployment-6799fc88d8-j5rnt   1/1     Running   0          41d
+nginx-deployment-6799fc88d8-ltc2g   1/1     Running   0          41d
+```
+
+```
+$ ./bin/arm64/authn-webhook
+2022/07/10 16:09:48 receiving request
+2022/07/10 16:09:49 [Success] login as zhongmingmao
+```
 
 # 鉴权
+
+1. 授权主要用于对`集群资源`的`访问控制`
+2. 检查请求包含的相关`属性值`，与相对应的`访问策略`相比较，API 请求必须满足某些策略才能被处理
+3. Kubernetes 支持`同时开启`多个授权插件，主要有 1 个验证通过即可
+4. 授权成功，则请求进入`准入模块`做进一步的请求验证，否则返回 HTTP 403
+5. 支持的授权插件：ABAC、`RBAC`、Webhook、Node
+
+## RBAC
+
+1. RBAC 的授权策略可以利用 `kubectl` 或者 `Kubernetes API` 直接进行配置
+2. RBAC 可以授权给用户，让用户有权进行`授权管理`
+3. RBAC 在 Kubernetes 中被映射为 `API` 资源和操作
+
+> RBAC
+
+![image-20230711224415204](/Users/zhongmingmao/data/typora/image-20230711224415204.png)
+
+> Kubernetes - `RoleBinding` 可以绑定 `ClusterRole`
+
+![k8s-rbac](/Users/zhongmingmao/data/typora/k8s-rbac.png)
+
+```
+$ k api-resources --api-group="rbac.authorization.k8s.io"
+NAME                  SHORTNAMES   APIVERSION                     NAMESPACED   KIND
+clusterrolebindings                rbac.authorization.k8s.io/v1   false        ClusterRoleBinding
+clusterroles                       rbac.authorization.k8s.io/v1   false        ClusterRole
+rolebindings                       rbac.authorization.k8s.io/v1   true         RoleBinding
+roles                              rbac.authorization.k8s.io/v1   true         Role
+```
+
+> Role 是`权限集合`，Role 只能用来给某个特定的 `Namespace` 中的资源做鉴权
+
+```yaml role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+```
+
+> ClusterRole 适用于`多 Namespace 的资源`、`集群级别的资源`、`非资源类的 API`
+
+```yaml cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: secret-reader
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+```
+
+> Binding - RoleBinding 是与 Namespace 挂钩的，因此用户只有 default 下的权限
+
+```yaml role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: default
+  name: read-secrets
+
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: bob
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secret-reader
+```
+
+![image-20230712001210433](/Users/zhongmingmao/data/typora/image-20230712001210433.png)
+
+> Group
+
+![image-20230712001835088](/Users/zhongmingmao/data/typora/image-20230712001835088.png)
+
+1. 与`外部认证系统`对接时，用户信息（`UserInfo`）可以包含 `Group` 信息，授权可以针对`用户群组`
+2. 对 `ServiceAccount` 授权时，Group 代表某个 `Namespace` 下的所有 ServiceAccount
+
+```yaml cluster-role-binding-user.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-secrets-golobal-user
+
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: manager # User
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secret-reader
+```
+
+```yaml cluster-role-binding-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-secrets-global-sa
+
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:serviceaccounts:default # ServiceAccount
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secret-reader
+```
 
 # 准入
 
@@ -58,3 +922,4 @@ tags:
 
 # 对象
 
+> API Server 对象的实现
