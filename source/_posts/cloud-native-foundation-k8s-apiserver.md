@@ -793,7 +793,7 @@ $ ./bin/arm64/authn-webhook
 
 1. 授权主要用于对`集群资源`的`访问控制`
 2. 检查请求包含的相关`属性值`，与相对应的`访问策略`相比较，API 请求必须满足某些策略才能被处理
-3. Kubernetes 支持`同时开启`多个授权插件，主要有 1 个验证通过即可
+3. Kubernetes 支持`同时开启`多个授权插件，只要有 `1` 个验证通过即可
 4. 授权成功，则请求进入`准入模块`做进一步的请求验证，否则返回 HTTP 403
 5. 支持的授权插件：ABAC、`RBAC`、Webhook、Node
 
@@ -943,7 +943,7 @@ roleRef:
 2. 创建一个`管理员角色`，并且绑定给`开发运营团队`成员
 3. `ThirdPartyResource` 和 `CustomResourceDefinition` 是`全局资源 `
    - `普通用户`创建 ThirdPartyResource 后，需要管理员授权后才能真正操作该对象
-4. 创建 `spec`，用`源码启动`来进行`角色管理`
+4. 创建 `spec`，用`源码驱动`来进行`角色管理`
 5. 权限是可以`传递`的
    - 用户 A 可以将其对某对象的某操作，抽取成一个权限，然后赋给用户 B
 6. 防止`海量`的 Role 和 RoleBinding 对象，否则会导致`鉴权效率低下`，造成 API Server 的负担
@@ -1492,8 +1492,8 @@ I0715 13:24:45.249665  456063 apply.go:392] Running apply post-processor functio
 
 > 场景
 
-1. `mutating admission` -- 为资源增加自定义属性
-   - 在上述`多租户`方案中，需要在 Namespace 的准入控制中，获取用户信息，并将用户信息更新到 Namespace 的 Annotation 中
+1. `mutating admission` -- 为资源增加`自定义属性`，如在上述`多租户`方案中
+   - 需要在 Namespace 的准入控制中，获取用户信息，并将用户信息更新到 Namespace 的 Annotation 中
 2. 配额管理 -- 资源有限，如何限定某个用户有多少资源
    - 预定义每个 Namespace 的 `ResourceQuota`，并把 spec 保存为 configmap
      - 用户可以创建多少个 Pod：`BestEffortPod` / `QoSPod`
@@ -1506,9 +1506,11 @@ I0715 13:24:45.249665  456063 apply.go:392] Running apply post-processor functio
 
 > 概述
 
-1. `Admission` 是在 `Authentication` 和 `Authorization` 之`后`，对请求做进一步的验证或者添加默认参数
-2. `Authentication` 和 `Authorization` 只关心请求的`用户`和`操作`，而 `Admission` 还处理请求的`内容`（创建、更新、删除、连接）
-3. `Admission` 支持同时开启多个插件，`依次调用`，只有`全部插件都通过`的请求才可以放进入系统
+1. `Admission` 是在 `Authentication` 和 `Authorization` 之`后`，对请求做`进一步验证`或者`添加默认参数`
+2. 区别
+   - `Authentication` 和 `Authorization` 只关心请求的`用户`和`操作`
+   -  `Admission` 还处理请求的`内容`（创建、更新、删除、连接）
+3. `Admission` 支持`同时开启`多个插件，`依次调用`，只有`全部插件都通过`的请求才可以放进入系统
 
 ## 插件
 
@@ -2256,10 +2258,12 @@ spec:
 2. APF 对请求进行更细粒度的`分类`，每一个`请求分类`对应一个 `FlowSchema`
 3. FlowSchema 内的请求会根据 `distinguisher` 进一步划分为不同的 Flow
 4. `FlowSchema` 会设置一个 `Priority Level`，不同 `Priority Level` 的`并发资源`是`隔离`的
-5. `一个 Priority Level` 对应`多个 FlowSchema`
-   - `Priority Level` 中维护一个 `QueueSet`，用于`缓存`不能及时处理的请求，请求不会因为超出 Priority Level 的并发限制而被丢弃
+5. `一个 Priority Level` 对应`多个 FlowSchema`（一个 FlowSchema 又对应多个 Flow）
+   - `Priority Level` 中维护一个 `QueueSet`，用于`缓存`不能及时处理的请求
+   - 请求不会因为超出 Priority Level 的并发限制而被丢弃
 6. FlowSchema 的每个 `Flow` 通过 `shuffle sharding` 算法从 QueueSet 中`选取`特定的 Queues 缓存请求
-7. 每次从 QueueSet 中取请求执行时，会先应用 `fair queuing` 算法从 QueueSet 中选择一个 `Queue`，然后从这个 Queue 中取出 `oldest` 请求执行
+7. 每次从 QueueSet 中取请求执行时
+   - 会先应用 `fair queuing` 算法从 QueueSet 中选择一个 `Queue`，然后从这个 Queue 中取出 `oldest` 请求执行
 
 > FlowSchema 匹配一些入站请求，并将它们分配给 Priority Level
 
@@ -2361,14 +2365,15 @@ NAME      STATUS   AGE
 default   Active   112m
 ```
 
-> PriorityLevelConfiguration 表示单个`隔离类型` - 限制`未完成的请求数`（assuredConcurrencyShares）和`排队中的请求数`（Queue）
+> PriorityLevelConfiguration 表示单个`隔离类型`
+> 限制`未完成的请求数`（assuredConcurrencyShares）和`排队中的请求数`（Queue）
 
-| Key                      | Value                                                        |
-| ------------------------ | ------------------------------------------------------------ |
-| assuredConcurrencyShares | 允许的并发请求 - `Flow` 的维度                               |
-| queues                   | 当前 Priority Level 的队列总数                               |
-| queueLengthLimit         | 每个对象中的对象数量                                         |
-| handSize                 | `shuffle sharding` 的配置<br />每个 `flowschema + distinguisher` 的请求会被 `enqueue` 到多少个队列 |
+| Key                        | Value                                                        |
+| -------------------------- | ------------------------------------------------------------ |
+| `assuredConcurrencyShares` | 允许的并发请求 - `Flow` 的维度 - `限制某个 Flow 占用过多资`  |
+| queues                     | 当前 Priority Level 的队列总数                               |
+| queueLengthLimit           | 每个队列中的对象数量                                         |
+| `handSize`                 | `shuffle sharding` 的配置<br />每个 `flowschema + distinguisher` 的请求会被 `enqueue` 到多少个队列 |
 
 ```
 $ k get prioritylevelconfigurations.flowcontrol.apiserver.k8s.io
@@ -2406,12 +2411,12 @@ spec:
 status: {}
 ```
 
-> 概念
+> 概念：`FlowSchema - 分类规则` + `PriorityLevel - 并发规则`
 
 1. 传入的请求通过 FlowSchema 按照其属性`分类`，并分配`优先级`
 2. 每个`优先级`维护自定义的`并发规则`，不同优先级的请求，不会相互饿死
 3. 在同一个优先级内，`公平排队`算法可以防止来自不同 Flow 的请求相互饿死
-4. 将请求排队，通过排队机制，防止在平均负载较低时，通信量徒增而导致请求失败
+4. 将请求排队，通过排队机制，防止在平均负载较低时，因通信量徒增而导致请求失败
 
 > 优先级
 
@@ -2424,7 +2429,7 @@ status: {}
 
 > 排队
 
-1. 在过载情况下，防止一个请求流饿死其他流是非常有价值的
+1. 在过载情况下，防止一个 Flow 饿死其它 Flow 是非常有价值的
 2. 每个请求被分配到某个 `Flow` 中，该 `Flow` 由对应的 `FlowSchema` 和 `Distinguisher` 来标识确定
 3. 系统尝试为具有`相同 PriorityLevel` 的`不同 Flow` 中的请求赋予`近似相等的权重`
 4. 将请求分配到 `Flow` 之后，通过 `shuffle sharding` 将请求分配到 `Priority Level` 的 `Queue` 中
@@ -2728,12 +2733,14 @@ PriorityLevelName, FlowSchemaName, QueueIndex, RequestIndexInQueue, FlowDistings
 > Cache
 
 1. `API Server` 与 `etcd` 之间是基于 `gRPC` 协议进行通信的（gRPC 协议保证了在`大规模集群`中的`数据高速传输`）
-   - gRPC 是基于`连接复用`的 `HTTP/2`，针对`相同分组`的对象，API Server 和 etcd 之间共享`相同的 TCP 连接`，不同请求使用不同的 Stream
+   - gRPC 是基于`连接复用`的 `HTTP/2`
+     - 针对`相同分组`的对象，API Server 和 etcd 之间共享`相同的 TCP 连接`，不同请求使用不同的 Stream
    - 一个 `HTTP/2 连接`是有 `Stream 配额`的，配额大小会限制其能支持的`并发请求`
 2. API Server 提供了`集群对象`的`缓存`机制
-   - 当客户端发起查询请求时，API Server 默认会将其`缓存`直接返回给客户端，缓存区大小由参数 `--watch-cache-sizes` 控制
+   - 当客户端发起查询请求时
+     - API Server 默认会将其`缓存`直接返回给客户端，缓存区大小由参数 `--watch-cache-sizes` 控制
    - 针对访问比较多的对象，设置适当大小的缓存，可以极大降低对 etcd 的访问频率，降低对 etcd 集群的读写压力
-   - API Server 也允许客户端忽略缓存，API Server 直接从 etcd 中拉取最新数据返回给客户端
+   - API Server 也允许客户端`忽略缓存`，API Server 直接从 etcd 中拉取最新数据返回给客户端
 
 > 长连接
 
