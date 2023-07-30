@@ -1,0 +1,456 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Kubernetes - CSI | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="运行时存储 运行时存储：镜像只读层 + 容器读写层（写性能不高）    容器启动后，运行时所需文件系统的性能直接影响容器性能 早期 Docker 使用 DeviceMapper 作为容器运行时的存储驱动，因为 OverlayFS 尚未合并进 Linux Kernel 目前 Docker 和 containerd 都默认以 OverlayFS 作为运行时存储驱动 OverlayFS 的性能很好，与操">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes - CSI">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2022/12/09/cloud-native-foundation-k8s-csi/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="运行时存储 运行时存储：镜像只读层 + 容器读写层（写性能不高）    容器启动后，运行时所需文件系统的性能直接影响容器性能 早期 Docker 使用 DeviceMapper 作为容器运行时的存储驱动，因为 OverlayFS 尚未合并进 Linux Kernel 目前 Docker 和 containerd 都默认以 OverlayFS 作为运行时存储驱动 OverlayFS 的性能很好，与操">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/k8s-csi.jpeg">
+<meta property="article:published_time" content="2022-12-08T16:06:25.000Z">
+<meta property="article:modified_time" content="2023-07-30T14:44:43.848Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Cloud Native Foundation">
+<meta property="article:tag" content="Kubernetes">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/k8s-csi.jpeg"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2022/12/09/cloud-native-foundation-k8s-csi/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Kubernetes - CSI',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-07-30 22:44:43'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">436</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/k8s-csi.jpeg')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Kubernetes - CSI</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2022-12-08T16:06:25.000Z" title="Created 2022-12-09 00:06:25">2022-12-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/">Cloud Native Foundation</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/cloud-native-foundation/kubernetes/">Kubernetes</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">3.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>16min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="运行时存储"><a href="#运行时存储" class="headerlink" title="运行时存储"></a>运行时存储</h1><blockquote>
+<p>运行时存储：<code>镜像只读层</code> + <code>容器读写层</code>（<code>写</code>性能不高）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230729181341627.png" alt="image-20230729181341627"></p>
+<ol>
+<li>容器启动后，运行时所需<code>文件系统</code>的性能直接影响容器性能</li>
+<li>早期 Docker 使用 <code>DeviceMapper</code> 作为容器运行时的<code>存储驱动</code>，因为 <code>OverlayFS</code> 尚未合并进 <code>Linux Kernel</code></li>
+<li>目前 <code>Docker</code> 和 <code>containerd</code> 都默认以 <code>OverlayFS</code> 作为<code>运行时存储驱动</code></li>
+<li>OverlayFS 的<code>性能很好</code>，与操作<code>主机</code>文件的性能几乎一致，比 <code>DeviceMapper</code> 优 <code>20%</code></li>
+</ol>
+<span id="more"></span>
+
+<h1 id="CSI"><a href="#CSI" class="headerlink" title="CSI"></a>CSI</h1><h2 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h2><blockquote>
+<p>以<code>插件</code>的形式来实现对不同存储的支持和扩展</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Plugin</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>in-tree</td>
+<td>代码<code>耦合</code>在 Kubernetes 中，社区不再接受新的 in-tree 存储插件</td>
+</tr>
+<tr>
+<td>out-of-tree - <code>FlexVolume</code> - <code>Native Call</code></td>
+<td>Kubernetes 通过调用 Node 的<code>本地可执行文件</code>与<code>存储插件</code>进行交互<br />FlexVolume 插件需要 Node 用 <code>root</code> 权限安装<code>插件驱动</code><br />执行模式跟 <code>CNI</code> 非常类似</td>
+</tr>
+<tr>
+<td>out-of-tree - <code>CSI</code> - <code>RPC</code></td>
+<td>CSI 通过 <code>RPC</code> 与<code>存储驱动</code>进行交互</td>
+</tr>
+</tbody></table>
+<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><blockquote>
+<p><code>创建</code>存储卷 - <code>kube-controller-manager</code> - <code>provisioner</code> - CSI<br><code>使用</code>存储卷 - pod on node - <code>kubelet</code> - CSI - attach + mount</p>
+</blockquote>
+<ol>
+<li><code>kube-controller-manager</code><ul>
+<li>kube-controller-manager 模块用于<code>感知 CSI 驱动存在</code></li>
+<li>Kubernetes 的<code>主控模块</code>通过 <code>Unix domain socket</code>（并<code>不是 CSI 驱动</code>）或其它方式进行直接交互</li>
+<li>Kubernetes 的<code>主控模块</code>只<code>与 Kubernetes 相关的 API</code> 进行交互</li>
+<li>如果 <code>CSI 驱动</code>有<code>依赖 Kubernetes API</code> 的操作<ul>
+<li>需要在 CSI 驱动里通过 Kubernetes 的 API 来触发相关的 API 操作</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>kubelet</code><ul>
+<li>kubelet 模块用于<code>与 CSI 驱动进行交互</code></li>
+<li>kubelet 通过 <code>Unix domain socket</code> 向 <code>CSI 驱动</code>发起 <code>CSI 调用</code>，再发起 <code>mount</code> 卷和 <code>umount</code> 卷</li>
+<li>kubelet 通过<code>插件注册</code>机制<code>发现 CSI 驱动</code>以及<code>用于与 CSI 驱动交互</code>的 <code>Unix domain socket</code></li>
+<li>所有部署在 Kubernetes 集群中的 <code>CSI 驱动</code>都要通过 <code>kubelet</code> 的<code>插件注册机制</code>来注册自己</li>
+</ul>
+</li>
+</ol>
+<h2 id="驱动"><a href="#驱动" class="headerlink" title="驱动"></a>驱动</h2><blockquote>
+<p>external-<code>attacher</code> &#x2F; external-<code>provisioner</code> &#x2F; external-<code>resizer</code> &#x2F; external-<code>snapshotter</code> &#x2F; node-driver-register &#x2F; CSI driver</p>
+</blockquote>
+<blockquote>
+<p>CSI 插件 &#x3D; <code>存储控制器</code> + <code>存储代理</code>（DaemonSet）</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230729185935326.png" alt="image-20230729185935326"></p>
+<h1 id="临时存储"><a href="#临时存储" class="headerlink" title="临时存储"></a>临时存储</h1><blockquote>
+<p>常用的临时存储为 <code>emptyDir</code></p>
+</blockquote>
+<blockquote>
+<p><code>容器运行时存储</code>基于 <code>OverlayFS</code>，而<code>写性能</code>非常低，写数据应该要<code>外挂存储</code>，最常用是 <code>host + emptyDir</code></p>
+</blockquote>
+<ol>
+<li>卷一开始为<code>空</code></li>
+<li>与 Pod 的生命周期<code>紧绑定</code>，当 <code>Pod</code> 从 Node 上<code>删除</code>时，emptyDir 中的<code>数据</code>也会被<code>永久删除</code><ul>
+<li><code>kubelet syncPod</code> 中的 <code>makePodDataDirs</code></li>
+</ul>
+</li>
+<li>当 <code>Pod</code> 中的<code>容器</code> 原地<code>重启</code>时，emptyDir 的<code>数据</code>并<code>不会丢失</code></li>
+<li>支持<code>本地磁盘</code>、<code>网络存储</code>、<code>内存</code><ul>
+<li><code>emptyDir.medium: Memory</code> - Kubernetes 会为容器安装 <code>tmpfs</code></li>
+<li>此时数据存储在<code>内存</code>中<ul>
+<li>如果 <code>Node 重启</code>，内存数据会被<code>清除</code></li>
+<li>而如果数据存储在<code>磁盘</code>上，<code>Node 重启</code>，数据依然<code>存在</code></li>
+</ul>
+</li>
+<li><code>tmpfs</code> 的内存也会计入容器的使用内存总量，受 <code>Cgroups</code> 限制</li>
+</ul>
+</li>
+<li>设计初衷：给应用充当<code>缓存</code>空间，或者存储中间数据，用于快速恢复</li>
+<li>emptyDir 的空间位于<code>系统根盘</code>，被<code>所有容器共享</code>，在<code>磁盘使用率较高</code>时会触发 <code>Pod Eviction</code></li>
+</ol>
+<figure class="highlight yaml"><figcaption><span>emptydir.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-deployment</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">          <span class="attr">volumeMounts:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">mountPath:</span> <span class="string">/cache</span></span><br><span class="line">            <span class="attr">name:</span> <span class="string">cache-volume</span></span><br><span class="line">      <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">cache-volume</span></span><br><span class="line">        <span class="attr">emptyDir:</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f emptydir.yaml</span><br><span class="line">deployment.apps/nginx-deployment created</span><br><span class="line"></span><br><span class="line">$ k get po</span><br><span class="line">NAME                               READY   STATUS    RESTARTS   AGE</span><br><span class="line">centos-67dd9d8678-bxxdv            1/1     Running   0          3h27m</span><br><span class="line">nginx                              1/1     Running   0          2d18h</span><br><span class="line">nginx-deployment-9b44bf4b5-7h2t4   1/1     Running   0          12s</span><br><span class="line"></span><br><span class="line">$ sudo crictl ps</span><br><span class="line">CONTAINER           IMAGE               CREATED              STATE               NAME                        ATTEMPT             POD ID              POD</span><br><span class="line">fa15a037579fc       ff78c7a65ec2b       About a minute ago   Running             nginx                       0                   af4992aeefc57       nginx-deployment-9b44bf4b5-7h2t4</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Container - <code>sudo crictl inspect fa15a037579fc</code></p>
+</blockquote>
+<blockquote>
+<p>使用的是 <code>Node 上的 ext4 文件系统</code>，并不是容器运行时的存储（<code>OverlayFS</code>）</p>
+</blockquote>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span></span><br><span class="line">     <span class="attr">&quot;mounts&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span></span><br><span class="line">           <span class="attr">&quot;containerPath&quot;</span><span class="punctuation">:</span><span class="string">&quot;/cache&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;hostPath&quot;</span><span class="punctuation">:</span><span class="string">&quot;/var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;propagation&quot;</span><span class="punctuation">:</span><span class="string">&quot;PROPAGATION_PRIVATE&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;readonly&quot;</span><span class="punctuation">:</span><span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;selinuxRelabel&quot;</span><span class="punctuation">:</span><span class="literal"><span class="keyword">false</span></span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">     <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;info&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span></span><br><span class="line">     <span class="attr">&quot;config&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;mounts&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">           <span class="punctuation">&#123;</span></span><br><span class="line">              <span class="attr">&quot;container_path&quot;</span><span class="punctuation">:</span><span class="string">&quot;/cache&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="attr">&quot;host_path&quot;</span><span class="punctuation">:</span><span class="string">&quot;/var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume&quot;</span></span><br><span class="line">           <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">]</span></span><br><span class="line">     <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">     <span class="attr">&quot;mounts&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span></span><br><span class="line">           <span class="attr">&quot;destination&quot;</span><span class="punctuation">:</span><span class="string">&quot;/cache&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;bind&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;source&quot;</span><span class="punctuation">:</span><span class="string">&quot;/var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume&quot;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;options&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">              <span class="string">&quot;rbind&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;rprivate&quot;</span><span class="punctuation">,</span></span><br><span class="line">              <span class="string">&quot;rw&quot;</span></span><br><span class="line">           <span class="punctuation">]</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">     <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ls -ld /var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume</span><br><span class="line">drwxrwxrwx 2 root root 4096 Jul 29 12:01 /var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume</span><br><span class="line"></span><br><span class="line">$ df -Th</span><br><span class="line">Filesystem                        Type      Size  Used Avail Use% Mounted on</span><br><span class="line">udev                              devtmpfs  5.8G     0  5.8G   0% /dev</span><br><span class="line">tmpfs                             tmpfs     1.2G  4.2M  1.2G   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv ext4       30G   14G   15G  49% /</span><br><span class="line">tmpfs                             tmpfs     5.9G     0  5.9G   0% /dev/shm</span><br><span class="line">tmpfs                             tmpfs     5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                             tmpfs     5.9G     0  5.9G   0% /sys/fs/cgroup</span><br><span class="line">/dev/nvme0n1p2                    ext4      2.0G  206M  1.6G  12% /boot</span><br><span class="line">/dev/nvme0n1p1                    vfat      1.1G  6.4M  1.1G   1% /boot/efi</span><br><span class="line">/dev/loop0                        squashfs   58M   58M     0 100% /snap/core20/1614</span><br><span class="line">/dev/loop1                        squashfs   62M   62M     0 100% /snap/lxd/22761</span><br><span class="line">tmpfs                             tmpfs     1.2G     0  1.2G   0% /run/user/1000</span><br><span class="line">/dev/loop3                        squashfs   47M   47M     0 100% /snap/snapd/19459</span><br><span class="line">/dev/loop4                        squashfs   60M   60M     0 100% /snap/core20/1977</span><br><span class="line">/dev/loop5                        squashfs   92M   92M     0 100% /snap/lxd/24065</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/d115ca9d37d81b888613d87c251a5b73715e6e6c87797aa2da640a1568fe7abf/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/d69c146236495ec545f49398a47a96ebd9c3d7a6f27c3232ca22020a23f3566c/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/95fb6fc590c286b0a1dfec49b152927ede0de6267ce495ae6a3f85246e875813/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/1165bab25ae21f44b2e53542ad53ba0fcd09d8cd3926a2e5b06eac9c2aaa58e3/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/bc8c16a440f5c7e02fbdf04084f7084995f95d028fa791f0702d1c14724e4f5b/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/88103cf807ae5cc2639f792c6fa0b2ce2098f2bd3b00db946ad6208069249c81/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/a732a1530dd185a58a84ca866ebc4d082049f5ecfb079f42bfb4e4db0672a7d2/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/ecddecbd8bb0be0bbadc17c37b4ea684badc89bf88daae1920ffbbbd3363ec21/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/7d6e14cf214eb0436a77a72f94030819255bdce7abb177549a078fa436d6e899/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/14994dea79206eef6dca3caf2528e786aed6c882b1e03acdbac1d551c67f8909/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/704b36894705f2aabb5d3802c2071e4ea14cc2963006bd3426f1b7ce6e8b0cde/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/a31bfee878b49c68c28b36ff9fe4a7e5510639337bdff0c830dc5d37f6b87377/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/6cdce974ca5b8f5c2abc51b7cc2880df73192d440d52a964906c5437ca7eabb0/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/cb07c78e242382171ac035d9b888454f71bb393e788f7feaa7ee13d4ead5cb34/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/869afd4133b4f1415f95ab3949e26c0bd92d38034316f257c9d493889370b75b/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/68a89759992ad245f0e50af8aeca3105a709d191f82e6256fe15eec4dd9c580a/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/af4992aeefc579d7286148c31ce9a6d69592d2819c059f63db4273dc25f4a28b/shm</span><br><span class="line"></span><br><span class="line">$ sudo crictl pods</span><br><span class="line">POD ID              CREATED             STATE               NAME                                       NAMESPACE           ATTEMPT             RUNTIME</span><br><span class="line">af4992aeefc57       17 minutes ago      Ready               nginx-deployment-9b44bf4b5-7h2t4           default             0                   (default)</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">$ ll /run/containerd/io.containerd.grpc.v1.cri/sandboxes/af4992aeefc579d7286148c31ce9a6d69592d2819c059f63db4273dc25f4a28b/shm</span><br><span class="line">total 0</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>删除 Pod</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">$ k delete -f emptydir.yaml</span><br><span class="line">deployment.apps &quot;nginx-deployment&quot; deleted</span><br><span class="line"></span><br><span class="line">$ k get po</span><br><span class="line">NAME                      READY   STATUS    RESTARTS   AGE</span><br><span class="line">centos-67dd9d8678-bxxdv   1/1     Running   0          3h48m</span><br><span class="line">nginx                     1/1     Running   0          2d18h</span><br><span class="line"></span><br><span class="line">$ df -Th</span><br><span class="line">Filesystem                        Type      Size  Used Avail Use% Mounted on</span><br><span class="line">udev                              devtmpfs  5.8G     0  5.8G   0% /dev</span><br><span class="line">tmpfs                             tmpfs     1.2G  4.0M  1.2G   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv ext4       30G   14G   15G  49% /</span><br><span class="line">tmpfs                             tmpfs     5.9G     0  5.9G   0% /dev/shm</span><br><span class="line">tmpfs                             tmpfs     5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                             tmpfs     5.9G     0  5.9G   0% /sys/fs/cgroup</span><br><span class="line">/dev/nvme0n1p2                    ext4      2.0G  206M  1.6G  12% /boot</span><br><span class="line">/dev/nvme0n1p1                    vfat      1.1G  6.4M  1.1G   1% /boot/efi</span><br><span class="line">/dev/loop0                        squashfs   58M   58M     0 100% /snap/core20/1614</span><br><span class="line">/dev/loop1                        squashfs   62M   62M     0 100% /snap/lxd/22761</span><br><span class="line">tmpfs                             tmpfs     1.2G     0  1.2G   0% /run/user/1000</span><br><span class="line">/dev/loop3                        squashfs   47M   47M     0 100% /snap/snapd/19459</span><br><span class="line">/dev/loop4                        squashfs   60M   60M     0 100% /snap/core20/1977</span><br><span class="line">/dev/loop5                        squashfs   92M   92M     0 100% /snap/lxd/24065</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/d115ca9d37d81b888613d87c251a5b73715e6e6c87797aa2da640a1568fe7abf/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/d69c146236495ec545f49398a47a96ebd9c3d7a6f27c3232ca22020a23f3566c/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/95fb6fc590c286b0a1dfec49b152927ede0de6267ce495ae6a3f85246e875813/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/1165bab25ae21f44b2e53542ad53ba0fcd09d8cd3926a2e5b06eac9c2aaa58e3/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/bc8c16a440f5c7e02fbdf04084f7084995f95d028fa791f0702d1c14724e4f5b/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/88103cf807ae5cc2639f792c6fa0b2ce2098f2bd3b00db946ad6208069249c81/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/a732a1530dd185a58a84ca866ebc4d082049f5ecfb079f42bfb4e4db0672a7d2/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/ecddecbd8bb0be0bbadc17c37b4ea684badc89bf88daae1920ffbbbd3363ec21/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/7d6e14cf214eb0436a77a72f94030819255bdce7abb177549a078fa436d6e899/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/14994dea79206eef6dca3caf2528e786aed6c882b1e03acdbac1d551c67f8909/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/704b36894705f2aabb5d3802c2071e4ea14cc2963006bd3426f1b7ce6e8b0cde/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/a31bfee878b49c68c28b36ff9fe4a7e5510639337bdff0c830dc5d37f6b87377/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/6cdce974ca5b8f5c2abc51b7cc2880df73192d440d52a964906c5437ca7eabb0/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/cb07c78e242382171ac035d9b888454f71bb393e788f7feaa7ee13d4ead5cb34/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/869afd4133b4f1415f95ab3949e26c0bd92d38034316f257c9d493889370b75b/shm</span><br><span class="line">shm                               tmpfs      64M     0   64M   0% /run/containerd/io.containerd.grpc.v1.cri/sandboxes/68a89759992ad245f0e50af8aeca3105a709d191f82e6256fe15eec4dd9c580a/shm</span><br><span class="line"></span><br><span class="line">$ sudo ls -ld /var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume</span><br><span class="line">ls: cannot access &#x27;/var/lib/kubelet/pods/8af6e32d-537e-4760-b654-bf1dd416cf7b/volumes/kubernetes.io~empty-dir/cache-volume&#x27;: No such file or directory</span><br></pre></td></tr></table></figure>
+
+<h1 id="半持久化存储"><a href="#半持久化存储" class="headerlink" title="半持久化存储"></a>半持久化存储</h1><blockquote>
+<p>常用的半持久化存储为 <code>hostPath</code>，一般<code>不推荐</code>使用</p>
+</blockquote>
+<ol>
+<li>hostPath 将 <code>Node 文件系统</code>上的文件或者目录<code>挂载</code>到指定的 Pod 中</li>
+<li>场景：获取 Node 的<code>系统信息</code><ul>
+<li>日志采集 - <code>/var/log/pods</code></li>
+<li><code>/proc</code></li>
+</ul>
+</li>
+<li>支持类型：<code>目录</code>、<code>字符设备</code>、<code>块设备</code></li>
+<li>几点注意<ul>
+<li>使用同一目录的 Pod 可能会调度到不同的 Node，目录中的内容可能是不同的</li>
+<li>Kubernetes 在<code>调度</code>时无法顾及 <code>hostPath</code> 使用的资源</li>
+<li><code>Pod</code> 被<code>删除</code>后，hostPath 上的数据一般会<code>遗留</code>在 Node 上，<code>占用磁盘空间</code></li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>PV</p>
+</blockquote>
+<figure class="highlight yaml"><figcaption><span>pv.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PersistentVolume</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">task-pv-volume</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">local</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">storageClassName:</span> <span class="string">manual</span></span><br><span class="line">  <span class="attr">capacity:</span></span><br><span class="line">    <span class="attr">storage:</span> <span class="string">100Mi</span></span><br><span class="line">  <span class="attr">accessModes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">ReadWriteOnce</span></span><br><span class="line">  <span class="attr">hostPath:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">&quot;/mnt/data&quot;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PV 一般由集群管理员创建</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mkdir /mnt/data</span><br><span class="line"></span><br><span class="line">$ sudo sh -c &quot;echo &#x27;Hello from Kubernetes storage&#x27; &gt; /mnt/data/index.html&quot;</span><br><span class="line"></span><br><span class="line">$ k get pv</span><br><span class="line">No resources found</span><br><span class="line"></span><br><span class="line">$ k apply -f pv.yaml</span><br><span class="line">persistentvolume/task-pv-volume created</span><br><span class="line"></span><br><span class="line">$ k get pv -owide</span><br><span class="line">NAME             CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE   VOLUMEMODE</span><br><span class="line">task-pv-volume   100Mi      RWO            Retain           Available           manual                  20s   Filesystem</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PVC - 用户申请</p>
+</blockquote>
+<figure class="highlight yaml"><figcaption><span>pvc.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PersistentVolumeClaim</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">task-pv-claim</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">storageClassName:</span> <span class="string">manual</span></span><br><span class="line">  <span class="attr">accessModes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">ReadWriteOnce</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">requests:</span></span><br><span class="line">      <span class="attr">storage:</span> <span class="string">100Mi</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f pvc.yaml</span><br><span class="line">persistentvolumeclaim/task-pv-claim created</span><br><span class="line"></span><br><span class="line">$ k get pvc -owide</span><br><span class="line">NAME            STATUS   VOLUME           CAPACITY   ACCESS MODES   STORAGECLASS   AGE     VOLUMEMODE</span><br><span class="line">task-pv-claim   Bound    task-pv-volume   100Mi      RWO            manual         2m40s   Filesystem</span><br><span class="line"></span><br><span class="line">$ k get pv</span><br><span class="line">NAME             CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                   STORAGECLASS   REASON   AGE</span><br><span class="line">task-pv-volume   100Mi      RWO            Retain           Bound    default/task-pv-claim   manual                  3m32s</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Pod - 从 PVC 挂载卷</p>
+</blockquote>
+<figure class="highlight yaml"><figcaption><span>pod.yaml</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">task-pv-pod</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">task-pv-storage</span></span><br><span class="line">      <span class="attr">persistentVolumeClaim:</span></span><br><span class="line">        <span class="attr">claimName:</span> <span class="string">task-pv-claim</span></span><br><span class="line">  <span class="attr">containers:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">task-pv-container</span></span><br><span class="line">      <span class="attr">image:</span> <span class="string">nginx</span></span><br><span class="line">      <span class="attr">ports:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">&quot;http-server&quot;</span></span><br><span class="line">      <span class="attr">volumeMounts:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">mountPath:</span> <span class="string">&quot;/usr/share/nginx/html&quot;</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">task-pv-storage</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f pod.yaml</span><br><span class="line">pod/task-pv-pod created</span><br><span class="line"></span><br><span class="line">$ k get po -owide</span><br><span class="line">NAME                      READY   STATUS    RESTARTS   AGE     IP               NODE      NOMINATED NODE   READINESS GATES</span><br><span class="line">centos-67dd9d8678-bxxdv   1/1     Running   0          4h13m   192.168.185.20   mac-k8s   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx                     1/1     Running   0          2d19h   192.168.185.16   mac-k8s   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">task-pv-pod               1/1     Running   0          56s     192.168.185.22   mac-k8s   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line">$ ip r</span><br><span class="line">default via 192.168.191.2 dev ens160 proto dhcp src 192.168.191.153 metric 100</span><br><span class="line">172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown</span><br><span class="line">blackhole 192.168.185.0/26 proto 80</span><br><span class="line">192.168.185.8 dev calia19a798b8fd scope link</span><br><span class="line">192.168.185.9 dev calice2f12042d3 scope link</span><br><span class="line">192.168.185.10 dev calic53d7952249 scope link</span><br><span class="line">192.168.185.11 dev calicb368f46996 scope link</span><br><span class="line">192.168.185.12 dev cali07e441e0d79 scope link</span><br><span class="line">192.168.185.13 dev cali9ecb9fbd866 scope link</span><br><span class="line">192.168.185.16 dev calic440f455693 scope link</span><br><span class="line">192.168.185.20 dev calica4914fdab0 scope link</span><br><span class="line">192.168.185.22 dev calie85a22d69f1 scope link</span><br><span class="line">192.168.191.0/24 dev ens160 proto kernel scope link src 192.168.191.153</span><br><span class="line">192.168.191.2 dev ens160 proto dhcp scope link src 192.168.191.153 metric 100</span><br><span class="line"></span><br><span class="line">$ curl 192.168.185.22</span><br><span class="line">Hello from Kubernetes storage</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>修改 hostPath 里面的资源</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ k exec -it task-pv-pod -- bash</span><br><span class="line">root@task-pv-pod:/# echo &#x27;hello go&#x27; &gt; /usr/share/nginx/html/index.html</span><br><span class="line">root@task-pv-pod:/#</span><br><span class="line">exit</span><br><span class="line"></span><br><span class="line">$ curl 192.168.185.22</span><br><span class="line">hello go</span><br><span class="line"></span><br><span class="line">$ cat /mnt/data/index.html</span><br><span class="line">hello go</span><br><span class="line"></span><br><span class="line">$ k delete -f pod.yaml -f pvc.yaml -f pv.yaml</span><br><span class="line">pod &quot;task-pv-pod&quot; deleted</span><br><span class="line">persistentvolumeclaim &quot;task-pv-claim&quot; deleted</span><br><span class="line">persistentvolume &quot;task-pv-volume&quot; deleted</span><br><span class="line"></span><br><span class="line">$ cat /mnt/data/index.html</span><br><span class="line">hello go</span><br></pre></td></tr></table></figure>
+
+<h1 id="持久化存储"><a href="#持久化存储" class="headerlink" title="持久化存储"></a>持久化存储</h1><blockquote>
+<p>引入了 <code>StorageClass</code>、<code>PersistentVolumeClaim</code>、<code>PersistentVolume</code><br>将<code>存储</code>独立于 <code>Pod 的生命周期</code>来进行管理</p>
+</blockquote>
+<blockquote>
+<p>支持主流的<code>块存储</code>和<code>文件存储</code>，大体可分为<code>网络存储</code>和<code>本地存储</code></p>
+</blockquote>
+<h2 id="StorageClass"><a href="#StorageClass" class="headerlink" title="StorageClass"></a>StorageClass</h2><blockquote>
+<p>用于指示<code>存储类型</code></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ k api-resources --api-group=&#x27;storage.k8s.io&#x27;</span><br><span class="line">NAME                   SHORTNAMES   APIVERSION               NAMESPACED   KIND</span><br><span class="line">csidrivers                          storage.k8s.io/v1        false        CSIDriver</span><br><span class="line">csinodes                            storage.k8s.io/v1        false        CSINode</span><br><span class="line">csistoragecapacities                storage.k8s.io/v1beta1   true         CSIStorageCapacity</span><br><span class="line">storageclasses         sc           storage.k8s.io/v1        false        StorageClass</span><br><span class="line">volumeattachments                   storage.k8s.io/v1        false        VolumeAttachment</span><br><span class="line"></span><br><span class="line">$ k get sc -A</span><br><span class="line">NAME                  PROVISIONER               RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE</span><br><span class="line">localdev-nfs-common   nfs-localdev-nfs-common   Retain          WaitForFirstConsumer   false                  26d</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight yaml"><figcaption><span>localdev-nfs-common</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">storage.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">StorageClass</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">k8s.kuboard.cn/storageType:</span> <span class="string">nfs_client_provisioner</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">&quot;2022-07-03T05:56:58Z&quot;</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">localdev-nfs-common</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">&quot;574432&quot;</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">7915a5fa-606f-4d08-8498-3db67aaf9c61</span></span><br><span class="line"><span class="attr">parameters:</span></span><br><span class="line">  <span class="attr">archiveOnDelete:</span> <span class="string">&quot;false&quot;</span></span><br><span class="line"><span class="attr">provisioner:</span> <span class="string">nfs-localdev-nfs-common</span></span><br><span class="line"><span class="attr">reclaimPolicy:</span> <span class="string">Retain</span></span><br><span class="line"><span class="attr">volumeBindingMode:</span> <span class="string">WaitForFirstConsumer</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ get deployments.apps -n kube-system | grep nfs</span><br><span class="line">eip-nfs-localdev-nfs-common   1/1     1            1           26d</span><br></pre></td></tr></table></figure>
+
+<h2 id="PersistentVolumeClaim"><a href="#PersistentVolumeClaim" class="headerlink" title="PersistentVolumeClaim"></a>PersistentVolumeClaim</h2><blockquote>
+<p>由<code>用户</code>创建，代表用户<code>对存储需求的声明</code>；存储卷的<code>访问模式</code>必须与<code>存储类型</code>一致</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>AccessMode</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ReadWriteOnce</code> - RWO</td>
+<td>该卷只能在<code>1 个 Node</code> 上被 Mount，<code>可读可写</code></td>
+</tr>
+<tr>
+<td><code>ReadOnlyMany</code> - ROX</td>
+<td>该卷只能在<code>N 个 Node</code> 上被 Mount，<code>只读</code></td>
+</tr>
+<tr>
+<td><code>ReadWriteMany</code> - RWX</td>
+<td>该卷只能在<code>N 个 Node</code> 上被 Mount，<code>可读可写</code></td>
+</tr>
+</tbody></table>
+<h2 id="PersistentVolume"><a href="#PersistentVolume" class="headerlink" title="PersistentVolume"></a>PersistentVolume</h2><blockquote>
+<p><code>静态</code> - 由集群管理员<code>提前创建</code><br><code>动态</code> - 根据 PVC 的申请需求<code>动态创建</code></p>
+</blockquote>
+<h2 id="对象关系"><a href="#对象关系" class="headerlink" title="对象关系"></a>对象关系</h2><blockquote>
+<ol>
+<li><code>用户</code>创建 <code>PVC</code> 来<code>申请</code>存储</li>
+<li><code>控制器</code>通过 <code>PVC</code> 的 <code>StorageClass</code> 和<code>请求大小</code>，到<code>存储后端</code>创建 <code>PV</code><ul>
+<li>StorageClass 对应 <code>Provisioner</code>，Provisioner 也是一个 Controller</li>
+</ul>
+</li>
+<li><code>Pod</code> 通过指定 <code>PVC</code> 来<code>引用</code>存储</li>
+</ol>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230729211158482.png" alt="image-20230729211158482"></p>
+<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h2><blockquote>
+<p><code>本地</code> &#x3D; <code>集群内部</code></p>
+</blockquote>
+<ol>
+<li>不同<code>介质类型</code>的磁盘，需要设置不同的 <code>StorageClass</code>（需要设置磁盘介质的类型）</li>
+<li>在<code>本地存储</code>的 PV <code>静态</code>部署模式下，每个<code>物理磁盘</code>都尽量只创建<code>一个 PV</code><ul>
+<li>如果划分多个<code>分区</code>来提供多个本地存储 PV，会产生 <code>IO 竞争</code></li>
+</ul>
+</li>
+<li><code>本地存储</code>需要配合<code>磁盘检测</code><ul>
+<li>在集群部署<code>规模化</code>后，每个集群的<code>本地存储 PV</code> 可能会超过几万个，<code>磁盘损坏</code>是<code>频发事件</code></li>
+</ul>
+</li>
+<li>对于提供<code>本地存储</code>节点的<code>磁盘管理</code>，需要做到<code>灵活管理</code>和<code>自动化</code></li>
+</ol>
+<h2 id="Exclusive-x2F-Static"><a href="#Exclusive-x2F-Static" class="headerlink" title="Exclusive &#x2F; Static"></a>Exclusive &#x2F; Static</h2><blockquote>
+<p>场景：<code>高 IOPS</code></p>
+</blockquote>
+<blockquote>
+<p><code>先创建 PV</code></p>
+<ol>
+<li>Node 上架时携带了硬盘，一旦注册到 Kubernetes，会有 provisioner 扫描 Node 的信息，并自动创建 PV</li>
+<li>当用户使用 Pod 时，里面会携带 PVC 的定义</li>
+<li>当 Pod 知道要调度到某个 Node 时，会建立对应 PVC 和 PV 的绑定</li>
+</ol>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230729213606940.png" alt="image-20230729213606940"></p>
+<h2 id="Shared-x2F-Dynamic"><a href="#Shared-x2F-Dynamic" class="headerlink" title="Shared &#x2F; Dynamic"></a>Shared &#x2F; Dynamic</h2><blockquote>
+<p>场景：需要<code>大空间</code>，借助 <code>LVM</code>，非独占（可能会有 <code>IO 竞争</code>）</p>
+</blockquote>
+<blockquote>
+<p><code>先创建 PVC，然后动态创建 PV</code></p>
+<ol>
+<li><code>CSI 驱动</code> 需要<code>汇报</code> Node 上相关存储的资源信息，以便于调度</li>
+<li>不同厂家的机器，汇报方式也不同</li>
+<li>如何<code>汇报</code> Node 的存储信息，以及如何让 Node 的存储信息应用于<code>调度</code>，目前<code>没有统一的方案</code></li>
+</ol>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20230729220257698.png" alt="image-20230729220257698"></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2022/12/09/cloud-native-foundation-k8s-csi/">https://blog.zhongmingmao.top/2022/12/09/cloud-native-foundation-k8s-csi/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/cloud-native-foundation/">Cloud Native Foundation</a><a class="post-meta__tags" href="/tags/kubernetes/">Kubernetes</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2022/12/08/cloud-native-foundation-k8s-cni-v2/" title="Kubernetes - CNI"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/cni-logo-card.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Kubernetes - CNI</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2022/12/08/cloud-native-foundation-k8s-cni-v2/" title="Kubernetes - CNI"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/cni-logo-card.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-08</div><div class="title">Kubernetes - CNI</div></div></a></div><div><a href="/2022/12/07/cloud-native-foundation-k8s-cri/" title="Kubernetes - CRI"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kubernetes-trends_k8s_container_runtime_popularity.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-07</div><div class="title">Kubernetes - CRI</div></div></a></div><div><a href="/2022/12/06/cloud-native-foundation-k8s-kubelet/" title="Kubernetes - Kubelet"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kubernetes-architecture.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-06</div><div class="title">Kubernetes - Kubelet</div></div></a></div><div><a href="/2022/12/05/cloud-native-foundation-k8s-controller-manager/" title="Kubernetes - Controller Manager"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kdpv.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-05</div><div class="title">Kubernetes - Controller Manager</div></div></a></div><div><a href="/2022/12/04/cloud-native-foundation-k8s-scheduler/" title="Kubernetes - Scheduler"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/rebalancing-8_qgh6ro.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-04</div><div class="title">Kubernetes - Scheduler</div></div></a></div><div><a href="/2022/12/03/cloud-native-foundation-k8s-apiserver/" title="Kubernetes - API Server"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/Screen-Shot-2022-01-22-at-10.52.54-AM.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-03</div><div class="title">Kubernetes - API Server</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">436</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">123</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">63</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AD%98%E5%82%A8"><span class="toc-number">1.</span> <span class="toc-text">运行时存储</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CSI"><span class="toc-number">2.</span> <span class="toc-text">CSI</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E7%B1%BB"><span class="toc-number">2.1.</span> <span class="toc-text">分类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%92%E4%BB%B6"><span class="toc-number">2.2.</span> <span class="toc-text">插件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A9%B1%E5%8A%A8"><span class="toc-number">2.3.</span> <span class="toc-text">驱动</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%B4%E6%97%B6%E5%AD%98%E5%82%A8"><span class="toc-number">3.</span> <span class="toc-text">临时存储</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%8A%E6%8C%81%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8"><span class="toc-number">4.</span> <span class="toc-text">半持久化存储</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8C%81%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8"><span class="toc-number">5.</span> <span class="toc-text">持久化存储</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#StorageClass"><span class="toc-number">5.1.</span> <span class="toc-text">StorageClass</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolumeClaim"><span class="toc-number">5.2.</span> <span class="toc-text">PersistentVolumeClaim</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PersistentVolume"><span class="toc-number">5.3.</span> <span class="toc-text">PersistentVolume</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%85%B3%E7%B3%BB"><span class="toc-number">5.4.</span> <span class="toc-text">对象关系</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">5.5.</span> <span class="toc-text">最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Exclusive-x2F-Static"><span class="toc-number">5.6.</span> <span class="toc-text">Exclusive &#x2F; Static</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Shared-x2F-Dynamic"><span class="toc-number">5.7.</span> <span class="toc-text">Shared &#x2F; Dynamic</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/12/09/cloud-native-foundation-k8s-csi/" title="Kubernetes - CSI"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/k8s-csi.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - CSI"/></a><div class="content"><a class="title" href="/2022/12/09/cloud-native-foundation-k8s-csi/" title="Kubernetes - CSI">Kubernetes - CSI</a><time datetime="2022-12-08T16:06:25.000Z" title="Created 2022-12-09 00:06:25">2022-12-09</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/08/cloud-native-foundation-k8s-cni-v2/" title="Kubernetes - CNI"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/cni-logo-card.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - CNI"/></a><div class="content"><a class="title" href="/2022/12/08/cloud-native-foundation-k8s-cni-v2/" title="Kubernetes - CNI">Kubernetes - CNI</a><time datetime="2022-12-07T16:06:25.000Z" title="Created 2022-12-08 00:06:25">2022-12-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/07/cloud-native-foundation-k8s-cri/" title="Kubernetes - CRI"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kubernetes-trends_k8s_container_runtime_popularity.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - CRI"/></a><div class="content"><a class="title" href="/2022/12/07/cloud-native-foundation-k8s-cri/" title="Kubernetes - CRI">Kubernetes - CRI</a><time datetime="2022-12-06T16:06:25.000Z" title="Created 2022-12-07 00:06:25">2022-12-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/06/cloud-native-foundation-k8s-kubelet/" title="Kubernetes - Kubelet"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kubernetes-architecture.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Kubelet"/></a><div class="content"><a class="title" href="/2022/12/06/cloud-native-foundation-k8s-kubelet/" title="Kubernetes - Kubelet">Kubernetes - Kubelet</a><time datetime="2022-12-05T16:06:25.000Z" title="Created 2022-12-06 00:06:25">2022-12-06</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/12/05/cloud-native-foundation-k8s-controller-manager/" title="Kubernetes - Controller Manager"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kdpv.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kubernetes - Controller Manager"/></a><div class="content"><a class="title" href="/2022/12/05/cloud-native-foundation-k8s-controller-manager/" title="Kubernetes - Controller Manager">Kubernetes - Controller Manager</a><time datetime="2022-12-04T16:06:25.000Z" title="Created 2022-12-05 00:06:25">2022-12-05</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2023 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
