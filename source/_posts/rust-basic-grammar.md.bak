@@ -1,0 +1,367 @@
+---
+title: Rust - Basic Grammar
+mathjax: false
+date: 2023-11-01 00:06:25
+cover: https://rust-1253868755.cos.ap-guangzhou.myqcloud.com/rust-01.jpeg
+categories:
+  - Rust
+tags:
+  - Rust
+---
+
+# 基础类型
+
+## 赋值语句
+
+> Rust 使用 `let` 关键字定义变量及初始化
+
+```rust
+fn main() {
+    // 无符号 32 位整数，赋值为 1
+    let a: u32 = 1;
+}
+```
+
+> Rust 保证定义的变量在`第一次使用之前`一定被初始化过了
+
+<!-- more -->
+
+## 数字类型
+
+> Rust 中的数字是区分`位数`的
+
+### 整数
+
+| 长度    | 有符号 | 无符号 |
+| ------- | ------ | ------ |
+| 8 bit   | i8     | u8     |
+| 16 bit  | i16    | u16    |
+| 32 bit  | i32    | u32    |
+| 64 bit  | i64    | u64    |
+| 128 bit | i128   | u128   |
+| arch    | isize  | usize  |
+
+1. `isize` 和 `usize` 的位数与具体的 `CPU 架构位数`有关
+2. 整数类型可以作为`字面量的后缀`，来直接指定值的类型
+
+```rust
+let a = 10u32;
+```
+
+> 整数字面量的辅助写法
+
+| 进制           | 样例                               |
+| -------------- | ---------------------------------- |
+| 十进制         | `92_222`                           |
+| 二进制         | `0b1111_0000`                      |
+| 八进制         | `0o77`                             |
+| 十六进制       | `0xff`                             |
+| 字符的字节表示 | `b'A'`，等到字符 `A` 的 `ASCII` 值 |
+
+```rust
+  let a: u32 = 12_345;
+  let b: u32 = 0b1111_0000;
+  let c: u32 = 0o7_1;
+  let d: u32 = 0xef;
+  let e: u8 = b'A';
+```
+
+### 浮点数
+
+> 浮点数有两种类型，f32 和 f64
+
+```rust
+let a: f32 = 10.0;
+let b = 10.1f64;
+```
+
+## 布尔类型
+
+> 布尔类型为 bool
+
+```rust
+let a: bool = true;
+let b = false;
+```
+
+## 字符
+
+> Rust 中的字符类型是 `char`，使用`单引号`
+
+```rust
+let a = 'z';
+let b: char = '中';
+let c = '😻';
+```
+
+1. `char` 类型存储的是 `Unicode 散列值`
+2. `char` 类型在内存中总是占用 `4 bytes`
+
+## 字符串
+
+> Rust 的字符串类型是 `String`
+
+1. String 的内部存储结构与 char `完全不同`
+2. String 内部存储的是 `Unicode 字符串`的 `UTF-8 编码 `，而 char 直接存储的是 `Unicode Scalar Value`
+3. `String 并不是 char 数组`
+
+> Rust String 对 `Unicode 字符集`有良好的支持
+
+```rust
+let s1 = String::from("hello rust");
+let s1 = String::from("你好，Rust");
+```
+
+> Rust 中的 String 不能通过`下标`去访问
+
+```rust
+let s1 = String::from("hello rust");
+let a = s1[0]; // `String` cannot be indexed by `{integer}`
+```
+
+1. 由于 String 存储的是 `Unicode 序列的 UTF-8 编码`，而 `UTF-8` 编码是`变长编码`
+2. 因此 Rust 直接禁止对 String 的索引操作
+
+> 字面量转义
+
+```rust
+let s = "Hello \"Rust\"";
+let s = "Hello \n Rust";
+let s = "Hello \\ Rust";
+let s = "Hello \n Rust";
+let s = "Hello \r\n Rust"; // Windows
+let s = "Hello Rust\0"; // 强制在字符串后加 0，与 C 语言一致
+```
+
+> 支持通过 `\x` 输入`等值`的 `ASCII 字符`（最高 7 位），通过 `\u{}` 输入等值的 `Unicode 字符`（最高 24 位）
+
+```rust
+let a = "Hello \x41";
+println!("{}", a); // Hello A
+
+let a = "Hello \u{0065}";
+println!("{}", a); // Hello e
+```
+
+> 禁止转义，输出原始字面量，`r""` 或者 `r#""#`
+
+```rust
+// 不转义
+let raw_str = r"\41 \u{0065}";
+println!("{}", raw_str); // \41 \u{0065}
+
+// 字符串字面量中保留 ""
+let quotes = r#"Hello "Rust""#;
+println!("{}", quotes); // Hello "Rust"
+
+// 字符串字面量中保留 #，可以加任意多的前后匹配的 # 号
+let longer_delimiter = r###"A string with "# in it. And even "##!"###;
+println!("{}", longer_delimiter); // A string with "# in it. And even "##!
+```
+
+> String 字面量支持换行书写，默认包含换行符
+
+```rust
+let s = "hello
+rust"; // hello\nrust
+```
+
+> `字节串` - 只需要用到 `ASCII 字符集`的字符串字面量（不需要 Unicode 字符），存储为`字节数组`（`[u8;N]`）
+> 常用于`系统级编程`或者`网络协议开发`
+
+```rust
+let a: &[u8; 10] = b"Hello Rust";
+println!("{:?}", a); // [72, 101, 108, 108, 111, 32, 82, 117, 115, 116]
+
+let b = b"\x41 Hello Rust";
+println!("{:?}", b); // [65, 32, 72, 101, 108, 108, 111, 32, 82, 117, 115, 116]
+
+// 使用原始字面量的字节串
+let c = br"\x41 Hello Rust";
+println!("{:?}", c); // [92, 120, 52, 49, 32, 72, 101, 108, 108, 111, 32, 82, 117, 115, 116]
+```
+
+## 数组
+
+> Rust 中的数组是 `array` 类型的，用于存储`同一类型`的多个值，数组表示为 `[T;N]`
+
+```rust
+fn main() {
+    let a: [i32; 5] = [1, 2, 3, 4, 5];
+    let b = [1, 2, 3, 4, 5]; // [i32; 5]
+}
+```
+
+1. Rust 中的数组是`固定长度`的，即在`编译阶段`能确定其占用的字节数，并在运行阶段，不能修改
+2. Rust 区分固定长度的数组和动态数组
+   - 固定长度的数据类型可以直接放在`栈`上，创建和回收都比在堆上动态分配的动态数组的`性能`要好
+3. Rust 的类型系统对`类型`进行`分类`
+   - 能否在`编译期`就计算出某个数据类型在`运行过程`中占用`内存空间`的大小
+
+> 数组常用于开辟一个`固定大小的 Buffer`
+
+```rust
+fn main() {
+    let months = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"]; // [&str; 12]
+}
+```
+
+> 可以通过`下标`索引访问数组
+
+```rust
+fn main() {
+    let a: [i32; 5] = [1, 2, 3, 4, 5];
+    let b = a[0];
+    println!("{}", b); // 1
+}
+```
+
+> 数组越界（由于数组的长度是确定的，因此 Rust 能在编译期报错）
+
+```rust
+fn main() {
+    let a: [i32; 5] = [1, 2, 3, 4, 5];
+    let b = a[5]; // index out of bounds: the length is 5 but the index is 5
+}
+```
+
+## 动态数组
+
+> Rust 中的动态数组为 `Vec`（Vector），即`向量`，用来存储同`一类型`的多个值，`容量`可以在程序运行的过程中`动态扩缩`
+
+```rust
+fn main() {
+    let v: Vec<i32> = Vec::new();
+    let v = vec![1, 2, 3];
+    println!("{}", v.len()); // 3
+
+    let mut v = Vec::new(); // Vec<?>
+    v.push(4);
+    v.push(5);
+    v.push(6);
+    v.push(7);
+    println!("{}", v.len()); // 4
+}
+```
+
+> 动态数组可以通过下标进行索引访问
+
+```rust
+fn main() {
+    let a = String::from("java");
+    let b = String::from("go");
+    let c = String::from("rust");
+
+    let v = vec![a, b, c];
+    println!("{:?}", v[0]); // java
+}
+```
+
+> 下标越界，能通过编译，但`运行时报错`，导致主线程崩溃
+
+```rust
+fn main() {
+    let a = String::from("java");
+    let b = String::from("go");
+    let c = String::from("rust");
+
+    let v = vec![a, b, c];
+    println!("{:?}", v[3]); // index out of bounds: the len is 3 but the index is 3
+}
+```
+
+## 哈希表
+
+> 用于存储 `Key-Value` 映射关系，Rust 中的哈希类型为 `HashMap`，Key 为同一种类型，Value 也为同一种类型
+
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+}
+```
+
+# 复合类型
+
+> 复合类型可以包含多种基础类型
+
+## 元组
+
+> 元组是一个`固定元素长度的列表`，每个`元素类型`可以`不一样`
+
+```rust
+fn main() {
+    let tup: (i32, f64, u8) = (500, 6.4, 1);
+}
+```
+
+> 访问元组元素，使用 `.` 运算符，下标从 `0` 开始
+
+```rust
+fn main() {
+    let tup: (i32, f64, u8) = (500, 6.4, 1);
+
+    let a = tup.0;
+    let b = tup.1;
+    let c = tup.2;
+}
+```
+
+> 与数组类似，都是`固定元素个数`，在`运行时不可伸缩`，常用于`函数的返回值`，类似于 Go 的多返回值特性
+
+> 当没有任何元素时，元组退化为 `()`，称为 `unit` 类型，unit 类型唯一的`值实例`就是 `()`
+> 如果一个函数没有返回值时，实际默认返回的是 `()`
+
+```rust
+let u = ();
+```
+
+## 结构体
+
+> 由若干字段组成，每个字段的类型可以不一样
+
+```rust
+struct User {
+    active: bool,
+    username: String,
+    email: String,
+    age: u64,
+}
+
+fn main() {
+    let user = User {
+        active: true,
+        username: String::from("admin"),
+        email: String::from("admin@x.com"),
+        age: 1,
+    };
+}
+```
+
+## 枚举
+
+> Rust 中最强大的复合类型，枚举是一个`载体`，可以`携带任何类型`
+
+```rust
+enum IpAddrKind {
+    V4,
+    V6,
+}
+
+fn main() {
+    let a = IpAddrKind::V4;
+    let b = IpAddrKind::V6;
+}
+```
+
+1. 枚举类型里的选项叫做此枚举的`变体`（`variants`），是其所属枚举类型的一部分
+2. 枚举 vs 结构体
+   - `结构体`类型里面的`所有字段`同时起作用，产生一个具体的实例 - `积`类型（`product` type）
+   - `枚举`类型中的`一个变体`起作用，产生一个具体的实例 - `和`类型（`sum` type）
+
+# 控制流
+

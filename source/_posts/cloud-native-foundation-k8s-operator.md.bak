@@ -1,0 +1,276 @@
+---
+title: Kubernetes - Operator
+mathjax: false
+date: 2022-12-16 00:06:25
+cover: https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/k8s-operators.png
+categories:
+  - Cloud Native
+  - Cloud Native Foundation
+  - Kubernetes
+tags:
+  - Cloud Native
+  - Cloud Native Foundation
+  - Kubernetes
+---
+
+# 应用容器化
+
+## 风险开销
+
+1. Log Driver
+   - Blocking Mode - 阻塞应用
+   - Non Blocking Mode
+2. 共享 Kernel
+   - 共享系统参数配置
+   - 共享 `PID` 数 - Fork bomb - PodPidsLimit
+   - 共享 `FD` 数
+   - 共享磁盘
+
+<!-- more -->
+
+## 资源监控
+
+### 环境识别
+
+> 在容器中看到的资源是`主机资源`
+
+1. Top
+2. Java `java.lang.Runtime#availableProcessors`
+3. cat /proc/cpuinfo
+4. cat /proc/meminfo
+5. df -k
+
+> 判断当前进程是否运行在 Kubernetes 中 - `/proc/1/cgroup` 包含 `kubepods` 关键字
+
+```
+$ cat /proc/1/cgroup
+12:freezer:/
+11:hugetlb:/
+10:pids:/init.scope
+9:rdma:/
+8:cpuset:/
+7:devices:/init.scope
+6:perf_event:/
+5:memory:/init.scope
+4:net_cls,net_prio:/
+3:blkio:/init.scope
+2:cpu,cpuacct:/init.scope
+1:name=systemd:/init.scope
+0::/init.scope
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: app
+    image: nginx:1.25.2
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+```
+
+```
+$ k exec -it nginx -- cat /proc/1/cgroup
+12:freezer:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+11:hugetlb:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+10:pids:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+9:rdma:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+8:cpuset:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+7:devices:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+6:perf_event:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+5:memory:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+4:net_cls,net_prio:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+3:blkio:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+2:cpu,cpuacct:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+1:name=systemd:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+0::/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod4c46b309_35bd_40ab_aaa7_671f406529cb.slice/docker-4b547d0360be2b0f90cf16637d7b93e037c83449a6795f227dc959a25ca0aaee.scope
+```
+
+> 如果当前进程是在 Kubernetes 环境中，去查询 cgroups 中的信息
+
+### CPU
+
+> limits - 500m = 0.5 Core ==> 0.5 * cfs_period_us = 50000
+
+```
+$ cat /sys/fs/cgroup/cpu/cpu.cfs_period_us
+100000
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/cpu/cpu.cfs_period_us
+100000
+
+$ cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us
+-1
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us
+50000
+```
+
+> requests - 250m = 0.25 Core ==> 1024 / 4 = 256
+
+```
+$ cat /sys/fs/cgroup/cpu/cpu.shares
+1024
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/cpu/cpu.shares
+256
+```
+
+> usage
+
+```
+$ cat /sys/fs/cgroup/cpuacct/cpuacct.usage
+1986594115190
+
+$ cat /sys/fs/cgroup/cpuacct/cpuacct.usage_percpu
+487209182527 497078241956 505359219348 498293588551
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/cpuacct/cpuacct.usage
+37864457
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/cpuacct/cpuacct.usage_percpu
+6150542 4699758 10604622 17692783
+```
+
+### Memory
+
+> limits - 128Mi = 1024 * 1024 * 128 = 134217728 Bytes
+
+```
+$ cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+9223372036854771712
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+134217728
+```
+
+> usage
+
+```
+$ cat /sys/fs/cgroup/memory/memory.usage_in_bytes
+5176614912
+
+$ k exec -it nginx -- cat /sys/fs/cgroup/memory/memory.usage_in_bytes
+6623232
+```
+
+## Probe 误用
+
+> Probe 会做网络调用，可能会超时，导致会耗尽 Node 上的 pid（Entrypoint Fork 子进程 Probe，但没有优雅退出，会成为僵尸进程）
+> 解决方案：`Entrypoint 具有清理子进程的能力并可以将信号传递给子进程`
+
+![image-20231007142440954](/Users/zhongmingmao/data/typora/image-20231007142440954.png)
+
+## 应用数据
+
+![image-20231007143905069](/Users/zhongmingmao/data/typora/image-20231007143905069.png)
+
+| Local   | Desc                                          |
+| ------- | --------------------------------------------- |
+| SSD     | 独占的本地磁盘，独占 IO，固定大小，读写性能高 |
+| Dynamic | 基于 LVM，动态分配空间，效率低                |
+
+> 对比
+
+| 存储卷类型                   | Container 重启<br />数据是否存在 | Pod 调度<br />数据是否存在 | 容量限制 | 备注                               |
+| ---------------------------- | -------------------------------- | -------------------------- | -------- | ---------------------------------- |
+| emptyDir                     | Yes                              | No                         | Yes      | 达到 sizeLimit 会被 kubelet `驱逐` |
+| hostPath                     | Yes                              | No                         | No       | 一般是管理员使用                   |
+| Local SSD<br />Local Dynamic | Yes                              | No                         | Yes      | 无备份                             |
+| 网络存储                     | Yes                              | `Yes`                      | Yes      | 依赖网络存储的稳定性               |
+| 容器 rootfs（即 imagefs）    | `No`                             | No                         | No       | 基于 `Overlay2`，不要写数据        |
+
+## 应用配置
+
+1. 注入方式：`环境变量` + `挂载卷`
+2. 数据来源：ConfigMap / Secret / Downward API
+
+> Downward API
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: centos-qos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: centos
+  template:
+    metadata:
+      labels:
+        app: centos
+    spec:
+      containers:
+      - command:
+        - tail
+        - -f
+        - /dev/null
+        image: centos:centos7.9.2009
+        name: centos
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+          limits:
+            cpu: 250m
+            memory: 1Gi
+        env:
+          - name: SYSTEM_NAMESPACE_ENV
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: PODIP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: CPU_LIMIT
+            valueFrom:
+              resourceFieldRef:
+                containerName: centos
+                resource: limits.cpu
+                divisor: 1m
+```
+
+```
+$ k exec -it centos-qos-67cd66dd9c-tmpl8 -- env
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOSTNAME=centos-qos-67cd66dd9c-tmpl8
+TERM=xterm
+PODIP=192.168.185.14
+CPU_LIMIT=250
+SYSTEM_NAMESPACE_ENV=default
+KUBERNETES_SERVICE_PORT_HTTPS=443
+KUBERNETES_PORT=tcp://10.96.0.1:443
+KUBERNETES_PORT_443_TCP=tcp://10.96.0.1:443
+KUBERNETES_PORT_443_TCP_PROTO=tcp
+KUBERNETES_PORT_443_TCP_PORT=443
+KUBERNETES_PORT_443_TCP_ADDR=10.96.0.1
+KUBERNETES_SERVICE_HOST=10.96.0.1
+KUBERNETES_SERVICE_PORT=443
+HOME=/root
+```
+
+## PodDisruptionBudget
+
+> PDB 是为了`自主中断`时`保障应用的高可用`
+
+| App  | Desc |
+| ---- | ---- |
+|      |      |
+|      |      |
+|      |      |
+
+
+
+
+
