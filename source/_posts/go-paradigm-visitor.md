@@ -1,7 +1,7 @@
 ---
 title: Go Paradigm - Visitor
 mathjax: false
-date: 2023-02-02 00:06:25
+date: 2022-02-02 00:06:25
 cover: https://go-1253868755.cos.ap-guangzhou.myqcloud.com/paradigm/go-visitor.webp
 categories:
   - Go

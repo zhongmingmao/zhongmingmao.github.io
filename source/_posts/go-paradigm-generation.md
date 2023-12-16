@@ -1,7 +1,7 @@
 ---
 title: Go Paradigm - Generation
 mathjax: false
-date: 2023-01-30 00:06:25
+date: 2022-01-30 00:06:25
 cover: https://go-1253868755.cos.ap-guangzhou.myqcloud.com/paradigm/go-generation.webp
 categories:
   - Go
