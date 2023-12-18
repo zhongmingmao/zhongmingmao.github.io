@@ -865,3 +865,152 @@ status:
   startTime: "2022-12-17T13:53:06Z"
 ```
 
+## 生成 webhook
+
+```
+$ kubebuilder create webhook --group apps --version v1beta1 --kind MyDaemonSet --defaulting --programmatic-validation
+Writing kustomize manifests for you to edit...
+Writing scaffold for you to edit...
+api/v1beta1/mydaemonset_webhook.go
+Update dependencies:
+$ go mod tidy
+Running make:
+$ make generate
+/Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+Next: implement your new Webhook and generate the manifests with:
+$ make manifests
+```
+
+![image-20231218224955108](https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20231218224955108.png)
+
+```go
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+func (r *MyDaemonSet) ValidateCreate() error {
+	mydaemonsetlog.Info("validate create", "name", r.Name)
+
+	// TODO(user): fill in your validation logic upon object creation.
+	if r.Spec.Image == "" {
+		return fmt.Errorf("image is required")
+	}
+
+	return nil
+}
+```
+
+```
+$ make manifests
+/Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+```
+
+![image-20231218225257085](https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20231218225257085.png)
+
+```
+$ make docker-build
+$ make docker-push
+
+$ make deploy
+GOBIN=/Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0
+/Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cd config/manager && /Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin/kustomize edit set image controller=zhongmingmao/controller:0.0.1
+/Users/zhongmingmao/workspace/go/src/github.com/zhongmingmao/my-operator/bin/kustomize build config/default | kubectl apply -f -
+namespace/my-operator-system created
+customresourcedefinition.apiextensions.k8s.io/mydaemonsets.apps.zhongmingmao.io configured
+serviceaccount/my-operator-controller-manager created
+role.rbac.authorization.k8s.io/my-operator-leader-election-role created
+clusterrole.rbac.authorization.k8s.io/my-operator-manager-role created
+clusterrole.rbac.authorization.k8s.io/my-operator-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/my-operator-proxy-role created
+rolebinding.rbac.authorization.k8s.io/my-operator-leader-election-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/my-operator-manager-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/my-operator-proxy-rolebinding created
+configmap/my-operator-manager-config created
+service/my-operator-controller-manager-metrics-service created
+service/my-operator-webhook-service created
+deployment.apps/my-operator-controller-manager created
+mutatingwebhookconfiguration.admissionregistration.k8s.io/my-operator-mutating-webhook-configuration created
+validatingwebhookconfiguration.admissionregistration.k8s.io/my-operator-validating-webhook-configuration created
+```
+
+```
+$ k get all -n my-operator-system
+NAME                                                 READY   STATUS              RESTARTS   AGE
+pod/my-operator-controller-manager-57f4b55f6-nh9bq   0/2     ContainerCreating   0          4m20s
+
+NAME                                                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/my-operator-controller-manager-metrics-service   ClusterIP   10.109.32.208   <none>        8443/TCP   4m20s
+service/my-operator-webhook-service                      ClusterIP   10.99.60.181    <none>        443/TCP    4m20s
+
+NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-operator-controller-manager   0/1     1            0           4m20s
+
+NAME                                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-operator-controller-manager-57f4b55f6   1         1         0       4m20s
+```
+
+> k get po -n my-operator-system my-operator-controller-manager-57f4b55f6-nh9bq -oyaml
+
+```yaml
+...
+    volumeMounts:
+    - mountPath: /tmp/k8s-webhook-server/serving-certs
+      name: cert
+      readOnly: true
+...
+  volumes:
+  - name: cert
+    secret:
+      defaultMode: 420
+      secretName: webhook-server-cert
+...
+```
+
+```
+$ k get validatingwebhookconfigurations.admissionregistration.k8s.io
+NAME                                           WEBHOOKS   AGE
+my-operator-validating-webhook-configuration   1          9m36s
+```
+
+> k get validatingwebhookconfigurations.admissionregistration.k8s.io my-operator-validating-webhook-configuration -oyaml
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"admissionregistration.k8s.io/v1","kind":"ValidatingWebhookConfiguration","metadata":{"annotations":{"cert-manager.io/inject-ca-from":"my-operator-system/my-operator-serving-cert"},"name":"my-operator-validating-webhook-configuration"},"webhooks":[{"admissionReviewVersions":["v1"],"clientConfig":{"service":{"name":"my-operator-webhook-service","namespace":"my-operator-system","path":"/validate-apps-zhongmingmao-io-v1beta1-mydaemonset"}},"failurePolicy":"Fail","name":"vmydaemonset.kb.io","rules":[{"apiGroups":["apps.zhongmingmao.io"],"apiVersions":["v1beta1"],"operations":["CREATE","UPDATE"],"resources":["mydaemonsets"]}],"sideEffects":"None"}]}
+  creationTimestamp: "2023-12-18T15:37:36Z"
+  generation: 1
+  name: my-operator-validating-webhook-configuration
+  resourceVersion: "61873"
+  uid: 22c5221f-9fe1-42df-871b-df1463d4fb26
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: my-operator-webhook-service
+      namespace: my-operator-system
+      path: /validate-apps-zhongmingmao-io-v1beta1-mydaemonset
+      port: 443
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vmydaemonset.kb.io
+  namespaceSelector: {}
+  objectSelector: {}
+  rules:
+  - apiGroups:
+    - apps.zhongmingmao.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - mydaemonsets
+    scope: '*'
+  sideEffects: None
+  timeoutSeconds: 10
+```
+
