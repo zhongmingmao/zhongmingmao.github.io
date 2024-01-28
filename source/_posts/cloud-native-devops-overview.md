@@ -12,6 +12,38 @@ tags:
   - DevOps
 ---
 
+#  演进过程
+
+## 精益
+
+1. 诞生于工业领域：用最少的时间和资源消耗，生产出高质量的产品
+
+## 瀑布模式
+
+1. `线性`的开发流程、将软件开发划分为一系列阶段
+
+<!-- more -->
+
+## 敏捷模式
+
+> 误区：敏捷 = 管理
+
+![586d0a09d56c8](https://cloud-native-devops-1253868755.cos.ap-guangzhou.myqcloud.com/foundation/586d0a09d56c8.jpg)
+
+1. 敏捷是基于精益的思想
+2. 将开发过程拆分成 N 个敏捷开发周期，`小步快跑`
+3. 生命周期
+   - 基于`迭代`的敏捷（`固定`的迭代周期）
+   - 基于`流程`的敏捷（`不固定`的迭代周期）
+
+> 运维不堪重负，建立部门墙，敏捷模式只关注`开发`，不关注运维
+
+## DevOps
+
+![image-20240125215855319](https://cloud-native-devops-1253868755.cos.ap-guangzhou.myqcloud.com/foundation/image-20240125215855319.png)
+
+![image-20240125220420713](https://cloud-native-devops-1253868755.cos.ap-guangzhou.myqcloud.com/foundation/image-20240125220420713.png)
+
 # 核心阶段
 
 1. 版本控制
@@ -19,8 +51,6 @@ tags:
 3. 持续交付 - 测试环境
 4. 持续部署 - 生产环境
 5. 持续监控
-
-<!-- more -->
 
 ## 源码管理
 
