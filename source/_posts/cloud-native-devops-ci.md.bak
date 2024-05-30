@@ -1,0 +1,2193 @@
+---
+title: DevOps - CI
+mathjax: false
+date: 2023-02-07 00:06:25
+cover: https://cloud-native-devops-1253868755.cos.ap-guangzhou.myqcloud.com/foundation/ci-9383714.png
+categories:
+  - Cloud Native
+  - DevOps
+tags:
+  - Cloud Native
+  - Kubernetes
+  - Infrastructure
+  - Architecture
+  - DevOps
+  - CI
+  - Harbor
+  - Jekins
+  - Kaniko
+  - Tekton
+---
+
+# 概述
+
+## 挑战
+
+### 速度
+
+> 在不影响`质量`的情况下，提升生产效率
+
+1. 关键指标
+   - `运行时长`
+   - `错误率`
+2. 流水线：通过自动化的手段进行更小、更频繁以及增量的变更
+3. 托管服务
+   - GitHub Action
+   - GitLab CI
+
+<!-- more -->
+
+### 可扩展
+
+1. 由点到面
+2. 利用`最佳实践`，`避免自己造轮子`
+3. 选择能够`跟随业务发展而扩展`的工具和技术
+
+### 安全
+
+1. 尽早做安全审查 - 安全`左移`
+   - git commit hooks
+   - pr/mr - 与合并后的构建 CI 流水线是分开的，可以先进行安全扫描
+2. 工具 + 人
+3. 可观测性
+4. 供应链安全
+
+# Harbor
+
+```yaml
+apiVersion: v2
+name: harbor
+description: Harbor HA deployment
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: redis
+    version: "17.16.0"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: redis.enabled
+    tags:
+      - middleware
+  - name: postgresql-ha
+    version: "11.9.0"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: postgresql-ha.enabled
+    tags:
+      - middleware
+  - name: harbor
+    version: "1.13.0"
+    repository: "https://helm.goharbor.io"
+    condition: harbor.enabled
+    tags:
+      - harbor
+```
+
+![image-20240303175102460](/Users/zhongmingmao/data/typora/image-20240303175102460.png)
+
+# Jenkins
+
+## 安装
+
+![image-20240303181307539](/Users/zhongmingmao/data/typora/image-20240303181307539.png)
+
+> 插件
+
+```yaml
+agent:
+  resources:
+    requests:
+      cpu: "512m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2048Mi"
+controller:
+  containerEnv:
+    - name: HARBOR_URL
+      value: "harbor.${prefix}.${domain}"
+  ingress:
+    enabled: true
+    hostName: jenkins.${prefix}.${domain}
+    ingressClassName: nginx
+  adminPassword: "password123"
+  installPlugins:
+    - kubernetes:4029.v5712230ccb_f8
+    - workflow-aggregator:596.v8c21c963d92d
+    - git:5.1.0
+    - configuration-as-code:1670.v564dc8b_982d0
+  additionalPlugins:
+    - prometheus:2.2.3
+    - kubernetes-credentials-provider:1.211.vc236a_f5a_2f3c
+    - job-dsl:1.84
+    - github:1.37.1
+    - github-branch-source:1725.vd391eef681a_e
+    - gitlab-branch-source:660.vd45c0f4c0042
+    - gitlab-kubernetes-credentials:132.v23fd732822dc
+    - pipeline-stage-view:2.33
+    - sonar:2.15
+    - pipeline-utility-steps:2.16.0
+```
+
+> Harbor 镜像仓库推送凭据 - 通过 Secret 挂载到 Kaniko 容器的 /kaniko/.docker 目录
+
+```bash
+kubectl create secret docker-registry regcred --docker-server=harbor.${prefix}.${domain} --docker-username=admin --docker-password=${harbor_password} -n jenkins
+```
+
+> Git 拉取凭据 - 使用 Jenkins Kubernetes Secret Provider 插件从 Secret 中获取
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "github-pull-secret"
+  labels:
+    "jenkins.io/credentials-type": "usernamePassword"
+  annotations:
+    "jenkins.io/credentials-description" : "credentials from Kubernetes"
+type: Opaque
+stringData:
+  username: "${github_username}"
+  password: "${github_personal_token}"
+```
+
+> Secret 通过 labels 和 annotations 向 Jekins 直接提供凭据
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-pat-secret-text
+  labels:
+    "jenkins.io/credentials-type": "secretText"
+  annotations:
+    "jenkins.io/credentials-description" : "github pat"
+type: Opaque
+stringData:
+  text: "${github_personal_token}"
+```
+
+> 镜像仓库 URI - 与 Git 拉取凭据类似
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-url
+  labels:
+    "jenkins.io/credentials-type": "secretText"
+  annotations:
+    "jenkins.io/credentials-description" : "harbor url"
+type: Opaque
+stringData:
+  text: harbor.${prefix}.${domain}
+```
+
+## 构建方式
+
+### 方式 1
+
+> 多仓库、多 Pipeline、多分支流水线
+
+![image-20240303163432025](/Users/zhongmingmao/data/typora/image-20240303163432025.png)
+
+### 方式 2
+
+> 大仓、多 Pipeline、多分支流水线
+
+#### 完整构建
+
+![image-20240303164506712](/Users/zhongmingmao/data/typora/image-20240303164506712.png)
+
+![image-20240303182242110](/Users/zhongmingmao/data/typora/image-20240303182242110.png)
+
+> result/Jenkinsfile - 在 Kubernetes 平台中利用 Kaniko 容器来构建镜像，然后推送到 Harbor
+
+```json
+pipeline {
+    agent none
+    stages {
+        stage('Build with Kaniko') {
+            agent {
+                kubernetes {
+                    defaultContainer 'kaniko'
+                    //workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace-pvc", readOnly: false)
+                    yaml """
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:v1.11.0-debug
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - 99d
+    volumeMounts:
+      - name: jenkins-docker-cfg
+        mountPath: /kaniko/.docker
+  volumes:
+  - name: jenkins-docker-cfg
+    projected:
+      sources:
+      - secret:
+          name: regcred
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+                }
+            }
+
+            environment {
+                HARBOR_URL     = credentials('harbor-url')
+                IMAGE_PUSH_DESTINATION="${HARBOR_URL}/vote/result"
+                GIT_COMMIT="${checkout (scm).GIT_COMMIT}"
+                IMAGE_TAG = "${BRANCH_NAME}-${GIT_COMMIT}"
+                BUILD_IMAGE="${IMAGE_PUSH_DESTINATION}:${IMAGE_TAG}"
+                BUILD_IMAGE_LATEST="${IMAGE_PUSH_DESTINATION}:latest"
+            }
+
+            steps {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                    withEnv(['PATH+EXTRA=/busybox']) {
+                        sh '''#!/busybox/sh
+                            cd result
+                            /kaniko/executor --context `pwd` --destination $BUILD_IMAGE --insecure
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+> Multibranch pipeline - 能自动识别新增分支和 MR/PR
+
+![image-20240303191239122](/Users/zhongmingmao/data/typora/image-20240303191239122.png)
+
+> 配置仓库
+
+![image-20240303192321456](/Users/zhongmingmao/data/typora/image-20240303192321456.png)
+
+> 构建方式 - 采用 pull 模式，使用 result/Jenkinsfile 文件
+
+![image-20240303192350182](/Users/zhongmingmao/data/typora/image-20240303192350182.png)
+
+> 流水线
+
+![image-20240303192729533](/Users/zhongmingmao/data/typora/image-20240303192729533.png)
+
+![image-20240303192751356](/Users/zhongmingmao/data/typora/image-20240303192751356.png)
+
+![image-20240303192937228](/Users/zhongmingmao/data/typora/image-20240303192937228.png)
+
+![image-20240303192907878](/Users/zhongmingmao/data/typora/image-20240303192907878.png)
+
+> 日志输出
+
+```
+Branch indexing
+11:49:18 Connecting to https://api.github.com using zhongmingmao/****** (credentials from Kubernetes)
+Obtained result/Jenkinsfile from 85bc30b73bcd28ca5dcb61777e925fde9a43284b
+[Pipeline] Start of Pipeline
+[Pipeline] stage
+[Pipeline] { (Build with Kaniko)
+[Pipeline] podTemplate
+[Pipeline] {
+[Pipeline] node
+Created Pod: kubernetes jenkins/result-main-3-g24rg-bv4h7-16g3l
+Agent result-main-3-g24rg-bv4h7-16g3l is provisioned from template result_main_3-g24rg-bv4h7
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    buildUrl: "http://jenkins.jenkins.svc.cluster.local:8080/job/result/job/main/3/"
+    runUrl: "job/result/job/main/3/"
+  labels:
+    jenkins/jenkins-jenkins-agent: "true"
+    jenkins/label-digest: "34e096b232cd60149295922374c4568b347a181a"
+    jenkins/label: "result_main_3-g24rg"
+  name: "result-main-3-g24rg-bv4h7-16g3l"
+  namespace: "jenkins"
+spec:
+  containers:
+  - args:
+    - "99d"
+    command:
+    - "sleep"
+    image: "gcr.io/kaniko-project/executor:v1.11.0-debug"
+    imagePullPolicy: "Always"
+    name: "kaniko"
+    volumeMounts:
+    - mountPath: "/kaniko/.docker"
+      name: "jenkins-docker-cfg"
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - env:
+    - name: "JENKINS_SECRET"
+      value: "********"
+    - name: "JENKINS_TUNNEL"
+      value: "jenkins-agent.jenkins.svc.cluster.local:50000"
+    - name: "JENKINS_AGENT_NAME"
+      value: "result-main-3-g24rg-bv4h7-16g3l"
+    - name: "JENKINS_NAME"
+      value: "result-main-3-g24rg-bv4h7-16g3l"
+    - name: "JENKINS_AGENT_WORKDIR"
+      value: "/home/jenkins/agent"
+    - name: "JENKINS_URL"
+      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+    image: "jenkins/inbound-agent:3142.vcfca_0cd92128-1"
+    name: "jnlp"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  nodeSelector:
+    kubernetes.io/os: "linux"
+  restartPolicy: "Never"
+  volumes:
+  - name: "jenkins-docker-cfg"
+    projected:
+      sources:
+      - secret:
+          items:
+          - key: ".dockerconfigjson"
+            path: "config.json"
+          name: "regcred"
+  - emptyDir:
+      medium: ""
+    name: "workspace-volume"
+
+Running on result-main-3-g24rg-bv4h7-16g3l in /home/jenkins/agent/workspace/result_main
+[Pipeline] {
+[Pipeline] checkout
+The recommended git tool is: NONE
+using credential github-pull-secret
+Cloning the remote Git repository
+Cloning with configured refspecs honoured and without tags
+Cloning repository https://github.com/zhongmingmao/vote-app.git
+ > git init /home/jenkins/agent/workspace/result_main # timeout=10
+Fetching upstream changes from https://github.com/zhongmingmao/vote-app.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.30.2'
+using GIT_ASKPASS to set credentials credentials from Kubernetes
+ > git fetch --no-tags --force --progress -- https://github.com/zhongmingmao/vote-app.git +refs/heads/main:refs/remotes/origin/main # timeout=10
+Avoid second fetch
+Checking out Revision 85bc30b73bcd28ca5dcb61777e925fde9a43284b (main)
+Commit message: "Update Jenkinsfile"
+ > git config remote.origin.url https://github.com/zhongmingmao/vote-app.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/main:refs/remotes/origin/main # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 85bc30b73bcd28ca5dcb61777e925fde9a43284b # timeout=10
+ > git rev-list --no-walk fdce32378af60ca204f960e3c70f06018870efd6 # timeout=10
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] container
+[Pipeline] {
+[Pipeline] withCredentials
+Masking supported pattern matches of $HARBOR_URL
+[Pipeline] {
+[Pipeline] checkout
+The recommended git tool is: NONE
+using credential github-pull-secret
+Warning: JENKINS-30600: special launcher org.csanchez.jenkins.plugins.kubernetes.pipeline.ContainerExecDecorator$1@1fa95026; decorates RemoteLauncher[hudson.remoting.Channel@2e96c41a:JNLP4-connect connection from 10.42.0.22/10.42.0.22:58120] will be ignored (a typical symptom is the Git executable not being run inside a designated container)
+Fetching changes from the remote Git repository
+Fetching without tags
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/result_main/.git # timeout=10
+ > git config remote.origin.url https://github.com/zhongmingmao/vote-app.git # timeout=10
+Fetching upstream changes from https://github.com/zhongmingmao/vote-app.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.30.2'
+using GIT_ASKPASS to set credentials credentials from Kubernetes
+ > git fetch --no-tags --force --progress -- https://github.com/zhongmingmao/vote-app.git +refs/heads/main:refs/remotes/origin/main # timeout=10
+Checking out Revision 85bc30b73bcd28ca5dcb61777e925fde9a43284b (main)
+Commit message: "Update Jenkinsfile"
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 85bc30b73bcd28ca5dcb61777e925fde9a43284b # timeout=10
+[Pipeline] checkout
+The recommended git tool is: NONE
+using credential github-pull-secret
+Warning: JENKINS-30600: special launcher org.csanchez.jenkins.plugins.kubernetes.pipeline.ContainerExecDecorator$1@31728f1a; decorates RemoteLauncher[hudson.remoting.Channel@2e96c41a:JNLP4-connect connection from 10.42.0.22/10.42.0.22:58120] will be ignored (a typical symptom is the Git executable not being run inside a designated container)
+Fetching changes from the remote Git repository
+Fetching without tags
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/result_main/.git # timeout=10
+ > git config remote.origin.url https://github.com/zhongmingmao/vote-app.git # timeout=10
+Fetching upstream changes from https://github.com/zhongmingmao/vote-app.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.30.2'
+using GIT_ASKPASS to set credentials credentials from Kubernetes
+ > git fetch --no-tags --force --progress -- https://github.com/zhongmingmao/vote-app.git +refs/heads/main:refs/remotes/origin/main # timeout=10
+Checking out Revision 85bc30b73bcd28ca5dcb61777e925fde9a43284b (main)
+Commit message: "Update Jenkinsfile"
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 85bc30b73bcd28ca5dcb61777e925fde9a43284b # timeout=10
+[Pipeline] checkout
+The recommended git tool is: NONE
+using credential github-pull-secret
+Warning: JENKINS-30600: special launcher org.csanchez.jenkins.plugins.kubernetes.pipeline.ContainerExecDecorator$1@203e63cf; decorates RemoteLauncher[hudson.remoting.Channel@2e96c41a:JNLP4-connect connection from 10.42.0.22/10.42.0.22:58120] will be ignored (a typical symptom is the Git executable not being run inside a designated container)
+Fetching changes from the remote Git repository
+Fetching without tags
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/result_main/.git # timeout=10
+ > git config remote.origin.url https://github.com/zhongmingmao/vote-app.git # timeout=10
+Fetching upstream changes from https://github.com/zhongmingmao/vote-app.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.30.2'
+using GIT_ASKPASS to set credentials credentials from Kubernetes
+ > git fetch --no-tags --force --progress -- https://github.com/zhongmingmao/vote-app.git +refs/heads/main:refs/remotes/origin/main # timeout=10
+Checking out Revision 85bc30b73bcd28ca5dcb61777e925fde9a43284b (main)
+Commit message: "Update Jenkinsfile"
+[Pipeline] withEnv
+Warning: A secret was passed to "withEnv" using Groovy String interpolation, which is insecure.
+		 Affected argument(s) used the following variable(s): [HARBOR_URL]
+		 See https://jenkins.io/redirect/groovy-string-interpolation for details.
+[Pipeline] {
+[Pipeline] container
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 85bc30b73bcd28ca5dcb61777e925fde9a43284b # timeout=10
+[36mINFO[0m[0000] Using dockerignore file: /home/jenkins/agent/workspace/result_main/result/.dockerignore 
+[36mINFO[0m[0000] Retrieving image manifest node:18-slim       
+[36mINFO[0m[0000] Retrieving image node:18-slim from registry index.docker.io 
+[36mINFO[0m[0002] Built cross stage deps: map[]                
+[36mINFO[0m[0002] Retrieving image manifest node:18-slim       
+[36mINFO[0m[0002] Returning cached image manifest              
+[36mINFO[0m[0002] Executing 0 build triggers                   
+[36mINFO[0m[0002] Building stage 'node:18-slim' [idx: '0', base-idx: '-1'] 
+[36mINFO[0m[0002] Unpacking rootfs as cmd RUN apt-get update     && apt-get install -y --no-install-recommends     curl     tini     && rm -rf /var/lib/apt/lists/* requires it. 
+[36mINFO[0m[0023] RUN apt-get update     && apt-get install -y --no-install-recommends     curl     tini     && rm -rf /var/lib/apt/lists/* 
+[36mINFO[0m[0023] Initializing snapshotter ...                 
+[36mINFO[0m[0023] Taking snapshot of full filesystem...        
+[36mINFO[0m[0023] Cmd: /bin/sh                                 
+[36mINFO[0m[0023] Args: [-c apt-get update     && apt-get install -y --no-install-recommends     curl     tini     && rm -rf /var/lib/apt/lists/*] 
+[36mINFO[0m[0023] Running: [/bin/sh -c apt-get update     && apt-get install -y --no-install-recommends     curl     tini     && rm -rf /var/lib/apt/lists/*] 
+Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8786 kB]
+Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [12.7 kB]
+Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [144 kB]
+Fetched 9197 kB in 9s (1056 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  libbrotli1 libcurl4 libgssapi-krb5-2 libk5crypto3 libkeyutils1 libkrb5-3
+  libkrb5support0 libldap-2.5-0 libnghttp2-14 libpsl5 librtmp1 libsasl2-2
+  libsasl2-modules-db libssh2-1 libssl3
+Suggested packages:
+  krb5-doc krb5-user
+Recommended packages:
+  ca-certificates krb5-locales libldap-common publicsuffix libsasl2-modules
+The following NEW packages will be installed:
+  curl libbrotli1 libcurl4 libgssapi-krb5-2 libk5crypto3 libkeyutils1
+  libkrb5-3 libkrb5support0 libldap-2.5-0 libnghttp2-14 libpsl5 librtmp1
+  libsasl2-2 libsasl2-modules-db libssh2-1 libssl3 tini
+0 upgraded, 17 newly installed, 0 to remove and 0 not upgraded.
+Need to get 4474 kB of archives.
+After this operation, 12.7 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main amd64 libbrotli1 amd64 1.0.9-2+b6 [275 kB]
+Get:2 http://deb.debian.org/debian bookworm/main amd64 libkrb5support0 amd64 1.20.1-2+deb12u1 [32.4 kB]
+Get:3 http://deb.debian.org/debian bookworm/main amd64 libk5crypto3 amd64 1.20.1-2+deb12u1 [78.9 kB]
+Get:4 http://deb.debian.org/debian bookworm/main amd64 libkeyutils1 amd64 1.6.3-2 [8808 B]
+Get:5 http://deb.debian.org/debian bookworm/main amd64 libssl3 amd64 3.0.11-1~deb12u2 [2019 kB]
+Get:6 http://deb.debian.org/debian bookworm/main amd64 libkrb5-3 amd64 1.20.1-2+deb12u1 [332 kB]
+Get:7 http://deb.debian.org/debian bookworm/main amd64 libgssapi-krb5-2 amd64 1.20.1-2+deb12u1 [134 kB]
+Get:8 http://deb.debian.org/debian bookworm/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10 [20.3 kB]
+Get:9 http://deb.debian.org/debian bookworm/main amd64 libsasl2-2 amd64 2.1.28+dfsg-10 [59.7 kB]
+Get:10 http://deb.debian.org/debian bookworm/main amd64 libldap-2.5-0 amd64 2.5.13+dfsg-5 [183 kB]
+Get:11 http://deb.debian.org/debian bookworm/main amd64 libnghttp2-14 amd64 1.52.0-1+deb12u1 [72.4 kB]
+Get:12 http://deb.debian.org/debian bookworm/main amd64 libpsl5 amd64 0.21.2-1 [58.7 kB]
+Get:13 http://deb.debian.org/debian bookworm/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b2 [60.8 kB]
+Get:14 http://deb.debian.org/debian bookworm/main amd64 libssh2-1 amd64 1.10.0-3+b1 [179 kB]
+Get:15 http://deb.debian.org/debian bookworm/main amd64 libcurl4 amd64 7.88.1-10+deb12u5 [390 kB]
+Get:16 http://deb.debian.org/debian bookworm/main amd64 curl amd64 7.88.1-10+deb12u5 [315 kB]
+Get:17 http://deb.debian.org/debian bookworm/main amd64 tini amd64 0.19.0-1 [255 kB]
+debconf: delaying package configuration, since apt-utils is not installed
+Fetched 4474 kB in 0s (54.1 MB/s)
+Selecting previously unselected package libbrotli1:amd64.
+(Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 6098 files and directories currently installed.)
+Preparing to unpack .../00-libbrotli1_1.0.9-2+b6_amd64.deb ...
+Unpacking libbrotli1:amd64 (1.0.9-2+b6) ...
+Selecting previously unselected package libkrb5support0:amd64.
+Preparing to unpack .../01-libkrb5support0_1.20.1-2+deb12u1_amd64.deb ...
+Unpacking libkrb5support0:amd64 (1.20.1-2+deb12u1) ...
+Selecting previously unselected package libk5crypto3:amd64.
+Preparing to unpack .../02-libk5crypto3_1.20.1-2+deb12u1_amd64.deb ...
+Unpacking libk5crypto3:amd64 (1.20.1-2+deb12u1) ...
+Selecting previously unselected package libkeyutils1:amd64.
+Preparing to unpack .../03-libkeyutils1_1.6.3-2_amd64.deb ...
+Unpacking libkeyutils1:amd64 (1.6.3-2) ...
+Selecting previously unselected package libssl3:amd64.
+Preparing to unpack .../04-libssl3_3.0.11-1~deb12u2_amd64.deb ...
+Unpacking libssl3:amd64 (3.0.11-1~deb12u2) ...
+Selecting previously unselected package libkrb5-3:amd64.
+Preparing to unpack .../05-libkrb5-3_1.20.1-2+deb12u1_amd64.deb ...
+Unpacking libkrb5-3:amd64 (1.20.1-2+deb12u1) ...
+Selecting previously unselected package libgssapi-krb5-2:amd64.
+Preparing to unpack .../06-libgssapi-krb5-2_1.20.1-2+deb12u1_amd64.deb ...
+Unpacking libgssapi-krb5-2:amd64 (1.20.1-2+deb12u1) ...
+Selecting previously unselected package libsasl2-modules-db:amd64.
+Preparing to unpack .../07-libsasl2-modules-db_2.1.28+dfsg-10_amd64.deb ...
+Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+Selecting previously unselected package libsasl2-2:amd64.
+Preparing to unpack .../08-libsasl2-2_2.1.28+dfsg-10_amd64.deb ...
+Unpacking libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+Selecting previously unselected package libldap-2.5-0:amd64.
+Preparing to unpack .../09-libldap-2.5-0_2.5.13+dfsg-5_amd64.deb ...
+Unpacking libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../10-libnghttp2-14_1.52.0-1+deb12u1_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.52.0-1+deb12u1) ...
+Selecting previously unselected package libpsl5:amd64.
+Preparing to unpack .../11-libpsl5_0.21.2-1_amd64.deb ...
+Unpacking libpsl5:amd64 (0.21.2-1) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../12-librtmp1_2.4+20151223.gitfa8646d.1-2+b2_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+Selecting previously unselected package libssh2-1:amd64.
+Preparing to unpack .../13-libssh2-1_1.10.0-3+b1_amd64.deb ...
+Unpacking libssh2-1:amd64 (1.10.0-3+b1) ...
+Selecting previously unselected package libcurl4:amd64.
+Preparing to unpack .../14-libcurl4_7.88.1-10+deb12u5_amd64.deb ...
+Unpacking libcurl4:amd64 (7.88.1-10+deb12u5) ...
+Selecting previously unselected package curl.
+Preparing to unpack .../15-curl_7.88.1-10+deb12u5_amd64.deb ...
+Unpacking curl (7.88.1-10+deb12u5) ...
+Selecting previously unselected package tini.
+Preparing to unpack .../16-tini_0.19.0-1_amd64.deb ...
+Unpacking tini (0.19.0-1) ...
+Setting up libkeyutils1:amd64 (1.6.3-2) ...
+Setting up libpsl5:amd64 (0.21.2-1) ...
+Setting up libbrotli1:amd64 (1.0.9-2+b6) ...
+Setting up libssl3:amd64 (3.0.11-1~deb12u2) ...
+Setting up libnghttp2-14:amd64 (1.52.0-1+deb12u1) ...
+Setting up libkrb5support0:amd64 (1.20.1-2+deb12u1) ...
+Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+Setting up tini (0.19.0-1) ...
+Setting up libk5crypto3:amd64 (1.20.1-2+deb12u1) ...
+Setting up libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+Setting up libssh2-1:amd64 (1.10.0-3+b1) ...
+Setting up libkrb5-3:amd64 (1.20.1-2+deb12u1) ...
+Setting up libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+Setting up libgssapi-krb5-2:amd64 (1.20.1-2+deb12u1) ...
+Setting up libcurl4:amd64 (7.88.1-10+deb12u5) ...
+Setting up curl (7.88.1-10+deb12u5) ...
+Processing triggers for libc-bin (2.36-9+deb12u4) ...
+[36mINFO[0m[0035] Taking snapshot of full filesystem...        
+[36mINFO[0m[0036] WORKDIR /app                                 
+[36mINFO[0m[0036] Cmd: workdir                                 
+[36mINFO[0m[0036] Changed working directory to /app            
+[36mINFO[0m[0036] Creating directory /app with uid -1 and gid -1 
+[36mINFO[0m[0036] Taking snapshot of files...                  
+[36mINFO[0m[0036] RUN npm install -g nodemon                   
+[36mINFO[0m[0036] Cmd: /bin/sh                                 
+[36mINFO[0m[0036] Args: [-c npm install -g nodemon]            
+[36mINFO[0m[0036] Running: [/bin/sh -c npm install -g nodemon] 
+
+added 33 packages in 2s
+
+3 packages are looking for funding
+  run `npm fund` for details
+npm notice 
+npm notice New minor version of npm available! 10.2.4 -> 10.5.0
+npm notice Changelog: <https://github.com/npm/cli/releases/tag/v10.5.0>
+npm notice Run `npm install -g npm@10.5.0` to update!
+npm notice 
+[36mINFO[0m[0038] Taking snapshot of full filesystem...        
+[36mINFO[0m[0039] Resolving srcs [package*.json]...            
+[36mINFO[0m[0039] COPY package*.json ./                        
+[36mINFO[0m[0039] Resolving srcs [package*.json]...            
+[36mINFO[0m[0039] Taking snapshot of files...                  
+[36mINFO[0m[0039] RUN npm ci     && npm cache clean --force     && mv /app/node_modules /node_modules 
+[36mINFO[0m[0039] Cmd: /bin/sh                                 
+[36mINFO[0m[0039] Args: [-c npm ci     && npm cache clean --force     && mv /app/node_modules /node_modules] 
+[36mINFO[0m[0039] Running: [/bin/sh -c npm ci     && npm cache clean --force     && mv /app/node_modules /node_modules] 
+npm WARN deprecated debug@4.1.1: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)
+npm WARN deprecated debug@4.1.1: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)
+npm WARN deprecated debug@4.1.1: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)
+
+added 115 packages, and audited 116 packages in 3s
+
+8 packages are looking for funding
+  run `npm fund` for details
+
+4 vulnerabilities (3 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm WARN using --force Recommended protections disabled.
+[36mINFO[0m[0042] Taking snapshot of full filesystem...        
+[36mINFO[0m[0043] COPY . .                                     
+[36mINFO[0m[0043] Taking snapshot of files...                  
+[36mINFO[0m[0043] ENV PORT 80                                  
+[36mINFO[0m[0043] EXPOSE 80                                    
+[36mINFO[0m[0043] Cmd: EXPOSE                                  
+[36mINFO[0m[0043] Adding exposed port: 80/tcp                  
+[36mINFO[0m[0043] ENTRYPOINT ["/usr/bin/tini", "--"]           
+[36mINFO[0m[0043] CMD ["node", "server.js"]                    
+[36mINFO[0m[0043] Pushing image to ****/vote/result:main-85bc30b73bcd28ca5dcb61777e925fde9a43284b 
+[36mINFO[0m[0044] Pushed ****/vote/result@sha256:878c8d5100828a78c80310dcfd83e3baaa7e0fe8737787b0af5d4dd3255bfb57 
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // container
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // container
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // podTemplate
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] End of Pipeline
+
+GitHub has been notified of this commit’s build result
+
+Finished: SUCCESS
+```
+
+> Harbor
+
+![image-20240303195228443](/Users/zhongmingmao/data/typora/image-20240303195228443.png)
+
+> 使用 Webhook 来触发流水线
+
+> Jekins
+
+![image-20240303200245423](/Users/zhongmingmao/data/typora/image-20240303200245423.png)
+
+> Github
+
+![image-20240303200531524](/Users/zhongmingmao/data/typora/image-20240303200531524.png)
+
+![image-20240303200722002](/Users/zhongmingmao/data/typora/image-20240303200722002.png)
+
+```
+$ git commit -a -m 'test ci' --allow-empty
+[main 6e6617a] test ci
+
+$ ggpush
+Enumerating objects: 1, done.
+Counting objects: 100% (1/1), done.
+Writing objects: 100% (1/1), 181 bytes | 181.00 KiB/s, done.
+Total 1 (delta 0), reused 0 (delta 0), pack-reused 0
+To github.com:zhongmingmao/vote-app.git
+   85bc30b..6e6617a  main -> main
+```
+
+![image-20240303201133208](/Users/zhongmingmao/data/typora/image-20240303201133208.png)
+
+![image-20240303201210442](/Users/zhongmingmao/data/typora/image-20240303201210442.png)
+
+![image-20240303201308456](/Users/zhongmingmao/data/typora/image-20240303201308456.png)
+
+> 新增 dev 分支
+
+![image-20240303202139162](/Users/zhongmingmao/data/typora/image-20240303202139162.png)
+
+![image-20240303202444322](/Users/zhongmingmao/data/typora/image-20240303202444322.png)
+
+![image-20240303202407404](/Users/zhongmingmao/data/typora/image-20240303202407404.png)
+
+![image-20240303202516366](/Users/zhongmingmao/data/typora/image-20240303202516366.png)
+
+#### 按需构建
+
+> 依赖于 ChangeSet 动态判断，从而实现按需构建
+
+```json
+pipeline {
+    agent none
+    stages {
+        stage('Build with Kaniko') {
+            when {
+                changeset "**/result/**"
+            }
+            agent {
+                kubernetes {
+                    defaultContainer 'kaniko'
+                    //workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace-pvc", readOnly: false)
+                    yaml """
+```
+
+![image-20240303205536096](/Users/zhongmingmao/data/typora/image-20240303205536096.png)
+
+```
+$ ggpush
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 10 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 417 bytes | 417.00 KiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:zhongmingmao/vote-app.git
+   27df217..b80fae8  dev -> dev
+```
+
+
+
+![image-20240303205744945](/Users/zhongmingmao/data/typora/image-20240303205744945.png)
+
+![image-20240303205912852](/Users/zhongmingmao/data/typora/image-20240303205912852.png)
+
+> Vote 跳过了构建
+
+![image-20240303210706185](/Users/zhongmingmao/data/typora/image-20240303210706185.png)
+
+![image-20240303210314485](/Users/zhongmingmao/data/typora/image-20240303210314485.png)
+
+![image-20240303205940087](/Users/zhongmingmao/data/typora/image-20240303205940087.png)
+
+> 推荐：根据目录（包含 Jenkinsfile）自动生成多分支流水线，降低维护成本
+
+![image-20240303213108022](/Users/zhongmingmao/data/typora/image-20240303213108022.png)
+
+> Jenkinsfile-auto
+
+```json
+pipeline {
+    agent any
+    stages{
+        stage('Create multibranchPipelineJob'){
+            steps{
+                script{
+                    def files = findFiles(glob: ' **/Jenkinsfile')
+                    for (int i = 1; i < files.size(); i++) {
+                        echo files[i].name
+                        def filePath = files[i].path
+                        def pathWithoutFile = filePath.replace('/Jenkinsfile', '')
+                        def jobName = "auto-generated-" + ( pathWithoutFile =~ /([^\/]+)\/?$/)[0][0]
+                        echo filePath
+                        echo jobName
+                        if(Jenkins.instance.getItemMap()[jobName] == null){
+                            echo "Job ${jobName} does not exist, creating..."
+                            createJob(filePath, jobName)
+                        }else{
+                            echo "Job ${jobName} already exists."
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}
+
+def createJob(filePath, jobName){
+        jobDsl  targets: '*.groovy',
+        removedJobAction: 'IGNORE',
+        removedViewAction: 'IGNORE',
+        lookupStrategy: 'JENKINS_ROOT',
+        additionalParameters: [jenkinsfile: filePath, Name: jobName]
+}
+```
+
+> pipelineCreator.groovy
+
+```groovy
+multibranchPipelineJob("${Name}") {
+    branchSources {
+        branchSource {
+            source {
+                github {
+                    id('github')
+                    repoOwner("zhognmingmao")
+                    configuredByUrl(false)
+                    repository("vote-app")
+                    repositoryUrl("https://github.com/zhongmingmao/vote-app.git")
+                    credentialsId('github-pull-secret')
+
+                    traits {
+                        gitHubBranchDiscovery {
+                            strategyId(1)
+                        }
+                        gitHubPullRequestDiscovery {
+                            strategyId(2)
+                        }
+                    }
+                }
+            }
+        }
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath("${jenkinsfile}")
+            }
+        }
+    }
+}
+```
+
+```
+$ git add Jenkinsfile-auto pipelineCreator.groovy
+
+$ ggpush
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 10 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 1.25 KiB | 1.25 MiB/s, done.
+Total 4 (delta 0), reused 0 (delta 0), pack-reused 0
+To github.com:zhongmingmao/vote-app.git
+   7837aa1..ca096d5  dev -> dev
+```
+
+> 创建流水线：自动创建流水线
+
+![image-20240303214818388](/Users/zhongmingmao/data/typora/image-20240303214818388.png)
+
+![image-20240303215015358](/Users/zhongmingmao/data/typora/image-20240303215015358.png)
+
+> 默认运行在 Sandbox，有安全限制，导致无法执行
+
+![image-20240303215206890](/Users/zhongmingmao/data/typora/image-20240303215206890.png)
+
+> 审批
+
+![image-20240303215436154](/Users/zhongmingmao/data/typora/image-20240303215436154.png)
+
+> 手动触发，再次运行，还是受限
+
+![image-20240303215655788](/Users/zhongmingmao/data/typora/image-20240303215655788.png)
+
+> 再次审批
+
+![image-20240303215736037](/Users/zhongmingmao/data/typora/image-20240303215736037.png)
+
+> 再次执行，再次受限
+
+![image-20240303215855284](/Users/zhongmingmao/data/typora/image-20240303215855284.png)
+
+> 再次审批，再次执行，执行成功
+
+![image-20240303220438558](/Users/zhongmingmao/data/typora/image-20240303220438558.png)
+
+![image-20240303220113362](/Users/zhongmingmao/data/typora/image-20240303220113362.png)
+
+> 新增目录
+
+```
+$ cp -r result result2
+$ git add result2
+$ git commit -a -m 'result 2'
+
+$ ggpush
+Enumerating objects: 1155, done.
+Counting objects: 100% (1155/1155), done.
+Delta compression using up to 10 threads
+Compressing objects: 100% (1098/1098), done.
+Writing objects: 100% (1154/1154), 1.45 MiB | 1.25 MiB/s, done.
+Total 1154 (delta 182), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (182/182), completed with 1 local object.
+To github.com:zhongmingmao/vote-app.git
+   ca096d5..9490fbb  dev -> dev
+```
+
+![image-20240303220904426](/Users/zhongmingmao/data/typora/image-20240303220904426.png)
+
+![image-20240303222222371](/Users/zhongmingmao/data/typora/image-20240303222222371.png)
+
+### 方式 3
+
+> 大仓、单 Pipeline、多分支流水线、按需构建
+
+![image-20240303203655916](/Users/zhongmingmao/data/typora/image-20240303203655916.png)
+
+> 合并 Jenkinsfile
+
+```
+$ tree -L 1 .
+.
+├── Jenkinsfile
+├── result
+├── vote
+└── worker
+```
+
+```json
+pipeline {
+    agent none
+    stages {
+
+// ==== result
+        stage('Build result') {
+            when {
+                changeset "**/result/*.*"
+            }
+            agent {
+                kubernetes {
+                    defaultContainer 'kaniko'
+                    //workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace-pvc", readOnly: false)
+                    yaml """
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:v1.11.0-debug
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - 99d
+    volumeMounts:
+      - name: jenkins-docker-cfg
+        mountPath: /kaniko/.docker
+  volumes:
+  - name: jenkins-docker-cfg
+    projected:
+      sources:
+      - secret:
+          name: regcred
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+                }
+            }
+
+            environment {
+                HARBOR_URL     = credentials('harbor-url')
+                IMAGE_PUSH_DESTINATION="${HARBOR_URL}/vote/result"
+                GIT_COMMIT="${checkout (scm).GIT_COMMIT}"
+                IMAGE_TAG = "${BRANCH_NAME}-${GIT_COMMIT}"
+                BUILD_IMAGE="${IMAGE_PUSH_DESTINATION}:${IMAGE_TAG}"
+                BUILD_IMAGE_LATEST="${IMAGE_PUSH_DESTINATION}:latest"
+            }
+
+            steps {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                    withEnv(['PATH+EXTRA=/busybox']) {
+                        sh '''#!/busybox/sh
+                            cd result
+                            /kaniko/executor --context `pwd` --destination $BUILD_IMAGE --insecure
+                        '''
+                    }
+                }
+            }
+        }
+
+// ==== vote
+        stage('Build vote') {
+            when {
+                changeset "**/vote/*.*"
+            }
+            agent {
+                kubernetes {
+                    defaultContainer 'kaniko'
+                    //workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace-pvc", readOnly: false)
+                    yaml """
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:v1.11.0-debug
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - 99d
+    volumeMounts:
+      - name: jenkins-docker-cfg
+        mountPath: /kaniko/.docker
+  volumes:
+  - name: jenkins-docker-cfg
+    projected:
+      sources:
+      - secret:
+          name: regcred
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+                }
+            }
+
+            environment {
+                HARBOR_URL     = credentials('harbor-url')
+                IMAGE_PUSH_DESTINATION="${HARBOR_URL}/vote/vote"
+                GIT_COMMIT="${checkout (scm).GIT_COMMIT}"
+                IMAGE_TAG = "${BRANCH_NAME}-${GIT_COMMIT}"
+                BUILD_IMAGE="${IMAGE_PUSH_DESTINATION}:${IMAGE_TAG}"
+                BUILD_IMAGE_LATEST="${IMAGE_PUSH_DESTINATION}:latest"
+            }
+
+            steps {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                    withEnv(['PATH+EXTRA=/busybox']) {
+                        sh '''#!/busybox/sh
+                            cd vote
+                            /kaniko/executor --context `pwd` --destination $BUILD_IMAGE --insecure
+                        '''
+                    }
+                }
+            }
+        }
+
+// ==== worker
+        stage('Build worker') {
+            when {
+                changeset "**/worker/*.*"
+            }
+            agent {
+                kubernetes {
+                    defaultContainer 'kaniko'
+                    //workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace-pvc", readOnly: false)
+                    yaml """
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:v1.11.0-debug
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - 99d
+    volumeMounts:
+      - name: jenkins-docker-cfg
+        mountPath: /kaniko/.docker
+  volumes:
+  - name: jenkins-docker-cfg
+    projected:
+      sources:
+      - secret:
+          name: regcred
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+                }
+            }
+
+            environment {
+                HARBOR_URL     = credentials('harbor-url')
+                IMAGE_PUSH_DESTINATION="${HARBOR_URL}/vote/worker"
+                GIT_COMMIT="${checkout (scm).GIT_COMMIT}"
+                IMAGE_TAG = "${BRANCH_NAME}-${GIT_COMMIT}"
+                BUILD_IMAGE="${IMAGE_PUSH_DESTINATION}:${IMAGE_TAG}"
+                BUILD_IMAGE_LATEST="${IMAGE_PUSH_DESTINATION}:latest"
+            }
+
+            steps {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                    withEnv(['PATH+EXTRA=/busybox']) {
+                        sh '''#!/busybox/sh
+                            cd worker
+                            /kaniko/executor --context `pwd` --destination $BUILD_IMAGE --insecure --build-arg "TARGETPLATFORM='linux/amd64'" --build-arg "BUILDPLATFORM='linux/amd64'"
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+![image-20240303212136557](/Users/zhongmingmao/data/typora/image-20240303212136557.png)
+
+![image-20240303212310458](/Users/zhongmingmao/data/typora/image-20240303212310458.png)
+
+![image-20240303212331470](/Users/zhongmingmao/data/typora/image-20240303212331470.png)
+
+> 将多条流水线`合并`成一条流水线，并实现按需构建
+
+## SonarQube
+
+### 创建项目
+
+![image-20240303222752220](/Users/zhongmingmao/data/typora/image-20240303222752220.png)
+
+![image-20240303223117199](/Users/zhongmingmao/data/typora/image-20240303223117199.png)
+
+![image-20240303223154813](/Users/zhongmingmao/data/typora/image-20240303223154813.png)
+
+![image-20240303223341191](/Users/zhongmingmao/data/typora/image-20240303223341191.png)
+
+### 创建 Token
+
+![image-20240303223638869](/Users/zhongmingmao/data/typora/image-20240303223638869.png)
+
+> 以 Secret 的方式提交给 Jekins
+
+```yaml sonar-token-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "sonarqube-token"
+  namespace: jenkins
+  labels:
+    "jenkins.io/credentials-type": "secretText"
+  annotations:
+    "jenkins.io/credentials-description": "credentials from Kubernetes of Sonarqube"
+type: Opaque
+stringData:
+  text: "squ_c76ecab746994da220f1ed047872946586cbabf4"
+```
+
+```
+$ k --kubeconfig=./config.yaml apply -f yaml/sonar-token-secret.yaml
+secret/sonarqube-token created
+```
+
+### Jekins 连接 SonarQube
+
+![image-20240303224410930](/Users/zhongmingmao/data/typora/image-20240303224410930.png)
+
+> result/Jenkinsfile - 在构建之前新增代码扫描的 Stage
+
+```json
+        stage('Scan Code with Sonarqube') {
+            when {
+                changeset "**/result/**"
+            }
+            agent {
+                kubernetes {
+                    defaultContainer 'sonar-scanner'
+                    yaml """
+kind: Pod
+spec:
+  containers:
+  - name: sonar-scanner
+    image: sonarsource/sonar-scanner-cli@sha256:e028b6fd811f0184a3ff7f223a66908c3c359fa559c97fa2ee87042c2b540415
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - 99d
+"""
+                }
+            }
+
+            environment {
+                HARBOR_URL     = credentials('harbor-url')
+                SONAR_TOKEN     = credentials('sonarqube-token')
+                SONAR_SCANNER_OPTS = "-Dsonar.projectKey=result -Dsonar.token=${SONAR_TOKEN}"
+                SONAR_HOST_URL = "http://sonar${HARBOR_URL.replaceAll('harbor','')}."
+            }
+
+            steps {
+                container(name: 'sonar-scanner', shell: '/bin/sh') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''#!/bin/sh
+                            cd result
+                            sonar-scanner
+                        '''
+                    }
+                    timeout(time: 1, unit: 'HOURS') {
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
+            }
+        }
+```
+
+![image-20240303225803237](/Users/zhongmingmao/data/typora/image-20240303225803237.png)
+
+![image-20240303225819548](/Users/zhongmingmao/data/typora/image-20240303225819548.png)
+
+> 代码扫描原理
+
+![image-20240303230220359](/Users/zhongmingmao/data/typora/image-20240303230220359.png)
+
+## HA
+
+> 控制器不支持`水平扩展`的高可用部署
+
+1. 部署`带有插件`的`预构建镜像`，避免在重启时下载或者升级插件
+2. `JENKINS_HOME` 持久卷使用 `SSD`
+3. 将`制品`存储在`外部系统`，如对象存储
+4. 确保拥有`完整的 Jekins 配置代码`，尤其是 `JCaaS` - 要`定义`环境，而不是`配置`环境
+5. 将日志和指标收集卸载到另一个系统，如 Prometheus
+
+# Tekton
+
+## 特点
+
+1. 声明式
+2. `可组合` - 扩展性
+3. 可重现
+4. 云原生
+
+## 核心概念
+
+### 定义
+
+![concept-tasks-pipelines](/Users/zhongmingmao/data/typora/concept-tasks-pipelines.png)
+
+1. Step -> `Container`
+2. Task  -> `Pod` -> DAG
+3. Pipeline
+4. Workspace - `PVC`：在不同的 Task 之间共享上下文
+
+> 大部分时候，直接复用社区的 Task，一般只需要关注 Pipeline
+
+![image-20240304211015165](/Users/zhongmingmao/data/typora/image-20240304211015165.png)
+
+### 运行
+
+> PipelineRun / TaskRun
+
+![image-20240304212322845](/Users/zhongmingmao/data/typora/image-20240304212322845.png)
+
+## 安装
+
+> 安装 Tekton Operator
+
+```
+$ kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+
+$ k get pod -n tekton-pipelines
+NAME                                           READY   STATUS    RESTARTS   AGE
+tekton-pipelines-controller-59464bcc97-tgs27   1/1     Running   0          56s
+tekton-events-controller-5949b9d9f7-44qqr      1/1     Running   0          56s
+tekton-pipelines-webhook-5c67bc7c9b-w44pl      1/1     Running   0          53s
+
+$ k get pod -n tekton-pipelines -n tekton-pipelines-resolvers
+NAME                                                 READY   STATUS    RESTARTS   AGE
+tekton-pipelines-remote-resolvers-5b7f759fcd-52vs8   1/1     Running   0          65s
+```
+
+> 安装 Tekton Dashboard
+
+```
+$ kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/release.yaml
+
+$ k get pod -A
+NAMESPACE                    NAME                                                 READY   STATUS    RESTARTS   AGE
+...
+tekton-pipelines-resolvers   tekton-pipelines-remote-resolvers-5b7f759fcd-52vs8   1/1     Running   0          3m40s
+tekton-pipelines             tekton-pipelines-controller-59464bcc97-tgs27         1/1     Running   0          3m43s
+tekton-pipelines             tekton-events-controller-5949b9d9f7-44qqr            1/1     Running   0          3m43s
+tekton-pipelines             tekton-pipelines-webhook-5c67bc7c9b-w44pl            1/1     Running   0          3m40s
+tekton-pipelines             tekton-dashboard-6cc47fd6d-97mqv                     1/1     Running   0          22s
+```
+
+![image-20240304220909644](/Users/zhongmingmao/data/typora/image-20240304220909644.png)
+
+> 安装 Tekton Trigger
+
+```
+$ kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
+
+$ k get pod -A
+NAMESPACE                    NAME                                                 READY   STATUS    RESTARTS   AGE
+...
+tekton-pipelines-resolvers   tekton-pipelines-remote-resolvers-5b7f759fcd-52vs8   1/1     Running   0          5m45s
+tekton-pipelines             tekton-pipelines-controller-59464bcc97-tgs27         1/1     Running   0          5m48s
+tekton-pipelines             tekton-events-controller-5949b9d9f7-44qqr            1/1     Running   0          5m48s
+tekton-pipelines             tekton-pipelines-webhook-5c67bc7c9b-w44pl            1/1     Running   0          5m45s
+tekton-pipelines             tekton-dashboard-6cc47fd6d-97mqv                     1/1     Running   0          2m27s
+tekton-pipelines             tekton-triggers-controller-5fcbc55fdf-kn6tw          1/1     Running   0          20s
+tekton-pipelines             tekton-triggers-webhook-65df876dfb-58bm7             1/1     Running   0          20s
+```
+
+>安装 Tekton Webhook Interceptor
+
+```
+$ kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
+
+$ k get pod -A
+NAMESPACE                    NAME                                                 READY   STATUS    RESTARTS   AGE
+...
+tekton-pipelines-resolvers   tekton-pipelines-remote-resolvers-5b7f759fcd-52vs8   1/1     Running   0          7m11s
+tekton-pipelines             tekton-pipelines-controller-59464bcc97-tgs27         1/1     Running   0          7m14s
+tekton-pipelines             tekton-events-controller-5949b9d9f7-44qqr            1/1     Running   0          7m14s
+tekton-pipelines             tekton-pipelines-webhook-5c67bc7c9b-w44pl            1/1     Running   0          7m11s
+tekton-pipelines             tekton-dashboard-6cc47fd6d-97mqv                     1/1     Running   0          3m53s
+tekton-pipelines             tekton-triggers-controller-5fcbc55fdf-kn6tw          1/1     Running   0          106s
+tekton-pipelines             tekton-triggers-webhook-65df876dfb-58bm7             1/1     Running   0          106s
+tekton-pipelines             tekton-triggers-core-interceptors-5d8b848d99-mmswg   1/1     Running   0          25s
+```
+
+## Task
+
+1. https://hub.tekton.dev/tekton/task/git-clone
+2. https://hub.tekton.dev/tekton/task/sonarqube-scanner
+3. https://hub.tekton.dev/tekton/task/kaniko
+
+```
+$ k apply -f tasks
+task.tekton.dev/git-clone created
+task.tekton.dev/kaniko created
+task.tekton.dev/sonarqube-scanner created
+```
+
+![image-20240304221949750](/Users/zhongmingmao/data/typora/image-20240304221949750.png)
+
+> TaskRun
+
+```yaml task-run.yaml
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: run-git-clone
+spec:
+  serviceAccountName: build-bot
+  taskRef:
+    name: git-clone
+  params:
+    - name: url
+      value: "https://github.com/zhongmingmao/vote-app.git"
+  workspaces:
+    - emptyDir: {}
+      name: output
+```
+
+```
+$ k apply -f task-run.yaml
+taskrun.tekton.dev/run-git-clone created
+
+$ k get taskruns.tekton.dev
+NAME            SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+run-git-clone   True        Succeeded   24s         3s
+```
+
+![image-20240304222729646](/Users/zhongmingmao/data/typora/image-20240304222729646.png)
+
+![image-20240304222800197](/Users/zhongmingmao/data/typora/image-20240304222800197.png)
+
+## Pipeline
+
+> 创建 SonarQube Token
+
+![image-20240304223302367](/Users/zhongmingmao/data/typora/image-20240304223302367.png)
+
+```yaml sonar-secret-serviceaccount.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sonar-user-pass
+type: Opaque
+stringData:
+  login: "squ_79877187841e404c7f126a6b1ce99f7b402ecb5c"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sonar-user-pass
+secrets:
+  - name: sonar-user-pass
+```
+
+```
+$ k apply -f sonar-secret-serviceaccount.yaml
+secret/sonar-user-pass created
+serviceaccount/sonar-user-pass created
+```
+
+> Workspace 的持久化存储卷
+
+```yaml pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pipeline-pvc
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+```
+
+```
+$ k apply -f pvc.yaml
+persistentvolumeclaim/pipeline-pvc created
+
+$ k get pvc
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+pipeline-pvc   Pending                                      local-path     80s
+```
+
+### git clone
+
+> Pipeline
+
+```yaml pipeline-ex1.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: github-pipeline-ex1
+spec:
+  workspaces:
+    - name: output
+  params:
+    - name: git_url
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: output
+      params:
+        - name: url
+          value: $(params.git_url)
+```
+
+```
+$ k apply -f pipeline-ex1.yaml
+pipeline.tekton.dev/github-pipeline-ex1 created
+```
+
+![image-20240304225845226](/Users/zhongmingmao/data/typora/image-20240304225845226.png)
+
+> PipelineRun -> Pipeline -> TaskRun -> Task ->Step
+
+```yaml pipeline-ex1-run.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: github-pipeline-ex1
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: git-clone
+      serviceAccountName: build-bot
+  pipelineRef:
+    name: github-pipeline-ex1
+  params:
+    - name: git_url
+      value: "https://github.com/zhongmingmao/vote-app.git"
+  workspaces:
+    - name: output
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+      subPath: $(context.pipelineRun.uid)
+```
+
+```
+$ k apply -f pipeline-ex1-run.yaml
+pipelinerun.tekton.dev/github-pipeline-ex1 created
+
+$ k get pvc
+NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+pipeline-pvc   Bound    pvc-3139e6a1-dce6-4486-a806-094c7b9ad7ea   5Gi        RWO            local-path     32m
+```
+
+![image-20240304230130162](/Users/zhongmingmao/data/typora/image-20240304230130162.png)
+
+![image-20240304230157218](/Users/zhongmingmao/data/typora/image-20240304230157218.png)
+
+![image-20240304230228814](/Users/zhongmingmao/data/typora/image-20240304230228814.png)
+
+![image-20240304230309079](/Users/zhongmingmao/data/typora/image-20240304230309079.png)
+
+![image-20240304230330038](/Users/zhongmingmao/data/typora/image-20240304230330038.png)
+
+### git clone + kaniko build
+
+> https://hub.tekton.dev/tekton/task/kaniko
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kaniko
+  labels:
+    app.kubernetes.io/version: "0.6"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/categories: Image Build
+    tekton.dev/tags: image-build
+    tekton.dev/displayName: "Build and upload container image using Kaniko"
+    tekton.dev/platforms: "linux/amd64,linux/arm64,linux/ppc64le"
+spec:
+  description: >-
+    This Task builds a simple Dockerfile with kaniko and pushes to a registry.
+    This Task stores the image name and digest as results, allowing Tekton Chains to pick up
+    that an image was built & sign it.
+  params:
+    - name: IMAGE
+      description: Name (reference) of the image to build.
+    - name: DOCKERFILE
+      description: Path to the Dockerfile to build.
+      default: ./Dockerfile
+    - name: CONTEXT
+      description: The build context used by Kaniko.
+      default: ./
+    - name: EXTRA_ARGS
+      type: array
+      default: []
+    - name: BUILDER_IMAGE
+      description: The image on which builds will run (default is v1.5.1)
+      default: gcr.io/kaniko-project/executor:v1.5.1@sha256:c6166717f7fe0b7da44908c986137ecfeab21f31ec3992f6e128fff8a94be8a5
+  workspaces:
+    - name: source
+      description: Holds the context and Dockerfile
+    - name: dockerconfig
+      description: Includes a docker `config.json`
+      optional: true
+      mountPath: /kaniko/.docker
+  results:
+    - name: IMAGE_DIGEST
+      description: Digest of the image just built.
+    - name: IMAGE_URL
+      description: URL of the image just built.
+  steps:
+    - name: build-and-push
+      workingDir: $(workspaces.source.path)
+      image: $(params.BUILDER_IMAGE)
+      args:
+        - $(params.EXTRA_ARGS)
+        - --dockerfile=$(params.DOCKERFILE)
+        - --context=$(workspaces.source.path)/$(params.CONTEXT) # The user does not need to care the workspace and the source.
+        - --destination=$(params.IMAGE)
+        - --digest-file=$(results.IMAGE_DIGEST.path)
+      # kaniko assumes it is running as root, which means this example fails on platforms
+      # that default to run containers as random uid (like OpenShift). Adding this securityContext
+      # makes it explicit that it needs to run as root.
+      securityContext:
+        runAsUser: 0
+    - name: write-url
+      image: docker.io/library/bash:5.1.4@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9
+      script: |
+        set -e
+        image="$(params.IMAGE)"
+        echo -n "${image}" | tee "$(results.IMAGE_URL.path)"
+```
+
+> Pipeline
+
+```yaml pipeline-ex2.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: github-pipeline-ex2
+spec:
+  workspaces:
+    - name: output
+    - name: docker-credentials
+  params:
+    - name: git_url
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: output
+      params:
+        - name: url
+          value: $(params.git_url)
+    - name: kaniko
+      taskRef:
+        name: kaniko
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: output
+        - name: dockerconfig
+          workspace: docker-credentials
+      params:
+        - name: IMAGE
+          value: harbor.zhongmingmao625.gkdevopscamp.uk/vote/result:tekton
+        - name: DOCKERFILE
+          value: result/Dockerfile
+        - name: CONTEXT
+          value: result
+        - name: EXTRA_ARGS
+          value:
+            - "--insecure"
+```
+
+```
+$ k apply -f pipeline-ex2.yaml
+pipeline.tekton.dev/github-pipeline-ex2 created
+```
+
+![image-20240304233854247](/Users/zhongmingmao/data/typora/image-20240304233854247.png)
+
+> PipelineRun
+
+```yaml pipeline-ex2-run.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: github-pipeline-ex2
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: git-clone
+      serviceAccountName: build-bot
+  pipelineRef:
+    name: github-pipeline-ex2
+  params:
+    - name: git_url
+      value: "https://github.com/zhongmingmao/vote-app.git"
+  workspaces:
+    - name: output
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+      subPath: $(context.pipelineRun.uid)
+    - name: docker-credentials
+      secret:
+        secretName: docker-credentials
+```
+
+```
+$ k apply -f pipeline-ex2-run.yaml
+pipelinerun.tekton.dev/github-pipeline-ex2 created
+```
+
+![image-20240304234054203](/Users/zhongmingmao/data/typora/image-20240304234054203.png)
+
+![image-20240304234119968](/Users/zhongmingmao/data/typora/image-20240304234119968.png)
+
+![image-20240304234148801](/Users/zhongmingmao/data/typora/image-20240304234148801.png)
+
+### git clone + sonar scan + kaniko build
+
+> Pipeline
+
+```yaml pipeline-ex3.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: github-pipeline-ex3
+spec:
+  workspaces:
+    - name: output
+    - name: docker-credentials
+    - name: sonar-credentials
+  params:
+    - name: git_url
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: output
+      params:
+        - name: url
+          value: $(params.git_url)
+    - name: sonarqube-scanner
+      taskRef:
+        name: sonarqube-scanner
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: output
+        - name: sonar-credentials
+          workspace: sonar-credentials
+      params:
+        - name: SONAR_HOST_URL
+          value: "http://sonar.zhongmingmao625.gkdevopscamp.uk/"
+        - name: SONAR_PROJECT_KEY
+          value: result
+        - name: SOURCE_TO_SCAN
+          value: result
+        - name: SONAR_ORGANIZATION
+          value: result
+    - name: kaniko
+      taskRef:
+        name: kaniko
+      runAfter:
+        - sonarqube-scanner
+      workspaces:
+        - name: source
+          workspace: output
+        - name: dockerconfig
+          workspace: docker-credentials
+      params:
+        - name: IMAGE
+          value: harbor.zhongmingmao625.gkdevopscamp.uk/vote/result:scan
+        - name: DOCKERFILE
+          value: result/Dockerfile
+        - name: CONTEXT
+          value: result
+        - name: EXTRA_ARGS
+          value:
+            - "--insecure"
+```
+
+```
+$ k apply -f pipeline-ex3.yaml
+pipeline.tekton.dev/github-pipeline-ex3 created
+```
+
+![image-20240304235730997](/Users/zhongmingmao/data/typora/image-20240304235730997.png)
+
+> PipelineRun
+
+```yaml pipeline-ex3-run.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: github-pipeline-ex3
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: git-clone
+      serviceAccountName: build-bot
+  pipelineRef:
+    name: github-pipeline-ex3
+  params:
+    - name: git_url
+      value: "https://github.com/zhongmingmao/vote-app.git"
+  workspaces:
+    - name: output
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+      subPath: $(context.pipelineRun.uid)
+    - name: sonar-credentials
+      secret:
+        secretName: sonar-user-pass
+    - name: docker-credentials
+      secret:
+        secretName: docker-credentials
+```
+
+```
+$ k apply -f pipeline-ex3-run.yaml
+pipelinerun.tekton.dev/github-pipeline-ex3 created
+```
+
+![image-20240304235748414](/Users/zhongmingmao/data/typora/image-20240304235748414.png)
+
+![image-20240304235823267](/Users/zhongmingmao/data/typora/image-20240304235823267.png)
+
+![image-20240304235852291](/Users/zhongmingmao/data/typora/image-20240304235852291.png)
+
+![image-20240304235914680](/Users/zhongmingmao/data/typora/image-20240304235914680.png)
+
+### refactor
+
+> Pipeline
+
+```yaml pipeline.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: github-pipeline
+spec:
+  workspaces:
+    - name: output
+    - name: sonar-credentials
+    - name: docker-credentials
+  params:
+    - name: git_url
+    # git repository name
+    - name: git_repository
+      default: "vote"
+    # microservice name(build path)
+    - name: microservice
+      default: "result"
+    - name: registry_url
+      default: ""
+    - name: sonar_host_url
+      default: "http://sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
+    - name: commit_id
+      default: "latest"
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: output
+      params:
+        - name: url
+          value: $(params.git_url)
+    - name: sonarqube-scanner
+      taskRef:
+        name: sonarqube-scanner
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: output
+        - name: sonar-credentials
+          workspace: sonar-credentials
+      params:
+        - name: SONAR_HOST_URL
+          value: $(params.sonar_host_url)
+        - name: SONAR_PROJECT_KEY
+          value: $(params.microservice)
+        - name: SOURCE_TO_SCAN
+          value: $(params.microservice)
+        - name: SONAR_ORGANIZATION
+          value: $(params.microservice)
+    - name: kaniko
+      taskRef:
+        name: kaniko
+      runAfter:
+        - sonarqube-scanner
+      workspaces:
+        - name: source
+          workspace: output
+        - name: dockerconfig
+          workspace: docker-credentials
+      params:
+        - name: IMAGE
+          value: $(params.registry_url)/$(params.git_repository)/$(params.microservice):$(params.commit_id)
+        - name: DOCKERFILE
+          value: $(params.microservice)/Dockerfile
+        - name: CONTEXT
+          value: $(params.microservice)
+        - name: EXTRA_ARGS
+          value:
+            - "--insecure"
+```
+
+```
+$ k apply -f pipeline.yaml
+pipeline.tekton.dev/github-pipeline created
+```
+
+![image-20240305000845655](/Users/zhongmingmao/data/typora/image-20240305000845655.png)
+
+> PipelineRun
+
+```yaml pipeline-run.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: github-pipeline
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: git-clone
+      serviceAccountName: build-bot
+  pipelineRef:
+    name: github-pipeline
+  params:
+    - name: git_url
+      value: "https://github.com/zhongmingmao/vote-app.git"
+    - name: microservice
+      value: "result"
+    - name: git_repository
+      value: "vote"
+    - name: commit_id
+      value: "refactor"
+    - name: registry_url
+      value: "harbor.zhongmingmao625.gkdevopscamp.uk"
+  workspaces:
+    # - name: output
+    #   volumeClaimTemplate:
+    #     spec:
+    #       accessModes:
+    #         - ReadWriteOnce
+    #       resources:
+    #         requests:
+    #           storage: 20Mi
+    - name: output
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+      subPath: $(context.pipelineRun.uid)
+    - name: sonar-credentials
+      secret:
+        secretName: sonar-user-pass
+    - name: docker-credentials
+      secret:
+        secretName: docker-credentials
+```
+
+```
+$ k apply -f pipeline-run.yaml
+pipelinerun.tekton.dev/github-pipeline created
+```
+
+![image-20240305001011319](/Users/zhongmingmao/data/typora/image-20240305001011319.png)
+
+![image-20240305001111532](/Users/zhongmingmao/data/typora/image-20240305001111532.png)
+
+![image-20240305001138326](/Users/zhongmingmao/data/typora/image-20240305001138326.png)
+
+## Trigger
+
+> 根据 Webhook 的 payload 生成对应的 PipelineRun
+
+![image-20240305010924927](/Users/zhongmingmao/data/typora/image-20240305010924927.png)
+
+> TriggerTemplate
+
+```yaml github-trigger-template.yaml
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+spec:
+  params:
+    - name: git_url
+    - name: commit_id
+    - name: microservice
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: github-run-
+      spec:
+        taskRunSpecs:
+          - pipelineTaskName: git-clone
+            serviceAccountName: build-bot
+        pipelineRef:
+          name: github-pipeline
+        workspaces:
+          # - name: output
+          #   volumeClaimTemplate:
+          #     spec:
+          #       accessModes:
+          #         - ReadWriteOnce
+          #       resources:
+          #         requests:
+          #           storage: 50Mi
+          - name: output
+            persistentVolumeClaim:
+              claimName: pipeline-pvc
+            subPath: $(context.pipelineRun.uid)
+          - name: sonar-credentials
+            secret:
+              secretName: sonar-user-pass
+          - name: docker-credentials
+            secret:
+              secretName: docker-credentials
+        params:
+          - name: git_url
+            value: $(tt.params.git_url) # 注意：$tt 开头，从 EventListener binding params 获取
+          - name: microservice
+            value: $(tt.params.microservice)
+          - name: git_repository
+            value: "vote"
+          - name: commit_id
+            value: $(tt.params.commit_id)
+          - name: registry_url
+            value: "harbor.zhongmingmao625.gkdevopscamp.uk"
+```
+
+```
+$ k apply -f github-trigger-template.yaml
+triggertemplate.triggers.tekton.dev/github-template created
+```
+
+![image-20240305004335561](/Users/zhongmingmao/data/typora/image-20240305004335561.png)
+
+> EventListener
+
+```yaml github-event-listener.yaml
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  serviceAccountName: tekton-triggers
+  triggers:
+    - name: github-push-events-trigger-result
+      interceptors:
+        - ref:
+            name: github
+          params:
+            # - name: secretRef
+            #   value:
+            #     secretName: github-secret
+            #     secretKey: secretToken
+            - name: "eventTypes"
+              value:
+                - pull_request
+                - push
+            - name: "addChangedFiles"
+              value:
+                enabled: true
+        - ref:
+            name: cel
+          params:
+            - name: filter
+              # execute only when a file within the controllers directory has changed
+              value: extensions.changed_files.matches('result/')
+      bindings:
+        - name: git_url
+          value: $(body.repository.clone_url)
+        - name: commit_id
+          value: $(body.after)
+        - name: microservice
+          value: "result"
+      template:
+        ref: github-template
+
+    - name: github-push-events-trigger-vote
+      interceptors:
+        - ref:
+            name: github
+          params:
+            # - name: secretRef
+            #   value:
+            #     secretName: github-secret
+            #     secretKey: secretToken
+            - name: "eventTypes"
+              value:
+                - pull_request
+                - push
+            - name: "addChangedFiles"
+              value:
+                enabled: true
+        - ref:
+            name: cel
+          params:
+            - name: filter
+              # execute only when a file within the controllers directory has changed
+              value: extensions.changed_files.matches('vote/')
+      bindings:
+        - name: git_url
+          value: $(body.repository.clone_url)
+        - name: commit_id
+          value: $(body.after)
+        - name: microservice
+          value: "vote"
+      template:
+        ref: github-template
+
+    - name: github-push-events-trigger-worker
+      interceptors:
+        - ref:
+            name: github
+          params:
+            # - name: secretRef
+            #   value:
+            #     secretName: github-secret
+            #     secretKey: secretToken
+            - name: "eventTypes"
+              value:
+                - pull_request
+                - push
+            - name: "addChangedFiles"
+              value:
+                enabled: true
+        - ref:
+            name: cel
+          params:
+            - name: filter
+              # execute only when a file within the controllers directory has changed
+              value: extensions.changed_files.matches('worker/')
+      bindings:
+        - name: git_url
+          value: $(body.repository.clone_url)
+        - name: commit_id
+          value: $(body.after)
+        - name: microservice
+          value: "worker"
+      template:
+        ref: github-template
+```
+
+```
+$ k apply -f github-event-listener.yaml
+eventlistener.triggers.tekton.dev/github-listener created
+
+$ k get pod
+NAME                                        READY   STATUS      RESTARTS   AGE
+...
+el-github-listener-6bf6876d88-mw7t9         1/1     Running     0          4m12s
+```
+
+![image-20240305004619604](/Users/zhongmingmao/data/typora/image-20240305004619604.png)
+
+> GitHub Webhook - http://tekton.zhongmingmao625.gkdevopscamp.uk/hooks
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tekton-listener-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: tekton.${prefix}.${domain}
+      http:
+        paths:
+          - path: /hooks
+            pathType: Prefix
+            backend:
+              service:
+                name: el-github-listener
+                port:
+                  number: 8080
+```
+
+![image-20240305005224231](/Users/zhongmingmao/data/typora/image-20240305005224231.png)
+
+```
+$ git commit -a -m 'change result and vote'
+[dev 626d50e] change result and vote
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+$ ggpush
+Enumerating objects: 11, done.
+Counting objects: 100% (11/11), done.
+Delta compression using up to 10 threads
+Compressing objects: 100% (6/6), done.
+Writing objects: 100% (6/6), 480 bytes | 480.00 KiB/s, done.
+Total 6 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To github.com:zhongmingmao/vote-app.git
+   d948320..626d50e  dev -> dev
+```
+
+![image-20240305010412435](/Users/zhongmingmao/data/typora/image-20240305010412435.png)
+
+> 当 pvc 为 ReadWriteOnce，Pod 可能会被阻塞
+
+![image-20240305010340153](/Users/zhongmingmao/data/typora/image-20240305010340153.png)
+
+![image-20240305010520106](/Users/zhongmingmao/data/typora/image-20240305010520106.png)
+
+![image-20240305010545687](/Users/zhongmingmao/data/typora/image-20240305010545687.png)
+
+# GitHub Action
+
+## 优势
+
+1. 托管的 CI 环境，无需额外部署
+2. 完善的 Action 插件市场
+3. 基于`虚拟机`的 CI 环境，可以运行虚拟化任务（如构建多平台镜像）
+4. 免费构建额度：2000 分钟/月
+
+## 核心概念
+
