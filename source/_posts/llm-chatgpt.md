@@ -1,7 +1,7 @@
 ---
 title: LLM - ChatGPT
 mathjax: false
-date: 2023-09-12 00:06:25
+date: 2024-06-25 00:06:25
 cover: https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-chatgpt.png
 categories:
   - AI

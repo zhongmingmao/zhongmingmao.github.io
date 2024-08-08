@@ -1,7 +1,7 @@
 ---
 title: LLM - Prompt
 mathjax: false
-date: 2023-09-13 00:06:25
+date: 2024-06-26 00:06:25
 cover: https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-prompt.png
 categories:
   - AI
