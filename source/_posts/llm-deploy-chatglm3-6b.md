@@ -1,5 +1,5 @@
 ---
-title: LLM - ChatGLM3-6B
+title: LLM Deploy - ChatGLM3-6B
 mathjax: false
 date: 2024-06-28 00:06:25
 cover: https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/chatglm3-6b.png
