@@ -10,6 +10,9 @@ tags:
   - AI
   - LLM
   - NLP
+  - Python
+  - FastAPI
+  - Uvicorn
 ---
 
 # 背景
