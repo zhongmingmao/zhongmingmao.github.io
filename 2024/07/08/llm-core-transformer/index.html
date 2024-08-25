@@ -1,0 +1,785 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>LLM Core - Transformer | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="背景 不论是 GRU 还是 LSTM 都面临梯度消失和梯度爆炸的问题 RNN 必须按照顺序处理序列中的每个元素，无法并发处理 RNN 还有长依赖问题，虽然可以处理长序列，但实战效果不佳   Attention Is All You Need - http:&#x2F;&#x2F;arxiv.org&#x2F;pdf&#x2F;1706.03762">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM Core - Transformer">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2024/07/08/llm-core-transformer/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="背景 不论是 GRU 还是 LSTM 都面临梯度消失和梯度爆炸的问题 RNN 必须按照顺序处理序列中的每个元素，无法并发处理 RNN 还有长依赖问题，虽然可以处理长序列，但实战效果不佳   Attention Is All You Need - http:&#x2F;&#x2F;arxiv.org&#x2F;pdf&#x2F;1706.03762">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-transformer.png">
+<meta property="article:published_time" content="2024-07-07T16:06:25.000Z">
+<meta property="article:modified_time" content="2024-08-25T10:47:50.089Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="NLP">
+<meta property="article:tag" content="Seq2Seq">
+<meta property="article:tag" content="Transformer">
+<meta property="article:tag" content="Attention">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-transformer.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2024/07/08/llm-core-transformer/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'LLM Core - Transformer',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-08-25 18:47:50'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">537</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">172</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">71</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-transformer.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">LLM Core - Transformer</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2024-07-07T16:06:25.000Z" title="Created 2024-07-08 00:06:25">2024-07-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/ai/">AI</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/ai/llm/">LLM</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">5.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>19min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><ol>
+<li>不论是 <strong>GRU</strong> 还是 <strong>LSTM</strong> 都面临<strong>梯度消失</strong>和<strong>梯度爆炸</strong>的问题</li>
+<li>RNN 必须<strong>按照顺序处理</strong>序列中的每个元素，<strong>无法并发处理</strong></li>
+<li>RNN 还有<strong>长依赖</strong>问题，虽然可以处理<strong>长序列</strong>，但<strong>实战效果不佳</strong></li>
+</ol>
+<blockquote>
+<p>Attention Is All You Need - <a target="_blank" rel="noopener" href="http://arxiv.org/pdf/1706.03762">http://arxiv.org/pdf/1706.03762</a></p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="简单介绍"><a href="#简单介绍" class="headerlink" title="简单介绍"></a>简单介绍</h1><ol>
+<li>Transformer 是一种基于<strong>自注意力机制</strong>的<strong>深度学习模型</strong>，诞生于 <strong>2017</strong> 年</li>
+<li>目前<strong>大部分</strong>的语言模型（如 <strong>GPT</strong> 系列、<strong>BERT</strong>系列）都基于 <strong>Transformer</strong> 架构</li>
+<li>Transformer 摒弃了之前<strong>序列处理任务</strong>中广泛使用的 <strong>RNN</strong><ul>
+<li>转而使用<strong>自注意力层</strong>来直接计算<strong>序列内个元素之间的关系</strong>，从而有效捕获<strong>长距离依赖</strong></li>
+</ul>
+</li>
+<li>Transformer 明显提高了<strong>处理速度</strong></li>
+<li>Transformer 由于其<strong>并行计算</strong>的特性，大幅度提升了模型在处理<strong>长序列</strong>数据时的<strong>效率</strong></li>
+<li>Transformer 由<strong>编码器</strong>和<strong>解码器</strong>组成<ul>
+<li>每个部分均由<strong>多层重复的模块</strong>构成，其中包括<strong>自注意力层</strong>和<strong>前馈神经网络</strong></li>
+</ul>
+</li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/354a83f2bbf6ee36021475638c0ac329.png.webp" alt="354a83f2bbf6ee36021475638c0ac329.png"></p>
+<h1 id="优势"><a href="#优势" class="headerlink" title="优势"></a>优势</h1><blockquote>
+<p>Transformer 通过其独特的架构设计，在效率、效果和灵活性方面提供了显著优势<br>使其成为处理复杂序列数据任务的强大工具</p>
+</blockquote>
+<ol>
+<li>并行处理能力<ul>
+<li>与传统的 RNN 和 LSTM 不同，Transformer 完全依赖于自注意力机制</li>
+<li>消除了序列处理中的递归结果，允许模型在处理输入数据时实现高效地并行计算</li>
+<li>使得训练过程大大加速 - 使用现代 GPU 和 TPU</li>
+<li>Position Encoding<ul>
+<li>为序列添加位置编码，以便在并行处理完成后，进行合并</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>捕捉长距离依赖<ul>
+<li>Transformer 通过自注意力机制能够捕捉序列中的长距离依赖关系</li>
+<li>在 NLP 中<ul>
+<li>意味着模型可以有效地关联文本中相隔很远的词汇</li>
+<li>提高对上下文的理解</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>灵活的注意力分布<ul>
+<li>多头注意力机制允许 Transformer 在同一个模型中同时学习数据的不同表示</li>
+<li>每个头专注于序列的不同方面<ul>
+<li>一个头关注语法结构，另一个头关注语义内容</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>可扩展性<ul>
+<li>Transformer 模型可以很容易地扩展到非常大的数据集和非常深的网络结构</li>
+<li>通过模型的简单可堆叠的架构来实现的，在训练非常大的模型时表现出色</li>
+</ul>
+</li>
+</ol>
+<h1 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h1><h2 id="Attention"><a href="#Attention" class="headerlink" title="Attention"></a>Attention</h2><ol>
+<li>在 Transformer 之前，<strong>2014</strong> 年<strong>注意力机制</strong>已经被提出，也被用于 <strong>Seq2Seq</strong></li>
+<li>Transformer 还在强调注意力机制<ul>
+<li>Transformer 是一个<strong>完全基于注意力机制</strong>构建的模型 - <u>Attention Is All You Need</u></li>
+<li>与 <strong>RNN</strong> 和 LSTM 不同<ul>
+<li>Transformer 通过<strong>自注意力机制</strong>来处理序列数据</li>
+<li>使得每个<strong>输出</strong>元素都能直接与<strong>输入</strong>序列中的<strong>所有元素</strong>相关联</li>
+<li>从而<strong>有效</strong>捕获<strong>长距离依赖</strong>关系</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="Seq2Seq"><a href="#Seq2Seq" class="headerlink" title="Seq2Seq"></a>Seq2Seq</h2><blockquote>
+<p>在<strong>编码</strong>阶段结束后，会产生一个<strong>上下文向量</strong>（<strong>状态向量</strong>、<strong>隐藏状态</strong>）<br><strong>解码器</strong>根据<strong>隐藏状态</strong>来计算<strong>下一个词</strong>的概率</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/image-20240825103412308.png" alt="image-20240825103412308"></p>
+<blockquote>
+<p>解码阶段公式 - $C$ 代表隐藏状态，解码器在<strong>不同解码阶段</strong>，仅依赖<strong>同一个</strong>隐藏状态 $C$</p>
+</blockquote>
+<p>$$<br>y_1&#x3D;f(C)<br>$$</p>
+<p>$$<br>y_2&#x3D;f(C,y_1)<br>$$</p>
+<p>$$<br>y_3&#x3D;f(C,y_1,y_2)<br>$$</p>
+<h2 id="Seq2Seq-With-Attention"><a href="#Seq2Seq-With-Attention" class="headerlink" title="Seq2Seq With Attention"></a>Seq2Seq With Attention</h2><blockquote>
+<p>加入<strong>注意力机制</strong>后<br>编码器传给解码器<strong>多个</strong>隐藏状态，解码器根据<strong>不同</strong>的隐藏状态计算下一个词的概率<br>每推测一个词之前，都会计算下一个所有<strong>和这个词相关</strong>的概率，即<strong>注意力</strong></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/image-20240825104839375.png" alt="image-20240825104839375"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">我 喜欢 学习 机器 学习。</span><br><span class="line">I like studying machine learning</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>在<strong>推测 machine</strong> 的时候，会先计算一下<strong>与 machine 相关</strong>的词的概率 - <strong>分配注意力</strong><ul>
+<li>假设 <code>（我,0.2)(like,0.3)(学习,0.4)(机器,0.6)</code></li>
+<li>此时模型知道下一个词与<code>机器</code>相关，会把注意力集中在机器上</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>解码阶段公式</p>
+</blockquote>
+<p>$$<br>y_1&#x3D;f(C_1)<br>$$</p>
+<p>$$<br>y_2&#x3D;f(C_2,y_1)<br>$$</p>
+<p>$$<br>y_3&#x3D;f(C_3,y_1,y_2)<br>$$</p>
+<h2 id="注意力分配"><a href="#注意力分配" class="headerlink" title="注意力分配"></a>注意力分配</h2><h3 id="向量转换"><a href="#向量转换" class="headerlink" title="向量转换"></a>向量转换</h3><blockquote>
+<p>将输入序列中的每个词与目标词转换为 3 种向量表示</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Vector</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Query</td>
+<td>代表目标词的向量，用于查询与输入序列中的那些词相关</td>
+</tr>
+<tr>
+<td>Key</td>
+<td>代表输入序列中的每个词的向量，用于被查询匹配</td>
+</tr>
+<tr>
+<td>Value</td>
+<td>代表输入序列中每个词的向量<br />一旦词的重要性（通过 Query 和 Key 的匹配）被确定，其值向量将被用来计算最终的输出</td>
+</tr>
+</tbody></table>
+<h3 id="计算相似度"><a href="#计算相似度" class="headerlink" title="计算相似度"></a>计算相似度</h3><ol>
+<li>模型需要判断目标词（Query）与输入序列中每个词（Key）之间的相关性</li>
+<li>判断方式<ul>
+<li>计算查询向量（Query）与每个键向量（Key）之间的点积</li>
+<li>点积越大，表示两个向量越相似，即输入中的词与目标词越相近</li>
+<li>词嵌入 - 具有相同意思的词，在同一个向量空间中比较接近</li>
+<li>点积衡量两个向量在方向上的一致性，可以用来计算向量的相似度</li>
+</ul>
+</li>
+</ol>
+<h3 id="注意力权重"><a href="#注意力权重" class="headerlink" title="注意力权重"></a>注意力权重</h3><ol>
+<li>由于点积的结果可能会非常大</li>
+<li>为了将其转换为一个合理的概率分布，即每个词的重要性权重</li>
+<li>对点积结果应用 Softmax 函数<ul>
+<li>Softmax 能确保所有计算出的权重加起来等于 1，每个权重的值介于 0 和 1 之间</li>
+</ul>
+</li>
+<li>每个输入词的权重就代表了它对于目标词的相对重要性</li>
+</ol>
+<h3 id="代码模拟"><a href="#代码模拟" class="headerlink" title="代码模拟"></a>代码模拟</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设我们已经有了每个词的嵌入向量，这里用简单的随机向量代替真实的词嵌入</span></span><br><span class="line"><span class="comment"># 假设嵌入大小为 4</span></span><br><span class="line">embed_size = <span class="number">4</span></span><br><span class="line"><span class="comment"># 输入序列 &quot;我 喜欢 学习 机器 学习&quot; 的嵌入表示</span></span><br><span class="line">inputs = torch.rand((<span class="number">5</span>, embed_size))</span><br><span class="line"><span class="comment"># 假设 &quot;machine&quot; 的查询向量</span></span><br><span class="line">query_machine = torch.rand((<span class="number">1</span>, embed_size))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">query, keys, values</span>):</span><br><span class="line">    <span class="comment"># 计算查询和键的点积，除以根号下的嵌入维度来缩放</span></span><br><span class="line">    scores = torch.matmul(query, keys.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / (embed_size ** <span class="number">0.5</span>)</span><br><span class="line">    <span class="comment"># 应用softmax获取注意力权重</span></span><br><span class="line">    attn_weights = F.softmax(scores, dim=-<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># 计算加权和</span></span><br><span class="line">    output = torch.matmul(attn_weights, values)</span><br><span class="line">    <span class="keyword">return</span> output, attn_weights</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">output, attn_weights = attention(query_machine, inputs, inputs)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Output (Attention applied):&quot;</span>, output)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Attention Weights:&quot;</span>, attn_weights)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>输出<br>最后两个权重 0.2165 和 0.2192 - machine 与结尾的两个词『机器』和『学习』最相似<br>为计算过程赋予了<strong>注意力</strong> - 要注意之后两个词</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Output (Attention applied): tensor([[0.4447, 0.6016, 0.7582, 0.7434]])</span><br><span class="line">Attention Weights: tensor([[0.1702, 0.2151, 0.1790, 0.2165, 0.2192]])</span><br></pre></td></tr></table></figure>
+
+<h2 id="多头注意力"><a href="#多头注意力" class="headerlink" title="多头注意力"></a>多头注意力</h2><blockquote>
+<p>Multi-head Attention</p>
+</blockquote>
+<ol>
+<li>多头注意力是 Transformer 模型的一个<strong>关键创新</strong></li>
+<li>核心思想 - 在<strong>相同的数据</strong>上<strong>并行</strong>地运行<strong>多个注意力机制</strong>，然后将它们的<strong>输出合并</strong></li>
+<li>优点 - 允许模型在<strong>不同的表示子空间</strong>中<strong>捕获信息</strong>，从而提高模型<strong>处理信息</strong>的能力</li>
+<li>Transformer 默认 <strong>8</strong> 个头</li>
+</ol>
+<blockquote>
+<p>工作过程</p>
+</blockquote>
+<ol>
+<li>分割<ul>
+<li>对于每个输入，多头注意力首先将 Query、Key、Value 矩阵分割成多个头</li>
+<li>实现方式<ul>
+<li>将每个矩阵分割成较小的矩阵来实现</li>
+<li>每个较小的矩阵对应一个注意力头</li>
+</ul>
+</li>
+<li>假设原始矩阵的维度为 $d_{model}$，那么每个头的矩阵维度将是 $d_{model}&#x2F;h$，$h$ 为头数</li>
+</ul>
+</li>
+<li>并行注意力计算<ul>
+<li>对每个头分别计算注意力</li>
+<li>计算是独立的，所以可以并行</li>
+<li>每个头都能在不同的表示子空间中捕获输入序列的信息</li>
+</ul>
+</li>
+<li>拼接和线性转换<ul>
+<li>所有头的输出再被拼接起来，形成一个与原始矩阵维度相同的长矩阵</li>
+<li>最后，通过一个线性变换调整维度，得到多头注意力的最终输出</li>
+</ul>
+</li>
+</ol>
+<h1 id="架构原理"><a href="#架构原理" class="headerlink" title="架构原理"></a>架构原理</h1><h2 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/image-20240825113902710.png" alt="image-20240825113902710"></p>
+<blockquote>
+<p>在 Transformer 中，编码器叫做<strong>编码器组</strong>，解码器叫做<strong>解码器组</strong></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/96c6302a46fdb1ff7154eafe70d53d8c.png" alt="96c6302a46fdb1ff7154eafe70d53d8c"></p>
+<blockquote>
+<p>每个编码器内部又分为两层：<strong>自注意力层</strong> + <strong>前馈神经网络层</strong></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/9585fcf121a0965a234c8f11b691734a.png" alt="9585fcf121a0965a234c8f11b691734a"></p>
+<blockquote>
+<p>每个解码器内部又分为三层：<strong>自注意力层</strong> + <strong>编码-解码注意力层</strong> + <strong>前馈神经网络层</strong></p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/cea5a6e20126aea395beca926d67011d.png" alt="cea5a6e20126aea395beca926d67011d"></p>
+<h2 id="编码器"><a href="#编码器" class="headerlink" title="编码器"></a>编码器</h2><h3 id="输入层"><a href="#输入层" class="headerlink" title="输入层"></a>输入层</h3><ol>
+<li>第一步进行词嵌入处理，在第一个编码器中，将单词向量化</li>
+<li>然后进行位置编码，为每个单词添加位置信息<ul>
+<li>因为 Transformer 不像 RNN 或者 CNN，顺序处理序列</li>
+<li>所以需要进入位置编码机制，确保模型能够记住单词的顺序</li>
+</ul>
+</li>
+</ol>
+<h3 id="自注意力层"><a href="#自注意力层" class="headerlink" title="自注意力层"></a>自注意力层</h3><ol>
+<li>这一层模型会计算每个输入元素与序列中其它元素的关系<ul>
+<li>使得每个元素的新表示都富含整个序列的上下文信息</li>
+</ul>
+</li>
+<li>通过自注意力机制，模型能够理解每个词<ul>
+<li>不仅仅在其自身的语义层面上，还包括它与句子中其它词的关系</li>
+</ul>
+</li>
+<li>之后数据经过 <code>Add &amp; Norm</code> 操作，进入前馈处理层（<code>Feed Forward</code>）</li>
+</ol>
+<h4 id="Add"><a href="#Add" class="headerlink" title="Add"></a>Add</h4><ol>
+<li>Add 表示残差连接<ul>
+<li>是指在自注意力层后把这一层处理过的数据和把这一层的原始输入想加</li>
+</ul>
+</li>
+<li>这种方式允许模型在增加额外处理层的同时，保留输入信息的完整性<ul>
+<li>从而在不损失重要信息的前提下，学习到输入数据的复杂特征</li>
+</ul>
+</li>
+<li>具体来说<ul>
+<li>如果某一层的输入为 $x$ ，层的函数表示为 $f(x)$，那么这一层的输出为 $x+f(x)$</li>
+</ul>
+</li>
+<li>主要是为了缓解深层网络中的梯度消失或者梯度爆炸的问题，使深度模型更容易训练<ul>
+<li>缓解梯度消失问题 - 因为 $x+f(x)$，而不仅仅是 $f(x)$</li>
+<li>在反向传播过程中，可以有多条路径，可以减轻连续连乘导致梯度减少到 0 的问题</li>
+</ul>
+</li>
+</ol>
+<h4 id="Norm"><a href="#Norm" class="headerlink" title="Norm"></a>Norm</h4><ol>
+<li>Norm 表示归一化（Normalization）</li>
+<li>数据在经过 Add 操作后，对每个样本的所有特征进行标准化<ul>
+<li>在层内对每个样本的所有特征计算均差和方差，并使用这些统计信息来标准化特征值</li>
+</ul>
+</li>
+<li>有助于避免训练过程中的内部协变量偏移问题<ul>
+<li>即保证网络的每一层都在相似的数据分布上工作</li>
+<li>从而提高模型训练的稳定性和速度</li>
+</ul>
+</li>
+</ol>
+<h3 id="前馈层"><a href="#前馈层" class="headerlink" title="前馈层"></a>前馈层</h3><ol>
+<li>前馈全连接网络（FFN）对每个位置的表示进行独立的非线性变换，提升模型的表达能力</li>
+<li>通过两次线性映射和一个中间的 ReLU 激活函数</li>
+<li>FFN 引入了必要的非线性处理，使模型能够捕捉更复杂的数据特征<ul>
+<li>加强了模型对序列内各元素的理解，提升了模型处理各种语言任务的能力</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>ReLU</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/relu.webp" alt="relu"></p>
+<blockquote>
+<p>公式</p>
+</blockquote>
+<p>$$<br>FFN(x)&#x3D;max(0,xW_1+b_1)W_2+b_2<br>$$</p>
+<ol>
+<li>$x$ 为上一层自注意力层的输出，首先通过一个线性变化<ul>
+<li>即与权重矩阵 $W_1$ 相乘并加上偏置向量 $b_1$，即 $xW_1+b_1$</li>
+<li>权重矩阵 $W_1$ 和偏置向量 $b_1$ 是这一层的参数，它们在模型训练过程中学习得到</li>
+</ul>
+</li>
+<li>然后，线性变换的结果通过一个 ReLU 激活函数<ul>
+<li>ReLU 函数的作用是增加非线性，定义为 $max(0,z)$，其中 $z$ 为输入</li>
+<li>如果 $z$ 为正，函数输出 $z$，如果 $z$ 为负或者 $0$，函数输出 $0$</li>
+<li>这一步可以帮助模型捕捉复杂的特征，防止输出被压缩在线性空间内</li>
+</ul>
+</li>
+<li>ReLU 函数的输出再次通过一个线性变换<ul>
+<li>即与第二个权重矩阵 $W_2$ 相乘并加上第二个偏置向量 $b_2$</li>
+<li>即 $max(0,xW_1+b_1)W_2+b_2$，其中输入为 $max(0,xW_1+b_1)$</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>最后，同样经历与自注意力层一样的 Add &amp; Norm 处理，完成归一化输出<br>然后数据进入下一个编码器或者解码器</p>
+</blockquote>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><ol>
+<li>使用位置编码，为了方便处理序列顺序</li>
+<li>编码器包括两层 - 自注意力层 + 前馈网络层</li>
+<li>每一层进入下一层前都需要进行 <code>Add &amp; Norm</code> 操作</li>
+</ol>
+<h2 id="解码器"><a href="#解码器" class="headerlink" title="解码器"></a>解码器</h2><blockquote>
+<p>相比于编码器，解码器多了一层 - Encoder-Decoder Attention</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/4d6c6cbaa5a9754c6976ae4a6af62e84.webp" alt="4d6c6cbaa5a9754c6976ae4a6af62e84"></p>
+<h3 id="自注意力层-1"><a href="#自注意力层-1" class="headerlink" title="自注意力层"></a>自注意力层</h3><ol>
+<li>解码器的自注意力层与编码器的自注意力层不同</li>
+<li>解码器的自注意力层需要处理额外的约束<ul>
+<li>即保证在生成序列的每一步仅依赖于之前的输出，而不是未来的输出</li>
+<li>实现方式 - 特定的掩蔽（masking）技术</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>关键点</p>
+</blockquote>
+<ol>
+<li>处理序列依赖关系<ul>
+<li>自注意力层使每个输出位置可以依赖于到目前位置的目标序列中的所有先前位置</li>
+<li>这允许模型在生成每个新词时，综合考虑已生成序列的上下文信息</li>
+</ul>
+</li>
+<li>遮蔽未来信息<ul>
+<li>为了确保在生成第 $t$ 个词时不会使用到第 $t+N$ 的词的信息</li>
+<li>自注意力层使用一个上三角遮蔽矩阵，在实现中通常填充为负无穷或者非常大的负数</li>
+<li>这保证了在计算 Softmax 时未来位置的贡献被归 $0$</li>
+</ul>
+</li>
+<li>动态调整注意力焦点<ul>
+<li>通过学习的注意力权重</li>
+<li>模型可以动态地决定在生成每个词时应该更多地关注目标序列中的哪部分</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>代码</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">decoder_self_attention</span>(<span class="params">query, key, value, mask</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    解码器自注意力层，带掩蔽功能。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">    - query, key, value: 形状为 (batch_size, seq_len, embed_size) 的张量</span></span><br><span class="line"><span class="string">    - mask: 形状为 (seq_len, seq_len) 的张量，用于防止未来标记的注意力</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">    - attention output: 形状为 (batch_size, seq_len, embed_size) 的张量</span></span><br><span class="line"><span class="string">    - attention weights: 形状为 (batch_size, seq_len, seq_len) 的张量</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 计算缩放点积注意力分数</span></span><br><span class="line">    d_k = query.size(-<span class="number">1</span>)  <span class="comment"># 键向量的维度</span></span><br><span class="line">    scores = torch.matmul(query, key.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / torch.sqrt(torch.tensor(d_k, dtype=torch.float32))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 应用掩蔽（将未来的标记设置为极大的负数以排除它们）</span></span><br><span class="line">    scores = scores.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&#x27;-inf&#x27;</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 应用softmax获取注意力权重</span></span><br><span class="line">    attention_weights = F.softmax(scores, dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 使用注意力权重和值向量乘积得到输出</span></span><br><span class="line">    attention_output = torch.matmul(attention_weights, value)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> attention_output, attention_weights</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例用法</span></span><br><span class="line">batch_size = <span class="number">1</span></span><br><span class="line">seq_len = <span class="number">5</span></span><br><span class="line">embed_size = <span class="number">64</span></span><br><span class="line">query = torch.rand(batch_size, seq_len, embed_size)</span><br><span class="line">key = torch.rand(batch_size, seq_len, embed_size)</span><br><span class="line">value = torch.rand(batch_size, seq_len, embed_size)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成掩蔽矩阵以阻止对未来标记的注意（使用上三角矩阵掩蔽）</span></span><br><span class="line">mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=<span class="number">1</span>).<span class="built_in">bool</span>()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;掩蔽矩阵:&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(mask)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用函数</span></span><br><span class="line">output, weights = decoder_self_attention(query, key, value, mask)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输出形状:&quot;</span>, output.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;注意力权重形状:&quot;</span>, weights.shape)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>输出</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/image-20240825173233931.png" alt="image-20240825173233931"></p>
+<blockquote>
+<p>解码器中的自注意力层至关重要</p>
+</blockquote>
+<ol>
+<li>不仅提供了处理序列内依赖关系的能力，还确保了生成过程的自回归性质</li>
+<li>即在生成当前词的时候，只依赖于之前生成的词</li>
+<li>这种机制使得 Transformer 模型非常适合各种序列生成任务 - 机器翻译、文本摘要等</li>
+</ol>
+<blockquote>
+<p>产生这种机制的原因</p>
+</blockquote>
+<ol>
+<li>自注意力机制允许当前位置的输出与未来位置的输入产生关联<ul>
+<li>从而导致数据泄露和信息泄露的问题</li>
+</ul>
+</li>
+<li>而在推理阶段，是不可能读到未来信息的<ul>
+<li>这样会导致模型在训练和推断阶段的表现不一致，以及模型预测结果的不稳定性</li>
+</ul>
+</li>
+</ol>
+<h3 id="编码-解码注意力层"><a href="#编码-解码注意力层" class="headerlink" title="编码-解码注意力层"></a>编码-解码注意力层</h3><ol>
+<li>编码-解码注意力层是一种特殊的注意力机制<ul>
+<li>用于在解码器中对输入序列（编码器的输出）进行注意力计算</li>
+</ul>
+</li>
+<li>编码-解码注意力层有助于解码器在生成输出序列时对输入序列的信息进行有效整合利用</li>
+<li>编码-解码注意力层关注的是全局的注意力计算<ul>
+<li>包括编码器输出的信息序列和解码器内部的自注意力计算</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>与解码器自注意力层的区别</p>
+</blockquote>
+<ol>
+<li>信息来源不同<ul>
+<li>编码-解码注意力层用在解码器中<ul>
+<li>将解码器当前位置的查询向量与编码器的输出进行注意力计算</li>
+</ul>
+</li>
+<li>自注意力层用于解码器自身内部<ul>
+<li>将解码器当前位置的查询向量与解码器之前生成的位置的输出进行注意力计算</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>计算方式不同<ul>
+<li>编码-解码注意力层计算当前解码器位置与编码器输出序列中所有位置的注意力分数<ul>
+<li>意味着解码器在生成每个输出位置时，都可以综合考虑整个输入序列的信息</li>
+</ul>
+</li>
+<li>自注意力层计算当前解码器位置与之前所有解码器位置的输出的注意力分数<ul>
+<li>使得解码器可以自我关注并利用先前生成的信息来生成当前位置的输出</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>小结</p>
+</blockquote>
+<ol>
+<li>编码-解码注意力层关注整个编码器输出序列<ul>
+<li>将编码器的信息传递给解码器，用于帮助解码器生成目标序列</li>
+</ul>
+</li>
+<li>自注意力层关注解码器自身先前生成的位置的信息<ul>
+<li>用于班主解码器维护上下文并生成连贯的输出序列</li>
+</ul>
+</li>
+</ol>
+<h3 id="前馈层-1"><a href="#前馈层-1" class="headerlink" title="前馈层"></a>前馈层</h3><ol>
+<li>前馈处理与编码器中的前馈处理类似</li>
+<li>通过两次线性映射和一个中间的 ReLU 激活函数，生成解码器的最终输出</li>
+</ol>
+<p>$$<br>FFN(x)&#x3D;max(0,xW_1+b_1)W_2+b_2<br>$$</p>
+<h3 id="Linear"><a href="#Linear" class="headerlink" title="Linear"></a>Linear</h3><ol>
+<li>在 Transformer 架构中，Linear 层是线性层的意思</li>
+<li>Linear 层通常被用于多个子模块，包括编码器和解码器中的不同部分</li>
+<li>Linear 层的作用是对数据进行线性变换<ul>
+<li>将输入张量映射到另一个张量空间中</li>
+<li>并通过学习参数来实现数据的线性组合和特征变换</li>
+</ul>
+</li>
+<li>Linear 无处不在</li>
+</ol>
+<blockquote>
+<p>解码器后面的 Linear 的作用</p>
+</blockquote>
+<ol>
+<li>解码器后面的 Linear 层通常用于将经过前馈层处理的特征表示<ul>
+<li>映射到最终的输出空间，即模型的输出词汇表的维度</li>
+</ul>
+</li>
+<li>将解码器前馈层的输出映射为模型最终的预测结果<ul>
+<li>例如生成下一个单词的概率分布</li>
+<li>实际上进行降维，将前馈层的高维输出转换为词汇表的维度</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>代码</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Decoder</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, vocab_size</span>):</span><br><span class="line">        <span class="built_in">super</span>(Decoder, self).__init__()</span><br><span class="line">        self.d_model = d_model</span><br><span class="line">        self.vocab_size = vocab_size</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 前馈网络（Feed Forward Network）</span></span><br><span class="line">        self.feedforward = nn.Sequential(</span><br><span class="line">            nn.Linear(d_model, <span class="number">2048</span>),</span><br><span class="line">            nn.ReLU(),</span><br><span class="line">            nn.Linear(<span class="number">2048</span>, vocab_size)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="comment"># x: 解码器前馈网络的输出，形状为 [batch_size, seq_len, d_model]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 将解码器前馈网络的输出通过线性层进行映射</span></span><br><span class="line">        output_logits = self.feedforward(x)  <span class="comment"># 输出形状为 [batch_size, seq_len, vocab_size]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 对输出 logits 进行 softmax 操作，得到预测概率</span></span><br><span class="line">        output_probs = F.softmax(output_logits, dim=-<span class="number">1</span>)  <span class="comment"># 输出形状为 [batch_size, seq_len, vocab_size]</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> output_probs</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例用法</span></span><br><span class="line">d_model = <span class="number">512</span>  <span class="comment"># 解码器特征维度</span></span><br><span class="line">vocab_size = <span class="number">10000</span>  <span class="comment"># 词汇表大小</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建解码器实例</span></span><br><span class="line">decoder = Decoder(d_model, vocab_size)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入数据，假设解码器前馈网络的输出</span></span><br><span class="line">input_tensor = torch.randn(<span class="number">2</span>, <span class="number">10</span>, d_model)  <span class="comment"># 示例输入，batch_size=2，序列长度=10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 解码器前向传播</span></span><br><span class="line">output_probs = decoder(input_tensor)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出预测概率，形状为 [2, 10, 10000]</span></span><br><span class="line"><span class="built_in">print</span>(output_probs.shape)</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>定义了一个简单的解码器，其中包含一个前馈网络</li>
+<li>前馈网络由两个线性层和一个 ReLU 激活函数组成<ul>
+<li>$FFN(x)&#x3D;max(0,xW_1+b_1)W_2+b_2$</li>
+<li>将解码器的特征表示 $x$ 映射到词汇表大小的维度上</li>
+</ul>
+</li>
+<li>最后对输出进行 Softmax 操作，得到预测概率</li>
+</ol>
+<h3 id="Softmax"><a href="#Softmax" class="headerlink" title="Softmax"></a>Softmax</h3><ol>
+<li>Softmax 的核心 - 将一组任意实数转换成一个概率分布</li>
+<li>Softmax 在 Transformer 模型的多处用到<ul>
+<li>注意力机制和多头注意力机制，通过 Softmax 函数计算注意力分数</li>
+<li>在解码器最后一层，将 Linear 线性层输出的数据，应用 Softmax 函数进行处理</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>问题 1 - 为什么需要通过 Softmax 函数进行计算</p>
+</blockquote>
+<ol>
+<li>将得分转换为概率后，模型能够更加明确地选择哪些输入的部分是最相关的</li>
+<li>在神经网络中，直接处理非常大或非常小的数值可能会导致数值不稳定 - 梯度消失爆炸<ul>
+<li>通过 Softmax 函数处理后，数据将被规范化到一个固定的范围（0 ~ 1）- 缓解问题</li>
+</ul>
+</li>
+<li>Softmax 输出的是概率分布，使得模型的行为更加透明<ul>
+<li>可以直接解释为 - 有多少比例的注意力被分配到特定的输入上</li>
+<li>有助于调试和优化模型，以及理解模型的决策过程</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>问题 2 - 将任意实数转化为概率分布，数据的意义发生变化，会不会对效果产生影响？</p>
+</blockquote>
+<ol>
+<li>原始得分只表达了相对大小关系，但不清楚这种差异有多大</li>
+<li>通过 Softmax 转换后，可以让模型做出更精准的决策<ul>
+<li>得到的概率不仅仅反映出哪些得分较高</li>
+<li>还具体表达了它们相对于其它选项的重要性</li>
+</ul>
+</li>
+<li>原始得分可能因为范围广泛或分布不均而难以直接操作<ul>
+<li>而概率形式的输出更标准化、更规则</li>
+<li>适合进一步的处理和决策，如分险决策以及风险评估等</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>代码</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设有一个简单的查询 (Query) 和键 (Key) 矩阵，这里使用随机数生成</span></span><br><span class="line">np.random.seed(<span class="number">0</span>)  <span class="comment"># 设置随机种子以确保结果的可复现性</span></span><br><span class="line">query = np.random.rand(<span class="number">1</span>, <span class="number">64</span>)  <span class="comment"># 查询向量，维度为1x64</span></span><br><span class="line">key = np.random.rand(<span class="number">64</span>, <span class="number">10</span>)  <span class="comment"># 键矩阵，维度为64x10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 将numpy数组转换为torch张量</span></span><br><span class="line">query = torch.tensor(query, dtype=torch.float32)</span><br><span class="line">key = torch.tensor(key, dtype=torch.float32)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 计算点积注意力得分</span></span><br><span class="line">attention_scores = torch.matmul(query, key)  <span class="comment"># 结果维度为1x10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 应用Softmax函数，规范化注意力权重</span></span><br><span class="line">attention_weights = F.softmax(attention_scores, dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;注意力得分（未规范化）:&quot;</span>, attention_scores)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;注意力权重（Softmax规范化后）:&quot;</span>, attention_weights)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>输出</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">注意力得分（未规范化）: tensor([[17.9834, 15.4092, 15.5016, 15.2171, 18.3008, 17.4539, 15.6339, 16.3575,</span><br><span class="line">         14.5159, 15.4736]])</span><br><span class="line">注意力权重（Softmax规范化后）: tensor([[0.2786, 0.0212, 0.0233, 0.0175, 0.3826, 0.1640, 0.0266, 0.0548, 0.0087,</span><br><span class="line">         0.0226]])</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>具体实现</p>
+</blockquote>
+<p>$$<br>Softmax(x_i)&#x3D;\frac{e^{x_i}}{\sum_{j}{e^{x_j}}}<br>$$</p>
+<ol>
+<li>指数化<ul>
+<li>对输入向量的每个元素应用指数函数</li>
+<li>即每个输入值 $x_i$ 被转换为 $e^{x_i}$，其中 $e$ 为自然对数的底</li>
+<li>这一步的作用是将所有输入转化为正数，并放大了输入值之间的差异</li>
+</ul>
+</li>
+<li>归一化<ul>
+<li>计算所有指数化值的总和 $\sum_{j}{e^{x_j}}$</li>
+<li>将每个指数化后的值除以这个总和<ul>
+<li>得到一组和为 1 的概率值</li>
+<li>其中每个概率值都表示原始输入值相对于其它值的重要性或贡献度</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>代码实现</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">softmax</span>(<span class="params">x</span>):</span><br><span class="line">    exp_x = np.exp(x - np.<span class="built_in">max</span>(x))  <span class="comment"># 防止数值溢出</span></span><br><span class="line">    <span class="keyword">return</span> exp_x / exp_x.<span class="built_in">sum</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例输入</span></span><br><span class="line">x = np.array([<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Softmax输出:&quot;</span>, softmax(x))  <span class="comment"># Softmax输出: [0.09003057 0.24472847 0.66524096]</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>示意图</p>
+</blockquote>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/softmax.png" alt="softmax"></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2024/07/08/llm-core-transformer/">https://blog.zhongmingmao.top/2024/07/08/llm-core-transformer/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/ai/">AI</a><a class="post-meta__tags" href="/tags/llm/">LLM</a><a class="post-meta__tags" href="/tags/nlp/">NLP</a><a class="post-meta__tags" href="/tags/seq2seq/">Seq2Seq</a><a class="post-meta__tags" href="/tags/transformer/">Transformer</a><a class="post-meta__tags" href="/tags/attention/">Attention</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2024/07/07/llm-core-seq2seq/" title="LLM Core - Seq2Seq"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/seq2seq-4492942.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">LLM Core - Seq2Seq</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2024/07/07/llm-core-seq2seq/" title="LLM Core - Seq2Seq"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/seq2seq-4492942.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-07</div><div class="title">LLM Core - Seq2Seq</div></div></a></div><div><a href="/2024/07/06/llm-core-word2vec/" title="LLM Core - Word2Vec"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/word2vec.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-06</div><div class="title">LLM Core - Word2Vec</div></div></a></div><div><a href="/2024/07/05/llm-core-nlp/" title="LLM Core - NLP"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/nlp.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-05</div><div class="title">LLM Core - NLP</div></div></a></div><div><a href="/2024/07/04/llm-core-rnn/" title="LLM Core - RNN"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/rnn.jpeg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-04</div><div class="title">LLM Core - RNN</div></div></a></div><div><a href="/2024/07/03/llm-core-ml-algorithm/" title="LLM Core - Machine Learning Algorithm"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/ml-algorithm-3947367.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-03</div><div class="title">LLM Core - Machine Learning Algorithm</div></div></a></div><div><a href="/2024/07/02/llm-core-ml-concept/" title="LLM Core - Machine Learning Concept"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-ml.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-07-02</div><div class="title">LLM Core - Machine Learning Concept</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">537</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">172</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">71</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D"><span class="toc-number">2.</span> <span class="toc-text">简单介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BC%98%E5%8A%BF"><span class="toc-number">3.</span> <span class="toc-text">优势</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">4.</span> <span class="toc-text">核心概念</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Attention"><span class="toc-number">4.1.</span> <span class="toc-text">Attention</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Seq2Seq"><span class="toc-number">4.2.</span> <span class="toc-text">Seq2Seq</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Seq2Seq-With-Attention"><span class="toc-number">4.3.</span> <span class="toc-text">Seq2Seq With Attention</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%88%86%E9%85%8D"><span class="toc-number">4.4.</span> <span class="toc-text">注意力分配</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%91%E9%87%8F%E8%BD%AC%E6%8D%A2"><span class="toc-number">4.4.1.</span> <span class="toc-text">向量转换</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%A1%E7%AE%97%E7%9B%B8%E4%BC%BC%E5%BA%A6"><span class="toc-number">4.4.2.</span> <span class="toc-text">计算相似度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9D%83%E9%87%8D"><span class="toc-number">4.4.3.</span> <span class="toc-text">注意力权重</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%A8%A1%E6%8B%9F"><span class="toc-number">4.4.4.</span> <span class="toc-text">代码模拟</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="toc-number">4.5.</span> <span class="toc-text">多头注意力</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E5%8E%9F%E7%90%86"><span class="toc-number">5.</span> <span class="toc-text">架构原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84"><span class="toc-number">5.1.</span> <span class="toc-text">模型结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E7%A0%81%E5%99%A8"><span class="toc-number">5.2.</span> <span class="toc-text">编码器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E5%B1%82"><span class="toc-number">5.2.1.</span> <span class="toc-text">输入层</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B1%82"><span class="toc-number">5.2.2.</span> <span class="toc-text">自注意力层</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Add"><span class="toc-number">5.2.2.1.</span> <span class="toc-text">Add</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Norm"><span class="toc-number">5.2.2.2.</span> <span class="toc-text">Norm</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E9%A6%88%E5%B1%82"><span class="toc-number">5.2.3.</span> <span class="toc-text">前馈层</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">5.2.4.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E7%A0%81%E5%99%A8"><span class="toc-number">5.3.</span> <span class="toc-text">解码器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B1%82-1"><span class="toc-number">5.3.1.</span> <span class="toc-text">自注意力层</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E7%A0%81-%E8%A7%A3%E7%A0%81%E6%B3%A8%E6%84%8F%E5%8A%9B%E5%B1%82"><span class="toc-number">5.3.2.</span> <span class="toc-text">编码-解码注意力层</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E9%A6%88%E5%B1%82-1"><span class="toc-number">5.3.3.</span> <span class="toc-text">前馈层</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Linear"><span class="toc-number">5.3.4.</span> <span class="toc-text">Linear</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Softmax"><span class="toc-number">5.3.5.</span> <span class="toc-text">Softmax</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/07/08/llm-core-transformer/" title="LLM Core - Transformer"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/llm-transformer.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LLM Core - Transformer"/></a><div class="content"><a class="title" href="/2024/07/08/llm-core-transformer/" title="LLM Core - Transformer">LLM Core - Transformer</a><time datetime="2024-07-07T16:06:25.000Z" title="Created 2024-07-08 00:06:25">2024-07-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/07/07/llm-core-seq2seq/" title="LLM Core - Seq2Seq"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/seq2seq-4492942.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LLM Core - Seq2Seq"/></a><div class="content"><a class="title" href="/2024/07/07/llm-core-seq2seq/" title="LLM Core - Seq2Seq">LLM Core - Seq2Seq</a><time datetime="2024-07-06T16:06:25.000Z" title="Created 2024-07-07 00:06:25">2024-07-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/07/06/llm-core-word2vec/" title="LLM Core - Word2Vec"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/word2vec.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LLM Core - Word2Vec"/></a><div class="content"><a class="title" href="/2024/07/06/llm-core-word2vec/" title="LLM Core - Word2Vec">LLM Core - Word2Vec</a><time datetime="2024-07-05T16:06:25.000Z" title="Created 2024-07-06 00:06:25">2024-07-06</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/07/05/llm-core-nlp/" title="LLM Core - NLP"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/nlp.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LLM Core - NLP"/></a><div class="content"><a class="title" href="/2024/07/05/llm-core-nlp/" title="LLM Core - NLP">LLM Core - NLP</a><time datetime="2024-07-04T16:06:25.000Z" title="Created 2024-07-05 00:06:25">2024-07-05</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/07/04/llm-core-rnn/" title="LLM Core - RNN"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://llm-1253868755.cos.ap-guangzhou.myqcloud.com/rnn.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LLM Core - RNN"/></a><div class="content"><a class="title" href="/2024/07/04/llm-core-rnn/" title="LLM Core - RNN">LLM Core - RNN</a><time datetime="2024-07-03T16:06:25.000Z" title="Created 2024-07-04 00:06:25">2024-07-04</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2024 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, ''],
+        insertScript: [200, () => {
+          document.querySelectorAll('mjx-container').forEach(node => {
+            if (node.hasAttribute('display')) {
+              btf.wrap(node, 'div', { class: 'mathjax-overflow' })
+            } else {
+              btf.wrap(node, 'span', { class: 'mathjax-overflow' })
+            }
+          });
+        }, '', false]
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
