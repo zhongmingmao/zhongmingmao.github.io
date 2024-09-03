@@ -304,7 +304,7 @@ $ python -m spacy download en_core_web_sm
      - https://huggingface.co/models?library=sentence-transformers&author=sentence-transformers
    - Community models - 8557
      - https://huggingface.co/models?library=sentence-transformers
-3. 在**中文**领域，**BAAI** 的 **BGE** 系列模型是比较知名的，在 **C-MTEB** 上表现出色
+3. 在**中文**领域，**BAAI** 的 **BGE**（BAAI General Embedding） 系列模型是比较知名的，在 **C-MTEB** 上表现出色
    - https://huggingface.co/collections/BAAI/bge-66797a74476eb1f085c7446d
 
 ![image-20240903095158210](https://rag-1253868755.cos.ap-guangzhou.myqcloud.com/image-20240903095158210.png)
