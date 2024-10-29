@@ -2,7 +2,7 @@
 title: Python - List + Tuple
 mathjax: true
 date: 2024-08-18 00:06:25
-cover: https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/python-list-tuple.webp
+cover: https://python-1253868755.cos.ap-guangzhou.myqcloud.com/python-list-tuple.webp
 categories:
   - Python
 tags:
