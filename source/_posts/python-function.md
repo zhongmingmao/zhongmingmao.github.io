@@ -131,7 +131,7 @@ def validation_check(value):
 validation_check(5)
 ```
 
-> 不能在**函数内部**随意改变**全局变量**的值
+> 不能在**函数内部**随意改变**全局变量**的值 -- 针对**不可变对象**，如 int 和 string
 
 1. Python **解析器**会默认**函数内部的变量**为**局部变量**
 2. 如果要在函数内部改变全局变量的值，必须加上 **global** 声明
@@ -152,6 +152,21 @@ def validation_check(value):
 print(MIN_VALUE)  # 1
 validation_check(5)
 print(MIN_VALUE)  # 2
+```
+
+> 如果全局变量指向的对象是**可变**的，如 list 和 tuple，可以在**函数内部**修改
+
+```python
+x = [1]
+
+
+def func():
+    x.append(2)
+
+
+print(x)  # [1]
+func()
+print(x)  # [1, 2]
 ```
 
 > 如果函数内部局部变量和全局变量**同名**的情况下，在函数内部，局部变量会**覆盖**全局全局变量
