@@ -4695,5 +4695,560 @@ PUT /collections/{collection_name}
    - **Extra edges** allow you to **efficiently search** for **nearby vectors** using the **HNSW** index and **apply filters** as you search in the graph.
    - This approach **minimizes the overhead** on **condition checks** since you **only need to calculate the conditions for a small fraction of the points** involved in the search.
 
+# Quantization
 
+1. Quantization is an optional feature in Qdrant that enables **efficient storage and search** of **high-dimensional vectors**.
+   - By transforming original vectors into **a new representations**, quantization **compresses data** while **preserving close to original relative distances** between vectors.
+   - Different **quantization methods** have different **mechanics** and **tradeoffs**.
+2. Quantization is primarily used to **reduce the memory footprint** and **accelerate the search process** in **high-dimensional vector spaces**.
+   - In the context of the Qdrant, quantization allows you to optimize the search engine for specific use cases, striking a balance between **accuracy**, **storage efficiency**, and **search speed**.
+3. There are **tradeoffs** associated with quantization.
+   - On the one hand, quantization allows for **significant reductions in storage requirements** and **faster search times**.
+     - This can be particularly beneficial in **large-scale applications** where **minimizing the use of resources** is a **top priority**.
+   - On the other hand, quantization **introduces an approximation error**, which can lead to a **slight decrease in search quality**.
+     - The level of this tradeoff depends on the **quantization method** and **its parameters**, as well as **the characteristics of the data**.
+
+## Scalar Quantization
+
+> float32 -> uint8 / SIMD fast / loss of accuracy
+
+1. Scalar quantization, in the context of **vector search engines**, is a **compression technique** that compresses vectors by **reducing the number of bits** used to represent each **vector component**.
+2. For instance, Qdrant uses **32-bit floating numbers** to represent the **original vector components**.
+   - Scalar quantization allows you to **reduce the number of bits used to 8**.
+   - In other words, Qdrant performs **float32 -> uint8** conversion for **each vector component**.
+   - Effectively, this means that the amount of **memory** required to store a vector is **reduced by a factor of 4**.
+3. In addition to **reducing the memory footprint**, scalar quantization also **speeds up the search process**.
+   - Qdrant uses a special **SIMD** CPU instruction to perform **fast vector comparison**.
+   - This instruction works with **8-bit integers**, so the conversion to **uint8** allows Qdrant to **perform the comparison faster**.
+4. The main drawback of scalar quantization is the **loss of accuracy**.
+   - The float32 -> uint8 conversion **introduces an error** that can **lead to a slight decrease in search quality**.
+   - However, this **error** is usually **negligible**, and tends to be **less significant** for **high-dimensional** vectors.
+   - In our experiments, we found that the error introduced by scalar quantization is usually **less than 1%**.
+
+## Binary Quantization
+
+> only with rescoring enabled / high-dimensional vectors / centered distribution
+
+1. Binary quantization is an **extreme case** of **scalar** quantization.
+   - This feature lets you represent **each vector component** as a **single bit**, effectively **reducing** the **memory** footprint by a factor of **32**.
+2. This is the **fastest quantization method**, since it lets you perform a **vector comparison** with **a few CPU instructions**.
+3. Binary quantization can achieve up to a **40x speedup** compared to the original vectors.
+4. However, binary quantization is **only efficient** for **high-dimensional vectors** and require a **centered distribution** of **vector components**.
+5. Models with a **lower dimensionality** or a **different distribution** of vector components may require **additional experiments** to find the **optimal quantization parameters**.
+6. We recommend using binary quantization **only with rescoring enabled**, as it can **significantly improve the search quality** with just **a minor performance impact**.
+   - Additionally, **oversampling** can be used to tune the **tradeoff** between **search speed** and **search quality** in the query time.
+7. The additional benefit of this method is that you can efficiently emulate **Hamming distance** with **dot product**.
+
+## Product Quantization
+
+> chunk / k-means / not SIMD-friendly / slower than scalar quantization / only for high-dimensional vectors
+
+1. Product quantization is a method of compressing vectors to minimize their memory usage by **dividing them into chunks** and **quantizing each segment individually**.
+   - Each **chunk** is **approximated** by a **centroid index** that represents the original vector component.
+   - The **positions** of the **centroids** are determined through the utilization of a **clustering algorithm** such as **k-means**.
+   - For now, Qdrant uses only **256 centroids**, so **each centroid index** can be represented by a **single byte**.
+2. Product quantization can compress by a **more prominent factor** than a **scalar** one. But there are some **tradeoffs**.
+   - Product quantization distance calculations are **not SIMD-friendly**, so it is **slower than scalar quantization**.
+   - Also, product quantization has a **loss of accuracy**, so it is recommended to use it **only for high-dimensional vectors**.
+
+## Choose
+
+> **Scalar** Quantization
+
+| Quantization method | Accuracy | Speed     | Compression  |
+| ------------------- | -------- | --------- | ------------ |
+| Scalar              | 0.99     | up to x2  | 4            |
+| ~~Binary~~          | 0.95*    | up to x40 | 32           |
+| ~~Product~~         | 0.7      | 0.5       | up to **64** |
+
+1. **Binary** Quantization
+   - is the **fastest** method and the **most memory-efficient**, but it requires a **centered distribution** of **vector components**.
+   - It is recommended to use with **tested models only**. - OpenAI text-embedding-ada-002 / Cohere AI embed-english-v2.0
+2. **Product** Quantization
+   - may provide a **better compression ratio**, but it has a **significant loss of accuracy** and is **slower than scalar quantization**.
+   - It is recommended if the **memory footprint** is the **top priority** and the **search speed** is **not critical**.
+3. **Scalar** Quantization
+   - is the **most universal** method, as it provides a **good balance** between **accuracy**, **speed**, and **compression**.
+   - It is recommended as **default quantization** if **binary quantization** is **not applicable**.
+
+## Setting up
+
+1. You can configure quantization for a **collection** by specifying the quantization parameters in the **quantization_config** section of the collection configuration.
+2. Quantization will be **automatically applied to all vectors** during the **indexation process**.
+   - **Quantized vectors** are **stored alongside** the **original vectors** in the collection, so you will **still have access to the original vectors** if you need them.
+3. The **quantization_config** can also be set on a **per vector basis** by specifying it in a **named vector**.
+
+> Setting up Scalar Quantization
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine"
+    },
+    "quantization_config": {
+        "scalar": {
+            "type": "int8",
+            "quantile": 0.99,
+            "always_ram": true
+        }
+    }
+}
+```
+
+1. **type**
+   - the type of the **quantized vector components**. Currently, Qdrant supports only **int8**.
+2. **quantile**
+   - the quantile of the quantized vector components.
+   - The quantile is used to **calculate the quantization bounds**.
+   - For instance, if you specify **0.99** as the quantile, **1% of extreme values** will be **excluded** from the **quantization bounds**.
+   - Using quantiles **lower than 1.0** might be useful if there are **outliers** in your vector components.
+     - This parameter only affects the **resulting precision** and **not the memory footprint**.
+     - It might be worth tuning this parameter if you experience a **significant decrease in search quality**.
+3. **always_ram**
+   - whether to **keep quantized vectors always cached in RAM** or not.
+   - By default, quantized vectors are loaded in the **same way** as the **original vectors**.
+     - However, in some setups you might want to keep quantized vectors in RAM to **speed up the search process**.
+
+## Searching
+
+1. Once you have configured quantization for a collection, you don’t need to do anything extra to search with quantization. Qdrant will **automatically use quantized vectors** if they are **available**.
+2. However, there are a few options that you can use to control the search process:
+
+```json
+POST /collections/{collection_name}/points/query
+{
+    "query": [0.2, 0.1, 0.9, 0.7],
+    "params": {
+        "quantization": {
+            "ignore": false,
+            "rescore": true,
+            "oversampling": 2.0
+        }
+    },
+    "limit": 10
+}
+```
+
+1. **ignore**
+   - Toggle whether to **ignore quantized vectors** during the **search process**.
+   - **By default**, Qdrant will **use** quantized vectors if they are **available**.
+2. **rescore**
+   - Having the original vectors available, Qdrant can **re-evaluate top-k search results** using the **original vectors**.
+   - This can **improve the search quality**, but may **slightly decrease the search speed**, compared to the search **without rescore**.
+     - It is recommended to **disable rescore** only if the **original vectors** are stored on a **slow storage** (e.g. **HDD** or **network** storage).
+     - **By default**, rescore is **enabled**.
+3. **oversampling**
+   - Defines how many **extra vectors** should be **pre-selected** using **quantized index**, and then **re-scored** using **original vectors**.
+   - For example, if oversampling is **2.4** and limit is **100**, then **240 vectors** will be **pre-selected** using **quantized index**, and then **top-100** will be returned after **re-scoring**.
+     - Oversampling is useful if you want to tune the tradeoff between **search speed** and **search quality** in the query time.
+
+## Tips
+
+### Accuracy tuning
+
+1. In this section, we will discuss how to tune the **search precision**.
+2. The **fastest** way to understand the **impact of quantization on the search quality** is to compare the search results with and without quantization.
+3. In order to **disable quantization**, you can set **ignore** to true in the search request:
+
+```json
+POST /collections/{collection_name}/points/query
+{
+    "query": [0.2, 0.1, 0.9, 0.7],
+    "params": {
+        "quantization": {
+            "ignore": true
+        }
+    },
+    "limit": 10
+}
+```
+
+1. Adjust the **quantile** parameter
+   - The quantile parameter in **scalar quantization** determines the **quantization bounds**.
+   - By setting it to a value **lower than 1.0**, you can **exclude extreme values (outliers)** from the quantization bounds.
+     - For example, if you set the quantile to **0.99**, 1% of the extreme values will be excluded.
+   - By adjusting the quantile, you find an **optimal value** that will provide the **best search quality** for your collection.
+2. Enable **rescore**
+   - Having the **original vectors** available, Qdrant can **re-evaluate top-k search results** using the **original vectors**.
+   - On **large collections**, this can **improve the search quality**, with just **minor performance impact**.
+
+### Memory and speed tuning
+
+1. In this section, we will discuss how to tune the **memory** and **speed** of the search process with **quantization**.
+2. There are 3 possible modes to place storage of vectors within the qdrant collection:
+   - **All in RAM**
+     - all vector, **original** and **quantized**, are loaded and kept in **RAM**.
+     - This is the **fastest** mode, but requires a lot of RAM. **Enabled by default**.
+   - **Original** on **Disk**, **quantized** in **RAM**
+     - this is a **hybrid** mode, allows to obtain a **good balance** between **speed** and **memory usage**.
+     - Recommended scenario if you are aiming to **shrink the memory footprint** while **keeping the search speed**.
+   - All on **Disk**
+     - all vectors, **original** and **quantized**, are stored on **disk**.
+     - This mode allows to achieve the **smallest memory footprint**, but **at the cost of the search speed**.
+     - It is recommended to use this mode if you have a **large collection** and **fast storage** (e.g. **SSD** or **NVMe**).
+
+> **Original** on **Disk**, **quantized** in **RAM** - This mode is enabled by setting **always_ram** to true in the quantization config while using **memmap** storage:
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine",
+      "on_disk": true
+    },
+    "quantization_config": {
+        "scalar": {
+            "type": "int8",
+            "always_ram": true
+        }
+    }
+}
+```
+
+1. In this scenario, the **number of disk reads** may **play a significant role** in the **search speed**.
+2. In a system with **high disk latency**, the **re-scoring** step may become a **bottleneck**.
+3. Consider **disabling rescore** to improve the search speed:
+
+```json
+POST /collections/{collection_name}/points/query
+{
+    "query": [0.2, 0.1, 0.9, 0.7],
+    "params": {
+        "quantization": {
+            "rescore": false
+        }
+    },
+    "limit": 10
+}
+```
+
+> All on **Disk** - This mode is enabled by setting **always_ram** to **false** in the quantization config while using **mmap** storage:
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine",
+      "on_disk": true
+    },
+    "quantization_config": {
+        "scalar": {
+            "type": "int8",
+            "always_ram": false
+        }
+    }
+}
+```
+
+# Optimizing Performance
+
+1. **Different use cases** require **different balances** between **memory usage**, **search speed**, and **precision**.
+   - Qdrant is designed to be **flexible** and **customizable** so you can tune it to your specific needs.
+2. This guide will walk you three main optimization strategies:
+   - High **Speed** Search & Low **Memory** Usage
+   - High **Precision** & Low **Memory** Usage
+   - High **Precision** & High **Speed** Search
+
+![tradeoff](https://rag-1253868755.cos.ap-guangzhou.myqcloud.com/tradeoff.png)
+
+## High-Speed Search + Low Memory Usage
+
+> original vectors on disk / quantized vectors in ram / scalar quantization / rescoring
+
+1. To achieve high search speed with minimal memory usage, you can **store vectors on disk** while **minimizing the number of disk reads**.
+2. **Vector quantization** is a technique that **compresses vectors**, allowing **more of them to be stored in memory**, thus reducing the need to read from disk.
+3. To configure **in-memory quantization**, with **on-disk original vectors**, you need to **create a collection** with the following parameters:
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+        "size": 768,
+        "distance": "Cosine",
+        "on_disk": true
+    },
+    "quantization_config": {
+        "scalar": {
+            "type": "int8",
+            "always_ram": true
+        }
+    }
+
+```
+
+| Parameter               | Desc                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| **on_disk**             | Stores **original vectors** on **disk**.                     |
+| **quantization_config** | Compresses quantized vectors to **int8** using the **scalar** method. |
+| **always_ram**          | Keeps **quantized vectors** in **RAM**.                      |
+
+> **Disable Rescoring** for Faster Search (optional) - **only quantized vectors in RAM**
+
+```json
+POST /collections/{collection_name}/points/query
+{
+    "query": [0.2, 0.1, 0.9, 0.7],
+    "params": {
+        "quantization": {
+            "rescore": false
+        }
+    },
+    "limit": 10
+}
+```
+
+1. This is completely optional.
+2. Disabling **rescoring** with search params can **further reduce the number of disk reads**.
+3. Note that this **might slightly decrease precision**.
+
+## High Precision + Low Memory Usage
+
+1. If you require **high precision** but have **limited RAM**, you can store both **vectors** and the **HNSW index** on **disk**.
+2. This setup **reduces memory usage** while **maintaining search precision**.
+3. To store the vectors **on_disk**, you need to configure both the **vectors** and the **HNSW index**:
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine",
+      "on_disk": true
+    },
+    "hnsw_config": {
+        "on_disk": true
+    }
+}
+```
+
+> Improving Precision
+
+1. Increase the **ef** and **m** parameters of the **HNSW index** to **improve precision**, even with **limited RAM**:
+2. The **speed** of this setup depends on the **disk’s IOPS** (Input/Output Operations Per Second).
+
+```json
+...
+"hnsw_config": {
+    "m": 64,
+    "ef_construct": 512,
+    "on_disk": true
+}
+...
+```
+
+## High Precision + High-Speed Search
+
+> quantized vectors in ram / scalar quantization / rescoring
+
+1. For scenarios requiring both **high speed** and **high precision**, keep **as much data in RAM** as possible. Apply **quantization** with **re-scoring** for **tunable accuracy**.
+2. Here is how you can configure **scalar** quantization for a collection:
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine"
+    },
+    "quantization_config": {
+        "scalar": {
+            "type": "int8",
+            "always_ram": true
+        }
+    }
+}
+```
+
+> Fine-Tuning **Search** Parameters
+
+You can adjust search parameters like `hnsw_ef` and `exact` to balance between speed and precision
+
+| Key Parameter | Desc                                                         |
+| ------------- | ------------------------------------------------------------ |
+| hnsw_ef       | Number of **neighbors** to visit during search (**higher value** = **better accuracy**, **slower speed**). |
+| exact         | Set to true for **exact search**, which is **slower** but **more accurate**.<br />You can use it to compare results of the search with **different hnsw_ef values** versus the **ground truth**. |
+
+```json
+POST /collections/{collection_name}/points/query
+{
+    "query": [0.2, 0.1, 0.9, 0.7],
+    "params": {
+        "hnsw_ef": 128,
+        "exact": false
+    },
+    "limit": 3
+}
+```
+
+## Balancing Latency and Throughput
+
+When optimizing search performance, **latency** and **throughput** are two main **metrics** to consider:
+
+1. **Latency:** Time taken for a single request.
+2. **Throughput:** Number of requests handled per second.
+
+The following optimization approaches are **not mutually exclusive**, but in some cases it might be preferable to optimize for one or another.
+
+> Minimizing **Latency**
+
+1. To minimize latency, you can set up Qdrant to use **as many cores as** possible for a single request.
+2. You can do this by setting the **number of segments** in the **collection** to be equal to the **number of cores** in the system.
+3. In this case, **each segment** will be **processed in parallel**, and the final result will be obtained **faster**.
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine"
+    },
+    "optimizers_config": {
+        "default_segment_number": 16
+    }
+}
+```
+
+> Maximizing **Throughput**
+
+1. To maximize throughput, configure Qdrant to use **as many cores as** possible to **process multiple requests in parallel**.
+2. To do that, **use fewer segments** (usually **2**) to **handle more requests in parallel**.
+3. **Large segments** benefit from the **size of the index** and **overall smaller number of vector comparisons** required to **find the nearest neighbors**.
+   - However, they will **require more time** to build the **HNSW index**.
+
+```json
+PUT /collections/{collection_name}
+{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine"
+    },
+    "optimizers_config": {
+        "default_segment_number": 2
+    }
+}
+```
+
+## Summary
+
+By adjusting configurations like **vector storage**, **quantization**, and **search parameters**, you can optimize Qdrant for different use cases:
+
+| Case                            | Desc                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| Low Memory + High Speed         | Use vector quantization                                      |
+| **High Precision + High Speed** | Keep data in RAM, use quantization with re-scoring.          |
+| ~~High Precision + Low Memory~~ | Store vectors and HNSW index on disk.                        |
+| Latency vs. Throughput          | Adjust segment numbers based on the priority - **2 - Throughput** |
+
+# Configuration
+
+1. Qdrant ships with **sensible defaults** for collection and network settings that are **suitable for most use cases**. 
+
+```yaml
+storage:
+  # If true - the point's payload will not be stored in memory.
+  # It will be read from the disk every time it is requested.
+  # This setting saves RAM by (slightly) increasing the response time.
+  # Note: those payload values that are involved in filtering and are indexed - remain in RAM.
+  on_disk_payload: true
+
+  optimizers:
+    # The minimal fraction of deleted vectors in a segment, required to perform segment optimization
+    deleted_threshold: 0.2
+
+    # The minimal number of vectors in a segment, required to perform segment optimization
+    vacuum_min_vector_number: 1000
+
+    # Target amount of segments optimizer will try to keep.
+    # Real amount of segments may vary depending on multiple parameters:
+    #  - Amount of stored points
+    #  - Current write RPS
+    #
+    # It is recommended to select default number of segments as a factor of the number of search threads,
+    # so that each segment would be handled evenly by one of the threads.
+    # If `default_segment_number = 0`, will be automatically selected by the number of available CPUs
+    default_segment_number: 0
+
+    # Do not create segments larger this size (in KiloBytes).
+    # Large segments might require disproportionately long indexation times,
+    # therefore it makes sense to limit the size of segments.
+    #
+    # If indexation speed have more priority for your - make this parameter lower.
+    # If search speed is more important - make this parameter higher.
+    # Note: 1Kb = 1 vector of size 256
+    # If not set, will be automatically selected considering the number of available CPUs.
+    max_segment_size_kb: null
+
+    # Maximum size (in KiloBytes) of vectors to store in-memory per segment.
+    # Segments larger than this threshold will be stored as read-only memmaped file.
+    # To enable memmap storage, lower the threshold
+    # Note: 1Kb = 1 vector of size 256
+    # To explicitly disable mmap optimization, set to `0`.
+    # If not set, will be disabled by default. Previously this was called memmap_threshold_kb.
+    memmap_threshold: null
+
+    # Maximum size (in KiloBytes) of vectors allowed for plain index.
+    # Default value based on https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md
+    # Note: 1Kb = 1 vector of size 256
+    # To explicitly disable vector indexing, set to `0`.
+    # If not set, the default value will be used.
+    indexing_threshold_kb: 20000
+
+    # Interval between forced flushes.
+    flush_interval_sec: 5
+
+    # Max number of threads (jobs) for running optimizations per shard.
+    # Note: each optimization job will also use `max_indexing_threads` threads by itself for index building.
+    # If null - have no limit and choose dynamically to saturate CPU.
+    # If 0 - no optimization threads, optimizations will be disabled.
+    max_optimization_threads: null
+
+  # Default parameters of HNSW Index. Could be overridden for each collection or named vector individually
+  hnsw_index:
+    # Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.
+    m: 16
+
+    # Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build index.
+    ef_construct: 100
+
+    # Minimal size (in KiloBytes) of vectors for additional payload-based indexing.
+    # If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won't be used -
+    # in this case full-scan search should be preferred by query planner and additional indexing is not required.
+    # Note: 1Kb = 1 vector of size 256
+    full_scan_threshold_kb: 10000
+
+    # Number of parallel threads used for background index building.
+    # If 0 - automatically select.
+    # Best to keep between 8 and 16 to prevent likelihood of building broken/inefficient HNSW graphs.
+    # On small CPUs, less threads are used.
+    max_indexing_threads: 0
+
+    # Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false
+    on_disk: false
+
+    # Custom M param for hnsw graph built for payload index. If not set, default M will be used.
+    payload_m: null
+
+  # Default parameters for collections
+  collection:
+    # Default parameters for vectors.
+    vectors:
+      # Whether vectors should be stored in memory or on disk.
+      on_disk: null
+
+    # Default quantization configuration.
+    # More info: https://qdrant.tech/documentation/guides/quantization
+    quantization: null
+
+service:
+  # Maximum size of POST data in a single request in megabytes
+  max_request_size_mb: 32
+
+  # Number of parallel workers used for serving the api. If 0 - equal to the number of available cores.
+  # If missing - Same as storage.max_search_threads
+  max_workers: 0
+```
 
