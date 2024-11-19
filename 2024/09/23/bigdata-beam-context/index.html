@@ -1,0 +1,333 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Beam - Context | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="MapReduce架构思想 提供一套简洁的 API 来表达工程师数据处理的逻辑 在这套 API 底层嵌套一套扩展性很强的容错系统">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Beam - Context">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2024/09/23/bigdata-beam-context/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="MapReduce架构思想 提供一套简洁的 API 来表达工程师数据处理的逻辑 在这套 API 底层嵌套一套扩展性很强的容错系统">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-beam-context.webp">
+<meta property="article:published_time" content="2024-09-22T16:06:25.000Z">
+<meta property="article:modified_time" content="2024-11-19T03:44:52.539Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Big Data">
+<meta property="article:tag" content="Beam">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-beam-context.webp"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2024/09/23/bigdata-beam-context/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Beam - Context',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-11-19 11:44:52'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">593</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">185</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">76</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-beam-context.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Beam - Context</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2024-09-22T16:06:25.000Z" title="Created 2024-09-23 00:06:25">2024-09-23</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/big-data/">Big Data</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/big-data/beam/">Beam</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">845</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>2min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="MapReduce"><a href="#MapReduce" class="headerlink" title="MapReduce"></a>MapReduce</h1><h2 id="架构思想"><a href="#架构思想" class="headerlink" title="架构思想"></a>架构思想</h2><ol>
+<li>提供一套<strong>简洁的 API</strong> 来表达工程师<strong>数据处理</strong>的逻辑</li>
+<li>在这套 API 底层嵌套一套<strong>扩展性很强</strong>的<strong>容错系统</strong></li>
+</ol>
+<span id="more"></span>
+
+<h2 id="计算模型"><a href="#计算模型" class="headerlink" title="计算模型"></a>计算模型</h2><blockquote>
+<p>Map</p>
+</blockquote>
+<ol>
+<li>计算模型从<strong>输入源</strong>中读取数据集合</li>
+<li>这些数据经过用户所写的逻辑后生成一个<strong>临时的键值对数据集</strong></li>
+<li>MapReduce 计算模型会将拥有<strong>相同键</strong>的数据集集中起来发送到下一阶段，即 <strong>Shuffle</strong> 阶段</li>
+</ol>
+<blockquote>
+<p>Reduce</p>
+</blockquote>
+<ol>
+<li>接收从 <strong>Shuffle</strong> 阶段发送过来的数据集</li>
+<li>在经过用户所写的逻辑后生成<strong>零个或多个结果</strong></li>
+</ol>
+<h2 id="划时代意义"><a href="#划时代意义" class="headerlink" title="划时代意义"></a>划时代意义</h2><ol>
+<li><strong>Map</strong> 和 <strong>Reduce</strong> 这两种<strong>抽象</strong>，其实可以<strong>适用于非常多的应用场景</strong></li>
+<li>MapReduce 的<strong>容错系统</strong>，可以让<strong>数据处理逻辑</strong>在<strong>分布式环境</strong>下有很好的<strong>扩展性</strong>（<strong>Scalability</strong>）</li>
+</ol>
+<h2 id="不足"><a href="#不足" class="headerlink" title="不足"></a>不足</h2><ol>
+<li>使用 MapReduce 来解决一个<strong>工程问题</strong>，往往会涉及<strong>非常多的步骤</strong></li>
+<li>每次使用 MapReduce 时，都需要在分布式环境中<strong>启动机器</strong>来完成 <strong>Map</strong> 和 <strong>Reduce</strong> 步骤</li>
+<li>并且需要启动 <strong>Master</strong> 机器来<strong>协调</strong>两个步骤的<strong>中间结果</strong>，存在不少的<strong>硬件资源开销</strong></li>
+</ol>
+<h1 id="FlumeJava"><a href="#FlumeJava" class="headerlink" title="FlumeJava"></a>FlumeJava</h1><ol>
+<li>将<strong>所有的数据</strong>都抽象成名为 <strong>PCollection</strong> 的数据结构<ul>
+<li>无论是从<strong>内存</strong>中读取的数据，还是在分布式环境下所读取的<strong>文件</strong></li>
+</ul>
+</li>
+<li><strong>统一的抽象</strong>，对于<strong>测试代码中的逻辑</strong>非常友好<ul>
+<li>MapReduce - 读取测试数据集 + 在分布式环境下运行 + 测试代码逻辑</li>
+<li><strong>PCollection</strong> - 在<strong>内存</strong>中读取数据然后跑测试文件<ul>
+<li><strong>同样的逻辑</strong>，既可以在<strong>分布式环境</strong>下运行，也可以在<strong>单机内存</strong>中运行</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FlumeJava 在 MapReduce 框架中 <strong>Map</strong> 和 <strong>Reduce</strong> 思想上，抽象出 4 个原始操作 - <strong>Primitive Operation</strong><ul>
+<li><strong>parallelDo</strong>、<strong>groupByKey</strong>、<strong>combineValues</strong>、<strong>flatten</strong></li>
+<li>基于这 4 个 Primitive Operation 来表达任意 Map 和 Reduce 的逻辑</li>
+</ul>
+</li>
+<li><strong>Deferred Evaluation</strong> - 用于<strong>代码优化</strong><ul>
+<li>FlumeJava 框架为业务代码进行一次<strong>静态遍历</strong>，然后改造出一个<strong>执行计划</strong>的 <strong>DAG</strong></li>
+<li><strong>Execution Plan Dataflow Graph</strong> - FlumeJava 会<strong>自动优化代码</strong></li>
+</ul>
+</li>
+<li>FlumeJava 通过<strong>输入数据集规模</strong>，<strong>预测输出结果的规模</strong>，自行决定代码是放在<strong>内存</strong>中，还是在<strong>分布式环境</strong>中运行</li>
+<li>不足<ul>
+<li>FlumeJava <strong>只支持批处理</strong>，对于<strong>无边界数据</strong>是<strong>不支持</strong>的 - Google <strong>Millwheel</strong> 用于<strong>流处理</strong></li>
+<li>统一框架 - <strong>Dataflow Model</strong></li>
+</ul>
+</li>
+</ol>
+<h1 id="Apache-Beam"><a href="#Apache-Beam" class="headerlink" title="Apache Beam"></a>Apache Beam</h1><ol>
+<li>Google 基于 <strong>Dataflow Model</strong> 思想推出了 <strong>Cloud Dataflow</strong>，但只能在 <strong>Google 云平台</strong>上使用</li>
+<li>在 2016 年，基于 <strong>Dataflow Model</strong> 思想开发出一套 SDK，并贡献给 Apache Software Foundation</li>
+<li><strong>Beam &#x3D; Batch + Streaming</strong>，统一<strong>批处理</strong>和<strong>流处理</strong></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-apache-beam.webp" alt="bigdata-apache-beam"></p>
+<ol>
+<li>在实际的业务场景中，不可避免地需要对数据<strong>同时</strong>进行<strong>批处理</strong>和<strong>流处理</strong></li>
+<li>Apache Beam 提供了一套<strong>统一的 API</strong> 来处理这两种数据处理模式<ul>
+<li><strong>专注于数据处理的逻辑</strong>上，而不是花时间在对两种数据处理模式的差异的维护上</li>
+</ul>
+</li>
+<li>将<strong>算法逻辑</strong>与<strong>底层运行环境</strong>解耦<ul>
+<li>通过 Beam 提供的 API 写好数据处理逻辑后</li>
+<li>处理逻辑可以<strong>不做任何修改</strong>，直接放到任何<strong>支持 Beam API 的底层系统</strong>上运行 - 类似于 <strong>SQL</strong></li>
+<li>支持 Beam API 的底层系统 - <strong>Runner</strong> - Apache <strong>Spark</strong> &#x2F; Apache <strong>Flink</strong></li>
+</ul>
+</li>
+<li>现阶段 Apache Beam 支持的语言 - <strong>Java &#x2F; Python &#x2F; Golang</strong></li>
+</ol>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-apache-beam-language.webp" alt="bigdata-apache-beam-language"></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2024/09/23/bigdata-beam-context/">https://blog.zhongmingmao.top/2024/09/23/bigdata-beam-context/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/big-data/">Big Data</a><a class="post-meta__tags" href="/tags/beam/">Beam</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2024/09/22/bigdata-spark-flink/" title="Big Data - Spark + Flink"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-flink.jpeg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Big Data - Spark + Flink</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2024/09/22/bigdata-spark-flink/" title="Big Data - Spark + Flink"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-flink.jpeg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-22</div><div class="title">Big Data - Spark + Flink</div></div></a></div><div><a href="/2024/09/21/bigdata-spark-structured-streaming/" title="Spark - Structured Streaming"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-structured-streaming.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-21</div><div class="title">Spark - Structured Streaming</div></div></a></div><div><a href="/2024/09/20/bigdata-spark-streaming/" title="Spark - Streaming"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-streaming.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-20</div><div class="title">Spark - Streaming</div></div></a></div><div><a href="/2024/09/19/bigdata-spark-sql/" title="Spark - SQL"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-sql.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-19</div><div class="title">Spark - SQL</div></div></a></div><div><a href="/2024/09/18/bigdata-spark-rdd/" title="Spark - RDD"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-rdd.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-18</div><div class="title">Spark - RDD</div></div></a></div><div><a href="/2024/09/17/bigdata-spark-overview/" title="Spark - Overview"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-09-17</div><div class="title">Spark - Overview</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">593</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">185</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">76</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#MapReduce"><span class="toc-number">1.</span> <span class="toc-text">MapReduce</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E6%80%9D%E6%83%B3"><span class="toc-number">1.1.</span> <span class="toc-text">架构思想</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.2.</span> <span class="toc-text">计算模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%92%E6%97%B6%E4%BB%A3%E6%84%8F%E4%B9%89"><span class="toc-number">1.3.</span> <span class="toc-text">划时代意义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8D%E8%B6%B3"><span class="toc-number">1.4.</span> <span class="toc-text">不足</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#FlumeJava"><span class="toc-number">2.</span> <span class="toc-text">FlumeJava</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Apache-Beam"><span class="toc-number">3.</span> <span class="toc-text">Apache Beam</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/09/23/bigdata-beam-context/" title="Beam - Context"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-beam-context.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Beam - Context"/></a><div class="content"><a class="title" href="/2024/09/23/bigdata-beam-context/" title="Beam - Context">Beam - Context</a><time datetime="2024-09-22T16:06:25.000Z" title="Created 2024-09-23 00:06:25">2024-09-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/09/22/bigdata-spark-flink/" title="Big Data - Spark + Flink"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-flink.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Big Data - Spark + Flink"/></a><div class="content"><a class="title" href="/2024/09/22/bigdata-spark-flink/" title="Big Data - Spark + Flink">Big Data - Spark + Flink</a><time datetime="2024-09-21T16:06:25.000Z" title="Created 2024-09-22 00:06:25">2024-09-22</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/09/21/bigdata-spark-structured-streaming/" title="Spark - Structured Streaming"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-structured-streaming.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spark - Structured Streaming"/></a><div class="content"><a class="title" href="/2024/09/21/bigdata-spark-structured-streaming/" title="Spark - Structured Streaming">Spark - Structured Streaming</a><time datetime="2024-09-20T16:06:25.000Z" title="Created 2024-09-21 00:06:25">2024-09-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/09/20/bigdata-spark-streaming/" title="Spark - Streaming"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-streaming.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spark - Streaming"/></a><div class="content"><a class="title" href="/2024/09/20/bigdata-spark-streaming/" title="Spark - Streaming">Spark - Streaming</a><time datetime="2024-09-19T16:06:25.000Z" title="Created 2024-09-20 00:06:25">2024-09-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/09/19/bigdata-spark-sql/" title="Spark - SQL"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://big-data-1253868755.cos.ap-guangzhou.myqcloud.com/bigdata-spark-sql.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spark - SQL"/></a><div class="content"><a class="title" href="/2024/09/19/bigdata-spark-sql/" title="Spark - SQL">Spark - SQL</a><time datetime="2024-09-18T16:06:25.000Z" title="Created 2024-09-19 00:06:25">2024-09-19</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2024 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, ''],
+        insertScript: [200, () => {
+          document.querySelectorAll('mjx-container').forEach(node => {
+            if (node.hasAttribute('display')) {
+              btf.wrap(node, 'div', { class: 'mathjax-overflow' })
+            } else {
+              btf.wrap(node, 'span', { class: 'mathjax-overflow' })
+            }
+          });
+        }, '', false]
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
