@@ -1,0 +1,3427 @@
+---
+title: Observability - Prometheus
+mathjax: true
+date: 2025-01-02 00:06:25
+cover: https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/prometheus.webp
+categories:
+  - Cloud Native
+  - Observability
+tags:
+  - Cloud Native
+  - Observability
+  - Prometheus
+---
+
+# 介绍
+
+## 概览
+
+### 特性
+
+1. 多维度的数据模型，支持通过**指标名称**和**键值对**标识时间序列数据
+2. **PromQL**，一种利用维度的灵活查询语言
+3. 不依赖分布式存储；自治的单个服务器节点
+4. 通过 **HTTP 拉模式**采集时间序列数据
+5. 支持通过**中间代理推送**时间序列
+6. 通过**服务发现**或**静态配置**来发现 **Target**（采集目标）
+7. 支持多种**图形绘制**和**仪表盘**功能
+
+<!-- more -->
+
+### 指标
+
+1. **指标**指的是**数值测量**
+2. **时间序列**指的是**随时间变化**的记录
+
+### 组件
+
+1. 主要的 **Prometheus 服务器**，用于**抓取**和**存储**时间序列数据
+2. 用于进行**代码埋点**的应用程序客户端库
+3. 用于支持**短暂任务**的**推送**网关
+4. 专门用于服务（如 HAProxy、StatsD、Graphite 等）的 **Exporter**（导出器）
+5. 处理警报的 **Alertmanager**
+6. 各种支持工具
+
+### 架构
+
+![102356477-1725256421911-aaab6cce-ed46-4fa8-992e-482cb8002a2f](/Users/zhongmingmao/data/typora/102356477-1725256421911-aaab6cce-ed46-4fa8-992e-482cb8002a2f.png)
+
+1. Prometheus 从被埋点的工作负载中**抓取**指标
+   - 这一过程通过**直接**或**间接**地通过 Pushgateway（位于架构中间的推送网关，用于短暂的工作负载）来进行
+2. Prometheus 将所有抓取的样本存储在本地，并**评估规则**（rules）来聚合现有数据**生成新的时间序列**或将数据用于**生成告警**
+3. 这些数据能够被 Grafana 或其他 API 消费者用于进行可视化操作
+
+## 入门
+
+### 配置
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+```
+
+1. global 块控制 Prometheus 服务器的全局配置
+   - **scrape_interval** 控制 Prometheus 向 **Target** 采集的频率，可以给单个 Target 覆盖此设置
+   - **evaluation_interval** 控制 Prometheus **规则评估**（rules evaluation）的频率
+     - Prometheus 使用**规则**来**创建新的时间序列**，并**生成告警**（alert）
+2. rule_files 指定要 Prometheus 服务器加载的规则文件位置
+3. scrape_configs 块控制 Prometheus 要监控的资源
+   - 由于 Prometheus 自身也作为 HTTP 端点暴露数据，因此它可以采集自身的指标和监控自身的健康状况 - **自监控**
+
+### 启动
+
+```
+$ ./prometheus --config.file=prometheus.yml
+```
+
+![image-20250430171028937](/Users/zhongmingmao/data/typora/image-20250430171028937.png)
+
+> http://localhost:9090
+
+![image-20250430171136324](/Users/zhongmingmao/data/typora/image-20250430171136324.png)
+
+> http://localhost:9090/metrics
+
+![image-20250430171217739](/Users/zhongmingmao/data/typora/image-20250430171217739.png)
+
+### 表达式
+
+> promhttp_metric_handler_requests_total - Prometheus 服务器已经处理的 **/metrics** 请求总数
+
+![image-20250430171618900](/Users/zhongmingmao/data/typora/image-20250430171618900.png)
+
+1. 上述表达式应该返回**不同的时间序列**（以及每个时间序列记录的**最新值**）
+2. 所有的**序列**都应该具有**相同的指标名称** promhttp_metric_handler_requests_total，它们有**不同的标签**，这些标签对应不同的请求状态
+
+> 只对 HTTP 代码为 200 的请求感兴趣
+
+![image-20250430171959164](/Users/zhongmingmao/data/typora/image-20250430171959164.png)
+
+> 计算返回的**时间序列数量**
+
+![image-20250430172121652](/Users/zhongmingmao/data/typora/image-20250430172121652.png)
+
+### UI
+
+> rate(promhttp_metric_handler_requests_total{code="200"}[1m]) - 采集的 Prometheus 每秒返回代码 200 的 HTTP **请求率**
+
+![image-20250430172526552](/Users/zhongmingmao/data/typora/image-20250430172526552.png)
+
+## FAQ
+
+### Pull vs Push
+
+> 拉取式 HTTP 有许多优势
+
+1. 可以根据需要启动额外的监控实例
+2. 更容易且更可靠地判断 **Target** 是否离线
+3. 可以**手动访问目标**并使用 Web 浏览器检查其健康状况
+
+### Logs to Prometheus
+
+1. Logs 应该使用 **Grafana Loki** 或 **OpenSearch** 之类的工具
+2. Prometheus 是收集和处理**指标**的系统，而不是**事件**记录系统
+
+### UTC
+
+1. 为了避免任何时间区混淆，在 Prometheus 的**所有组件内部**决定只使用 **Unix 时间戳**并使用 **UTC** 用于时间展示用途
+2. **时区选择**可以被引入到**用户界面**中
+
+### 64-bit floats
+
+1. 只使用 **64 位浮点数**以**简化设计**
+2. **IEEE 754 双精度二进制浮点格式**支持只到 **2^53** 至 **2^63** 之间的**整数精度**
+3. 原则上，Prometheus 应该实现支持**不同的采样值类型**，但这目前并不是**优先**事项
+   - 包括某种**大整数类型**，支持超过 64 位的更多精度
+   - 即使 **Counter** 每秒递增**一百万次**，它也只会在超过 **285 年**后遇到**精度问题**
+
+## 术语
+
+### 告警
+
+1. 告警是由 Prometheus 中激活（**firing**）的**告警规则**产生的
+2. 告警由 Prometheus 发送给 **Alertmanager**
+
+### Alertmanager
+
+1. **接收告警**，将其**聚合**到**组**中，**去重**，应用**静默**（silences），**限流**，然后将**通知**发送给电子邮件、Pagerduty、Slack 等通信媒介
+
+### 桥接器
+
+1. 桥接器是一种组件，它从**客户端库**获取**样本**并暴露给**非 Prometheus 监控系统**
+2. Python、Go 和 Java 客户端可以将指标导出到 **Graphite**
+
+### 客户端库
+
+1. 客户端库是在某种**语言**（如 Go、Java、Python、Ruby）中的一个库，能够得直接在代码中获取指标变得更加容易
+2. 可以编写用于从其他系统**拉取**指标的自定义 **Collector**（收集器），并将这些指标暴露给 Prometheus
+
+### Collector
+
+1. Collector（收集器）是 Exporter 中表示一组指标的部分
+2. 可以是**单个指标**（如果它是直接注入的一部分的话）或者**多个指标**（从其他系统拉取指标时）
+
+### 直接注入
+
+1. 直接注入（direct instrumentation）是在程序**源代码**中作为代码的一部分添加的代码注入标准
+
+### 端点
+
+1. **指标的来源**，可以通过采集获取，这通常对应于**单个进程**
+
+### Exporter
+
+1. Exporter（指标导出器） 是在要获得指标的应用程序**周围**运行的二进制文件
+2. Exporter 通过将**非 Prometheus 格式**中暴露的指标转换为 Prometheus 支持的格式来暴露 Prometheus 指标
+
+### 实例
+
+1. 实例是一个**唯一标识 Target**（采集目标）的**标签**
+
+### 采集任务
+
+1. 具有**相同目的**的**一组 Target**，例如为了**可伸缩性**和**可靠性**监控**一组类似进程**，称为**采集作业**或**采集任务**（job）
+
+### 通知
+
+1. 通知代表一组**一个或多个告警**，并由 **Alertmanager** 发送给电子邮件、Pagerduty、Slack 等
+
+### Promdash
+
+1. Promdash 是 Prometheus 系统的**本地仪表板构建器**，已被弃用并被 **Grafana** 取代
+
+### Prometheus
+
+1. Prometheus 通常指的是 Prometheus 系统的**主二进制文件**
+2. Prometheus 也可能指**整个 Prometheus 监控系统**
+
+### PromQL
+
+1. PromQL 是 Prometheus 查询语言
+2. PromQL 允许执行一系列操作，包括**聚合**、**切片**、**分析**、**预测**和**连接**
+
+### Pushgateway
+
+1. Pushgateway **持久化**来自**批处理作业**的**最近推送的指标**
+2. Pushgateway 允许 Prometheus 在**作业终止后**依旧能够采集它们的指标
+
+### 记录规则
+
+1. 记录规则（recording rules）**预先计算**经常需要或消耗计算**昂贵资源**的**表达式**，并将其**结果**保存为新的一组**时间序列**
+
+### Remote Read
+
+1. Remote read（远程读取） 是 Prometheus 的一个功能，允许在查询中**透明**地从其他系统（如**长期存储**）**读取时间序列**
+
+### Remote Read 适配器
+
+1. 并非所有系统都**直接支持** remote read
+2. Remote read 适配器位于 **Prometheus** 和**其他系统**之间，将时间序列请求和响应转换为它们之间的格式
+
+### Remote Read 端点
+
+1. 当进行 remote read 时，Prometheus 与之通信的是 remote read 端点
+
+### Remote Write
+
+1. Remote write（远程写入）是 Prometheus 的一个功能，可以将**处理后**的样本**实时发送**到其他系统（如**长期存储系统**）
+
+### Remote Write 适配器
+
+1. 并非所有系统都**直接支持** remote write
+2. Remote write 适配器位于 **Prometheus** 和**其他系统**之间，将 remote write 的样本**转换**为其他系统能够理解的格式
+
+### Remote Write 端点
+
+1. 当进行 remote write 时，与 Prometheus 通信的是 remote write 端点
+
+### 样本
+
+1. **样本**是在**时间序列**中**时间点**上的**单个值**
+2. 在 Prometheus 中，每个样本包含一个 **float64 值**和一个**毫秒级精度的时间戳**
+
+### 静默
+
+1. 在 **Alertmanager** 中的静默（silence）阻止了**匹配**该**静默标签**的**告警**被包含在**通知**中
+
+### Target
+
+1. Target（采集目标）定义要进行采集的对象
+2. 应用什么**标签**，连接所需的任何**身份验证**，或其他定义**指标采集如何进行**的信息
+
+### 时间序列
+
+> **Metrics + Labels**
+
+1. Prometheus 的时间序列是属于**同一度量标准**和**相同标记维度集**的**时间戳打标值（timestamped values）流**
+2. Prometheus 以时间序列的形式**存储**所有数据
+
+# 概念
+
+## 数据模型
+
+1. Prometheus 基本上会把**所有数据**存储为**时间序列**：属于**同一指标**和**相同标签维度**的**时间戳**打标值（**timestamped values**）流
+2. 除了**存储**的时间序列外，Prometheus 可能会**生成查询结果**作为**临时衍生时间序列**
+
+### 指标
+
+> 每个时间序列通过其**指标名称**和**可选的关键值对**（即 **labels**，称为**标签**）进行**唯一标识**
+
+#### 指标名称
+
+1. 指定**系统测量**的**一般特性**（例如 http_requests_total - 接收到的 HTTP 请求总数）
+2. 指标名称可包含 **ASCII 字母**、**数字**、**下划线**和**冒号**
+   - 它必须匹配正则表达式 `[a-zA-Z_:][a-zA-Z0-9_:]*`
+   - **冒号**保留用于用户定义的**记录规则**
+     - 它们不应被 **Exporter** 或直接注入（**direct instrumentation**）使用
+     - `[a-zA-Z_][a-zA-Z0-9_]*`
+
+#### 指标标签
+
+1. 使 Prometheus 的**维度数据模型**能够识别具有**相同指标名称**的任意给定的**标签组合**
+   - 它标识了该指标的**特定维度**，使用**查询语言**可以根据这些维度进行**过滤**和**聚合**
+2. 任何标签值的变化，包括**添加或移除标签**，都将**创建**一个**新的时间序列**
+3. 标签可包含 ASCII 字母、数字以及下划线
+   - 它们必须匹配正则表达式 - `[a-zA-Z_][a-zA-Z0-9_]*`
+4. 开始以 `__`（两个 `_`）的标签名用于 **Prometheus 内部**使用
+5. 标签名可以包含**任何 Unicode 字符**
+6. 具有**空标签值的标签**被视为与**不存在的标签**等效
+
+### 样本
+
+1. 指标样本构成了实际的时间序列数据，每个样本包括
+   - 一个 **float64 值**
+   - **毫秒精度**的时间戳
+2. 从 Prometheus **v2.40** 版本开始，**实验性**支持**原生 Histogram**（native histogram）
+   - 现在，**样本值**可以以**完整的 Histogram** 的形式出现，而不仅仅是简单的 **float64**
+
+### 符号表示
+
+> 给定**一个指标名称**和**一组标签**，时间序列经常使用以下符号表示法进行标识，**OpenTSDB** 也使用同样的符号表示法
+
+```
+<指标名称>{<标签名称>=<标签值>，...}
+```
+
+## 指标类型
+
+1. Prometheus 客户端库提供了四种核心指标类型
+   - 这些类型目前**仅在客户端库**（以适应特定的使用场景）和网络协议中区分
+2. **Prometheus 服务器**只将所有数据**扁平化**为**无类型**的时间序列，**尚未利用**这些**类型信息**
+   - 在未来，这一点可能会**改变**
+
+### Counter
+
+1. Counter（计数器）是一种**累积指标**，表示**单调递增** Counter，其值只能**增加**或在**重启时重置为零**
+
+### Gauge
+
+1. Gauge（测量值）是表示单个数值的指标，可以**任意上升和下降**，通常用于**瞬时测量值**
+
+### Histogram
+
+1. Histogram（直方图）通过配置**桶**来**采样观察值**并对它们进行**计数**，还提供**所有观察值**的**总和**
+2. 具有**基础指标名称**为 `<basename>` 的 Histogram 在**采集期间**暴露**多个时间序列**
+   - 对**观察桶**（observation buckets）的**累积 Counter**，暴露为 `<basename>_bucket{le="<上界（包含）>"}`
+   - **所有观察值的总和**，暴露为 `<basename>_sum`
+   - **观察事件的计数**，暴露为 `<basename>_count` - 与上述 `<basename>_bucket{le="+Inf"}` 相同
+3. 可以使用 `Histogram_quantile()` 函数从 Histogram 或 Histogram 的聚合中计算**分位数**，Histogram 也适用于计算 **Apdex 得分**
+4. Histogram 是**累积**的
+5. Prometheus 从 **v2.40** 开始，支持**原生 Histogram**（native histogram）实验性功能
+   - 原生 Histogram **只需要一个时间序列**，其中包含额外的**桶**、**总和**和**观察次数**的计数
+   - 原生 Histogram 能够在**成本大幅降低**的情况下获得**更高的解析度**
+
+### Summary
+
+1. 类似于 Histogram，Summary（汇总）也进行**观察值采样**
+   - 它不仅提供**观察次数的总数**和**所有观察值的总和**，还会在**滑动时间窗口**内计算**可配置的分位数**
+2. 具有**基础指标名称**为 `<basename>` 的 Summary 在**采集期间**暴露**多个时间序列**
+   - 流式 `φ-分位数`（0 ≤ φ ≤ 1），暴露为 `<basename>{quantile="<φ>"}`
+   - **所有观察值的总和**，暴露为 `<basename>_sum`
+   - **观察事件的计数**，暴露为 `<basename>_count`
+
+## 采集
+
+1. 在 Prometheus 术语中，可以采集的端点被称为**实例**，它通常对应于**单个进程**
+2. 具有**相同目的**的**一组实例**，例如为了**伸缩**或**可靠性**而复制出来的进程，被称为**采集任务**（Job）
+
+> 自动生成的**标签**和**时间序列**
+
+1. 当 Prometheus 采集 Target 时，它会**自动附加一些标签**到采集的时间序列，以**识别**采集的 Target
+   - **job** - 配置的采集任务名称，Target 属于该采集任务
+   - **instance** - 目标 URL 中的 `<host>:<port>` 部分
+2. 如果这些标签**已经在采集的数据中存在**，则行为取决于 **honor_labels** 配置选项
+3. 对于每个实例采集，Prometheus 存储以下时间序列的样本
+   - `up{job="<job-name>", instance="<instance-id>"}`
+     - 如果**实例健康**（即**可达**），则值为 **1**；如果**采集失败**，则值为 **0**
+     - up 时间序列对实例**可用性监控**非常有用
+   - `scrape_duration_seconds{job="<job-name>", instance="<instance-id>"}`
+     - **采集的持续时间**
+   - `scrape_samples_scraped{job="<job-name>", instance="<instance-id>"}`
+     - **Target 暴露的样本数**
+   - `scrape_samples_post_metric_relabeling{job="<job-name>", instance="<instance-id>"}`
+     - 应用指标**重标签**（relabel）后**剩余的样本数**
+   - `scrape_series_added{job="<job-name>", instance="<instance-id>"}`
+     - 本次采集中**新增的序列数**
+4. 通过启用 **extra-scrape-metrics** 特性标志，可以获得以下额外指标
+   - `scrape_timeout_seconds{job="<job-name>", instance="<instance-id>"}`
+     - 为 Target 配置的 **scrape_timeout**
+   - `scrape_sample_limit{job="<job-name>", instance="<instance-id>"}`
+     - 为 Target 配置的 **sample_limit**
+     - 如果未配置限制，则返回 **0**
+   - `scrape_body_size_bytes{job="<job-name>", instance="<instance-id>"}`
+     - 如果采集成功，则为最新的采集响应的**未压缩大小**
+     - 因为超出 **body_size_limit** 导致采集失败的情况报告 **-1**，其他采集失败报告 **0**
+
+# Prometheus Server
+
+## 快速开始
+
+### 自监控
+
+```yaml
+global:
+  scrape_interval: 15s
+  # 将这些标签附加到与外部系统通信时（联邦、远程存储、Alertmanager）的任何时间序列或告警
+  external_labels:
+    monitor: "codelab-monitor"
+
+scrape_configs:
+  - job_name: "prometheus"
+    # 覆盖全局默认设置，每 5 秒抓取一次 Target
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+```
+
+### 启动
+
+> 默认情况下，Prometheus 将数据库存储在 **./data**（--storage.tsdb.path）
+
+```
+$ ./prometheus --config.file=prometheus.yml
+```
+
+![image-20250502110227729](/Users/zhongmingmao/data/typora/image-20250502110227729.png)
+
+### 表达式
+
+> prometheus_target_interval_length_seconds - 抓取 Target 的**实际时间间隔**
+> 返回多个**不同的时间序列**（以及每个时间序列记录的**最新值**）
+> 每个都带有**相同的指标名称**，但具有**不同的标签**，这些标签区分**不同的百分位数**和 **Target 实际的抓取间隔**
+
+![image-20250502111409347](/Users/zhongmingmao/data/typora/image-20250502111409347.png)
+
+> 仅对 99% 的延迟感兴趣
+
+```
+prometheus_target_interval_length_seconds{quantile="0.99"}
+```
+
+> 要计算返回的**时间序列数量**
+
+```
+count(prometheus_target_interval_length_seconds)
+```
+
+### UI
+
+> rate(prometheus_tsdb_head_chunks_created_total[1m]) - Prometheus 数据块的创建速率
+
+![image-20250502133652094](/Users/zhongmingmao/data/typora/image-20250502133652094.png)
+
+### Node Exporter
+
+> 在单独的终端中，分别启动 3 个示例 Target
+
+```
+./node_exporter --web.listen-address 127.0.0.1:8080
+./node_exporter --web.listen-address 127.0.0.1:8081
+./node_exporter --web.listen-address 127.0.0.1:8082
+```
+
+![image-20250502134118877](/Users/zhongmingmao/data/typora/image-20250502134118877.png)
+
+### 配置
+
+1. 将所有三个端点分组到一个名为 **node** 的采集任务中
+2. 前两个端点是生产实例，而第三个端点代表了一个灰度实例 - 向一组端点添加**额外的标签**
+
+```yaml
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: "codelab-monitor"
+
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "node"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:8080", "localhost:8081"]
+        labels:
+          group: "production"
+      - targets: ["localhost:8082"]
+        labels:
+          group: "canary"
+```
+
+![image-20250502134753408](/Users/zhongmingmao/data/typora/image-20250502134753408.png)
+
+### 聚合
+
+> 配置规则以**聚合**抓取的数据生成**新的时间序列**
+
+1. 聚合超过**数千个时间序列**的**查询**可能会在**临时计算**时变得**十分缓慢**
+2. 为了**提高效率**，Prometheus 可以通过配置记录规则（**recording rules**）将**表达式**转换为**持久化的新时间序列**
+3. 对每个实例（但保留 **job**、**instance** 和 **mode** 维度）
+   - 在**过去 5 分钟内**平均的 CPU 时间( **node_cpu_seconds_total** )的**每秒变化率**感兴趣
+
+```
+avg by (job, instance, mode) (rate(node_cpu_seconds_total[5m]))
+```
+
+![image-20250502135339993](/Users/zhongmingmao/data/typora/image-20250502135339993.png)
+
+1. 要将由此**产生的时间序列**结果**记录**到名为 `job_instance_mode:node_cpu_seconds:avg_rate5m` 的**新指标**中
+2. 请创建一个包含以下**记录规则**的文件并将其保存为 `prometheus.rules.yml`
+
+```yaml
+groups:
+  - name: cpu-node
+    rules:
+      - record: job_instance_mode:node_cpu_seconds:avg_rate5m
+        expr: avg by (job, instance, mode) (rate(node_cpu_seconds_total[5m]))
+```
+
+> 要使 Prometheus 加载这条新规则，请在 prometheus.yml 中添加 **rule_files** 声明
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s # 每 15 秒计算一次规则
+  # 将这些额外标签附加到由此 Prometheus 实例收集的所有时间序列
+  external_labels:
+    monitor: "codelab-monitor"
+
+rule_files:
+  - "prometheus.rules.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "node"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:8080", "localhost:8081"]
+        labels:
+          group: "production"
+      - targets: ["localhost:8082"]
+        labels:
+          group: "canary"
+```
+
+> job_instance_mode:node_cpu_seconds:avg_rate5m - 新时间序列
+
+![image-20250502140020903](/Users/zhongmingmao/data/typora/image-20250502140020903.png)
+
+### 热更
+
+1. Prometheus 实例可以在**不重新启动进程**的情况下通过使用 **SIGHUP 信号**重新加载其配置
+2. `kill -s SIGHUP <PID>`
+
+### 优雅关闭
+
+1. 建议使用 **SIGTERM 信号**来安全地关闭 Prometheus 实例
+2. `kill -s SIGTERM <PID>`
+
+## 安装
+
+### Docker
+
+1. Prometheus 镜像使用**卷**来存储实际的指标
+2. 对于**生产**中的部署，强烈建议使用 **named volume** 来简化 Prometheus 升级时的数据管理
+
+#### 命令行参数
+
+> Docker 镜像使用**默认的命令行参数**启动
+
+```dockerfile
+ARG ARCH="amd64"
+ARG OS="linux"
+FROM quay.io/prometheus/busybox-${OS}-${ARCH}:latest
+LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
+LABEL org.opencontainers.image.source="https://github.com/prometheus/prometheus"
+
+ARG ARCH="amd64"
+ARG OS="linux"
+COPY .build/${OS}-${ARCH}/prometheus        /bin/prometheus
+COPY .build/${OS}-${ARCH}/promtool          /bin/promtool
+COPY documentation/examples/prometheus.yml  /etc/prometheus/prometheus.yml
+COPY LICENSE                                /LICENSE
+COPY NOTICE                                 /NOTICE
+COPY npm_licenses.tar.bz2                   /npm_licenses.tar.bz2
+
+WORKDIR /prometheus
+RUN chown -R nobody:nobody /etc/prometheus /prometheus && chmod g+w /prometheus
+
+USER       nobody
+EXPOSE     9090
+VOLUME     [ "/prometheus" ]
+ENTRYPOINT [ "/bin/prometheus" ]
+CMD        [ "--config.file=/etc/prometheus/prometheus.yml", \
+             "--storage.tsdb.path=/prometheus" ]
+```
+
+#### 卷挂载
+
+> 运行以下命令从主机挂载 **prometheus.yml** 文件
+
+```
+docker run \
+    -p 9090:9090 \
+    -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
+    prom/prometheus
+```
+
+> 运行以下命令将**包含 prometheus.yml 的目录**挂载到 **/etc/prometheus**
+
+```
+docker run \
+    -p 9090:9090 \
+    -v /path/to/config:/etc/prometheus \
+    prom/prometheus
+```
+
+#### 持久卷
+
+1. Prometheus 数据存储在**容器内**的 **/prometheus 目录**中，因此每次**容器重启**时**数据**都会被**清除**
+2. 要保存数据，需要设置持久化存储（**persistent storage**）以供容器使用
+
+> 在运行 Prometheus 容器添加持久卷（**persistent volume**）
+
+```shell
+# 创建用于存储数据的持久卷
+docker volume create prometheus-data
+# 启动 Prometheus 容器
+docker run \
+    -p 9090:9090 \
+    -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
+    -v prometheus-data:/prometheus \
+    prom/prometheus
+```
+
+### 配置管理系统
+
+1. Ansible
+2. Chef
+3. Puppet
+4. SaltStack
+
+## 配置
+
+1. Prometheus 是通过**命令行参数**和**配置文件**进行配置的
+   - **命令行参数**用于配置**不可变的系统参数**（如**存储位置**、**磁盘和内存中保留的数据量**等）
+   - **配置文件**则定义了与**采集任务**和**实例**以及要加载的规则文件（**记录规则**配置）相关的一切
+2. Prometheus 可在**运行时重新加载**其配置，如果**新配置不正确**，则**不会应用更改**
+   - 触发配置重新加载的方法是向 Prometheus 进程发送 **SIGHUP 信号**
+   - 或者向 **-/reload** 端点发送 **HTTP POST 请求** - 当启用了 `--web.enable-lifecycle` 参数时
+
+### 配置文件
+
+1. 要指定要加载的配置文件，请使用 `--config.file` 标志
+2. **方括号**表示**参数可选**，对于**非列表参数**，值设置为其指定的**默认值**
+
+> **通用占位符**定义
+
+| 占位符          | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| `<boolean>`     | 可以取值为 **true** 或 **false** 的布尔值                    |
+| `<duration>`    | 例如 **1d**、**1h30m**、**5m**、**10s**                      |
+| `<filename>`    | **当前工作目录**中的有效路径                                 |
+| `<float>`       | 浮点数                                                       |
+| `<host>`        | 由**主机名**或 **IP** 后跟**可选端口号**组成的有效字符串     |
+| `<int>`         | 整数值                                                       |
+| `<labelname>`   | 匹配正则表达式 `[a-zA-Z_][a-zA-Z0-9_]*` 的字符串<br />源标签中的任何其他不支持的字符应转换为**下划线**<br />`app.kubernetes.io/name` -> `app_kubernetes_io_name` |
+| `<labelvalue>`  | 由 **Unicode** 字符组成的字符串                              |
+| `<path>`        | 有效的 **URL 路径**                                          |
+| `<scheme>`      | 可以取值为 **http** 或 **https** 的字符串                    |
+| `<secret>`      | 像密码这样的常规字符串，**秘文**                             |
+| `<string>`      | 常规字符串                                                   |
+| `<size>`        | 以**字节**为单位的大小，例如 **512MB**<br />需要单位，支持的单位 - **B**、**KB**、**MB**、**GB**、**TB**、**PB**、**EB** |
+| `<tmpl_string>` | 在使用前**被模板展开**的字符串                               |
+
+#### 全局配置
+
+> 全局配置指定了适用于所有其他配置上下文的参数，它们也充当其他配置部分的默认值
+
+```yaml
+global:
+  # 默认的抓取频率。
+  [ scrape_interval: <duration> | default = 1m ]
+
+  # 抓取请求超时的时间长度。
+  [ scrape_timeout: <duration> | default = 10s ]
+
+  # 与客户端协商抓取期间使用的协议。
+  # 支持的值（严格区分大小写）：PrometheusProto、OpenMetricsText0.0.1、OpenMetricsText1.0.0、PrometheusText0.0.4。
+  # 当启用 native_histogram 特性标志时，默认值会变为 [PrometheusProto、OpenMetricsText1.0.0、OpenMetricsText0.0.1、PrometheusText0.0.4]。
+  [ scrape_protocols: [<string>, ...] | default = [OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4] ]
+
+  # 默认的规则评估频率。
+  [ evaluation_interval: <duration> | default = 1m ]
+
+  # 确保底层指标已接收时，针对特定组的规则评估时间戳的偏移量。
+  # 指标可用性延迟更有可能发生在 Prometheus 作为 remote write 目标运行时，但也可能在抓取异常时发生。
+  [ rule_query_offset: <duration> | default = 0s ]
+
+  # 与外部系统通信时要添加的标签（联邦化、远程存储、Alertmanager）。
+  external_labels:
+    [ <labelname>: <labelvalue> ... ]
+
+  # 记录 PromQL 查询的日志文件。
+  # 重新加载配置时会重新打开文件。
+  [ query_log_file: <string> ]
+
+  # 超过此大小的未压缩响应体将导致抓取失败。0 表示无限制。示例：100MB。
+  # 这是一个实验功能，此行为可能会在未来改变或删除。
+  [ body_size_limit: <size> | default = 0 ]
+
+  # 每个抓取允许接受的样本数限制。
+  # 在指标重标签（relabel）后，如果样本超过这个数量，整个抓取将被视为失败。0 表示无限制。
+  [ sample_limit: <int> | default = 0 ]
+
+  # 每个抓取允许接受的样本标签数量限制。
+  # 在指标重标签后，如果标签超过这个数量，整个抓取将被视为失败。0 表示无限制。
+  [ label_limit: <int> | default = 0 ]
+
+  # 每个抓取允许接受的标签名称长度限制。
+  # 在指标重标签后，如果标签名称超过这个长度，整个抓取将被视为失败。0 表示无限制。
+  [ label_name_length_limit: <int> | default = 0 ]
+
+  # 每个抓取允许接受的标签值长度限制。
+  # 在指标重标签后，如果标签值超过这个长度，整个抓取将被视为失败。0 表示无限制。
+  [ label_value_length_limit: <int> | default = 0 ]
+
+  # 每个抓取配置允许接受的唯一 Target 数量限制。
+  # 在 Target 重标签后，如果 Target 超过这个数量，Prometheus 将标记这些 Target 为失败而不进行抓取。
+  # 0 表示无限制。这是一个实验功能，此行为可能在未来改变。
+  [ target_limit: <int> | default = 0 ]
+
+  # 每个抓取配置允许保留的被重标签丢弃的 Target 数量限制。
+  # 0 表示无限制。
+  [ keep_dropped_targets: <int> | default = 0 ]
+
+  # 指定指标和标签名称验证方案。要么为空或“legacy”（字母、数字、冒号和下划线）；或者“utf8”（全面的 UTF-8 支持）。
+  [ metric_name_validation_scheme <string> | default "legacy" ]
+
+runtime:
+  # 配置 Go 垃圾收集器 GOGC 参数
+  # 见：https://tip.golang.org/doc/gc-guide#GOGC
+  # 降低此数字会增加 CPU 使用率。
+  [ gogc: <int> | default = 75 ]
+
+# 规则文件指定一组通配符。从匹配的所有文件中读取规则和告警。
+rule_files:
+  [ - <filepath_glob> ... ]
+
+# 抓取配置文件指定一组通配符。从匹配的所有文件中读取抓取配置并附加到抓取配置列表。
+scrape_config_files:
+  [ - <filepath_glob> ... ]
+
+# 抓取配置列表。
+scrape_configs:
+  [ - <scrape_config> ... ]
+
+# 告警系统指定与 Alertmanager 相关的设置。
+alerting:
+  alert_relabel_configs:
+    [ - <relabel_config> ... ]
+  alertmanagers:
+    [ - <alertmanager_config> ... ]
+
+# 与remote write功能相关的设置。
+remote_write:
+  [ - <remote_write> ... ]
+
+# 与 OTLP 接收器功能相关的设置。
+otlp:
+  [ promote_resource_attributes: [<string>, ...] | default = [ ] ]
+
+# 与remote read功能相关的设置。
+remote_read:
+  [ - <remote_read> ... ]
+
+# 运行时可重新加载的存储相关设置。
+storage:
+  [ tsdb: <tsdb> ]
+  [ exemplars: <exemplars> ]
+
+# 配置追踪。
+tracing:
+  [ <tracing_config> ]
+```
+
+#### scrape_config
+
+1. scrape_config 部分定义了要抓取的 Target 集合以及描述如何抓取它们的参数
+2. 在一般情况下，一个抓取配置指定单个采集任务，然而，在高级配置中，这可能会有所不同
+3. Target 可以通过 **static_configs** 参数**静态配置**，或者通过**服务发现**机制**动态发现**
+4. 此外，**relabel_configs** 允许在**抓取之前**对任何 Target 及其**标签**进行高级的**修改**行为（重标签）
+
+```yaml
+# 默认分配给由抓取的指标的采集任务名称。
+job_name: <job_name>
+
+# 指定从此采集任务抓取 Target 的频率。
+[ scrape_interval: <duration> | default = <global_config.scrape_interval> ]
+
+# 每次抓取的超时时间。
+[ scrape_timeout: <duration> | default = <global_config.scrape_timeout> ]
+
+# 在与客户端协商抓取时使用的协议类型。
+# 支持的值（区分大小写）：PrometheusProto, OpenMetricsText0.0.1, OpenMetricsText1.0.0, PrometheusText0.0.4。
+[ scrape_protocols: [<string>, ...] | default = <global_config.scrape_protocols> ]
+
+# 是否抓取也是作为本地 Histogram 暴露的经典 Histogram（如果没有启用 --enable-feature=native-histograms，则没有效果）。
+[ scrape_classic_histograms: <boolean> | default = false ]
+
+# Target 上可获取指标的 HTTP 资源路径。
+[ metrics_path: <path> | default = /metrics ]
+
+# `honor_labels` 控制 Prometheus 如何处理抓取数据中已存在的标签与 Prometheus 附加到服务器端的标签（“job”和“instance”标签、手动配置的 Target 标签和由服务发现实现生成的标签）之间的冲突。
+
+# 如果 `honor_labels` 设置为 "true"，则通过保留抓取数据中的标签值并忽略冲突的服务器端标签来解决标签冲突。
+# 如果 `honor_labels` 设置为 "false"，则通过重命名冲突的标签在抓取数据中为 "exported_<original-label>"（例如 "exported_instance"、"exported_job"）并然后附加服务器端标签来解决冲突。
+# 将 `honor_labels` 设置为 "true" 对于诸如联邦化和抓取 Pushgateway 这样的用例非常有用，在这些用例中，所有指定在 Target 上的标签都应被保留。
+
+# 注意任何全局配置的 "external_labels" 不受此设置的影响。在与外部系统通信时，它们总是应用于时间序列不具有给定标签时，并且在其他情况下被忽略。
+
+[ honor_labels: <boolean> | default = false ]
+
+# `honor_timestamps` 控制 Prometheus 是否尊重抓取数据中存在的时间戳。
+
+# 如果 `honor_timestamps` 设置为 "true"，则使用 Target 提供的指标的时间戳。
+# 如果 `honor_timestamps` 设置为 "false"，则忽略 Target 提供的指标的时间戳。
+
+[ honor_timestamps: <boolean> | default = true ]
+
+# `track_timestamps_staleness` 控制 Prometheus 是否跟踪存在明确时间戳的指标的过时性。
+
+# 如果 `track_timestamps_staleness` 设置为 "true"，当指标不再存在或 Target 掉线时，将在 TSDB 中插入过时标记。
+
+[ track_timestamps_staleness: <boolean> | default = false ]
+
+# 配置请求使用的协议方案。
+[ scheme: <scheme> | default = http ]
+
+# 可选的 HTTP URL 参数。
+params:
+  [ <string>: [<string>, ...] ]
+
+# 如果 `enable_compression` 设置为 "false"，Prometheus 将从抓取的 Target 请求未压缩的响应。
+[ enable_compression: <boolean> | default = true ]
+
+# 每次抓取请求上的 `Authorization` 请求头，使用配置的用户名和密码。
+# `password` 和 `password_file` 是互斥的。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# 每次抓取请求上的 `Authorization` 请求头，使用配置的凭据。
+authorization:
+  # 设置请求的认证类型。
+  [ type: <string> | default: Bearer ]
+  # 设置请求的凭据。它与 `credentials_file` 相互排斥。
+  [ credentials: <secret> ]
+  # 从配置的文件中读取请求的凭据。它与 `credentials` 相互排斥。
+  [ credentials_file: <filename> ]
+
+# 可选的 OAuth 2.0 配置。
+# 不能同时与 `basic_auth` 或 `authorization` 使用。
+oauth2:
+  [ <oauth2> ]
+
+# 配置抓取请求是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+
+# 是否启用 HTTP2。
+[ enable_http2: <boolean> | default: true ]
+
+# 配置抓取请求的 TLS 设置。
+tls_config:
+  [ <tls_config> ]
+
+# 可选的代理 URL。
+[ proxy_url: <string> ]
+# 包含 IP、CIDR 表示法、域名的逗号分隔字符串，这些应该从代理中排除。IP 和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量指示的代理 URL（HTTP_PROXY、https_proxy、HTTPs_PROXY、https_proxy 和 no_proxy）
+[ proxy_from_environment: <boolean> | default: false ]
+# 指定在 CONNECT 请求期间发送给代理的自定义头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+
+# 与每个请求一起发送的自定义 HTTP 头部。
+# Prometheus 自己设置的头部无法被覆盖。
+http_headers:
+  # 头部名称。
+  [ <string>:
+    # 头部值。
+    [ values: [<string>, ...] ]
+    # 隐藏在配置页面中的头部值。
+    [ secrets: [<secret>, ...] ]
+    # 从指定的文件读取头部值的文件。
+    [ files: [<string>, ...] ] ]
+
+# Azure 服务发现配置列表。
+azure_sd_configs:
+  [ - <azure_sd_config> ... ]
+
+# Consul 服务发现配置列表。
+consul_sd_configs:
+  [ - <consul_sd_config> ... ]
+
+# DigitalOcean 服务发现配置列表。
+digitalocean_sd_configs:
+  [ - <digitalocean_sd_config> ... ]
+
+# Docker 服务发现配置列表。
+docker_sd_configs:
+  [ - <docker_sd_config> ... ]
+
+# Docker Swarm 服务发现配置列表。
+dockerswarm_sd_configs:
+  [ - <dockerswarm_sd_config> ... ]
+
+# DNS 服务发现配置列表。
+dns_sd_configs:
+  [ - <dns_sd_config> ... ]
+
+# EC2 服务发现配置列表。
+ec2_sd_configs:
+  [ - <ec2_sd_config> ... ]
+
+# Eureka 服务发现配置列表。
+eureka_sd_configs:
+  [ - <eureka_sd_config> ... ]
+
+# 文件服务发现配置列表。
+file_sd_configs:
+  [ - <file_sd_config> ... ]
+
+# GCE 服务发现配置列表。
+gce_sd_configs:
+  [ - <gce_sd_config> ... ]
+
+# Hetzner 服务发现配置列表。
+hetzner_sd_configs:
+  [ - <hetzner_sd_config> ... ]
+
+# HTTP 服务发现配置列表。
+http_sd_configs:
+  [ - <http_sd_config> ... ]
+
+# IONOS 服务发现配置列表。
+ionos_sd_configs:
+  [ - <ionos_sd_config> ... ]
+
+# Kubernetes 服务发现配置列表。
+kubernetes_sd_configs:
+  [ - <kubernetes_sd_config> ... ]
+
+# Kuma 服务发现配置列表。
+kuma_sd_configs:
+  [ - <kuma_sd_config> ... ]
+
+# Lightsail 服务发现配置列表。
+lightsail_sd_configs:
+  [ - <lightsail_sd_config> ... ]
+
+# Linode 服务发现配置列表。
+linode_sd_configs:
+  [ - <linode_sd_config> ... ]
+
+# Marathon 服务发现配置列表。
+marathon_sd_configs:
+  [ - <marathon_sd_config> ... ]
+
+# 空气bnb的Nerve 服务发现配置列表。
+nerve_sd_configs:
+  [ - <nerve_sd_config> ... ]
+
+# Nomad 服务发现配置列表。
+nomad_sd_configs:
+  [ - <nomad_sd_config> ... ]
+
+# OpenStack 服务发现配置列表。
+openstack_sd_configs:
+  [ - <openstack_sd_config> ... ]
+
+# OVHcloud 服务发现配置列表。
+ovhcloud_sd_configs:
+  [ - <ovhcloud_sd_config> ... ]
+
+# PuppetDB 服务发现配置列表。
+puppetdb_sd_configs:
+  [ - <puppetdb_sd_config> ... ]
+
+# Scaleway 服务发现配置列表。
+scaleway_sd_configs:
+  [ - <scaleway_sd_config> ... ]
+
+# Zookeeper Serverset 服务发现配置列表。
+serverset_sd_configs:
+  [ - <serverset_sd_config> ... ]
+
+# Triton 服务发现配置列表。
+triton_sd_configs:
+  [ - <triton_sd_config> ... ]
+
+# Uyuni 服务发现配置列表。
+uyuni_sd_configs:
+  [ - <uyuni_sd_configs> ... ]
+```
+
+#### oauth2
+
+1. 使用**客户端凭据**授权类型的 OAuth 2.0 认证
+2. Prometheus 通过给定的 **client_id** 和 **client_secret** 从指定的端点获取访问令牌
+
+#### docker_sd_config
+
+1. Docker SD 配置允许从 **Docker 引擎**主机检索抓取 Target
+2. 此 SD 会发现**容器**，并为每个容器暴露的**网络 IP** 和**端口**创建 Target
+
+#### dns_sd_config
+
+1. 基于 DNS 的服务发现配置允许指定**一组 DNS 域名**，这些域名将用于**定期查询**以发现 Target 列表
+   - DNS 服务器从 **/etc/resolv.conf** 读取
+2. 此服务发现方法仅支持基本的 **DNS A**、**AAAA**、**MX**、**NS** 和 **SRV** 记录查询，而不支持在 RFC6763 中指定的高级 **DNS-SD** 方法
+
+#### file_sd_config
+
+1. 基于**文件**的服务发现提供了一种更通用的方式来配置**静态 Target**，能够作为**插件**自定义服务发现机制的接口
+2. 它读取一组包含零个或多个 **<static_config>** 的文件
+   - 所有定义的**文件的变化**会通过**磁盘监控检测**，并**立即**被应用
+   - 在监控这些**个别文件**的变化的同时，其**父目录**也会被**隐式**地被监控
+     - 这是为了高效处理原子重命名（**atomic renaming**）和检测匹配配置**通配符**的新文件
+   - 如果父目录包含大量其他文件，则有可能会引起问题
+     - 这是因为这些文件中的每一个都会被监控，即使我们并不关心与它们相关联的事件
+3. 文件可以以 **YAML** 或 **JSON** 格式提供 - 只有**符合格式要求**的变化才会**被应用**
+4. 文件必须包含**静态配置列表**
+
+> JSON
+
+```json
+[
+  {
+    "targets": [ "<host>", ... ],
+    "labels": {
+      "<labelname>": "<labelvalue>", ...
+    }
+  },
+  ...
+]
+```
+
+> YAML
+
+```yaml
+- targets:
+  [ - '<host>' ]
+  labels:
+    [ <labelname>: <labelvalue> ... ]
+```
+
+1. 文件内容会在指定的**刷新间隔**内定期被重新读取
+2. 每个 Target 在**重标签**阶段中有一个元标签 `__meta_filepath`，其值设置为**从该文件提取 Target 的路径**
+
+```yaml
+# 从其中提取 Target 组的文件模式。
+files:
+  [ - <filename_pattern> ... ]
+
+# 重新读取文件的刷新间隔。
+[ refresh_interval: <duration> | default = 5m ]
+```
+
+1. 其中 **<filename_pattern>** 可以是以 **.json**、**.yml** 或 **.yaml** 结尾的路径
+2. 路径的**最后一个部分**可以包含单个 `*`，匹配**任意字符序列**
+
+#### http_sd_config
+
+1. 基于 **HTTP** 的服务发现提供了一种更通用的方式来配置**静态 Target**，能够作为**插件**自定义**服务发现**机制的接口
+2. 它从包含零个或多个 **<static_config>** 的 **HTTP 端点**获取 Target
+   - Target 必须响应 **HTTP 200** 状态码
+   - HTTP 头 **Content-Type** 必须为 **application/json**，主体必须是有效的 **JSON**
+
+> 示例响应体
+
+```json
+[
+  {
+    "targets": [ "<host>", ... ],
+    "labels": {
+      "<labelname>": "<labelvalue>", ...
+    }
+  },
+  ...
+]
+```
+
+1. 该端点在指定的**刷新间隔**内被**周期性**查询
+   - `prometheus_sd_http_failures_total` **Counter** 指标跟踪**刷新失败**的数量
+2. 每个 Target 在**重标签**期间具有元标签 `__meta_url`，其值设置为其从中提取 Target 的 **URL**
+
+```yaml
+# 从哪个 URL 获取 Target。
+url: <string>
+
+# 定期重新查询端点的刷新间隔。
+[ refresh_interval: <duration> | default = 60s ]
+
+# 用于向 API 服务器认证的信息。
+# 注意`basic_auth`、`authorization`和`oauth2`选项是互斥的。
+# `password`和`password_file`是互斥的。
+
+# 可选的 HTTP 基本认证信息。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# 可选的`Authorization`头部配置。
+authorization:
+  # 设置认证类型。
+  [ type: <string> | default: Bearer ]
+  # 设置凭证。与`credentials_file`互斥。
+  [ credentials: <secret> ]
+  # 设置凭证，从配置的文件中读取凭证。与`credentials`互斥。
+  [ credentials_file: <filename> ]
+
+# 可选的 OAuth 2.0 配置。
+oauth2:
+  [ <oauth2> ]
+
+# 可选代理 URL。
+[ proxy_url: <string> ]
+# 包含 IP、CIDR 表示法、域名的逗号分隔字符串，这些应从代理中排除。IP 和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量（HTTP_PROXY、https_proxy、HTTPs_PROXY、https_proxy和no_proxy）指示的代理 URL。
+[ proxy_from_environment: <boolean> | default: false ]
+# 指定在 CONNECT 请求期间发送给代理的头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+
+# 配置是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+
+# 是否启用 HTTP2。
+[ enable_http2: <boolean> | default: true ]
+
+# TLS 配置。
+tls_config:
+  [ <tls_config> ]
+```
+
+#### kubernetes_sd_config
+
+1. Kubernetes SD 配置允许从 **Kubernetes REST API** 检索集群节点的扫描 Target，并始终保持与**集群状态**的**同步**
+2. 可以配置以下 **role** 类型来发现 Target - **node** / **service** / **pod** / **endpoints** / **endpointslice** / **ingress**
+
+##### node
+
+1. node 角色在每个**集群节点**上发现一个 Target，地址默认为 **Kubelet** 的 **HTTP 端口**
+2. Target 地址默认为 **Kubernetes 节点对象**中存在的**第一个地址**，按照**地址类型**顺序排列
+   - NodeInternalIP / NodeExternalIP / NodeLegacyHostIP / NodeHostName
+3. 此外，对于节点，将通过 **api-server** 检索的节点名设置为 **instance** 标签
+
+> 可用的**元标签**
+
+| Label                                                       | Desc                                                         |
+| ----------------------------------------------------------- | ------------------------------------------------------------ |
+| `__meta_kubernetes_node_name`                               | 节点对象的名称                                               |
+| `__meta_kubernetes_node_provider_id`                        | 节点对象的云提供商名称                                       |
+| `__meta_kubernetes_node_label_<labelname>`                  | 节点对象中的每个标签，不支持字符转换为**下划线**             |
+| `__meta_kubernetes_node_labelpresent_<labelname>`           | 对于节点对象中的每个标签返回 **true**<br />不支持的字符转换为下划线 |
+| `__meta_kubernetes_node_annotation_<annotationname>`        | 节点对象中的每个注解                                         |
+| `__meta_kubernetes_node_annotationpresent_<annotationname>` | 对于节点对象中的每个注解返回 true                            |
+| `__meta_kubernetes_node_address_<address_type>`             | 如果存在，则为每个节点地址类型设置的第一个地址               |
+
+##### service
+
+1. service 角色为每个服务的**每个服务端口**发现一个 Target - 通常适用于对服务进行**黑盒监控**
+2. 地址将设置为服务的 **Kubernetes DNS 名称**和相应的**服务端口**
+
+> 可用的**元标签**
+
+| Label                                                        | Desc                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `__meta_kubernetes_namespace`                                | 服务对象的命名空间                                           |
+| `__meta_kubernetes_service_annotation_<annotationname>`      | 服务对象中的每个注解                                         |
+| `__meta_kubernetes_service_annotationpresent_<annotationname>` | 对于服务对象中的每个注解返回 true                            |
+| `__meta_kubernetes_service_cluster_ip`                       | 服务的集群 IP 地址<br />不适用于类型为 **ExternalName** 的服务 |
+| `__meta_kubernetes_service_loadbalancer_ip`                  | 负载均衡器的 IP 地址<br />适用于类型为 **LoadBalancer** 的服务 |
+| `__meta_kubernetes_service_external_name`                    | 服务的 **DNS** 名称<br />适用于类型为 **ExternalName** 的服务 |
+| `__meta_kubernetes_service_label_<labelname>`                | 服务对象中的每个标签<br />不支持的字符转换为**下划线**       |
+| `__meta_kubernetes_service_labelpresent_<labelname>`         | 对于服务对象中的每个标签返回 true<br />不支持的字符转换为**下划线** |
+| `__meta_kubernetes_service_name`                             | 服务对象的名称                                               |
+| `__meta_kubernetes_service_port_name`                        | Target 服务端口号名称                                        |
+| `__meta_kubernetes_service_port_number`                      | Target 服务端口号数字                                        |
+| `__meta_kubernetes_service_port_protocol`                    | Target 服务端口的协议                                        |
+| `__meta_kubernetes_service_type`                             | 服务的类型                                                   |
+
+##### pod
+
+1. pod 角色发现所有 pod 并将其**容器**作为 Target 暴露出来 - 对于**每个声明的容器端口**，生成一个单独的 Target
+2. 如果**容器没有指定端口**，则为**每个容器**创建一个**无端口的 Target**，以便手动通过**重标签**添加端口
+
+> 可访问的**元标签**
+
+| Label                                                      | Desc                                                         |
+| ---------------------------------------------------------- | ------------------------------------------------------------ |
+| `__meta_kubernetes_namespace`                              | pod 对象的命名空间                                           |
+| `__meta_kubernetes_pod_name`                               | pod 对象的名称                                               |
+| `__meta_kubernetes_pod_ip`                                 | pod 对象的 pod IP                                            |
+| `__meta_kubernetes_pod_label_<labelname>`                  | 从 pod 对象中获取的每个标签<br />任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_pod_labelpresent_<labelname>`           | 对于 pod 对象中的每个标签<br />将任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_pod_annotation_<annotationname>`        | 从 pod 对象中获取的每个注解                                  |
+| `__meta_kubernetes_pod_annotationpresent_<annotationname>` | 对于 pod 对象中的每个注解，设置为 true                       |
+| `__meta_kubernetes_pod_container_init`                     | 如果容器是 **InitContainer**，设置为 true                    |
+| `__meta_kubernetes_pod_container_name`                     | Target 地址指向的**容器的名称**                              |
+| `__meta_kubernetes_pod_container_id`                       | Target 地址指向的**容器的 ID**<br />ID 形式为 `<type>://<container_id>` |
+| `__meta_kubernetes_pod_container_image`                    | 容器使用的镜像                                               |
+| `__meta_kubernetes_pod_container_port_name`                | 容器端口的名称                                               |
+| `__meta_kubernetes_pod_container_port_number`              | 容器端口的编号                                               |
+| `__meta_kubernetes_pod_container_port_protocol`            | 容器端口的协议                                               |
+| `__meta_kubernetes_pod_ready`                              | 设置为 **true** 或 **false** 以表示 pod 的**就绪状态**       |
+| `__meta_kubernetes_pod_phase`                              | Pending、Running、Succeeded、Failed、Unknown                 |
+| `__meta_kubernetes_pod_node_name`                          | pod 调度到的**节点**的名称                                   |
+| `__meta_kubernetes_pod_host_ip`                            | pod 对象的**当前主机** IP                                    |
+| `__meta_kubernetes_pod_uid`                                | pod 对象的 UID                                               |
+| `__meta_kubernetes_pod_controller_kind`                    | pod 控制器的对象类型                                         |
+| `__meta_kubernetes_pod_controller_name`                    | pod 控制器的名称                                             |
+
+##### endpoints
+
+1. endpoints 角色从**服务列出的端点**中发现 Target - 对于**每个 endpoint**，为**每个端口**发现一个 Target
+2. 如果 **endpoint** 由 **pod** 支撑，则还会从 pod 中发现所有**未绑定到端点端口**的**额外容器端口**作为 Target
+
+> 可访问的**元标签**
+
+| Label                                                        | Desc                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `__meta_kubernetes_namespace`                                | endpoint 对象的命名空间                                      |
+| `__meta_kubernetes_endpoints_name`                           | endpoint 对象的名称                                          |
+| `__meta_kubernetes_endpoints_label_<labelname>`              | 从 endpoint 对象获取的每个标签<br />任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_endpoints_labelpresent_<labelname>`       | 对于 endpoint 对象中的每个标签<br />将任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_endpoints_annotation_<annotationname>`    | 从 endpoint 对象获取的每个注解                               |
+| `__meta_kubernetes_endpoints_annotationpresent_<annotationname>` | 对于 endpoint 对象中的每个注解，设置为 true                  |
+
+> 对于**直接**从 **endpoint 列表**中发现的所有 Target（那些不是从**底层 pod** 推断出来的），以下标签附加
+
+| Label                                            | Desc                                                |
+| ------------------------------------------------ | --------------------------------------------------- |
+| `__meta_kubernetes_endpoint_hostname`            | endpoint 的**主机名**                               |
+| `__meta_kubernetes_endpoint_node_name`           | 托管 endpoint 的**节点名称**                        |
+| `__meta_kubernetes_endpoint_ready`               | 设置为 true 或 false 以表示 endpoint 的**就绪状态** |
+| `__meta_kubernetes_endpoint_port_name`           | endpoint 端口的名称                                 |
+| `__meta_kubernetes_endpoint_port_protocol`       | endpoint 端口的协议                                 |
+| `__meta_kubernetes_endpoint_address_target_kind` | endpoint 目标的对象类型                             |
+| `__meta_kubernetes_endpoint_address_target_name` | endpoint 引用对象的名称                             |
+
+1. 如果 **endpoint** 属于**服务**，则附加所有 `role:service` 发现的标签
+2. 对于所有**由 pod 支持**的 Target，附加所有 `role: pod` 发现的标签
+
+##### endpointslice
+
+1. endpointslice 角色从现有的 **endpointslice** 中发现 Target - 对于 endpointslice 对象中**引用**的**每个端点地址**，发现一个 Target
+2. 如果端点由 **pod** 支撑，则还会从 pod 中发现**所有未绑定到端点端口**的**额外容器端口**作为 Target
+
+> 可访问的**元标签**
+
+| Label                                                        | Desc                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `__meta_kubernetes_namespace`                                | 端点对象的命名空间                                           |
+| `__meta_kubernetes_endpointslice_name`                       | endpointslice 对象的名称                                     |
+| `__meta_kubernetes_endpointslice_label_<labelname>`          | 从 endpointslice 对象获取的每个标签<br />任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_endpointslice_labelpresent_<labelname>`   | 对于 endpointslice 对象中的每个标签<br />将任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_endpointslice_annotation_<annotationname>` | 从 endpointslice 对象获取的每个注解                          |
+| `__meta_kubernetes_endpointslice_annotationpresent_<annotationname>` | 对于 endpointslice 对象中的每个注解，设置为 true             |
+
+> 对于**直接**从 **EndpointSlice 列表**中发现的所有 Target（那些不是从**底层 pod** 推断出来的），以下标签附加
+
+| Label                                                        | Desc                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `__meta_kubernetes_endpointslice_address_target_kind`        | 引用对象的类型                                               |
+| `__meta_kubernetes_endpointslice_address_target_name`        | 引用对象的名称                                               |
+| `__meta_kubernetes_endpointslice_address_type`               | 目标地址的 IP 协议簇                                         |
+| `__meta_kubernetes_endpointslice_endpoint_conditions_ready`  | 设置为 true 或 false 以表示**引用端点的就绪状态**            |
+| `__meta_kubernetes_endpointslice_endpoint_conditions_serving` | 设置为 true 或 false 以表示**引用端点的服务状态**            |
+| `__meta_kubernetes_endpointslice_endpoint_conditions_terminating` | 设置为 true 或 false 以表示**引用端点的终止状态**            |
+| `__meta_kubernetes_endpointslice_endpoint_topology_kubernetes_io_hostname` | 托管引用端点的**节点名称**                                   |
+| `__meta_kubernetes_endpointslice_endpoint_topology_present_kubernetes_io_hostname` | 显示**引用对象**是否具有 **kubernetes.io/hostname** 注释的标志 |
+| `__meta_kubernetes_endpointslice_endpoint_hostname`          | 引用端点的**主机名**                                         |
+| `__meta_kubernetes_endpointslice_endpoint_node_name`         | 托管引用端点的**节点名称**                                   |
+| `__meta_kubernetes_endpointslice_endpoint_zone`              | 引用端点所在的区<br />仅当使用 **discovery.k8s.io/v1** API 组时可用 |
+| `__meta_kubernetes_endpointslice_port`                       | 引用端点的端口                                               |
+| `__meta_kubernetes_endpointslice_port_name`                  | 引用端点的命名端口                                           |
+| `__meta_kubernetes_endpointslice_port_protocol`              | 引用端点的协议                                               |
+
+1. 如果端点属于**服务**，则附加所有 `role:service` 发现的标签
+2. 对于所有**由 pod 支持**的 Target，附加所有 `role:pod` 发现的标签
+
+##### ingress
+
+1. ingress 角色为**每个 Ingress** 的**每个路径**发现 Target - 通常适用于对**入口**进行**黑盒监控**
+2. Target 地址将设置为**入口规范**中**指定的主机**
+
+> 可用的**元标签**
+
+| Label                                                        | Desc                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `__meta_kubernetes_namespace`                                | Ingress 对象的命名空间                                       |
+| `__meta_kubernetes_ingress_name`                             | Ingress 对象的名称                                           |
+| `__meta_kubernetes_ingress_label_<labelname>`                | Ingress 对象的每个标签<br />任何不支持的字符转换为**下划线** |
+| `__meta_kubernetes_ingress_labelpresent_<labelname>`         | Ingress 对象中带有**任何不支持字符**的每个标签的布尔值       |
+| `__meta_kubernetes_ingress_annotation_<annotationname>`      | Ingress 对象中的每个注解                                     |
+| `__meta_kubernetes_ingress_annotationpresent_<annotationname>` | Ingress 对象中带有**任何不支持字符**的每个注解的布尔值       |
+| `__meta_kubernetes_ingress_class_name`                       | 如果存在，则为 Ingress 规范中的**类名**                      |
+| `__meta_kubernetes_ingress_scheme`                           | Ingress 协议方案<br />如果设置了 TLS 配置则为 **https**，默认为 **http** |
+| `__meta_kubernetes_ingress_path`                             | Ingress 规范中的路径，默认为 `/`                             |
+
+```yaml
+# 访问 Kubernetes API 的信息。
+
+# API 服务器地址。如果为空，Prometheus 假定运行在集群内部，并自动发现 API 服务器并使用 pod 的 CA 证书和凭据文件（/var/run/secrets/kubernetes.io/serviceaccount/）。
+[ api_server: <host> ]
+
+# 应当被发现的 Kubernetes 实体的角色。可以是 endpoints、endpointslice、service、pod、node 或 ingress。
+role: <string>
+
+# 可选的 Kubeconfig 文件路径。
+# 注意：api_server 和 kube_config互斥。
+[ kubeconfig_file: <filename> ]
+
+# 可选的认证信息用于向API服务器认证。
+# 注意：basic_auth和authorization选项互斥。
+# password和password_file互斥。
+
+# 可选的 HTTP 基本认证信息。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# 可选的 Authorization 头配置。
+authorization:
+  # 设置认证类型。
+  [ type: <string> | default: Bearer ]
+  # 设置凭证。与`credentials_file`互斥。
+  [ credentials: <secret> ]
+  # 设置凭证从配置文件中读取的凭证。与`credentials`互斥。
+  [ credentials_file: <filename> ]
+
+# 可选的 OAuth 2.0 配置。
+# 不能同时与 basic_auth 或 authorization 一起使用。
+oauth2:
+  [ <oauth2> ]
+
+# 可选的代理 URL。
+[ proxy_url: <string> ]
+# 以逗号分隔的字符串，可以包含 IP、CIDR 表示法、域名，应排除代理。IP 和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量指示的代理 URL（HTTP_PROXY, https_proxy, HTTPs_PROXY, https_proxy和no_proxy）
+[ proxy_from_environment: <boolean> | default: false ]
+# 指定CONNECT请求期间发送到代理的头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+
+# 配置是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+
+# 是否启用HTTP2。
+[ enable_http2: <boolean> | default: true ]
+
+# TLS配置。
+tls_config:
+  [ <tls_config> ]
+
+# 可选的命名空间发现。如果省略，则使用所有命名空间。
+namespaces:
+  own_namespace: <boolean>
+  names:
+    [ - <string> ]
+
+# 可选的标签和字段选择器，限制发现过程以获取可用资源的子集。
+# 有关可能使用的过滤器，请参阅：
+# https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
+# 和 https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/。
+# endpoints角色支持pod和endpoint选择器。
+# pod角色在配置`attach_metadata: {node: true}`时支持节点选择器。
+# 其他角色仅支持匹配角色本身的筛选器（例如，node角色只能包含节点选择器）。
+
+# 注意：在决定使用字段/标签选择器时，请确保这是最佳方法 - 这将防止 Prometheus 重用单个列表/监视。这可能导致对 Kubernetes API 的负载更大，因为对于每个选择器组合，将有额外的 LIST/WATCH 动作。另一方面，如果你只想监控大型集群中的小部分 pod，则推荐使用选择器。
+# 配置选择器取决于具体的情况。
+[ selectors:
+  [ - role: <string>
+    [ label: <string> ]
+    [ field: <string> ] ]]
+
+# 可选的元数据附加到发现的 Target。如果省略，则不附加额外的元数据。
+attach_metadata:
+# 将节点元数据附加到发现的 Target。适用于角色：pod、endpoints、endpointslice。
+# 当设置为 true 时，Prometheus 必须有权获取 Nodes。
+  [ node: <boolean> | default = false ]
+```
+
+#### static_config
+
+1. static_config 允许指定 **Target 列表**和它们的**共同标签集**
+2. 这是在收集配置中指定**静态 Target** 的标准方式
+
+```yaml
+# 静态配置中指定的 Target。
+targets:
+  [ - '<host>' ]
+
+# 指派给从 Target 抓取的所有指标的标签。
+labels:
+  [ <labelname>: <labelvalue> ... ]
+```
+
+#### relabel_config
+
+> **Target Relabeling**
+
+1. Target 重标签（**target relabeling**）是一个强大的工具，在 Target **被抓取之前**动态地**重写**其标签集
+2. **每份收集配置**可以配置**多个重标签**
+   - 这些步骤按配置文件中**出现的顺序**依次应用于**每个 Target 的标签集**
+3. 初始状态下，除了配置的 Target 标签外，Target 的 **job** 标签设置为对应收集配置的 **job_name** 值
+   - `__address__` 标签设置为 Target 的 `<host>:<port>` 地址
+   - 标签重写完成后，默认情况下，如果**没有设置**，则将 **instance** 标签默认设置为 `__address__`
+4. `__scheme__` 和 `__metrics_path__` 标签分别设置为 Target 的**方案**和**指标路径**
+5. 如在 **scrape_config** 中定义，`__param_<name>` 标签设置 Target **首次传递的 URL 参数** `<name>` 的值
+6. 如在 **scrape_config** 中指定，`__scrape_interval__` 和 `__scrape_timeout__` 标签设置 Target 的**采集间隔**和**超时**
+   - 在**重标签**阶段可用的额外标签以 `__meta_` 前缀开头
+   - 它们由提供 Target 的**服务发现机制**设置，不同服务发现机制之间有所不同
+7. 开始后，带有 `__` 开头的标签将在 Target **重标签完成**时**从标签集移除**
+8. 如果重标签步骤需要仅**临时存储标签值**（作为**后续重标签步骤的输入**），则使用 `__tmp` 标签名前缀
+   - 此前缀保证永远不会由 **Prometheus 自身使用**
+
+```yaml
+# 选择现有标签的源标签。它们的内容使用配置的分隔符进行拼接，并与替换、保留和丢弃操作的配置正则表达式进行匹配。
+[ source_labels: '[' <labelname> [, ...] ']' ]
+
+# 拼接源标签值之间的分隔符。
+[ separator: <string> | default = ; ]
+
+# 写入到替换操作的结果值的 Target 标签。替换操作是必需的。正则表达式的捕获组可在替换值中使用。
+[ target_label: <labelname> ]
+
+# 对提取的值进行匹配的正则表达式。
+[ regex: <regex> | default = (.*) ]
+
+# 对正则表达式匹配的源标签值执行哈希运算的模数。
+[ modulus: <int> ]
+
+# 在正则表达式匹配时用于替换的替换值。正则表达式的捕获组可在替换值中使用。
+[ replacement: <string> | default = $1 ]
+
+# 根据正则表达式匹配执行的操作。
+[ action: <relabel_action> | default = replace ]
+```
+
+1. `<regex>` 是任何有效的 **RE2** 正则表达式语法
+   - 它对于 **replace**、**keep**、**drop**、**labelmap**、**labeldrop** 和 **labelkeep** 操作都是必需的
+   - 正则表达式**两端均锚定**
+     - 要**取消锚定**正则表达式，请使用 `.*<regex>.*`
+2. `<relabel_action>` 确定执行的重标签操作类型
+
+| Action    | Desc                                                         |
+| --------- | ------------------------------------------------------------ |
+| replace   | 使用 **regex** 匹配**拼接的 source_labels**<br />然后，将 **target_label** 设置为 **replacement**，其中 **replacement** 中的捕获组（`${1}`、`${2}` 等）会被其值替换<br />如果 **regex** 不匹配，则不会发生替换 |
+| lowercase | 将**拼接的 source_labels** 映射为其**小写**形式              |
+| uppercase | 将**拼接的 source_labels** 映射为其**大写**形式              |
+| keep      | 丢弃 **regex 不匹配拼接的 source_labels** 的 **Target**      |
+| drop      | 丢弃 **regex 匹配拼接的 source_labels** 的 **Target**        |
+| keepequal | 丢弃 **regex 不匹配 target_label** 的 **Target**             |
+| dropequal | 丢弃 **regex 匹配 target_label** 的 **Target**               |
+| hashmod   | 将 **target_label** 设置为**拼接的 source_labels** 的**哈希值**的**模数** |
+| labelmap  | 对**所有源标签名称**进行匹配，而不仅仅是 **source_labels** 中指定的那些<br />然后，将**匹配标签的值**复制到由 **replacement** 给出的**标签名**中，其中 replacement 中的捕获组（`${1}`、`${2}` 等）会被其值替换 |
+| labeldrop | 对**所有标签名称**进行匹配，**匹配的任何标签**都将**从标签集移除** |
+| labelkeep | 对**所有标签名称**进行匹配，**不匹配的任何标签**都将**从标签集移除** |
+
+> 需要特别小心的是，请确保在**删除标签后指标仍唯一标记**
+
+#### metric_relabel_configs
+
+> **Metrics Relabeling**
+
+1. 在**数据被消费前**的最后一个步骤，Prometheus 会应用指标重标签（**metrics relabeling**），它的配置格式和操作与 **Target 重标签**相同
+2. **指标重标签**不会应用于如 **up** 这样的**自动生成的时间序列**
+3. 使用这个功能的一个例子是**排除**那些**过于昂贵而无法消费**的**时间序列**
+
+#### alertmanager_config
+
+1. alertmanager_config 部分指定 **Prometheus 服务器**向其**发送告警**的 **Alertmanager 实例**
+   - 它还提供了配置如何与这些 Alertmanagers **进行通信**的参数
+2. Alertmanagers 可以通过 **static_configs** 参数**静态配置**，或者使用支持的**服务发现**机制**动态发现**
+3. 此外，**relabel_configs** 允许从**发现的实体**中**选择 Alertmanagers**，并提供对暴露通过 `__alerts_path__` 标签的用于**推送告警**的 **HTTP 路径**的高级修改
+
+```yaml
+# 每个 Target 的 Alertmanager 超时时间，当推送告警时。
+[ timeout: <duration> | default = 10s ]
+
+# Alertmanager 的 API 版本。
+[ api_version: <string> | default = v2 ]
+
+# 推送告警到的 HTTP 路径前缀。
+[ path_prefix: <path> | default = / ]
+
+# 配置请求使用的协议方案。
+[ scheme: <scheme> | default = http ]
+
+# 在每个请求上设置“Authorization”头，包含配置的用户名和密码。
+# password 和 password_file 是互斥的。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# 可选的“Authorization”头配置。
+authorization:
+  # 设置认证类型。
+  [ type: <string> | default: Bearer ]
+  # 设置凭证。它与 `credentials_file` 相互排斥。
+  [ credentials: <secret> ]
+  # 设置凭证来自配置的文件中的凭证。
+  # 它与 `credentials` 相互排斥。
+  [ credentials_file: <filename> ]
+
+# 选项地配置 AWS 的签名验证 4 签名过程来签署请求。
+# 不能同时设置 basic_auth、authorization、oauth2、azuread 或 google_iam。
+# 使用 AWS SDK 的默认凭据时，使用 `sigv4: {}`。
+sigv4:
+  # AWS 区域。如果空白，则使用默认凭据链中的区域。
+  [ region: <string> ]
+
+  # AWS API 密钥。如果空白，则使用环境变量 `AWS_ACCESS_KEY_ID` 和 `AWS_SECRET_ACCESS_KEY`。
+  [ access_key: <string> ]
+  [ secret_key: <secret> ]
+
+  # 命名的 AWS 策略用于认证。
+  [ profile: <string> ]
+
+  # AWS 角色 ARN，作为使用 AWS API 密钥的替代方式。
+  [ role_arn: <string> ]
+
+# 可选的 OAuth 2.0 配置。
+# 不能同时使用 basic_auth 或 authorization。
+oauth2:
+  [ <oauth2> ]
+
+# 配置抓取请求的 TLS 设置。
+tls_config:
+  [ <tls_config> ]
+
+# 可选的代理 URL。
+[ proxy_url: <string> ]
+# 包含 IP、CIDR 表示法、域名的逗号分隔字符串，应该从代理中排除。IP 和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量（HTTP_PROXY、https_proxy、HTTPs_PROXY、https_proxy 和 no_proxy）指示的代理 URL。
+[ proxy_from_environment: <boolean> | default: false ]
+# 指定在 CONNECT 请求期间发送到代理的头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+
+# 配置是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+
+# 是否启用 HTTP2。
+[ enable_http2: <boolean> | default: true ]
+
+# Azure 服务发现配置列表。
+azure_sd_configs:
+  [ - <azure_sd_config> ... ]
+
+# Consul 服务发现配置列表。
+consul_sd_configs:
+  [ - <consul_sd_config> ... ]
+
+# DNS 服务发现配置列表。
+dns_sd_configs:
+  [ - <dns_sd_config> ... ]
+
+# EC2 服务发现配置列表。
+ec2_sd_configs:
+  [ - <ec2_sd_config> ... ]
+
+# Eureka 服务发现配置列表。
+eureka_sd_configs:
+  [ - <eureka_sd_config> ... ]
+
+# 文件服务发现配置列表。
+file_sd_configs:
+  [ - <file_sd_config> ... ]
+
+# DigitalOcean 服务发现配置列表。
+digitalocean_sd_configs:
+  [ - <digitalocean_sd_config> ... ]
+
+# Docker 服务发现配置列表。
+docker_sd_configs:
+  [ - <docker_sd_config> ... ]
+
+# Docker Swarm 服务发现配置列表。
+dockerswarm_sd_configs:
+  [ - <dockerswarm_sd_config> ... ]
+
+# GCE 服务发现配置列表。
+gce_sd_configs:
+  [ - <gce_sd_config> ... ]
+
+# Hetzner 服务发现配置列表。
+hetzner_sd_configs:
+  [ - <hetzner_sd_config> ... ]
+
+# HTTP 服务发现配置列表。
+http_sd_configs:
+  [ - <http_sd_config> ... ]
+
+# IONOS 服务发现配置列表。
+ionos_sd_configs:
+  [ - <ionos_sd_config> ... ]
+
+# Kubernetes 服务发现配置列表。
+kubernetes_sd_configs:
+  [ - <kubernetes_sd_config> ... ]
+
+# Lightsail 服务发现配置列表。
+lightsail_sd_configs:
+  [ - <lightsail_sd_config> ... ]
+
+# Linode 服务发现配置列表。
+linode_sd_configs:
+  [ - <linode_sd_config> ... ]
+
+# Marathon 服务发现配置列表。
+marathon_sd_configs:
+  [ - <marathon_sd_config> ... ]
+
+# AirBnB 的 Nerve 服务发现配置列表。
+nerve_sd_configs:
+  [ - <nerve_sd_config> ... ]
+
+# Nomad 服务发现配置列表。
+nomad_sd_configs:
+  [ - <nomad_sd_config> ... ]
+
+# OpenStack 服务发现配置列表。
+openstack_sd_configs:
+  [ - <openstack_sd_config> ... ]
+
+# OVHcloud 服务发现配置列表。
+ovhcloud_sd_configs:
+  [ - <ovhcloud_sd_config> ... ]
+
+# PuppetDB 服务发现配置列表。
+puppetdb_sd_configs:
+  [ - <puppetdb_sd_config> ... ]
+
+# Scaleway 服务发现配置列表。
+scaleway_sd_configs:
+  [ - <scaleway_sd_config> ... ]
+
+# Zookeeper Serverset 服务发现配置列表。
+serverset_sd_configs:
+  [ - <serverset_sd_config> ... ]
+
+# Triton 服务发现配置列表。
+triton_sd_configs:
+  [ - <triton_sd_config> ... ]
+
+# Uyuni 服务发现配置列表。
+uyuni_sd_configs:
+  [ - <uyuni_sd_config> ... ]
+
+# Vultr 服务发现配置列表。
+vultr_sd_configs:
+  [ - <vultr_sd_config> ... ]
+
+# 静态配置的 Labeled Alertmanagers 列表。
+static_configs:
+  [ - <static_config> ... ]
+
+# Alertmanager 的 relabel 配置列表。
+relabel_configs:
+  [ - <relabel_config> ... ]
+
+# 告警 relabel 配置列表。
+alert_relabel_configs:
+  [ - <relabel_config> ... ]
+```
+
+#### remote_write
+
+1. 在**发送样本**到**远程端点**之前，**write_relabel_configs** 对**样本**进行**重标签**处理
+2. **写入重标签**化操作在**外部标签之后**应用 - 这可以用于**限制要发送的样本**
+
+```yaml
+# 指定要发送样例的端点 URL。
+url: <string>
+
+# 当写入 remote write 端点时使用的 protobuf 消息。
+#
+# * `prometheus.WriteRequest` 表示在1.0版本中引入的消息，最终会过时。
+# * `io.prometheus.write.v2.Request` 在2.0版本中引入，并替代了前者，通过提高效率并默认发送元数据、创建时间戳和原生 Histogram 来改进性能。
+#
+# 在更改此值之前，请咨询你的远程存储提供商（或进行测试），了解它支持哪种消息。
+# 更多信息见：https://prometheus.io/docs/specs/remote_write_spec_2_0/#io-prometheus-write-v2-request
+[ protobuf_message: <prometheus.WriteRequest | io.prometheus.write.v2.Request> | default = prometheus.WriteRequest ]
+
+# remote write 端点请求的超时时间。
+[ remote_timeout: <duration> | default = 30s ]
+
+# 每个 remote write 请求随附的自定义HTTP头部。
+# 需要注意的是，Prometheus 自身设置的头部无法被覆盖。
+headers:
+  [ <string>: <string> ... ]
+
+# remote write 配置的远程重定向规则列表。
+write_relabel_configs:
+  [ - <relabel_config> ... ]
+
+# remote write 配置的名称，如果指定，则必须与其他 remote write 配置唯一。
+# 名称将用于指标和日志中，代替生成的值，以帮助用户区分不同的 remote write 配置。
+[ name: <string> ]
+
+# 启用通过 remote write 发送示例。请注意，示例存储本身必须启用，才能首先抓取到示例。
+[ send_exemplars: <boolean> | default = false ]
+
+# 启用通过 remote write 发送原生 Histogram，也被称为稀疏 Histogram。
+# 对于`io.prometheus.write.v2.Request`消息，此选项为 noop（始终为 true）。
+[ send_native_histograms: <boolean> | default = false ]
+
+# 设置在每个 remote write 请求上的`Authorization`头部，带有配置的用户名和密码。
+# password 和 password_file 互斥。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# 可选的`Authorization`头部配置。
+authorization:
+  # 设置认证类型。
+  [ type: <string> | default = Bearer ]
+  # 设置凭据。与`credentials_file`互斥。
+  [ credentials: <secret> ]
+  # 设置凭据来自配置文件中的凭据。
+  # 与`credentials`互斥。
+  [ credentials_file: <filename> ]
+
+# 选项地配置 AWS 的 Signature Verification 4 签名过程以对请求进行签名。
+# 不能同时设置为 basic_auth、authorization、oauth2、azuread或google_iam。
+# 要使用 AWS SDK 的默认凭据，请使用`sigv4: {}`。
+sigv4:
+  # AWS 区域。如果空白，则使用默认凭据链中的区域。
+  [ region: <string> ]
+
+  # AWS API 密钥。如果空白，则使用环境变量`AWS_ACCESS_KEY_ID`和`AWS_SECRET_ACCESS_KEY`。
+  [ access_key: <string> ]
+  [ secret_key: <secret> ]
+
+  # 使用命名的 AWS 配置文件进行身份验证。
+  [ profile: <string> ]
+
+  # AWS 角色 ARN，作为使用 AWS API 密钥的替代方式。
+  [ role_arn: <string> ]
+
+# 可选的 OAuth 2.0 配置。
+# 不能同时设置为 basic_auth、authorization、oauth2、sigv4、azuread 或 google_iam。
+oauth2:
+  [ <oauth2> ]
+
+# 可选的 AzureAD 配置。
+# 不能同时设置为 basic_auth、authorization、oauth2、sigv4 或 google_iam。
+azuread:
+  # Azure 云。选项是'AzurePublic'、'AzureChina'或'AzureGovernment'。
+  [ cloud: <string> | default = AzurePublic ]
+
+  # Azure 用户分配的管理身份。
+  [ managed_identity:
+      [ client_id: <string> ] ]
+
+  # Azure OAuth。
+  [ oauth:
+      [ client_id: <string> ]
+      [ client_secret: <string> ]
+      [ tenant_id: <string> ] ]
+
+  # Azure SDK 认证。
+  # 见：https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication
+  [ sdk:
+      [ tenant_id: <string> ] ]
+
+# 警告：remote write 不支持 Google Cloud。此配置预留未来使用。
+# 可选的 Google Cloud 监控配置。
+# 不能同时设置为 basic_auth、authorization、oauth2、sigv4 或 azuread。
+# 要使用 Google Cloud SDK 的默认凭据，请使用`google_iam: {}`。
+google_iam:
+  # 具有监控写权限的服务帐户密钥。
+  credentials_file: <file_name>
+
+# 配置 remote write 请求的 TLS 设置。
+tls_config:
+  [ <tls_config> ]
+
+# 可选代理 URL。
+[ proxy_url: <string> ]
+# 包含 IP、CIDR 表示法、域名的逗号分隔字符串，这些应从代理中排除。
+# IP和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量（HTTP_PROXY、https_proxy、HTTPs_PROXY、https_proxy和no_proxy）指示的代理URL。
+[ proxy_from_environment: <boolean> | default = false ]
+# 指定CONNECT请求期间发送给代理的头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+
+# 配置 HTTP 请求是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+
+# 是否启用 HTTP2。
+[ enable_http2: <boolean> | default = true ]
+
+# 配置用于写入远程存储的队列。
+queue_config:
+  # 每个分区在阻塞更多WAL样例读取之前缓冲的样例数。建议每个分区有足够的容量来缓冲几个请求，以保持处理偶尔缓慢远程请求时的吞吐量。
+  [ capacity: <int> | default = 10000 ]
+  # 最大分区数，即并发度。
+  [ max_shards: <int> | default = 50 ]
+  # 最小分区数，即并发度。
+  [ min_shards: <int> | default = 1 ]
+  # 每次发送的最大样例数。
+  [ max_samples_per_send: <int> | default = 2000]
+  # 样例等待发送的最大时间。样例可能等待更少的时间，如果缓冲区已满。进一步的时间可能会因为潜在的重试而流逝。
+  [ batch_send_deadline: <duration> | default = 5s ]
+  # 重试的最小回退延迟。每次重试都会翻倍。
+  [ min_backoff: <duration> | default = 30ms ]
+  # 最大重试延迟。
+  [ max_backoff: <duration> | default = 5s ]
+  # 在收到 remote write 存储的429状态码时重试。
+  # 这是实验性的，未来可能会改变。
+  [ retry_on_http_429: <boolean> | default = false ]
+  # 如果设置，则任何超过sample_age_limit的样例都不会发送到远程存储。
+  # 默认值为0s，这意味着所有样例都被发送。
+  [ sample_age_limit: <duration> | default = 0s ]
+
+# 配置向远程存储发送系列元数据，
+# 当选择了`prometheus.WriteRequest`消息时。当使用`io.prometheus.write.v2.Request`时，元数据总是发送的。
+#
+# 元数据配置可能会在未来任何时候更改甚至被删除。
+metadata_config:
+  # 是否向远程存储发送指标元数据。
+  [ send: <boolean> | default = true ]
+  # 元数据发送到远程存储的频率。
+  [ send_interval: <duration> | default = 1m ]
+  # 每次发送的最大样例数。
+  [ max_samples_per_send: <int> | default = 500]
+```
+
+#### remote_read
+
+```yaml
+url: <string>
+# 遥控读取配置的名称，如果指定，则必须与其他遥控读取配置唯一。
+# 名称将在指标和日志中用于替换生成的值，以帮助用户区分不同的遥控读取配置。
+[ name: <string> ]
+# 可选的匹配器列表，这些匹配器必须存在于选择器中才能查询 remote read 端点。
+required_matchers:
+  [ <labelname>: <labelvalue> ... ]
+# 请求 remote read 端点的超时时间。
+[ remote_timeout: <duration> | default = 1m ]
+# 每个 remote read 请求随附的自定义 HTTP 头部。
+# 注意：由 Prometheus 自身设置的头部不能被覆盖。
+headers:
+  [ <string>: <string> ... ]
+# 是否在本地存储应具有完整数据的时间范围内进行读取。
+[ read_recent: <boolean> | default = false ]
+# 在每个 remote read 请求上设置`Authorization`头部，使用配置的用户名和密码。
+# password 和 password_file 互斥。
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+# 可选的`Authorization`头部配置。
+authorization:
+  # 设置认证类型。
+  [ type: <string> | default: Bearer ]
+  # 设置凭证。与`credentials_file`互斥。
+  [ credentials: <secret> ]
+  # 设置凭证从配置的文件中读取的凭证。
+  # 与`credentials`互斥。
+  [ credentials_file: <filename> ]
+# 可选的 OAuth 2.0 配置。
+# 不能同时与 basic_auth 或 authorization 一起使用。
+oauth2:
+  [ <oauth2> ]
+# 配置 remote read 请求的 TLS 设置。
+tls_config:
+  [ <tls_config> ]
+# 可选的代理 URL。
+[ proxy_url: <string> ]
+# 包含 IP、CIDR 表示法、域名的逗号分隔字符串，这些应该从代理中排除。IP和域名可以包含端口号。
+[ no_proxy: <string> ]
+# 使用环境变量（HTTP_PROXY, https_proxy, HTTPs_PROXY, https_proxy, no_proxy）指示的代理 URL。
+[ proxy_from_environment: <boolean> | default: false ]
+# 指定 CONNECT 请求期间发送给代理的头部。
+[ proxy_connect_header:
+  [ <string>: [<secret>, ...] ] ]
+# 配置 HTTP 请求是否遵循 HTTP 3xx 重定向。
+[ follow_redirects: <boolean> | default = true ]
+# 是否启用 HTTP2。
+[ enable_http2: <boolean> | default: true ]
+# 是否使用外部标签作为 remote read 端点的选择器。
+[ filter_external_labels: <boolean> | default = true ]
+```
+
+#### tsdb
+
+1. tsdb 可以配置 TSDB 的**运行时可重新加载配置**设置
+2. **离线数据处理**（out-of-order ingestion）是**实验性特性**，但**无需额外标志**即可启用
+   - 只需 **out_of_order_time_window** 置为**正数**即可启用它
+
+```yaml
+# 配置离线数据处理样本的旧程度，与 TSDB 最大时间的关系。
+# 如果样本的时间戳大于等于 TSDB.MaxTime-out_of_order_time_window，则将离线数据处理样本纳入 TSDB。
+#
+# 当out_of_order_time_window 大于0时，错误“离线”和“越界”被合并为一个名为'too-old'的错误；样本要么(a)可纳入 TSDB，即它是顺序样本或在 out-of-order 窗口内的离线数据处理样本，要么(b)太老，即不顺序且在 out-of-order 窗口之前。
+#
+# 当 out_of_order_time_window 大于0时，它也影响实验性代理。它允许代理的 WAL 接受相对于同一系列最后追加样本的时间戳，在指定的时间窗口内落入的离线数据处理样本。
+[ out_of_order_time_window: <duration> | default = 0s ]
+```
+
+#### exemplars
+
+> 请注意，**示例存储**仍然被认为是**实验性**的，必须通过 `--enable-feature=exemplar-storage` 启用
+
+```yaml
+# 配置用于存储所有序列的示例的循环缓冲区的最大大小。运行时可调整大小。
+[ max_exemplars: <int> | default = 100000 ]
+```
+
+#### tracing_config
+
+1. tracing_config 配置了 Prometheus 通过 **OTLP 协议**向**追踪后端**导出**跟踪信息**的功能
+2. 追踪功能目前是**实验性**特性，未来可能会改变
+
+```yaml
+# 用于导出跟踪的客户端。选项为'http'或'grpc'。
+[ client_type: <string> | default = grpc ]
+
+# 向其发送跟踪的端点。应以`<host>:<port>`格式提供。
+[ endpoint: <string> ]
+
+# 设置给定跟踪被采样的概率。必须是一个介于0和1之间的浮点数。
+[ sampling_fraction: <float> | default = 0 ]
+
+# 如果禁用，则客户端将使用安全连接。
+[ insecure: <boolean> | default = false ]
+
+# 作为与 gRPC 或 HTTP 请求关联的键值对使用的头部。
+headers:
+  [ <string>: <string> ... ]
+
+# 支持的压缩类型中的压缩密钥。支持的压缩：gzip。
+[ compression: <string> ]
+
+# 导出器等待每个批处理导出的最大时间。
+[ timeout: <duration> | default = 10s ]
+
+# TLS 配置。
+tls_config:
+  [ <tls_config> ]
+```
+
+### 记录规则
+
+#### 配置规则
+
+1. Prometheus 支持两种类型的规则，可以在配置文件中进行配置并**定期计算**
+   - 记录规则（**recording rules**）和告警规则（**alerting rules**）
+2. 要在 Prometheus 中使用规则，请创建包含**必要规则语句**的文件，并通过配置文件中的 **rule_files** 字段让 Prometheus 加载该文件
+   - 规则文件使用 **YAML** 格式
+3. 规则文件在**运行时**可以被**重新加载**，只需要向 Prometheus 进程发送 **SIGHUP** 即可
+   - 只有当**所有规则文件**格式正确时，更改才会被应用
+4. 关于**原生 Histogram**（**实验性**功能）的注释
+   - 原生 Histogram 目前总是以 **Gauge Histogram** 的形式被记录（目前如此）
+   - 大多数情况下，Prometheus 会自然地创建 Gauge Histogram，例如，在执行 **rate()** 后
+
+#### 检查规则语法
+
+1. 为了**快速检查规则文件**是否具有**正确的语法**而不必启动 Prometheus 服务器，可以使用 Prometheus 的命令行工具 **promtool**
+2. 如果文件语法有效，检查器将在**标准输出**上打印解析得到规则的文本表示，然后以 **0** 返回状态退出
+3. 如果有任何**语法错误**或**无效输入参数**，则在**标准错误**上打印错误消息并以 **1** 返回状态退出
+
+```
+$ ./promtool check rules ./prometheus.rules.yml
+Checking ./prometheus.rules.yml
+  SUCCESS: 1 rules found
+  
+$ echo $?
+0
+```
+
+#### 记录规则
+
+1. 记录规则允许**预计算**经常需要或**昂贵**的表达式并将结果保存为一组**新的时间序列**
+   - 每次查询**预计算**的结果通常比每次需要时执行原始表达式要快得多
+   - 这对于**频繁刷新**的**仪表板**特别有用，因为它们需要**反复查询相同的表达式**
+2. **记录规则**和**告警规则**存在于一个**规则组**中
+   - 组内的规则按照**固定的间隔顺序执行**，具有**相同**的**评估时间**
+   - **记录规则的名称**必须是**有效的指标名称**
+   - **告警规则的名称**必须是**有效的标签值**
+
+> **规则文件**的语法如下
+
+```yaml
+groups:
+  [ - <rule_group> ]
+```
+
+> 简单的**规则文件**示例如下
+
+```yaml
+groups:
+  - name: example
+    rules:
+    - record: code:prometheus_http_requests_total:sum
+      expr: sum by (code) (prometheus_http_requests_total)
+```
+
+##### rule_group
+
+```yaml
+# 组的名称。必须在文件内唯一。
+name: <string>
+
+# 组内规则的评估频率。
+[ interval: <duration> | default = global.evaluation_interval ]
+
+# 评估每个告警规则和由记录规则产生的序列的限制数量。0 表示无限制。
+[ limit: <int> | default = 0 ]
+
+# 为特定组的规则评估时间戳向过去偏移指定的一段时间。
+[ query_offset: <duration> | default = global.rule_query_offset ]
+
+rules:
+  [ - <rule> ... ]
+```
+
+##### rule
+
+> **记录规则**的语法如下
+
+```yaml
+# 输出的时间序列名称。必须是有效的指标名称。
+record: <string>
+
+# 要评估的 PromQL 表达式。在每轮评估中，此表达式会在当前时间评估，
+# 并将结果记录为一组新的时间序列，其指标名称为给定的“record”。
+expr: <string>
+
+# 在存储结果之前添加或覆盖的标签。
+labels:
+  [ <labelname>: <labelvalue> ]
+```
+
+> **告警规则**的语法如下
+
+```yaml
+# 告警的名称。必须是有效的标签值。
+alert: <string>
+
+# 要评估的 PromQL 表达式。在每轮评估中，此表达式会在当前时间评估，
+# 并且所有结果时间序列都成为待处理/正在生效的告警。
+expr: <string>
+
+# 告警一旦返回就会被认为正在生效。尚未达到足够长的告警被认为是待处理的。
+[ for: <duration> | default = 0s ]
+
+# 告警触发条件清除后告警将继续生效的持续时间。
+[ keep_firing_for: <duration> | default = 0s ]
+
+# 添加到每个告警的标签。
+labels:
+  [ <labelname>: <tmpl_string> ]
+
+# 添加到每个告警的注释。
+annotations:
+  [ <labelname>: <tmpl_string> ]
+```
+
+#### 限制告警和序列
+
+1. 可以为**告警规则**和**由记录规则产生的序列**配置**组限制**
+2. 当**超过限制**时，**由规则产生的所有序列**都将被**丢弃**
+   - 并且如果是**告警规则**，则规则的**所有活动**、**待处理**或**已取消**的**告警**也将被**清除**
+3. 此**事件**将作为**评估过程**中的**错误**被记录，使得**没有过期标记**（stale marker）会被写入
+
+#### 规则查询偏移量
+
+1. 这有助于确保**底层指标**已被**接收**并**存储**在 Prometheus 中
+2. 由于**分布式系统**的特性
+   - **指标可用性延迟**很有可能发生在 Prometheus 作为 **remote write 目标**运行时，但也有可能在**抓取异常**或**评估间隔较短**的情况下发生
+
+#### 过于缓慢而失败的规则评估
+
+1. 如果**规则组**没有在**下一个评估开始前**（由 **evaluation_interval** 定义）完成评估，则**下一个评估将被跳过**
+   - 后续对规则组的评估也将继续被跳过，**直到初始评估完成或超时**
+2. 当这种情况发生时，**记录规则**产生的指标将出现**空白**
+   - 每当**规则组**错过一次**迭代**时，**rule_group_iterations_missed_total** 指标将**自增**一次
+
+### 告警规则
+
+1. 告警规则允许你基于 **PromQL** 定义**告警条件**，并向**外部服务**发送有关**触发告警**的通知
+2. 每当**告警表达式**在**给定时间点的结果**为**一个或多个向量元素**时，这些元素的**标签集**将被视为**活跃**的
+
+#### 定义告警规则
+
+> **告警规则**与**记录规则**可以以**相同的方式**在 Prometheus 中配置
+
+```yaml
+groups:
+- name: example
+  rules:
+  - alert: HighRequestLatency
+    expr: job:request_latency_seconds:mean5m{job="myjob"} > 0.5
+    for: 10m
+    labels:
+      severity: page
+    annotations:
+      summary: 高请求延迟
+```
+
+1. 可选的 **for 子句**使得 Prometheus 在**首次**遇到新表达式**输出向量元素**后**等待一段时间**，然后才将**告警**设置为 **firing（触发）**状态
+   - Prometheus 将在**每次评估**期间检查**告警**是否**持续活跃 10 分钟以上**，然后**触发告警**
+   - **活跃但尚未进入 firing 状态**的元素会处于 **pending（等待）**状态
+2. **没有 for 子句**的**告警规则**将在**首次评估**时**立即激活** - firing
+3. **labels 子句**允许指定**一组附加标签**，用于**附加到告警上**
+   - 现有的**冲突标签**将**被覆盖**
+   - **标签值**可以进行**模板化**
+4. **annotations 子句**指定一组用于**存储更详细信息**（如告警描述或运行手册链接）的**元数据标签**
+   - **注释值**可以进行**模板化**
+
+##### 模版化
+
+1. **标签值**和**注释值**可以使用**控制台模板**进行**模板化**
+2. `$labels` 变量持有**告警实例**的**标签键/值对**
+3. 配置的**外部标签**可以通过 `$externalLabels` 变量访问
+4. `$value` 变量持有**告警实例计算**的**数值**
+
+```yaml
+# 插入触发元素的标签值：
+{{ $labels.<labelname> }}
+# 插入触发元素的表达式数值：
+{{ $value }}
+```
+
+> 示例
+
+```yaml
+groups:
+- name: example
+  rules:
+
+  # 对于任何无法访问超过5分钟的实例发出告警。
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+  # 对于任何具有中位请求延迟 > 1秒的实例发出告警。
+  - alert: APIHighRequestLatency
+    expr: api_http_request_latencies_second{quantile="0.5"} > 1
+    for: 10m
+    annotations:
+      summary: "High request latency on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has a median request latency above 1s (current value: {{ $value }}s)"
+```
+
+#### 运行时检查告警
+
+1. 要**手动检查**当前哪些告警处于**活跃状态**（**pending** 或 **firing**），跳转至 Prometheus 实例的“**Alerts**”选项卡
+2. 对于状态为 **pending** 和 **firing** 的告警，Prometheus 还存储了**合成时间序列**（synthetic time series）
+   -  `ALERTS{alertname="<alert name>", alertstate="<pending or firing>", <additional alert labels>}`
+   - 样本在告警处于**活跃状态**时被设置为 **1**，当告警**不再活跃**时，该序列会被标记为**过期**
+
+#### 发送告警通知
+
+1. **Prometheus** 的**告警规则**擅长**确定当前出了什么问题**，但它们并不是**完备的通知解决方案**
+   - 因此，还需要另一层服务来添加**总结**、**通知速率限制**、**静默**和**解决告警依赖性**等功能
+2. 在 Prometheus 的生态系统中，**Alertmanager** 承担了这一角色
+   - 因此，Prometheus 可以配置为**定期**将**告警状态信息**发送到 **Alertmanager** 实例，然后 Alertmanager 负责**分发正确的通知**
+   - Prometheus 可以配置**自动**通过其**服务发现**功能发现**可用**的 **Alertmanager 实例**
+
+### 模版示例
+
+1. Prometheus 支持在**告警的注释和标签**中使用**模板**，以及在提供的**控制台页面**中使用模板
+2. 模板能够执行针对**本地数据库的查询**、**遍历数据**、**使用条件语句**、**格式化数据**等操作
+3. Prometheus 的模板语言基于 **Go 模板系统**
+
+#### 简单的告警字段模板
+
+```yaml
+alert: InstanceDown
+expr: up == 0
+for: 5m
+labels:
+  severity: page
+annotations:
+  summary: "Instance {{$labels.instance}} down"
+  description: "{{$labels.instance}} of job {{$labels.job}} has been down for more than 5 minutes."
+```
+
+1. **告警字段模板**将在**每轮规则迭代**时对触发（**fire**）的**每个告警**执行一次，因此请保持**查询**和**模板**的**轻量化**
+2. 如果需要**更复杂的告警模板**，则推荐使用**控制台**进行操作
+
+#### 简单遍历
+
+> 下面显示了**一组实例**及其**状态**
+
+```go
+{{ range query "up" }}
+  {{ .Labels.instance }} {{ .Value }}
+{{ end }}
+```
+
+> 特殊的 `.` 变量包含**每次循环迭代**中的**当前样本值**
+
+#### 显示单个值
+
+```go
+{{ with query "some_metric{instance='someinstance'}" }}
+  {{ . | first | value | humanize }}
+{{ end }}
+```
+
+1. **Go** 和 **Go 的模板语言**都是**强类型语言**，因此必须检查**是否返回了样本**以避免执行错误
+2. 在抓取和规则评估**尚未运行**或主机处于**离线**状态时，这种情况都可能会发生
+   - 自带的 **prom_query_drilldown** 模板能够处理此问题，可以对结果进行**格式化**
+
+#### 使用控制台 URL 参数
+
+> 如果以 `console.html?instance=hostname` 访问，则 `.Params.instance` 将评估为 **hostname**
+
+```go
+{{ with printf "node_memory_MemTotal{job='node',instance='%s'}" .Params.instance | query }}
+  {{ . | first | value | humanize1024 }}B
+{{ end }}
+```
+
+#### 高级遍历
+
+```html
+<table>
+{{ range printf "node_network_receive_bytes{job='node',instance='%s',device!='lo'}" .Params.instance | query | sortByLabel "device"}}
+  <tr><th colspan=2>{{ .Labels.device }}</th></tr>
+
+  <tr>
+    <td>接收</td>
+
+    <td>{{ with printf "rate(node_network_receive_bytes{job='node',instance='%s',device='%s'}[5m])" .Labels.instance .Labels.device | query }}{{ . | first | value | humanize }}B/s{{end}}</td>
+
+  </tr>
+
+  <tr>
+    <td>发送</td>
+
+    <td>{{ with printf "rate(node_network_transmit_bytes{job='node',instance='%s',device='%s'}[5m])" .Labels.instance .Labels.device | query }}{{ . | first | value | humanize }}B/s{{end}}</td>
+
+  </tr>{{ end }}
+</table>
+```
+
+1. 在这里，我们**遍历所有网络设备**并显示每个设备的**网络流量**
+2. 由于**range** 动作没有指定变量，现在的循环变量是 `.` ，`.Params.instance` 在循环内不再可用
+
+#### 定义可重用的模板
+
+1. Prometheus 支持定义可以**重复使用的模板**
+2. 当与**控制台模板**功能结合时，能够实现**跨控制台共享模板**，十分强大
+
+```go
+{{/* 定义模版 */}}
+{{define "myTemplate"}}
+  do something
+{{end}}
+
+{{/* 使用模版 */}}
+{{template "myTemplate"}}
+```
+
+> **template 最多只能接受一个参数**，可以使用 **args 函数**来**包装多个参数**
+
+```yaml
+{{define "myMultiArgTemplate"}}
+  First argument: {{.arg0}}
+  Second argument: {{.arg1}}
+{{end}}
+{{template "myMultiArgTemplate" (args 1 2)}}
+```
+
+### 模版参考
+
+1. Prometheus 支持在**告警的注释和标签**以及在**服务控制台页面**中使用**模板**
+2. 模板具备对**本地数据库运行查询**、**迭代数据**、**使用条件语句**、**格式化数据**等功能的能力
+3. Prometheus 的模板语言基于 **Go 模板系统**
+
+#### 数据结构
+
+> 处理**时间序列数据**的主要数据结构是 **sample**（样本），定义如下
+
+```go
+type sample struct {
+        Labels map[string]string
+        Value  interface{}
+}
+```
+
+1. sample 的**指标名称**编码在 **Labels** 映射中的特殊 `__name__` 标签中
+2. `[]sample` 代表**样本列表**
+3. 在 Go 中，`interface{}` 类似于 **C** 中的**空指针**
+
+#### 函数
+
+1. 除了 **Go 模板系统**提供的**默认函数**，Prometheus 还提供了用于在模板中更轻松地**处理查询结果**的函数
+2. 如果在**管道**中使用函数，则将**管道值**作为**最后一个参数**传递
+
+##### 查询
+
+> first、label 和 value 函数旨在让查询结果在流程中更加易于使用
+
+| 名称        | 参数              | 返回类型    | 注释                                |
+| ----------- | ----------------- | ----------- | ----------------------------------- |
+| query       | 查询字符串        | `[]sample`  | **查询数据库**，不支持返回范围向量  |
+| first       | `[]sample`        | sample      | 等同于 `index a 0`                  |
+| label       | 标签，样本        | string      | 等同于 `index sample.Labels label`  |
+| value       | 样本              | interface{} | 等同于 `sample.Value`               |
+| sortByLabel | 标签，`[]samples` | `[]sample`  | 按给定标签对样本进行排序 - 稳定排序 |
+
+##### 数字
+
+> 人类化函数旨在为人类消费提供合理的输出，并且在**不同版本的 Prometheus** 中可能**不会始终产生相同的输出结果**
+
+| 名称               | 参数         | 返回类型   | 注释                                                     |
+| ------------------ | ------------ | ---------- | -------------------------------------------------------- |
+| humanize           | 数字或字符串 | string     | 使用**指标前缀**将数字转换为更可读的格式                 |
+| humanize1024       | 数字或字符串 | string     | 类似于 **humanize**，但以 **1024** 为**基数**而不是 1000 |
+| humanizeDuration   | 数字或字符串 | string     | 将**秒数**的持续时间转换为更可读的格式                   |
+| humanizePercentage | 数字或字符串 | string     | 将**比率值**转换为 **100** 的**分数**                    |
+| humanizeTimestamp  | 数字或字符串 | string     | 将**秒数的 Unix 时间戳**转换为更可读的格式               |
+| toTime             | 数字或字符串 | *time.Time | 将**秒数的 Unix 时间戳**转换为 **time.Time**             |
+
+##### 字符串
+
+| 名称          | 参数             | 返回类型 | 注释                                                         |
+| ------------- | ---------------- | -------- | ------------------------------------------------------------ |
+| title         | 字符串           | string   | strings.Title，**首字母大写每个单词**                        |
+| toUpper       | 字符串           | string   | strings.ToUpper，将**所有字符**转换为**大写**                |
+| toLower       | 字符串           | string   | strings.ToLower，将**所有字符**转换为**小写**                |
+| stripPort     | 字符串           | string   | net.SplitHostPort，将字符串拆分为主机和端口，然后仅返回**主机** |
+| match         | 模式，文本       | bool     | regexp.MatchString 对**未锚定正则表达式**匹配进行测试        |
+| reReplaceAll  | 模式，替换，文本 | string   | Regexp.ReplaceAllString 正则表达式替换，**未锚定**           |
+| graphLink     | 表达式           | string   | 返回**表达式的图形视图**在**表达式浏览器**中的**路径**       |
+| tableLink     | 表达式           | string   | 返回**表达式的表格视图**在**表达式浏览器**中的**路径**       |
+| parseDuration | 字符串           | float    | 将类似 “1h” 的**持续时间字符串**解析为其代表的**秒数**       |
+| stripDomain   | 字符串           | string   | 删除完全限定域名（**FQDN**）的**域名部分**，端口不受影响     |
+
+##### 其它
+
+| 名称        | 参数                  | 返回类型                 | 注释                                                         |
+| ----------- | --------------------- | ------------------------ | ------------------------------------------------------------ |
+| args        | `[]interface{}`       | `map[string]interface{}` | 将**对象列表**转换为具有 **arg0**、**arg1** 等键的**映射**<br />旨在允许**向模板传递多个参数** |
+| tmpl        | 字符串, []interface{} | nothing                  | 类似于**内置**的 **template**，但允许**非字面量**作为模板名称<br />**结果**被假设为**安全**的，**不会被自动转义**<br />仅在**控制台**中可用 |
+| safeHtml    | 字符串                | string                   | 标记字符串为 **HTML**，**无需自动转义**                      |
+| externalURL | none                  | string                   | **Prometheus 外部可访问的外部 URL**                          |
+| pathPrefix  | none                  | string                   | 用于**控制台模板**的**路径**                                 |
+
+#### 模板类型的差异
+
+> 每种类型的模板提供了不同的信息，可以用于**参数化模板**，它们存在一些其他差异
+
+##### 告警字段模板
+
+1. `.Value`、`.Labels`、`.ExternalLabels` 和 `.ExternalURL`
+   - 分别包含**告警值**、**告警标签**、**全局配置的外部标签**和**外部 URL**（通过 `--web.external-url` 配置）
+2. 它们也分别作为 `$value` 、 `$labels` 、 `$externalLabels` 和 `$externalURL` 变量提供方便访问
+
+##### 控制台模板
+
+1. 控制台暴露在 `/consoles/` 下，从 `-web.console.templates` 标志指定的**目录**中加载模版
+2. 控制台模板使用 **html/template** 渲染，该系统提供了**自动转义**功能，要绕过自动转义，请使用 **safe*** 函数
+3. **URL 参数**作为映射在 **.Params** 中可用
+   - 要访问具有**相同名称**的**多个 URL 参数**，**.RawParams** 是每个参数的**列表值映射**
+4. **URL 路径**在 **.Path** 中可用，不包括 **/consoles/** 前缀
+5. **全局配置的外部标签**在 `.ExternalLabels` 中可用
+6. 还有方便使用的四个变量：`$rawParams`、`$params`、`$path` 和 `$externalLabels`
+7. 控制台还具有访问指向由 `-web.console.libraries` 标志指定**目录**中
+   - 找到的所有以 `{{define "templateName"}}...{{end}}` 定义的模板的权限
+   - 由于这是一个**共享命名空间**，请小心避免与其他用户发生冲突
+   - 模板名称以 `prom`、`_prom` 和`__` 开头的模板**由 Prometheus 保留使用**，上述列出的**函数**也是如此
+
+### 规则的单元测试
+
+> 可以使用 **promtool** 来测试**规则**
+
+```yaml
+# 对单一测试文件
+./promtool test rules test.yml
+
+# 如果有多个测试文件，例如 test1.yml, test2.yml, test2.yml
+./promtool test rules test1.yml test2.yml test3.yml
+```
+
+#### 格式
+
+```yaml
+# 要考虑测试的规则文件列表。支持通配符。
+rule_files:
+  [ - <filename> ]
+
+[ evaluation_interval: <duration> | 默认 = 1m ]
+
+# 下面列出的组名称顺序将在给定计算时间时计算规则组（计算时间）。仅对下面列出的组有效。
+# 所有组不一定需要在下面列出。
+group_eval_order:
+  [ - <group_name> ]
+
+# 列出的所有测试。
+tests:
+  [ - <test_group> ]
+```
+
+##### test_group
+
+```yaml
+# 序列数据
+[ interval: <duration> | default = evaluation_interval ]
+input_series:
+  [ - <stries> ]
+
+# 测试组的名称
+[ name: <string> ]
+
+# 对上述数据进行的单元测试。
+
+# 对告警规则的单元测试。我们从输入文件中考虑告警规则。
+alert_rule_test:
+  [ - <alert_test_case> ]
+
+# 对PromQL表达式的单元测试。
+promql_expr_test:
+  [ - <promql_test_case> ]
+
+# 可访问告警模板的外部标签。
+external_labels:
+  [ <labelname>: <string> ... ]
+
+# 可访问告警模板的外部URL。
+# 通常通过`--web.external-url`设置。
+  [ external_url: <string> ]
+```
+
+##### series
+
+```yaml
+# 遵循通常的序列表示法`<指标名称>{<标签名称>=<标签值>, ...}`。
+# 示例：
+#      series_name{label1="value1", label2="value2"}
+#      go_goroutines{job="prometheus", instance="localhost:9090"}
+
+series: <string>
+
+# 使用扩展表示法。
+# 扩展表示法：
+#     'a+bxn' 变为 'a a+b a+(2*b) a+(3*b) … a+(n*b)' - 序列从 a 开始，n 个后续样本递增 b。
+#     'a-bxn' 变为 'a a-b a-(2*b) a-(3*b) … a-(n*b)' - 序列从 a 开始，n 个后续样本递减 b（或增加负 b）。
+#     'axn' 变为 'a a a … a'（a n+1 次） - 它是'a+0xn'的简写形式，序列从 a 开始，n 个后续样本递增0。
+#     存在用于表示缺失和过期样本的特殊值：
+#         '_' 表示从抓取中缺失的样本
+#         'stale' 表示过期的样本
+# 示例：
+#     1. '-2+4x3' 变为 '-2 2 6 10' - 序列从-2开始，3个后续样本递增4。
+#     2. ' 1-2x4' 变为 '1 -1 -3 -5 -7' - 序列从1开始，4个后续样本递减2。
+#     3. ' 1x4' 变为 '1 1 1 1 1' - 等同于'1+0x4'，序列从1开始，4个后续样本递增0。
+#     4. ' 1 _x3 stale' 变为 '1 _ _ _ stale' - 缺失的样本不能递增，因此产生了3个缺失样本由'_x3'表达式产生。
+
+values: <string>
+```
+
+##### alert_test_case
+
+1. Prometheus 允许为**不同的告警规则**具有**相同的告警名称**
+2. 因此，在单元测试中，需要列出**给定告警名称**下**所有触发的告警的并集**
+
+```yaml
+# 告警需要检查的时间从 time=0s 开始。
+eval_time: <duration>
+
+# 需要测试的告警名称。
+alertname: <string>
+
+# 在给定计算时间下，预期触发的告警列表。如果你想测试某个告警规则不应该触发，可以列出上述字段并将`exp_alerts`留空。
+exp_alerts:
+  [ - <alert> ]
+```
+
+##### alert
+
+```yaml
+# 预期告警的扩展标签和注释。
+# 注意：标签也包括与告警关联的样例的标签（在`/alerts`中看到的，没有序列`__name__`和`alertname`）
+exp_labels:
+  [ <labelname>: <string> ]
+exp_annotations:
+  [ <labelname>: <string> ]
+```
+
+##### promql_test_case
+
+```yaml
+# 要计算的表达式
+expr: <string>
+
+# 需要检查的表达式的时间，从time=0s开始。
+eval_time: <duration>
+
+# 给定计算时间时的预期样本。
+exp_samples:
+  [ - <sample> ]
+```
+
+##### sample
+
+```yaml
+# 样本的标签，遵循通常的序列表示法`<指标名称>{<标签名称>=<标签值>, ...}`。
+# 示例：
+#      series_name{label1="value1", label2="value2"}
+#      go_goroutines{job="prometheus", instance="localhost:9090"}
+labels: <string>
+
+# PromQL表达式的预期值。
+value: <number>
+```
+
+#### 示例
+
+1. 这是一个用于**单元测试**的示例输入文件，它通过了测试
+   - test.yml 遵循上述语法，并且 alerts.yml 包含告警规则
+2. 如果有 alerts.yml 在同一目录中，运行`./promtool test rules test.yml`
+
+![image-20250509135234763](/Users/zhongmingmao/data/typora/image-20250509135234763.png)
+
+##### test.yml
+
+```yaml
+# 单元测试的主要输入。
+# 只将此文件作为命令行参数传递。
+
+rule_files:
+    - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+    # 测试 1。
+    - interval: 1m
+      # 序列数据。
+      input_series:
+          - series: 'up{job="prometheus", instance="localhost:9090"}'
+            values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+          - series: 'up{job="node_exporter", instance="localhost:9100"}'
+            values: '1+0x6 0 0 0 0 0 0 0 0' # 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
+          - series: 'go_goroutines{job="prometheus", instance="localhost:9090"}'
+            values: '10+10x2 30+20x5' # 10 20 30 30 50 70 90 110 130
+          - series: 'go_goroutines{job="node_exporter", instance="localhost:9100"}'
+            values: '10+10x7 10+30x4' # 10 20 30 40 50 60 70 80 10 40 70 100 130
+
+      # 对告警规则的单元测试。
+      alert_rule_test:
+          # 单元测试 1。
+          - eval_time: 10m
+            alertname: InstanceDown
+            exp_alerts:
+                # 告警 1。
+                - exp_labels:
+                      severity: page
+                      instance: localhost:9090
+                      job: prometheus
+                  exp_annotations:
+                      summary: "Instance localhost:9090 down"
+                      description: "localhost:9090 of job prometheus has been down for more than 5 minutes."
+      # 对PromQL表达式的单元测试。
+      promql_expr_test:
+          # 单元测试 1。
+          - expr: go_goroutines > 5
+            eval_time: 4m
+            exp_samples:
+                # 样本 1。
+                - labels: 'go_goroutines{job="prometheus",instance="localhost:9090"}'
+                  value: 50
+                # 样本 2。
+                - labels: 'go_goroutines{job="node_exporter",instance="localhost:9100"}'
+                  value: 50
+```
+
+##### alerts.yml
+
+```yaml
+# 规则文件。
+
+groups:
+- name: example
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+        severity: page
+    annotations:
+        summary:
+```
+
+## 查询
+
+### 基础
+
+1. Prometheus 提供了一种功能查询语言，称为 **PromQL**，允许用户**实时选择和聚合时间序列数据**
+2. 向 Prometheus 发送查询请求时
+   - 可以是**瞬时查询**（在某一时间点评估）或**范围查询**（在从开始到结束时间的**等间隔步长**中多次运行）
+   - PromQL 在这两种情况下的**使用方法完全相同**；范围查询只是在**不同的时间戳**上**多次**运行的**瞬时查询**
+3. 在 Prometheus 的 UI 中， **Table** 用于**瞬时查询**， 而 **Graph** 用于**范围查询**
+4. 其它程序可以通过 **HTTP API** 获取 **PromQL** 表达式的结果
+
+#### 数据类型
+
+> 在 Prometheus 的表达式语言中，**表达式**或**子表达式**可以评估为四种类型之一
+
+| 数据类型 | 描述                                                         |
+| -------- | ------------------------------------------------------------ |
+| 瞬时向量 | 包含**每个时间序列**的**单个样本**的时间序列集，所有样本共享**相同的时间戳** |
+| 范围向量 | **每个时间序列**包含**随时间变化**的**数据点范围**的时间序列集 |
+| 标量     | 简单的**浮点数值**                                           |
+| 字符串   | 简单的字符串值 - **当前未使用**                              |
+
+1. 根据使用场景（例如**绘图**与**显示表达式输出**）的不同，用户指定的表达式结果只能是这四种类型中的某些类型
+   - **返回瞬时向量的表达式**是唯一可以**绘图**的类型
+2. Native Histogram
+   - 必须启用**特性标志**后才能消费 Native Histogram
+   - 一旦将 Native Histogram 消费到 **TSDB** 中（即使之后**再次禁用特性标志**）
+     - **范围向量**和**瞬时向量**现在可能包含**不是简单浮点数**（浮点样本）而是**完整的 Histogram 样本**
+   - **向量**可能时包含**浮点数样本**和 **Histogram 样本**的**混合**
+
+#### 字面量
+
+##### 字符串字面量
+
+1. 字符串字面量由**单引号**、**双引号**或**反引号**指定
+2. PromQL 遵循 **Go 转义规则**
+   - 对于**单引号**或**双引号**指定的字符串字面量，一个**反斜杠**开始一个转义序列，后面可能跟 **a**、**b**、**f**、**n**、**r**、**t**、**v** 或 **\**
+   - 使用**八进制**（`\nnn`）或**十六进制**（`\xnn`、`\unnnn` 和 `\Unnnnnnnn`）表示法可以提供**特定字符**
+3. 相反，在由**反引号**指定的字符串字面量中，**不会解析转义字符**
+   - 与 Go 不同，Prometheus **不会丢弃**反引号内部的**新行**
+
+```go
+"this is a string"
+'these are unescaped: \n \\ \t'
+`these are not unescaped: \n ' " \t`
+```
+
+##### 浮点字面量
+
+> 标量浮点值可以用**整数**或**浮点数**格式（仅为了更好的可读性而包括**空格**）编写
+
+```
+23
+-2.43
+3.4e-9
+0x8f
+-Inf
+NaN
+```
+
+#### 时间序列选择器
+
+1. 时间序列选择器负责**选择时间序列**以及**原始**或**推断**的**样本时间戳**和**值**
+2. 不要将时间序列选择器与可以**执行时间序列选择器**的**即时**和**范围查询**这些更高级别的概念相混淆
+   - 更高级别的**即时查询**将在**一个时间点**应用给定的选择器
+   - 但是**范围查询**将以**常规步骤**在**最小**和**最大**时间戳之间的**多个不同时间**应用选择器
+
+##### 瞬时向量选择器
+
+1. 瞬时向量（**instant vector**）选择器允许**选择一组时间序列**，并在给定时间（**时间点**）为**每个时间序列**获取**单个样本值**
+2. 在最简单的形式下，只指定一个**指标名称**，这会得到包含所有具有此指标名称的时间序列的瞬时向量
+
+> 以下示例选择了具有 **http_requests_total** 指标名称的**所有时间序列**
+
+```
+http_requests_total
+```
+
+> 可以通过附加由**花括号**包围的**逗号分隔**的**标签匹配器列表**来进一步**筛选**这些时间序列
+> 以下示例选择了具有 **http_requests_total** 指标名称且 job 标签设置为 prometheus 和其 group 标签设置为 canary 的时间序列
+
+```json
+http_requests_total{job="prometheus",group="canary"}
+```
+
+> 还可能对**标签值**进行**负匹配**，或者对**标签值**进行**正则表达式匹配**。存在以下标签匹配操作符
+
+| 标签匹配操作符 | 描述                                         |
+| -------------- | -------------------------------------------- |
+| =              | 选择与提供的字符串**完全相等**的标签         |
+| !=             | 选择与提供的字符串**不相等**的标签           |
+| =~             | 选择与提供的字符串**正则表达式匹配**的标签   |
+| !~             | 选择与提供的字符串**不匹配正则表达式**的标签 |
+
+1. 正则表达式的匹配**完全锚定** - `env=~"foo"` 的匹配被视为 `env=~"^foo$"`
+2. 此示例选择了环境为 staging、testing 和 development 的所有 http_requests_total 时间序列以及除了 GET 方法之外的 HTTP 方法
+
+```json
+http_requests_total{environment=~"staging|testing|development",method!="GET"}
+```
+
+1. 匹配**空标签值**的标签匹配器也会选择所有**没有设置特定标签**的时间序列
+2. 对于**同一标签名**，可以有**多个匹配器**
+
+> 给定以下数据集
+
+```json
+http_requests_total
+http_requests_total{replica="rep-a"}
+http_requests_total{replica="rep-b"}
+http_requests_total{environment="development"}
+```
+
+> 查询 **http_requests_total{environment=""}** 将匹配并返回
+
+```json
+http_requests_total
+http_requests_total{replica="rep-a"}
+http_requests_total{replica="rep-b"}
+```
+
+> 而会排除
+
+```json
+http_requests_total{environment="development"}
+```
+
+> 可以为**同一个标签名**使用**多个匹配器**；它们必须**都通过**才能返回结果
+
+```json
+http_requests_total{replica!="rep-a",replica=~"rep.*"}
+```
+
+> 会选择以下序列
+
+```json
+http_requests_total{replica="rep-b"}
+```
+
+> 向量选择器要么**指定名称**，要么**至少包含一个不匹配空字符串**的**标签匹配器**。以下表达式非法
+
+```json
+{job=~".*"} # BAD！
+```
+
+![image-20250512233556876](/Users/zhongmingmao/data/typora/image-20250512233556876.png)
+
+> 相比之下，以下表达式有效，因为它们都具有**不匹配空标签值**的选择器
+
+```json
+{job=~".+"}              # GOOD！
+{job=~".*",method="get"} # GOOD！
+```
+
+![image-20250512233531107](/Users/zhongmingmao/data/typora/image-20250512233531107.png)
+
+1. **标签匹配器**还可以应用于**指标名称**，通过针对内部的 `__name__` 标签匹配
+2. 表达式 **http_requests_total** 等同于`{__name__="http_requests_total"}`
+3. 以下表达式选择名称以 `job:` 开头的所有指标
+
+```json
+{__name__=~"job:.*"}
+```
+
+> **指标名称**不能是关键字 **bool**、**on**、**ignoring**、**group_left** 和 **group_right**。以下表达式非法
+
+```json
+on{} # BAD！
+```
+
+![image-20250512234043097](/Users/zhongmingmao/data/typora/image-20250512234043097.png)
+
+> 为此限制的一个变通方法是使用 `__name__` 标签
+
+```json
+{__name__="on"} # GOOD！
+```
+
+![image-20250512234151586](/Users/zhongmingmao/data/typora/image-20250512234151586.png)
+
+> Prometheus 中的所有正则表达式都使用 **RE2** 语法
+
+##### 范围向量选择器
+
+1. 范围向量（**range vector**）字面量的工作方式类似于瞬时向量字面量，但会为其每个结果范围向量元素从**当前时间**取回**一段值**
+2. 从语法上看，在范围向量选择器**末尾**附加一个由**方括号**包围的**时间间隔**（`[]`）以指定每个结果范围向量元素获取的值的时间段
+3. 该范围是一个**闭区间**，即**边界处的样本**仍然**包含在选择中**
+
+> 选择了**过去 5 分钟**内记录的**所有值**，所有具有 http_requests_total 指标名称和 job 标签设置为 prometheus 的时间序列
+
+```json
+http_requests_total{job="prometheus"}[5m]
+```
+
+##### 持续时间
+
+> 持续时间以**数字**形式指定，紧随其后的是以下之一的**单位**
+> 对于年中的天数，**跳过了闰日**，相应地，对于分钟，则**跳过了闰秒**
+
+| 单位 | 描述                      |
+| ---- | ------------------------- |
+| ms   | 毫秒                      |
+| s    | 秒                        |
+| m    | 分钟                      |
+| h    | 小时                      |
+| d    | 天 - 假设一天总是有24小时 |
+| w    | 周 - 假设一周总是有7天    |
+| y    | 年 - 假设一年总是有365天  |
+
+>  持续时间可以通过**拼接**进行组合，单位必须按照**最长到最短**的顺序排列，**给定单位**只能在一个持续时间中**出现一次**
+
+```
+5h
+1h30m
+5m
+10s
+```
+
+##### offset 修饰符
+
+> **offset** 修饰符允许更改查询中单个**即时**和**范围**向量的**时间偏移**
+> 以下表达式返回**相对于当前查询评估时间**的**过去 5 分钟内**的 **http_requests_total** 值
+
+```
+http_requests_total offset 5m
+```
+
+> **offset** 修饰符始终需要**紧跟选择器**，因此以下操作是正确的
+
+```json
+sum(http_requests_total{method="GET"} offset 5m) // GOOD
+```
+
+![image-20250512235833138](/Users/zhongmingmao/data/typora/image-20250512235833138.png)
+
+> 而以下操作则是错误的
+
+```json
+sum(http_requests_total{method="GET"}) offset 5m // INVALID。
+```
+
+![image-20250512235923807](/Users/zhongmingmao/data/typora/image-20250512235923807.png)
+
+> **offset** 同样适用于**范围向量** - 这返回**一周前** http_requests_total 的 **5 分钟变化速率**
+
+```json
+rate(http_requests_total[5m] offset 1w)
+```
+
+![image-20250513000136621](/Users/zhongmingmao/data/typora/image-20250513000136621.png)
+
+![image-20250513000218947](/Users/zhongmingmao/data/typora/image-20250513000218947.png)
+
+> 在查询**过去**的样本时，**负偏移**能够在时间上进行**向前的比较** - 这允许查询其**评估时间之后**的时间的数据
+
+```json
+rate(http_requests_total[5m] offset -1w)
+```
+
+##### @ 修饰符
+
+1. **@** 修饰符允许更改查询中单个**即时**和**范围**向量的**评估时间**
+2. 提供给 **@** 修饰符的时间需要是 **Unix 时间戳**，并用**浮点字面量**描述
+
+> 以下表达式返回 **2021-01-04T07:40:00+00:00** 时刻的 **http_requests_total** 值
+
+```json
+http_requests_total @ 1609746000
+```
+
+![image-20250513000738748](/Users/zhongmingmao/data/typora/image-20250513000738748.png)
+
+> **@** 修饰符始终需要**紧跟选择器**，因此以下操作是正确的
+
+```json
+sum(http_requests_total{method="GET"} @ 1609746000) // GOOD。
+```
+
+> 而以下操作则是错误的
+
+```json
+sum(http_requests_total{method="GET"}) @ 1609746000 // INVALID。
+```
+
+> **@** 同样适用于**范围向量** - 返回在 2021-01-04T07:40:00+00:00 时刻的 **5分钟速率**
+
+```json
+rate(http_requests_total[5m] @ 1609746000)
+```
+
+1. **@** 修饰符支持上述描述的**所有数值字面量**表示
+2. 可以与 **offset** 修饰符一起工作，其中**偏移**相对于 **@** 修饰符时间应用 - **结果不受修饰符顺序的影响**
+
+> 这两个查询将**产生相同的结果**
+
+```json
+# offset 在 @ 后
+http_requests_total @ 1609746000 offset 5m
+# offset 在 @ 前
+http_requests_total offset 5m @ 1609746000
+```
+
+1. 此外，**start()** 和 **end()** 也可以作为 **@** 修饰符的值使用作为**特殊值**
+2. 对于**范围查询**，它们分别对应于**查询范围**的**开始**和**结束**，并**对所有步骤保持不变**
+3. 对于**即时查询**，**start()** 和 **end()** 都会被解析为**评估时间**
+
+```json
+http_requests_total @ start()
+rate(http_requests_total[5m] @ end())
+```
+
+> **@** 修饰符允许查询查看其**评估时间之后**的时间
+
+#### 子查询
+
+1. 子查询允许为**给定的范围**和**解析度**运行**即时查询**
+2. **子查询的结果**是一个**范围向量**
+3. `<instant_query> '[' <range> ':' [<resolution>] ']' [ @ <float_literal> ] [ offset <duration> ]`
+   - **resolution** （解释度）是**可选**的，默认值是**全局的评估间隔**
+
+#### 运算符
+
+1. Prometheus 支持许多**二进制**和**聚合**运算符
+
+#### 函数
+
+1. Prometheus 支持几个函数来**操作数据**
+
+#### 注释
+
+1. PromQL 支持以 **#** 开头的**行注释**
+
+#### 陷阱
+
+##### 过时标记
+
+> Staleness
+
+1. 在**查询期间**用于**采样的时间戳**独立于**实际的时间序列数据**
+   - 这是为了**支持聚合**（如 sum、avg 等）的情况而设计的，其中多个聚合的时间序列**并不精确对齐**
+   - 由于它们的**独立性**，Prometheus 需要在查找时间段内**为每个相关时间序列分配一个值** - 默认情况下，该时间段为 **5 分钟**
+2. 如果 **Target 抓取**或**规则计算**不再返回**以前存在**的时间序列的样本，则该**时间序列**将标记为 **stale**
+3. 如果 **Target 被删除**，之前检索的时间序列将在删除后不久标记为 **stale**
+4. 如果**查询**在**时间序列**标记为 **stale** 后的**采样时间戳**上进行**评估**，则**不会返回该时间序列的值**
+   - 如果随后为这个时间序列消费了**新的样本**，则它们将如预期那样返回
+5. 当**时间序列不再被导出**（exported）或 **Target 不存在**时，**时间序列**将被标记为 **stale**
+   - 这样的**时间序列**将在**最近收集的样本时消失**，并且在标记为 **stale** 后**不会在查询中返回**
+6. 一些 **Exporter** 会在**样本**上**放置自己的时间戳**，这样会导致不同的行为
+   - **停止导出的时间序列**在**消失前**会被置为 **5 分钟（默认）的最后一个值**
+   - **track_timestamps_staleness** 配置项可以改变这一点
+
+##### 避免缓慢查询和过载
+
+1. 如果**查询**需要处理**大量数据**，可能会导致**绘图超时**或**服务器**或**浏览器过载**
+2. 在**构建未知数据的查询**时
+   - 应该始终在 **Prometheus 表达式浏览器**的**表格视图**中**构建查询**，直到结果集看起来**合理**一些（**最多只有几百个时间序列**）
+   - 只有在已**过滤**或**聚合**了数据足够多之后，才建议切换到**图形模式**
+   - 如果**表达式**仍然无法在**即时模式**下**快速绘图**，那么可以通过**记录规则**来实现
+3. 这尤其适用于 Prometheus 的查询语言
+   - 因为一个**简单的指标名称选择器**如 api_http_requests_total 就有可能会扩展为**数千个具有不同标签**的时间序列
+4. 同时，请记住，**聚合多个时间序列的表达式**即使**输出只有少量时间序列**也会**对服务器产生负载**
+   - 类似于在**关系数据库**中**求一列所有值的总和**，即使输出值只是一个**数字**，也会很慢
+
+### 运算符
+
+#### 二目运算符
+
+1. Prometheus 的查询语言支持基本的**逻辑**和**算术**运算符
+2. 对于两个**瞬时向量**之间的运算，可以**修改匹配行为**
+
+##### 算术二元运算符
+
+> Prometheus 中存在的以下二元算术运算符
+
+| 算术二元运算符 | 描述        |
+| -------------- | ----------- |
+| +              | 加法        |
+| -              | 减法        |
+| *              | 乘法        |
+| /              | 除法        |
+| %              | **取模**    |
+| ^              | **幂/指数** |
+
+> 标量 + 标量
+
+1. 它们**产生另一个标量**，该标量是应用运算符到两个标量运算数的结果
+
+> 瞬时向量 + 标量
+
+1. 运算符应用于向量中的**每个数据样本的值**
+2. 如果时间序列瞬时向量乘以 2，则结果是**另一个向量**，在该向量中原始向量的**每个样本值**都乘以 2
+3. **元数据名称被丢弃**
+
+> 瞬时向量 + 瞬时向量
+
+1. 在**左侧向量的每个元素**和**右侧向量的匹配元素**上应用二元算术运算符
+2. 结果被传播到**结果向量**中，**分组标签**将成为**输出标签集**
+3. **元数据名称被丢弃**
+4. **找不到**与右侧向量中**匹配元素**对应项的元素**不会出现在结果中**
+
+##### 二元比较运算符
+
+> 存在以下二元比较运算符
+
+| 二元比较运算符 | 描述     |
+| -------------- | -------- |
+| ==             | 等于     |
+| !=             | 不等于   |
+| >              | 大于     |
+| <              | 小于     |
+| >=             | 大于等于 |
+| <=             | 小于等于 |
+
+1. 默认情况下，它们可以进行**过滤**
+2. 可以通过提供 **bool** 来修改其行为，这将以**值**的形式返回 **0** 或 **1** ，而非过滤
+
+> 标量 + 标量
+
+1. 必须提供 **bool 修饰符**，并且这些运算符的结果是**另一个标量**
+2. 该标量取决于**比较结果**是 **0（false）**还是 **1（true）**
+
+> 瞬时向量 + 标量
+
+1. 这些运算符应用于向量中的**每个数据样本的值**，比较结果为 **false** 的**向量元素**从结果向量中**删除**
+2. 如果提供了 **bool 修饰符**，则会将应**被删除的向量元素值**设置为 **0**，将**应保留的向量元素值**设置为 **1**
+3. 如果提供了 **bool 修饰符**，则**指标名称会被丢弃**
+
+> 瞬时向量 + 瞬时向量
+
+1. **默认情况**下作为**过滤器**使用，应用于**匹配的元素**
+2. 对于**表达式为假**或**找不到匹配的其他一侧的元素**，结果向量中将**不会包含**该元素，而其他元素则被**传播**到**结果向量**中
+   - **分组标签**成为**输出标签集**
+3. 如果提供了 **bool 修饰符**，则会将**应删除的向量元素值**设置为 **0**，将**应保留的向量元素值**设置为 **1**
+   - **分组标签**再次成为**输出标签集**
+4. 如果提供了 **bool 修饰符**，则**指标名称会被丢弃**
+
+##### 二元逻辑/集合运算符
+
+> 仅在**瞬时向量之间**定义的二元逻辑/集合运算符
+
+| 二元逻辑/集合运算符 | Desc |
+| ------------------- | ---- |
+| and                 | 交集 |
+| or                  | 并集 |
+| unless              | 补集 |
+
+1. **vector1 and vector2** 结果为包含 vector1 和 vector2 中具有**完全匹配标签集**的**元素**的向量 - 其他元素被**删除**
+   - 从**左侧向量**继承**元数据名称和值**
+2. **vector1 or vector2** 结果为包含 vector1 的所有原始元素（**标签集+值**）以及 vector2 中所有没有与 vector1 中匹配标签集的元素的元素
+3. **vector1 unless vector2** 结果为包含 vector1 中没有与 vector2 中**任何一个元素完全匹配标签集**的元素所形成的向量
+   - 两个向量中的匹配元素都**被删除**
+
+#### 向量匹配
+
+1. 向量之间的运算尝试在**右侧向量**中的每一项中找到与**左侧向量**中每一项相匹配的元素
+2. 匹配行为有两种基本类型：**一对一**和**多对一**/**一对多**
+
+##### 向量匹配关键词
+
+1. 这些向量匹配关键词允许在**具有不同标签集**的系列之间进行匹配，提供 - `on` 和 `ignoring`
+2. 提供的**标签列表**将决定**向量**如何**结合**
+
+##### 组修饰符
+
+1. 这些组修饰符允许多对**多对一**/**一对多**向量匹配 - `group_left` 和 `group_right`
+2. 可以提供给**组修饰符**的**标签列表**包含来自“一”边（the “one” side）的标签，这些标签将**被包含**在结果指标中
+3. **多对一**和**一对多**匹配是**高级用例**，应**谨慎考虑**。通常，正确地使用 `ignoring(<labels>)` 就可以提供所需的结果
+4. **组修饰符**只能用于**比较**和**算术**
+   - 运算如 **and**、**unless** 和 **or** 默认情况下会与**右侧向量**的**所有可能条目**进行匹配
+
+##### 一对一向量匹配
+
+1. 一对一在运算符的两侧查找**唯一的配对项**
+2. 默认情况下，这是一类遵循格式 `vector1 <operator> vector2` 的运算
+3. 如果它们具有**完全相同的标签集**和**相应的值**，则两个条目**匹配**
+4. `ignoring` 关键字允许在**匹配时忽略某些标签**
+5. `on` 关键字则**将考虑的标签集减少到提供的列表**
+
+```json
+<vector expr> <bin-op> ignoring(<label list>) <vector expr>
+<vector expr> <bin-op> on(<label list>) <vector expr>
+```
+
+> 输入示例：
+
+```json
+method_code:http_errors:rate5m{method="get", code="500"}  24
+method_code:http_errors:rate5m{method="get", code="404"}  30
+method_code:http_errors:rate5m{method="put", code="501"}  3
+method_code:http_errors:rate5m{method="post", code="500"} 6
+method_code:http_errors:rate5m{method="post", code="404"} 21
+
+method:http_requests:rate5m{method="get"}  600
+method:http_requests:rate5m{method="del"}  34
+method:http_requests:rate5m{method="post"} 120
+```
+
+> 查询示例：
+
+```json
+method_code:http_errors:rate5m{code="500"} / ignoring(code) method:http_requests:rate5m
+```
+
+1. 这个返回一个**结果向量**，其中包含过去 5 分钟内**每个方法**的状态代码为 **500** 的 HTTP 请求的比例
+2. 如果没有 **ignoring(code)**，则**不会有匹配**，因为这些指标**不会共享相同的标签集**
+3. put 和 del 方法**没有匹配**，**不会出现在结果中**
+
+```json
+{method="get"}  0.04            //  24 / 600
+{method="post"} 0.05            //   6 / 120
+```
+
+##### 多对一和一对多向量匹配
+
+1. **多对一**和**一对多**匹配指的是**“一边”的每一项**都可以与**“多边”的多项**进行匹配的情况
+2. 这必须明确地通过使用 **group_left** 和 **group_right** 修饰符，以确定哪个向量具有**更高的基数**
+
+```json
+<vector expr> <bin-op> ignoring(<label list>) group_left(<label list>) <vector expr>
+<vector expr> <bin-op> ignoring(<label list>) group_right(<label list>) <vector expr>
+<vector expr> <bin-op> on(<label list>) group_left(<label list>) <vector expr>
+<vector expr> <bin-op> on(<label list>) group_right(<label list>) <vector expr>
+```
+
+1. **提供的标签列表**与**组修饰符**一起使用包含来自**“一个”方面的额外标签**，这些标签将被包含在**结果指标**中
+2. 对于 **on**，**一个标签**只能出现在**列表中的一个位置**，**结果向量**中的**每个时间序列**都必须是**唯一可识别**的
+
+> 查询示例
+
+```json
+method_code:http_errors:rate5m / ignoring(code) group_left method:http_requests:rate5m
+```
+
+1. 在这种情况下，**左侧向量**包含 **method 标签值的多项条目** - 因此，我们使用 **group_left** 指示这种情况
+2. **右侧元素**现在与左侧具有**相同 method 标签**的**多个元素**进行匹配
+
+```json
+{method="get", code="500"}  0.04            //  24 / 600
+{method="get", code="404"}  0.05            //  30 / 600
+{method="post", code="500"} 0.05            //   6 / 120
+{method="post", code="404"} 0.175           //  21 / 120
+```
+
+#### 聚合运算符
+
+> Prometheus 支持以下**原生聚合运算符**，可用于聚合**单个瞬时向量的元素**，生成具有**聚合值的新向量**，**元素数量较少**
+
+| 聚合运算符   | 描述                                                         |
+| ------------ | ------------------------------------------------------------ |
+| sum          | 计算维度上的总和                                             |
+| min          | 选择最小值维度                                               |
+| max          | 选择最大值维度                                               |
+| avg          | 计算维度上的平均值                                           |
+| group        | 结果向量中的所有值为 **1**                                   |
+| stddev       | 计算维度上的**总体标准差**                                   |
+| stdvar       | 计算维度上的**总体方差**                                     |
+| count        | 计算**向量中元素的数量**                                     |
+| count_values | 计算**相同值的元素数量**                                     |
+| bottomk      | 样本值**最小**的 k 个元素                                    |
+| topk         | 样本值最大的 k 个元素                                        |
+| quantile     | 计算维度上的 `φ`-分位数（0 ≤ `φ` ≤ 1）                       |
+| limitk       | 采样 n 个元素                                                |
+| limit_ratio  | 如果 r > 0 则采样大约 r 比例的元素，如果 r = -(1.0 - r) 则采样剩余元素 |
+
+1. 这些运算符既可以用于在**所有标签维度**上进行**聚合**，也可以通过包括 **without** 或 **by** 子句来保留不同的维度
+2. 这些子句可以在**表达式之前或之后**使用
+
+```json
+`<aggr-op> [without|by (<label list>)] ([parameter,] `<vector expr>`)
+```
+
+```json
+`<aggr-op>([parameter,] `<vector expr>`) [without|by (<label list>)]
+```
+
+1. label list 是一个**未引号的标签列表**，可能包含**尾随逗号**，即 **(label1, label2)** 和 **(label1, label2,)** 都是有效的语法
+2. **without** 从结果向量中**移除列出的标签**，同时保留输出中的其他标签
+3. **by** 的行为相反，它**丢弃不在 by 子句中列出的标签**，即使它们在向量的**所有元素**中具有**相同的标签**，值也是如此
+4. **parameter** 只有在 **count_values**、**quantile**、**topk**、**bottomk**、**limitk** 和 **limit_ratio** 中需要
+5. **count_values** 为**每个唯一样本值**输出一个**时间序列**
+   - 每个序列都有一个**额外的标签** - 该**标签名称**由**聚合参数**给出，**标签值是唯一的样本值**
+   - 每个时间序列的**值**是该**样本值出现的次数**
+6. **topk** 和 **bottomk** 与其他聚合器不同，因为返回的是**输入样本的子集**，其**结果向量**中包括**原始标签**
+7. **by** 和 **without** 只用于对**输入向量**进行**分桶**
+8. **limitk** 和 **limit_ratio** 也返回**输入样本的子集**，**原始标签**被包含在**结果向量**中
+9. quantile 计算 `φ`-分位数，即在聚合维度上的 N 指标值中排名为 `φ`*N 的值 - `φ` 作为聚合参数
+   - **quantile(0.5, ...)** 计算中位数，**quantile(0.95, ...)** 计算第 95 百分位数
+   - 对于 `φ` = NaN，返回 NaN
+   - 对于 `φ` < 0，返回 -Inf
+   - 对于 `φ` > 1，返回 +Inf
+
+> 假设指标 http_requests_total 是在 application、instance 和 group 标签上扇出的时间序列
+> 可以计算**所有实例**中**每个应用和组**的 HTTP 请求总数
+
+```json
+sum without (instance) (http_requests_total)
+```
+
+![image-20250513013354292](/Users/zhongmingmao/data/typora/image-20250513013354292.png)
+
+> 等价于
+
+```json
+sum by (application, group) (http_requests_total)
+```
+
+![image-20250513013503909](/Users/zhongmingmao/data/typora/image-20250513013503909.png)
+
+> 如果只关心看到的所有应用程序中的总 HTTP 请求数，可以简单地写出
+
+```
+sum(http_requests_total)
+```
+
+![image-20250513013623023](/Users/zhongmingmao/data/typora/image-20250513013623023.png)
+
+> 要计算每个构建版本运行的程序数量，可以写出
+
+```json
+count_values("version", build_version)
+```
+
+![image-20250513014032134](/Users/zhongmingmao/data/typora/image-20250513014032134.png)
+
+> 要获取所有实例中最大的 5 个 HTTP 请求计数，可以写出
+
+```json
+topk(5, http_requests_total)
+```
+
+![image-20250513014145824](/Users/zhongmingmao/data/typora/image-20250513014145824.png)
+
+> 为了**采样 10 个时间序列**，例如检查标签及其值，可以写出
+
+```json
+limitk(10, http_requests_total)
+```
+
+![image-20250513014330965](/Users/zhongmingmao/data/typora/image-20250513014330965.png)
+
+> 为了**确定性地采样**大约 10% 的时间序列，可以写出
+
+```json
+limit_ratio(0.1, http_requests_total)
+```
+
+![image-20250513014510959](/Users/zhongmingmao/data/typora/image-20250513014510959.png)
+
+![image-20250513014556169](/Users/zhongmingmao/data/typora/image-20250513014556169.png)
+
+> 由于 **limit_ratio()** 实现了一个**基于标签哈希**的**确定性采样算法**，可以通过使用
+
+```json
+limit_ratio(-0.9, http_requests_total)
+# 获取上述样本的补集，即大约90%
+# 这可以同样精确地获取 limit_ratio(0.1, ...) 返回的那些元素
+```
+
+![image-20250513014712153](/Users/zhongmingmao/data/typora/image-20250513014712153.png)
+
+> 可以使用此功能检查**两个样本子集的平均值**之间的**差异**与**标准差**相比是否“小”，以验证 **avg()** 是否是**样本值**的代表性聚合
+
+```json
+abs(
+  avg(limit_ratio(0.5, http_requests_total))
+  -
+  avg(limit_ratio(-0.5, http_requests_total))
+) <= bool stddev(http_requests_total)
+```
+
+![image-20250513015020956](/Users/zhongmingmao/data/typora/image-20250513015020956.png)
+
+### 函数
+
+#### abs
+
+1. `abs(v instant-vector)` 返回**输入向量**的**所有样本值**转换为其**绝对值**的**新向量**
+
+#### absent
+
+1. `absent(v instant-vector)` 
+   - 如果传入的向量**包含任何元素**（**浮点数**或**原生 Histogram**），则返回**空向量**
+   - 如果传入的向量**没有任何元素**，则返回一个值为 **1** 的**单元素向量**
+2. 这对于监控特定**指标名称**和**标签**组合下**不存在时间序列**的情况非常有用
+
+> 在前两个示例中，absent() 尝试从**输入向量**推断**输出向量**的单元素标签
+
+```json
+absent(nonexistent{job="myjob"})
+# => {job="myjob"}
+
+absent(nonexistent{job="myjob",instance=~".*"})
+# => {job="myjob"}
+
+absent(sum(nonexistent{job="myjob"}))
+# => {}
+```
+
+#### absent_over_time
+
+1. `absent_over_time(v range-vector)`
+   - 如果传入的范围向量**包含任何元素**（**浮点数**或**原生 Histogram**），则**返回空向量**
+   - 如果传入的范围向量**没有任何元素**，则返回一个值为 **1** 的**单元素向量**
+2. 这对于监控特定**指标名称**和**标签**组合**在一段时间内是否存在**非常有用
+
+> 在前两个示例中，**absent_over_time()** 尝试从**输入向量**推断**单元素输出向量**的**标签**
+
+```json
+absent_over_time(nonexistent{job="myjob"}[1h])
+# => {job="myjob"}
+
+absent_over_time(nonexistent{job="myjob",instance=~".*"}[1h])
+# => {job="myjob"}
+
+absent_over_time(sum(nonexistent{job="myjob"})[1h:])
+# => {}
+```
+
+#### ceil
+
+> `ceil(v instant-vector)` 对 v 中所有元素的样本值**向上取整**到**最接近且大于或等于 v 的整数值**
+
+1. ceil(+Inf) = +Inf
+2. ceil(±0) = ±0
+3. ceil(1.49) = 2.0
+4. ceil(1.78) = 2.0
+
+#### changes
+
+1. 对于每个**输入时间序列**，`changes(v range-vector)` 返回在其提供的时间范围内**值发生变化的次数**，并以**瞬时向量**的形式返回结果
+
+#### clamp
+
+1. `clamp(v instant-vector, min scalar, max scalar)` 将 v 中所有元素的样本值**限制**在最小值 min 和最大值 max 之间
+2. 特殊情况
+   - 如果 `min > max`，则返回**空向量**
+   - 如果 **min** 或 **max** 为 **NaN**，则返回 **NaN**
+
+#### clamp_max
+
+1. `clamp_max(v instant-vector, max scalar)` 将 v 中所有元素的样本值**限制**在最大值 max 以下
+
+#### clamp_min
+
+1. `clamp_min(v instant-vector, min scalar)` 将 v 中所有元素的样本值**限制**在最小值 min 以上
+
+#### day_of_month
+
+1. `day_of_month(v=vector(time()) instant-vector)` 返回给定时间（**UTC**）的**月份中的第几天** - 返回的值从 **1** 到 **31**
+
+#### day_of_week
+
+1. `day_of_week(v=vector(time()) instant-vector)` 返回给定时间（**UTC**）的**星期几** - 返回的值从 **0** 到 **6** ，其中 0 表示**周日**等
+
+#### day_of_year
+
+1. `day_of_year(v=vector(time()) instant-vector)` 返回给定时间在 **UTC** 下的年中的**第几天**
+2. 返回值范围是从**非闰年**的 **1** 到 **365**，**闰年**则是 **1** 到 **366**
+
+#### days_in_month
+
+1. `days_in_month(v=vector(time()) instant-vector)` 返回给定时间在 **UTC** 下的**月份天数** - 返回值范围是从 **28** 到 **31**
+
+#### delta
+
+1. `delta(v range-vector)` 计算范围向量 v 中每个时间序列元素的**第一**和**最后一个值**之间的**差值**
+   - 返回一个**瞬时向量**，包含给定的**差值**和**等效标签**
+2. 差值会被**外推**以**覆盖**在范围向量选择器中指定的时间范围，因此即使**样本值都是整数**，也可能得到**非整数结果**
+
+> 以下示例表达式返回当前 CPU 温度与 2 小时前之差
+
+```json
+delta(cpu_temp_celsius{host="zeus"}[2h])
+```
+
+#### deriv
+
+1. `deriv(v range-vector)` 计算范围向量 v 中的时间序列的**每秒的导数**（使用**简单线性回归**）
+2. 范围向量必须**至少有两个样本**才能执行计算
+3. 当遇到 **+Inf** 或 **-Inf** 时，**斜率**和**偏移值**将被计算为 **NaN**
+4. deriv 只应与 **Gauge** 一起使用
+
+#### exp
+
+1. `exp(v instant-vector)` 计算 v 中**所有元素**的**指数函数**
+2. 特殊情况
+   - **exp(+Inf) = +Inf**
+   - **exp(NaN) = NaN**
+
+#### floor
+
+> floor(v instant-vector) 将 v 中的所有元素的采样值**向下取整**到**小于或等于 v 的最接近的整数值**
+
+1. floor(+Inf) = +Inf
+2. floor(±0) = ±0
+3. floor(1.49) = 1.0
+4. floor(1.78) = 1.0
+
+#### hour
+
+1. `hour(v=vector(time()) instant-vector)` 对给定的 **UTC** 时间的**每个时间点**返回**一天中的小时数**。返回的值范围是 **0** 到 **23**
+
+#### idelta
+
+1. `idelta(v range-vector)` 计算范围向量 v 中的**最后两个样本之间的差异**，返回包含**给定差值**和**等效标签**的**瞬时向量**
+2. idelta 应该只与 **Gauge** 一起使用
+
+
+
+
+
+
+
