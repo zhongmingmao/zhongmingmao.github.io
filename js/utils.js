@@ -1,293 +1,350 @@
-const btf = {
-  debounce: function (func, wait, immediate) {
-    let timeout
-    return function () {
-      const context = this
-      const args = arguments
-      const later = function () {
-        timeout = null
-        if (!immediate) func.apply(context, args)
-      }
-      const callNow = immediate && !timeout
-      clearTimeout(timeout)
-      timeout = setTimeout(later, wait)
-      if (callNow) func.apply(context, args)
-    }
-  },
-
-  throttle: function (func, wait, options) {
-    let timeout, context, args
-    let previous = 0
-    if (!options) options = {}
-
-    const later = function () {
-      previous = options.leading === false ? 0 : new Date().getTime()
-      timeout = null
-      func.apply(context, args)
-      if (!timeout) context = args = null
-    }
-
-    const throttled = function () {
-      const now = new Date().getTime()
-      if (!previous && options.leading === false) previous = now
-      const remaining = wait - (now - previous)
-      context = this
-      args = arguments
-      if (remaining <= 0 || remaining > wait) {
-        if (timeout) {
-          clearTimeout(timeout)
+(() => {
+  const btfFn = {
+    debounce: (func, wait = 0, immediate = false) => {
+      let timeout
+      return (...args) => {
+        const later = () => {
           timeout = null
+          if (!immediate) func(...args)
         }
-        previous = now
+        const callNow = immediate && !timeout
+        clearTimeout(timeout)
+        timeout = setTimeout(later, wait)
+        if (callNow) func(...args)
+      }
+    },
+
+    throttle: function (func, wait, options = {}) {
+      let timeout, context, args
+      let previous = 0
+
+      const later = () => {
+        previous = options.leading === false ? 0 : new Date().getTime()
+        timeout = null
         func.apply(context, args)
         if (!timeout) context = args = null
-      } else if (!timeout && options.trailing !== false) {
-        timeout = setTimeout(later, remaining)
       }
-    }
 
-    return throttled
-  },
-
-  sidebarPaddingR: () => {
-    const innerWidth = window.innerWidth
-    const clientWidth = document.body.clientWidth
-    const paddingRight = innerWidth - clientWidth
-    if (innerWidth !== clientWidth) {
-      document.body.style.paddingRight = paddingRight + 'px'
-    }
-  },
-
-  snackbarShow: (text, showAction = false, duration = 2000) => {
-    const { position, bgLight, bgDark } = GLOBAL_CONFIG.Snackbar
-    const bg = document.documentElement.getAttribute('data-theme') === 'light' ? bgLight : bgDark
-    Snackbar.show({
-      text,
-      backgroundColor: bg,
-      showAction,
-      duration,
-      pos: position,
-      customClass: 'snackbar-css'
-    })
-  },
-
-  diffDate: (d, more = false) => {
-    const dateNow = new Date()
-    const datePost = new Date(d)
-    const dateDiff = dateNow.getTime() - datePost.getTime()
-    const minute = 1000 * 60
-    const hour = minute * 60
-    const day = hour * 24
-    const month = day * 30
-
-    let result
-    if (more) {
-      const monthCount = dateDiff / month
-      const dayCount = dateDiff / day
-      const hourCount = dateDiff / hour
-      const minuteCount = dateDiff / minute
-
-      if (monthCount > 12) {
-        result = datePost.toISOString().slice(0, 10)
-      } else if (monthCount >= 1) {
-        result = parseInt(monthCount) + ' ' + GLOBAL_CONFIG.date_suffix.month
-      } else if (dayCount >= 1) {
-        result = parseInt(dayCount) + ' ' + GLOBAL_CONFIG.date_suffix.day
-      } else if (hourCount >= 1) {
-        result = parseInt(hourCount) + ' ' + GLOBAL_CONFIG.date_suffix.hour
-      } else if (minuteCount >= 1) {
-        result = parseInt(minuteCount) + ' ' + GLOBAL_CONFIG.date_suffix.min
-      } else {
-        result = GLOBAL_CONFIG.date_suffix.just
-      }
-    } else {
-      result = parseInt(dateDiff / day)
-    }
-    return result
-  },
-
-  loadComment: (dom, callback) => {
-    if ('IntersectionObserver' in window) {
-      const observerItem = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          callback()
-          observerItem.disconnect()
+      const throttled = (...params) => {
+        const now = new Date().getTime()
+        if (!previous && options.leading === false) previous = now
+        const remaining = wait - (now - previous)
+        context = this
+        args = params
+        if (remaining <= 0 || remaining > wait) {
+          if (timeout) {
+            clearTimeout(timeout)
+            timeout = null
+          }
+          previous = now
+          func.apply(context, args)
+          if (!timeout) context = args = null
+        } else if (!timeout && options.trailing !== false) {
+          timeout = setTimeout(later, remaining)
         }
-      }, { threshold: [0] })
-      observerItem.observe(dom)
-    } else {
-      callback()
-    }
-  },
+      }
 
-  scrollToDest: (pos, time = 500) => {
-    const currentPos = window.pageYOffset
-    const isNavFixed = document.getElementById('page-header').classList.contains('fixed')
-    if (currentPos > pos || isNavFixed) pos = pos - 70
+      return throttled
+    },
 
-    if ('scrollBehavior' in document.documentElement.style) {
-      window.scrollTo({
-        top: pos,
-        behavior: 'smooth'
+    overflowPaddingR: {
+      add: () => {
+        const paddingRight = window.innerWidth - document.body.clientWidth
+
+        if (paddingRight > 0) {
+          document.body.style.paddingRight = `${paddingRight}px`
+          document.body.style.overflow = 'hidden'
+          const menuElement = document.querySelector('#page-header.nav-fixed #menus')
+          if (menuElement) {
+            menuElement.style.paddingRight = `${paddingRight}px`
+          }
+        }
+      },
+      remove: () => {
+        document.body.style.paddingRight = ''
+        document.body.style.overflow = ''
+        const menuElement = document.querySelector('#page-header.nav-fixed #menus')
+        if (menuElement) {
+          menuElement.style.paddingRight = ''
+        }
+      }
+    },
+
+    snackbarShow: (text, showAction = false, duration = 2000) => {
+      const { position, bgLight, bgDark } = GLOBAL_CONFIG.Snackbar
+      const bg = document.documentElement.getAttribute('data-theme') === 'light' ? bgLight : bgDark
+      Snackbar.show({
+        text,
+        backgroundColor: bg,
+        showAction,
+        duration,
+        pos: position,
+        customClass: 'snackbar-css'
       })
-      return
-    }
+    },
 
-    let start = null
-    pos = +pos
-    window.requestAnimationFrame(function step (currentTime) {
-      start = !start ? currentTime : start
-      const progress = currentTime - start
-      if (currentPos < pos) {
-        window.scrollTo(0, ((pos - currentPos) * progress / time) + currentPos)
+    diffDate: (inputDate, more = false) => {
+      const dateNow = new Date()
+      const datePost = new Date(inputDate)
+      const diffMs = dateNow - datePost
+      const diffSec = diffMs / 1000
+      const diffMin = diffSec / 60
+      const diffHour = diffMin / 60
+      const diffDay = diffHour / 24
+      const diffMonth = diffDay / 30
+      const { dateSuffix } = GLOBAL_CONFIG
+
+      if (!more) return Math.floor(diffDay)
+
+      if (diffMonth > 12) return datePost.toISOString().slice(0, 10)
+      if (diffMonth >= 1) return `${Math.floor(diffMonth)} ${dateSuffix.month}`
+      if (diffDay >= 1) return `${Math.floor(diffDay)} ${dateSuffix.day}`
+      if (diffHour >= 1) return `${Math.floor(diffHour)} ${dateSuffix.hour}`
+      if (diffMin >= 1) return `${Math.floor(diffMin)} ${dateSuffix.min}`
+      return dateSuffix.just
+    },
+
+    loadComment: (dom, callback) => {
+      if ('IntersectionObserver' in window) {
+        const observerItem = new IntersectionObserver(entries => {
+          if (entries[0].isIntersecting) {
+            callback()
+            observerItem.disconnect()
+          }
+        }, { threshold: [0] })
+        observerItem.observe(dom)
       } else {
-        window.scrollTo(0, currentPos - ((currentPos - pos) * progress / time))
+        callback()
       }
-      if (progress < time) {
-        window.requestAnimationFrame(step)
-      } else {
-        window.scrollTo(0, pos)
-      }
-    })
-  },
+    },
 
-  animateIn: (ele, text) => {
-    ele.style.display = 'block'
-    ele.style.animation = text
-  },
+    scrollToDest: (pos, time = 500) => {
+      const currentPos = window.scrollY
+      const isNavFixed = document.getElementById('page-header').classList.contains('fixed')
+      if (currentPos > pos || isNavFixed) pos = pos - 70
 
-  animateOut: (ele, text) => {
-    ele.addEventListener('animationend', function f () {
-      ele.style.display = ''
-      ele.style.animation = ''
-      ele.removeEventListener('animationend', f)
-    })
-    ele.style.animation = text
-  },
-
-  getParents: (elem, selector) => {
-    for (; elem && elem !== document; elem = elem.parentNode) {
-      if (elem.matches(selector)) return elem
-    }
-    return null
-  },
-
-  siblings: (ele, selector) => {
-    return [...ele.parentNode.children].filter((child) => {
-      if (selector) {
-        return child !== ele && child.matches(selector)
-      }
-      return child !== ele
-    })
-  },
-
-  /**
-   * @param {*} selector
-   * @param {*} eleType the type of create element
-   * @param {*} options object key: value
-   */
-  wrap: (selector, eleType, options) => {
-    const createEle = document.createElement(eleType)
-    for (const [key, value] of Object.entries(options)) {
-      createEle.setAttribute(key, value)
-    }
-    selector.parentNode.insertBefore(createEle, selector)
-    createEle.appendChild(selector)
-  },
-
-  unwrap: el => {
-    const elParentNode = el.parentNode
-    if (elParentNode !== document.body) {
-      elParentNode.parentNode.insertBefore(el, elParentNode)
-      elParentNode.parentNode.removeChild(elParentNode)
-    }
-  },
-
-  isHidden: ele => ele.offsetHeight === 0 && ele.offsetWidth === 0,
-
-  getEleTop: ele => {
-    let actualTop = ele.offsetTop
-    let current = ele.offsetParent
-
-    while (current !== null) {
-      actualTop += current.offsetTop
-      current = current.offsetParent
-    }
-
-    return actualTop
-  },
-
-  loadLightbox: ele => {
-    const service = GLOBAL_CONFIG.lightbox
-
-    if (service === 'mediumZoom') {
-      const zoom = mediumZoom(ele)
-      zoom.on('open', e => {
-        const photoBg = document.documentElement.getAttribute('data-theme') === 'dark' ? '#121212' : '#fff'
-        zoom.update({
-          background: photoBg
+      if ('scrollBehavior' in document.documentElement.style) {
+        window.scrollTo({
+          top: pos,
+          behavior: 'smooth'
         })
-      })
-    }
+        return
+      }
 
-    if (service === 'fancybox') {
-      ele.forEach(i => {
-        if (i.parentNode.tagName !== 'A') {
-          const dataSrc = i.dataset.lazySrc || i.src
-          const dataCaption = i.title || i.alt || ''
-          btf.wrap(i, 'a', { href: dataSrc, 'data-fancybox': 'gallery', 'data-caption': dataCaption, 'data-thumb': dataSrc })
+      const startTime = performance.now()
+      const animate = currentTime => {
+        const timeElapsed = currentTime - startTime
+        const progress = Math.min(timeElapsed / time, 1)
+        window.scrollTo(0, currentPos + (pos - currentPos) * progress)
+        if (progress < 1) {
+          requestAnimationFrame(animate)
         }
-      })
+      }
+      requestAnimationFrame(animate)
+    },
 
-      if (!window.fancyboxRun) {
-        Fancybox.bind('[data-fancybox]', {
-          Hash: false,
-          Thumbs: {
-            autoStart: false
+    animateIn: (ele, animation) => {
+      ele.style.display = 'block'
+      ele.style.animation = animation
+    },
+
+    animateOut: (ele, animation) => {
+      const handleAnimationEnd = () => {
+        ele.style.display = ''
+        ele.style.animation = ''
+        ele.removeEventListener('animationend', handleAnimationEnd)
+      }
+      ele.addEventListener('animationend', handleAnimationEnd)
+      ele.style.animation = animation
+    },
+
+    wrap: (selector, eleType, options) => {
+      const createEle = document.createElement(eleType)
+      for (const [key, value] of Object.entries(options)) {
+        createEle.setAttribute(key, value)
+      }
+      selector.parentNode.insertBefore(createEle, selector)
+      createEle.appendChild(selector)
+    },
+
+    isHidden: ele => ele.offsetHeight === 0 && ele.offsetWidth === 0,
+
+    getEleTop: ele => {
+      let actualTop = ele.offsetTop
+      let current = ele.offsetParent
+
+      while (current !== null) {
+        actualTop += current.offsetTop
+        current = current.offsetParent
+      }
+
+      return actualTop
+    },
+
+    loadLightbox: ele => {
+      const service = GLOBAL_CONFIG.lightbox
+
+      if (service === 'medium_zoom') {
+        mediumZoom(ele, { background: 'var(--zoom-bg)' })
+        return
+      }
+
+      if (service === 'fancybox') {
+        Array.from(ele).forEach(i => {
+          if (i.parentNode.tagName !== 'A') {
+            const dataSrc = i.dataset.lazySrc || i.src
+            const dataCaption = i.title || i.alt || ''
+            btf.wrap(i, 'a', { href: dataSrc, 'data-fancybox': 'gallery', 'data-caption': dataCaption, 'data-thumb': dataSrc })
           }
         })
-        window.fancyboxRun = true
-      }
-    }
-  },
 
-  initJustifiedGallery: function (selector) {
-    const runJustifiedGallery = i => {
-      if (!btf.isHidden(i)) {
-        fjGallery(i, {
-          itemSelector: '.fj-gallery-item',
-          rowHeight: i.getAttribute('data-rowHeight'),
-          gutter: 4,
-          onJustify: function () {
-            this.$container.style.opacity = '1'
+        if (!window.fancyboxRun) {
+          let options = ''
+          if (Fancybox.version < '6') {
+            options = {
+              Hash: false,
+              Thumbs: {
+                showOnStart: false
+              },
+              Images: {
+                Panzoom: {
+                  maxScale: 4
+                }
+              },
+              Carousel: {
+                transition: 'slide'
+              },
+              Toolbar: {
+                display: {
+                  left: ['infobar'],
+                  middle: [
+                    'zoomIn',
+                    'zoomOut',
+                    'toggle1to1',
+                    'rotateCCW',
+                    'rotateCW',
+                    'flipX',
+                    'flipY'
+                  ],
+                  right: ['slideshow', 'thumbs', 'close']
+                }
+              }
+            }
+          } else {
+            options = {
+              Hash: false,
+              Carousel: {
+                transition: 'slide',
+                Thumbs: {
+                  showOnStart: false
+                },
+                Toolbar: {
+                  display: {
+                    left: ['counter'],
+                    middle: [
+                      'zoomIn',
+                      'zoomOut',
+                      'toggle1to1',
+                      'rotateCCW',
+                      'rotateCW',
+                      'flipX',
+                      'flipY',
+                      'reset'
+                    ],
+                    right: ['autoplay', 'thumbs', 'close']
+                  }
+                },
+                Zoomable: {
+                  Panzoom: {
+                    maxScale: 4
+                  }
+                }
+              }
+            }
           }
-        })
+
+          Fancybox.bind('[data-fancybox]', options)
+          window.fancyboxRun = true
+        }
       }
+    },
+
+    setLoading: {
+      add: ele => {
+        const html = `
+        <div class="loading-container">
+          <div class="loading-item">
+            <div></div><div></div><div></div><div></div><div></div>
+          </div>
+        </div>
+      `
+        ele.insertAdjacentHTML('afterend', html)
+      },
+      remove: ele => {
+        ele.nextElementSibling.remove()
+      }
+    },
+
+    updateAnchor: anchor => {
+      if (anchor !== window.location.hash) {
+        if (!anchor) anchor = location.pathname
+        const title = GLOBAL_CONFIG_SITE.title
+        window.history.replaceState({
+          url: location.href,
+          title
+        }, title, anchor)
+      }
+    },
+
+    getScrollPercent: (() => {
+      let docHeight, winHeight, headerHeight, contentMath
+
+      return (currentTop, ele) => {
+        if (!docHeight || ele.clientHeight !== docHeight) {
+          docHeight = ele.clientHeight
+          winHeight = window.innerHeight
+          headerHeight = ele.offsetTop
+          contentMath = Math.max(docHeight - winHeight, document.documentElement.scrollHeight - winHeight)
+        }
+
+        const scrollPercent = (currentTop - headerHeight) / contentMath
+        return Math.max(0, Math.min(100, Math.round(scrollPercent * 100)))
+      }
+    })(),
+
+    addEventListenerPjax: (ele, event, fn, option = false) => {
+      ele.addEventListener(event, fn, option)
+      btf.addGlobalFn('pjaxSendOnce', () => {
+        ele.removeEventListener(event, fn, option)
+      })
+    },
+
+    removeGlobalFnEvent: (key, parent = window) => {
+      const globalFn = parent.globalFn || {}
+      const keyObj = globalFn[key]
+      if (!keyObj) return
+
+      Object.keys(keyObj).forEach(i => keyObj[i]())
+
+      delete globalFn[key]
+    },
+
+    switchComments: (el = document, path) => {
+      const switchBtn = el.querySelector('#switch-btn')
+      if (!switchBtn) return
+
+      let switchDone = false
+      const postComment = el.querySelector('#post-comment')
+      const handleSwitchBtn = () => {
+        postComment.classList.toggle('move')
+        if (!switchDone && typeof loadOtherComment === 'function') {
+          switchDone = true
+          loadOtherComment(el, path)
+        }
+      }
+      btf.addEventListenerPjax(switchBtn, 'click', handleSwitchBtn)
     }
-
-    if (Array.from(selector).length === 0) runJustifiedGallery(selector)
-    else selector.forEach(i => { runJustifiedGallery(i) })
-  },
-
-  updateAnchor: (anchor) => {
-    if (anchor !== window.location.hash) {
-      if (!anchor) anchor = location.pathname
-      const title = GLOBAL_CONFIG_SITE.title
-      window.history.replaceState({
-        url: location.href,
-        title
-      }, title, anchor)
-    }
-  },
-
-  getScrollPercent: (currentTop, ele) => {
-    const docHeight = ele.clientHeight
-    const winHeight = document.documentElement.clientHeight
-    const headerHeight = ele.offsetTop
-    const contentMath = (docHeight > winHeight) ? (docHeight - winHeight) : (document.documentElement.scrollHeight - winHeight)
-    const scrollPercent = (currentTop - headerHeight) / (contentMath)
-    const scrollPercentRounded = Math.round(scrollPercent * 100)
-    const percentage = (scrollPercentRounded > 100) ? 100 : (scrollPercentRounded <= 0) ? 0 : scrollPercentRounded
-    return percentage
   }
-}
+
+  window.btf = { ...window.btf, ...btfFn }
+})()

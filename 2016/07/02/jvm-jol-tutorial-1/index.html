@@ -1,11 +1,11 @@
-<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>JVM基础 -- JOL使用教程 1 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="本文将通过JOL分析Java对象的内存布局，包括基本使用、字节对齐、实例域重排序、继承、继承栅栏、继承对齐等内容代码托管在https:&#x2F;&#x2F;github.com&#x2F;zhongmingmao&#x2F;java_object_layout">
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>JVM基础 -- JOL使用教程 1 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="本文将通过JOL分析Java对象的内存布局，包括基本使用、字节对齐、实例域重排序、继承、继承栅栏、继承对齐等内容代码托管在https:&#x2F;&#x2F;github.com&#x2F;zhongmingmao&#x2F;java_object_layout">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JVM基础 -- JOL使用教程 1">
 <meta property="og:url" content="https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/index.html">
 <meta property="og:site_name" content="ByteCoding">
 <meta property="og:description" content="本文将通过JOL分析Java对象的内存布局，包括基本使用、字节对齐、实例域重排序、继承、继承栅栏、继承对齐等内容代码托管在https:&#x2F;&#x2F;github.com&#x2F;zhongmingmao&#x2F;java_object_layout">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png">
 <meta property="article:published_time" content="2016-07-01T16:06:25.000Z">
 <meta property="article:modified_time" content="2023-04-03T10:04:59.588Z">
 <meta property="article:author" content="zhongmingmao">
@@ -13,158 +13,164 @@
 <meta property="article:tag" content="JVM">
 <meta property="article:tag" content="JOL">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
-  root: '/',
-  algolia: undefined,
-  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
-  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
-  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
-  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
-  copy: {
-    success: 'Copy successfully',
-    error: 'Copy error',
-    noSupport: 'The browser does not support'
-  },
-  relativeDate: {
-    homepage: false,
-    post: false
-  },
-  runtime: 'days',
-  date_suffix: {
-    just: 'Just',
-    min: 'minutes ago',
-    hour: 'hours ago',
-    day: 'days ago',
-    month: 'months ago'
-  },
-  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
-  lightbox: 'fancybox',
-  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
-  source: {
-    justifiedGallery: {
-      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
-      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "JVM基础 -- JOL使用教程 1",
+  "url": "https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/",
+  "image": "https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png",
+  "datePublished": "2016-07-01T16:06:25.000Z",
+  "dateModified": "2023-04-03T10:04:59.588Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
     }
-  },
-  isPhotoFigcaption: true,
-  islazyload: true,
-  isAnchor: false,
-  percent: {
-    toc: true,
-    rightside: false,
-  }
-}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
-  title: 'JVM基础 -- JOL使用教程 1',
-  isPost: true,
-  isHome: false,
-  isHighlightShrink: false,
-  isToc: true,
-  postUpdate: '2023-04-03 18:04:59'
-}</script><noscript><style type="text/css">
-  #nav {
-    opacity: 1
-  }
-  .justified-gallery img {
-    opacity: 1
-  }
-
-  #recent-posts time,
-  #post-meta time {
-    display: inline !important
-  }
-</style></noscript><script>(win=>{
-    win.saveToLocal = {
-      set: function setWithExpiry(key, value, ttl) {
-        if (ttl === 0) return
-        const now = new Date()
-        const expiryDay = ttl * 86400000
-        const item = {
-          value: value,
-          expiry: now.getTime() + expiryDay,
-        }
-        localStorage.setItem(key, JSON.stringify(item))
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
       },
-
-      get: function getWithExpiry(key) {
+      get: key => {
         const itemStr = localStorage.getItem(key)
-
-        if (!itemStr) {
-          return undefined
-        }
-        const item = JSON.parse(itemStr)
-        const now = new Date()
-
-        if (now.getTime() > item.expiry) {
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
           localStorage.removeItem(key)
           return undefined
         }
-        return item.value
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
       }
     }
   
-    win.getScript = url => new Promise((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = url
-      script.async = true
-      script.onerror = reject
-      script.onload = script.onreadystatechange = function() {
-        const loadState = this.readyState
-        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
-        script.onload = script.onreadystatechange = null
-        resolve()
-      }
-      document.head.appendChild(script)
-    })
-  
-    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = url
-      if (id) link.id = id
-      link.onerror = reject
-      link.onload = link.onreadystatechange = function() {
-        const loadState = this.readyState
-        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
-        link.onload = link.onreadystatechange = null
-        resolve()
-      }
-      document.head.appendChild(link)
-    })
-  
-      win.activateDarkMode = function () {
+      
+      const activateDarkMode = () => {
         document.documentElement.setAttribute('data-theme', 'dark')
         if (document.querySelector('meta[name="theme-color"]') !== null) {
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
         }
       }
-      win.activateLightMode = function () {
+      const activateLightMode = () => {
         document.documentElement.setAttribute('data-theme', 'light')
         if (document.querySelector('meta[name="theme-color"]') !== null) {
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
         }
       }
-      const t = saveToLocal.get('theme')
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
     
-          if (t === 'dark') activateDarkMode()
-          else if (t === 'light') activateLightMode()
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
         
+      
       const asideStatus = saveToLocal.get('aside-status')
       if (asideStatus !== undefined) {
-        if (asideStatus === 'hide') {
-          document.documentElement.classList.add('hide-aside')
-        } else {
-          document.documentElement.classList.remove('hide-aside')
-        }
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
       }
     
+      
     const detectApple = () => {
-      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
         document.documentElement.classList.add('apple')
       }
     }
     detectApple()
-    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
-</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">JVM基础 -- JOL使用教程 1</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2016-07-01T16:06:25.000Z" title="Created 2016-07-02 00:06:25">2016-07-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/">JVM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/baisc/">Baisc</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>9min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><blockquote>
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'JVM基础 -- JOL使用教程 1',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">JVM基础 -- JOL使用教程 1</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">JVM基础 -- JOL使用教程 1</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2016-07-01T16:06:25.000Z" title="Created 2016-07-02 00:06:25">2016-07-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/">JVM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/jvm/baisc/">Baisc</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">1.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>9mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2023-04-03 18:04:59&quot;}" hidden></div><blockquote>
 <p>本文将通过<code>JOL</code>分析<code>Java对象的内存布局</code>，包括<code>基本使用</code>、<code>字节对齐</code>、<code>实例域重排序</code>、<code>继承</code>、<code>继承栅栏</code>、<code>继承对齐</code>等内容<br>代码托管在<a target="_blank" rel="noopener" href="https://github.com/zhongmingmao/java_object_layout">https://github.com/zhongmingmao/java_object_layout</a></p>
 </blockquote>
 <span id="more"></span>
@@ -175,7 +181,7 @@
 
 <h2 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_01_Basic$A object internals:</span><br><span class="line"> OFFSET  SIZE      TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12           (object header)                           N/A</span><br><span class="line">     12     1   boolean A.f                                       N/A</span><br><span class="line">     13     3           (loss due to the next object alignment)</span><br><span class="line">Instance size: 16 bytes</span><br><span class="line">Space losses: 0 bytes internal + 3 bytes external = 3 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局"><a href="#对象布局" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_basic_1.png" width="500">
+<h2 id="对象布局"><a href="#对象布局" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_basic_1.png" width="500">
 
 <h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
 <li><code>64-bit HotSpot JVM</code>默认开启<code>指针压缩</code>，<code>Mark Word</code>占用<code>8 Bytes</code>，<code>Klass Ref</code>占用<code>4 Bytes</code>，<code>对象头</code>总共占据了<code>12 Bytes</code>（如果是<code>数组对象</code>，对象头还会包括<code>4 Bytes</code>的<code>Array Length</code>，总共占据<code>16 Bytes</code>）</li>
@@ -185,7 +191,7 @@
 
 <h2 id="运行结果-1"><a href="#运行结果-1" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_02_Alignment$A object internals:</span><br><span class="line"> OFFSET  SIZE   TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12        (object header)                           N/A</span><br><span class="line">     12     4        (alignment/padding gap)</span><br><span class="line">     16     8   long A.f                                       N/A</span><br><span class="line">Instance size: 24 bytes</span><br><span class="line">Space losses: 4 bytes internal + 0 bytes external = 4 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局-1"><a href="#对象布局-1" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_alignment.png" width="500">
+<h2 id="对象布局-1"><a href="#对象布局-1" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_alignment.png" width="500">
 
 <h2 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h2><ol>
 <li><code>a.f</code>是<code>long类型</code>，占用<code>8 Bytes</code>，由于<code>8 Bytes字节对齐</code>的限制，无法放入<code>12~15</code>的位置，因此<code>12~15</code>只能是<code>Padding</code></li>
@@ -195,7 +201,7 @@
 
 <h2 id="运行结果-2"><a href="#运行结果-2" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_03_Packing$A object internals:</span><br><span class="line"> OFFSET  SIZE      TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12           (object header)                           N/A</span><br><span class="line">     12     4     float A.f1                                      N/A</span><br><span class="line">     16     8    double A.d1                                      N/A</span><br><span class="line">     24     8    double A.d2                                      N/A</span><br><span class="line">     32     8      long A.l1                                      N/A</span><br><span class="line">     40     8      long A.l2                                      N/A</span><br><span class="line">     48     4     float A.f2                                      N/A</span><br><span class="line">     52     4       int A.i1                                      N/A</span><br><span class="line">     56     4       int A.i2                                      N/A</span><br><span class="line">     60     2      char A.c1                                      N/A</span><br><span class="line">     62     2      char A.c2                                      N/A</span><br><span class="line">     64     2     short A.s1                                      N/A</span><br><span class="line">     66     2     short A.s2                                      N/A</span><br><span class="line">     68     1   boolean A.bo1                                     N/A</span><br><span class="line">     69     1   boolean A.bo2                                     N/A</span><br><span class="line">     70     1      byte A.b1                                      N/A</span><br><span class="line">     71     1      byte A.b2                                      N/A</span><br><span class="line">Instance size: 72 bytes</span><br><span class="line">Space losses: 0 bytes internal + 0 bytes external = 0 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局-2"><a href="#对象布局-2" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_packing.png" width="500">
+<h2 id="对象布局-2"><a href="#对象布局-2" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_packing.png" width="500">
 
 <h2 id="分析-2"><a href="#分析-2" class="headerlink" title="分析"></a>分析</h2><ol>
 <li>「对象内存布局 - Instrumentation + sa-jdi 实例分析」也存在类似的实例</li>
@@ -209,7 +215,7 @@
 
 <h2 id="运行结果-3"><a href="#运行结果-3" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_04_Inheritance$C object internals:</span><br><span class="line"> OFFSET  SIZE   TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12        (object header)                           N/A</span><br><span class="line">     12     4    int A.a                                       N/A</span><br><span class="line">     16     4    int B.b                                       N/A</span><br><span class="line">     20     4    int C.c                                       N/A</span><br><span class="line">Instance size: 24 bytes</span><br><span class="line">Space losses: 0 bytes internal + 0 bytes external = 0 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局-3"><a href="#对象布局-3" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance.png" width="500">
+<h2 id="对象布局-3"><a href="#对象布局-3" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance.png" width="500">
 
 <h2 id="分析-3"><a href="#分析-3" class="headerlink" title="分析"></a>分析</h2><ol>
 <li>在继承关系<code>C-&gt;B-&gt;A</code>中，<code>父类的实例域</code>必然排在<code>子类的实例域</code>之前</li>
@@ -218,7 +224,7 @@
 
 <h2 id="运行结果-4"><a href="#运行结果-4" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_05_InheritanceBarrier$C object internals:</span><br><span class="line"> OFFSET  SIZE   TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12        (object header)                           N/A</span><br><span class="line">     12     4        (alignment/padding gap)</span><br><span class="line">     16     8   long A.a                                       N/A</span><br><span class="line">     24     8   long B.b                                       N/A</span><br><span class="line">     32     8   long C.c                                       N/A</span><br><span class="line">     40     4    int C.d                                       N/A</span><br><span class="line">     44     4        (loss due to the next object alignment)</span><br><span class="line">Instance size: 48 bytes</span><br><span class="line">Space losses: 4 bytes internal + 4 bytes external = 8 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局-4"><a href="#对象布局-4" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_barrier.png" width="500">
+<h2 id="对象布局-4"><a href="#对象布局-4" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_barrier.png" width="500">
 
 <h2 id="分析-4"><a href="#分析-4" class="headerlink" title="分析"></a>分析</h2><ol>
 <li>继承栅栏（<code>inheritance barrier</code>）通俗点就是在继承关系中，分配当前类的实例域时，<code>Hotspot JVM</code>不会考虑在之前可能存在的<code>内存间隙</code>，<code>实例域的重排序仅限于当前类</code>，因此<code>父类的实例域</code>必然排在<code>子类的实例域</code>之前</li>
@@ -229,53 +235,60 @@
 
 <h2 id="运行结果-5"><a href="#运行结果-5" class="headerlink" title="运行结果"></a>运行结果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># Running 64-bit HotSpot VM.</span><br><span class="line"># Using compressed oop with 3-bit shift.</span><br><span class="line"># Using compressed klass with 3-bit shift.</span><br><span class="line"># Objects are 8 bytes aligned.</span><br><span class="line"># Field sizes by type: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"># Array element sizes: 4, 1, 1, 2, 2, 4, 4, 8, 8 [bytes]</span><br><span class="line"></span><br><span class="line">me.zhongmingmao.jol.JOLSample_06_Gaps$C object internals:</span><br><span class="line"> OFFSET  SIZE      TYPE DESCRIPTION                               VALUE</span><br><span class="line">      0    12           (object header)                           N/A</span><br><span class="line">     12     1   boolean A.a                                       N/A</span><br><span class="line">     13     3           (alignment/padding gap)</span><br><span class="line">     16     1   boolean B.b                                       N/A</span><br><span class="line">     17     3           (alignment/padding gap)</span><br><span class="line">     20     1   boolean C.c                                       N/A</span><br><span class="line">     21     3           (loss due to the next object alignment)</span><br><span class="line">Instance size: 24 bytes</span><br><span class="line">Space losses: 6 bytes internal + 3 bytes external = 9 bytes total</span><br></pre></td></tr></table></figure>
 
-<h2 id="对象布局-5"><a href="#对象布局-5" class="headerlink" title="对象布局"></a>对象布局</h2><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_gap.png" width="500">
+<h2 id="对象布局-5"><a href="#对象布局-5" class="headerlink" title="对象布局"></a>对象布局</h2><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://jvm-1253868755.cos.ap-guangzhou.myqcloud.com/jol_inheritance_gap.png" width="500">
 
 <h2 id="分析-5"><a href="#分析-5" class="headerlink" title="分析"></a>分析</h2><ol>
 <li><code>64-bit Hotspot JVM</code>默认是开启<code>指针压缩</code>，因为引用大小为<code>4 Bytes</code></li>
 <li>由于<code>继承补全</code>的限制，因此在<code>B.b</code>没有存放在<code>13</code>的位置，而是等A继承对齐后，存放在<code>16</code>的位置</li>
 </ol>
 <!-- indicate-the-source -->
-<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/">https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/jvm/">JVM</a><a class="post-meta__tags" href="/tags/jol/">JOL</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2016/07/03/jvm-jol-tutorial-2/" title="JVM基础 -- JOL使用教程 2"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-24.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">JVM基础 -- JOL使用教程 2</div></div></a></div><div class="next-post pull-right"><a href="/2016/06/29/jvm-object-layout-2/" title="JVM基础 -- Instrumentation + sa-jdi 实例分析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">JVM基础 -- Instrumentation + sa-jdi 实例分析</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2016/07/04/jvm-jol-tutorial-3/" title="JVM基础 -- JOL使用教程 3"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-24.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2016-07-04</div><div class="title">JVM基础 -- JOL使用教程 3</div></div></a></div><div><a href="/2016/07/03/jvm-jol-tutorial-2/" title="JVM基础 -- JOL使用教程 2"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-24.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2016-07-03</div><div class="title">JVM基础 -- JOL使用教程 2</div></div></a></div><div><a href="/2022/02/22/jvm-bytecode-manipulation-asm-introduction/" title="ASM - Introduction"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-22</div><div class="title">ASM - Introduction</div></div></a></div><div><a href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-7.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="title">Bytecode Manipulation - Javassist</div></div></a></div><div><a href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-10</div><div class="title">Bytecode Manipulation - Java Agent Practice</div></div></a></div><div><a href="/2019/09/13/java-performance-jvm-heap-allocation/" title="Java性能 -- JVM堆内存分配"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-13</div><div class="title">Java性能 -- JVM堆内存分配</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Maven%E4%BE%9D%E8%B5%96"><span class="toc-number">1.</span> <span class="toc-text">Maven依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">基本使用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="toc-number">2.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80"><span class="toc-number">2.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">2.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90"><span class="toc-number">3.</span> <span class="toc-text">字节对齐</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-1"><span class="toc-number">3.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-1"><span class="toc-number">3.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-1"><span class="toc-number">3.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-1"><span class="toc-number">3.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E4%BE%8B%E5%9F%9F%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="toc-number">4.</span> <span class="toc-text">实例域重排序</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-2"><span class="toc-number">4.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-2"><span class="toc-number">4.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-2"><span class="toc-number">4.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-2"><span class="toc-number">4.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF"><span class="toc-number">5.</span> <span class="toc-text">继承</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-3"><span class="toc-number">5.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-3"><span class="toc-number">5.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-3"><span class="toc-number">5.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-3"><span class="toc-number">5.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF%E6%A0%85%E6%A0%8F"><span class="toc-number">6.</span> <span class="toc-text">继承栅栏</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-4"><span class="toc-number">6.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-4"><span class="toc-number">6.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-4"><span class="toc-number">6.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-4"><span class="toc-number">6.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF%E5%AF%B9%E9%BD%90"><span class="toc-number">7.</span> <span class="toc-text">继承对齐</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-5"><span class="toc-number">7.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-5"><span class="toc-number">7.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-5"><span class="toc-number">7.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-5"><span class="toc-number">7.4.</span> <span class="toc-text">分析</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java-agent.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java Zero Code"/></a><div class="content"><a class="title" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code">Observability - OpenTelemetry Java Zero Code</a><time datetime="2025-01-20T16:06:25.000Z" title="Created 2025-01-21 00:06:25">2025-01-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java"/></a><div class="content"><a class="title" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java">Observability - OpenTelemetry Java</a><time datetime="2025-01-19T16:06:25.000Z" title="Created 2025-01-20 00:06:25">2025-01-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/mcp.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - MCP Overview"/></a><div class="content"><a class="title" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview">AI Agent - MCP Overview</a><time datetime="2025-01-18T16:06:25.000Z" title="Created 2025-01-19 00:06:25">2025-01-19</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/ai-agent.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - Overview"/></a><div class="content"><a class="title" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview">AI Agent - Overview</a><time datetime="2025-01-17T16:06:25.000Z" title="Created 2025-01-18 00:06:25">2025-01-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-feature-1253868755.cos.ap-guangzhou.myqcloud.com/Java-Foreign-Function-API.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="New Java Feature - Foreign Function API"/></a><div class="content"><a class="title" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API">New Java Feature - Foreign Function API</a><time datetime="2025-01-16T16:06:25.000Z" title="Created 2025-01-17 00:06:25">2025-01-17</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2025 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
-  if (typeof pangu === 'object') pangu.autoSpacingPage()
-  else {
-    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
-      .then(() => {
-        pangu.autoSpacingPage()
-      })
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/">https://blog.zhongmingmao.top/2016/07/02/jvm-jol-tutorial-1/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/jvm/">JVM</a><a class="post-meta__tags" href="/tags/jol/">JOL</a></div><div class="post-share"><div class="social-share" data-image="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2016/07/03/jvm-jol-tutorial-2/" title="JVM基础 -- JOL使用教程 2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">Previous</div><div class="info-item-2">JVM基础 -- JOL使用教程 2</div></div><div class="info-2"><div class="info-item-1"> 本文将通过JOL分析Java对象的内存布局，包括Throwable、Class、Object Header、HashCode等内容代码托管在https://github.com/zhongmingmao/java_object_layout    Throwable代码12345678// JVM Args : -Djol.tryWithSudo=truepublic class JOLSample_07_Exceptions &#123;    public static void main(String[] args) throws Exception &#123;        out.println(VM.current().details());        out.println(ClassLayout.parseClass(Throwable.class).toPrintable());    &#125;&#125;  运行结果1234567891011121314151617# Running 64-bit HotSpot VM.# Using compressed oop wit...</div></div></div></a><a class="pagination-related" href="/2016/06/29/jvm-object-layout-2/" title="JVM基础 -- Instrumentation + sa-jdi 实例分析"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">JVM基础 -- Instrumentation + sa-jdi 实例分析</div></div><div class="info-2"><div class="info-item-1"> 本文将通过Instrumentation + sa-jdi来分析几个实例的内存对象布局    关键概念 Java对象的内存布局：对象头(Header) + 实例数据（Instance Data） + 对其填充（Padding） Header具体内容 Mark Word：存储对象hashCode、锁信息等 Class MetaData Address：存储对象类型数据的指针 Array Length：数组的长度（如果当前对象是数组，否则没有这一内容）   HotSpot JVM中对象的对齐方式：8字节对齐 实例域重排序：为了节省内存空间，实例域将按（double/long，int/float，short/char，boolean/byte，reference）进行重排序 非静态内部类：有一个隐藏的对外部类的引用 指针压缩：影响对象的内存布局，JVM参数：-XX:+UseCompressedOops  指针压缩的影响    是否开启压缩 Mark Word Class MetaData Address Reference    否 8 8 8   是 8 4 4   指针压缩代码123456public ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2016/07/04/jvm-jol-tutorial-3/" title="JVM基础 -- JOL使用教程 3"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2016-07-04</div><div class="info-item-2">JVM基础 -- JOL使用教程 3</div></div><div class="info-2"><div class="info-item-1"> 本文将通过JOL分析Java对象的内存布局，包括伪共享、DataModel、Externals、数组对齐等内容代码托管在https://github.com/zhongmingmao/java_object_layout    伪共享Java8引入@sun.misc.Contended注解，自动进行缓存行填充，原始支持解决伪共享问题，实现高效并发，关于伪共享，网上已经很多资料，请参考下列连接：  https://yq.aliyun.com/articles/62865 http://www.cnblogs.com/Binhua-Liu/p/5620339.html http://blog.csdn.net/zero__007/article/details/54951584 http://blog.csdn.net/aigoogle/article/details/41517213 http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/tip/src/share/classes/sun/misc/Contended.java  代码12345678910111...</div></div></div></a><a class="pagination-related" href="/2016/07/03/jvm-jol-tutorial-2/" title="JVM基础 -- JOL使用教程 2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-11.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2016-07-03</div><div class="info-item-2">JVM基础 -- JOL使用教程 2</div></div><div class="info-2"><div class="info-item-1"> 本文将通过JOL分析Java对象的内存布局，包括Throwable、Class、Object Header、HashCode等内容代码托管在https://github.com/zhongmingmao/java_object_layout    Throwable代码12345678// JVM Args : -Djol.tryWithSudo=truepublic class JOLSample_07_Exceptions &#123;    public static void main(String[] args) throws Exception &#123;        out.println(VM.current().details());        out.println(ClassLayout.parseClass(Throwable.class).toPrintable());    &#125;&#125;  运行结果1234567891011121314151617# Running 64-bit HotSpot VM.# Using compressed oop wit...</div></div></div></a><a class="pagination-related" href="/2022/02/22/jvm-bytecode-manipulation-asm-introduction/" title="ASM - Introduction"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-22</div><div class="info-item-2">ASM - Introduction</div></div><div class="info-2"><div class="info-item-1">Glance ASM is an all purpose Java bytecode manipulation and analysis framework. It can be used to modify existing classes or to dynamically generate classes, directly in binary form.   ASM provides some common bytecode transformations and analysis algorithms from which custom complex transformations and code analysis tools can be built. ASM offers similar functionality as other Java bytecode frameworks, but is focused on performance. Because it was designed and implemented to be as small and as fast as p...</div></div></div></a><a class="pagination-related" href="/2022/02/11/jvm-bytecode-manipulation-javassist/" title="Bytecode Manipulation - Javassist"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="info-item-2">Bytecode Manipulation - Javassist</div></div><div class="info-2"><div class="info-item-1">概要 Unlike other similar bytecode editors, Javassist provides two levels of API: source level and bytecode level.  生成字节码1234567891011121314151617package me.zhongmingmao.javassist;public class Point &#123;  private int x;  private int y;  public Point(int x, int y) &#123;    this.x = x;    this.y = y;  &#125;  public void move(int x, int y) &#123;    this.x = x;    this.y = y;  &#125;&#125;  12$ javac me/zhongmingmao/javassist/Point.java$ javap -v me.zhongmingmao.javassist.Point    123456789101112131415161...</div></div></div></a><a class="pagination-related" href="/2022/02/10/jvm-bytecode-manipulation-java-agent-practice/" title="Bytecode Manipulation - Java Agent Practice"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-9.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-10</div><div class="info-item-2">Bytecode Manipulation - Java Agent Practice</div></div><div class="info-2"><div class="info-item-1">概念Instrument Instrument 是 JVM 提供的一个可以修改已加载类的类库，依赖于 JVMTI 的 Attach API 机制 要使用 Instrument 的类修改功能，需要实现 java.lang.instrument.ClassFileTransformer 接口 可以在 ClassFileTransformer#transform 中利用 ASM 或者 Byte Buddy 等工具对字节码进行操作   Instrument 通过与 Java Agent 结合来注入到 JVM 中  JVMTI &amp; Agent JPDA（Java Platform Debugger Architecture）是 JDK 标准，必须实现 如果 JVM 启动时开启了 JPDA，那么类是允许被重新加载的 已加载的旧版类信息被卸载，然后重新加载新版本的类   JVMTI 是 JVM 提供的一套对 JVM 进行操作的工具接口，Agent 是 JVMTI 的一种实现 Attach API 的作用：提供 JVM 进程间通信的能力 Attach 后，目标 JVM 在运行时走到 Agent 中定义的 age...</div></div></div></a><a class="pagination-related" href="/2019/09/13/java-performance-jvm-heap-allocation/" title="Java性能 -- JVM堆内存分配"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-13</div><div class="info-item-2">Java性能 -- JVM堆内存分配</div></div><div class="info-2"><div class="info-item-1">JVM内存分配性能问题 JVM内存分配不合理最直接的表现就是频繁的GC，这会导致上下文切换，从而降低系统的吞吐量，增加系统的响应时间  对象在堆中的生命周期 在JVM内存模型的堆中，堆被划分为新生代和老年代 新生代又被进一步划分为Eden区和Survivor区，Survivor区由From Survivor和To Survivor组成   当创建一个对象时，对象会被优先分配到新生代的Eden区 此时JVM会给对象定义一个对象年轻计数器（-XX:MaxTenuringThreshold）   当Eden空间不足时，JVM将执行新生代的垃圾回收（Minor GC） JVM会把存活的对象转移到Survivor中，并且对象年龄+1 对象在Survivor中同样也会经历Minor GC，每经历一次Minor GC，对象年龄都会+1   如果分配的对象超过了-XX:PetenureSizeThreshold，对象会直接被分配到老年代    查看JVM堆内存分配 在默认不配置JVM堆内存大小的情况下，JVM根据默认值来配置当前内存大小 在JDK 1.7中，默认情况下新生代和老年代的比例是1:2，可以通过–XX:New...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Maven%E4%BE%9D%E8%B5%96"><span class="toc-number">1.</span> <span class="toc-text">Maven依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">基本使用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="toc-number">2.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80"><span class="toc-number">2.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">2.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90"><span class="toc-number">3.</span> <span class="toc-text">字节对齐</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-1"><span class="toc-number">3.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-1"><span class="toc-number">3.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-1"><span class="toc-number">3.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-1"><span class="toc-number">3.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E4%BE%8B%E5%9F%9F%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="toc-number">4.</span> <span class="toc-text">实例域重排序</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-2"><span class="toc-number">4.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-2"><span class="toc-number">4.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-2"><span class="toc-number">4.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-2"><span class="toc-number">4.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF"><span class="toc-number">5.</span> <span class="toc-text">继承</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-3"><span class="toc-number">5.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-3"><span class="toc-number">5.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-3"><span class="toc-number">5.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-3"><span class="toc-number">5.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF%E6%A0%85%E6%A0%8F"><span class="toc-number">6.</span> <span class="toc-text">继承栅栏</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-4"><span class="toc-number">6.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-4"><span class="toc-number">6.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-4"><span class="toc-number">6.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-4"><span class="toc-number">6.4.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF%E5%AF%B9%E9%BD%90"><span class="toc-number">7.</span> <span class="toc-text">继承对齐</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-5"><span class="toc-number">7.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-5"><span class="toc-number">7.2.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80-5"><span class="toc-number">7.3.</span> <span class="toc-text">对象布局</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90-5"><span class="toc-number">7.4.</span> <span class="toc-text">分析</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java-agent.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java Zero Code"/></a><div class="content"><a class="title" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code">Observability - OpenTelemetry Java Zero Code</a><time datetime="2025-01-20T16:06:25.000Z" title="Created 2025-01-21 00:06:25">2025-01-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java"/></a><div class="content"><a class="title" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java">Observability - OpenTelemetry Java</a><time datetime="2025-01-19T16:06:25.000Z" title="Created 2025-01-20 00:06:25">2025-01-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/mcp.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - MCP Overview"/></a><div class="content"><a class="title" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview">AI Agent - MCP Overview</a><time datetime="2025-01-18T16:06:25.000Z" title="Created 2025-01-19 00:06:25">2025-01-19</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/ai-agent.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - Overview"/></a><div class="content"><a class="title" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview">AI Agent - Overview</a><time datetime="2025-01-17T16:06:25.000Z" title="Created 2025-01-18 00:06:25">2025-01-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-feature-1253868755.cos.ap-guangzhou.myqcloud.com/Java-Foreign-Function-API.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="New Java Feature - Foreign Function API"/></a><div class="content"><a class="title" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API">New Java Feature - Foreign Function API</a><time datetime="2025-01-16T16:06:25.000Z" title="Created 2025-01-17 00:06:25">2025-01-17</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2025 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = `%%{init:{ 'theme':'${theme}'}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
   }
-}
 
-function panguInit () {
-  if (false){
-    GLOBAL_CONFIG_SITE.isPost && panguFn()
-  } else {
-    panguFn()
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
   }
-}
 
-document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
-  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
-  if ($mermaidWrap.length) {
-    window.runMermaid = () => {
-      window.loadMermaid = true
-      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
 
-      Array.from($mermaidWrap).forEach((item, index) => {
-        const mermaidSrc = item.firstElementChild
-        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
-        const mermaidID = 'mermaid-' + index
-        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
-        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
-          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
-        })
-      })
-    }
-
-    const loadMermaid = () => {
-      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
-    }
-
-    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
   }
-})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>

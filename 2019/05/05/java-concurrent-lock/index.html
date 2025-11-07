@@ -1,169 +1,175 @@
-<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Java并发 -- Lock | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="管程 并发领域的两大核心问题：互斥 + 同步 互斥：同一时刻只允许一个线程访问共享资源 同步：线程之间的通信和协作 JUC通过Lock和Condition两个接口实现管程，其中Lock用于解决互斥问题，而Condition用于解决同步问题">
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Java并发 -- Lock | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="管程 并发领域的两大核心问题：互斥 + 同步 互斥：同一时刻只允许一个线程访问共享资源 同步：线程之间的通信和协作 JUC通过Lock和Condition两个接口实现管程，其中Lock用于解决互斥问题，而Condition用于解决同步问题">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java并发 -- Lock">
 <meta property="og:url" content="https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/index.html">
 <meta property="og:site_name" content="ByteCoding">
 <meta property="og:description" content="管程 并发领域的两大核心问题：互斥 + 同步 互斥：同一时刻只允许一个线程访问共享资源 同步：线程之间的通信和协作 JUC通过Lock和Condition两个接口实现管程，其中Lock用于解决互斥问题，而Condition用于解决同步问题">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png">
+<meta property="og:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png">
 <meta property="article:published_time" content="2019-05-05T01:07:32.000Z">
 <meta property="article:modified_time" content="2023-04-03T10:04:59.580Z">
 <meta property="article:author" content="zhongmingmao">
 <meta property="article:tag" content="Java">
 <meta property="article:tag" content="Java Concurrent">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png"><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
-  root: '/',
-  algolia: undefined,
-  localSearch: {"path":"/search.json","preload":false,"languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
-  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
-  noticeOutdate: {"limitDay":512,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
-  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":256},
-  copy: {
-    success: 'Copy successfully',
-    error: 'Copy error',
-    noSupport: 'The browser does not support'
-  },
-  relativeDate: {
-    homepage: false,
-    post: false
-  },
-  runtime: 'days',
-  date_suffix: {
-    just: 'Just',
-    min: 'minutes ago',
-    hour: 'hours ago',
-    day: 'days ago',
-    month: 'months ago'
-  },
-  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
-  lightbox: 'fancybox',
-  Snackbar: {"chs_to_cht":"Traditional Chinese Activated Manually","cht_to_chs":"Simplified Chinese Activated Manually","day_to_night":"Dark Mode Activated Manually","night_to_day":"Light Mode Activated Manually","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
-  source: {
-    justifiedGallery: {
-      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
-      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+<meta name="twitter:image" content="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Java并发 -- Lock",
+  "url": "https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/",
+  "image": "https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png",
+  "datePublished": "2019-05-05T01:07:32.000Z",
+  "dateModified": "2023-04-03T10:04:59.580Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
     }
-  },
-  isPhotoFigcaption: true,
-  islazyload: true,
-  isAnchor: false,
-  percent: {
-    toc: true,
-    rightside: false,
-  }
-}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
-  title: 'Java并发 -- Lock',
-  isPost: true,
-  isHome: false,
-  isHighlightShrink: false,
-  isToc: true,
-  postUpdate: '2023-04-03 18:04:59'
-}</script><noscript><style type="text/css">
-  #nav {
-    opacity: 1
-  }
-  .justified-gallery img {
-    opacity: 1
-  }
-
-  #recent-posts time,
-  #post-meta time {
-    display: inline !important
-  }
-</style></noscript><script>(win=>{
-    win.saveToLocal = {
-      set: function setWithExpiry(key, value, ttl) {
-        if (ttl === 0) return
-        const now = new Date()
-        const expiryDay = ttl * 86400000
-        const item = {
-          value: value,
-          expiry: now.getTime() + expiryDay,
-        }
-        localStorage.setItem(key, JSON.stringify(item))
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
       },
-
-      get: function getWithExpiry(key) {
+      get: key => {
         const itemStr = localStorage.getItem(key)
-
-        if (!itemStr) {
-          return undefined
-        }
-        const item = JSON.parse(itemStr)
-        const now = new Date()
-
-        if (now.getTime() > item.expiry) {
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
           localStorage.removeItem(key)
           return undefined
         }
-        return item.value
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
       }
     }
   
-    win.getScript = url => new Promise((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = url
-      script.async = true
-      script.onerror = reject
-      script.onload = script.onreadystatechange = function() {
-        const loadState = this.readyState
-        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
-        script.onload = script.onreadystatechange = null
-        resolve()
-      }
-      document.head.appendChild(script)
-    })
-  
-    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = url
-      if (id) link.id = id
-      link.onerror = reject
-      link.onload = link.onreadystatechange = function() {
-        const loadState = this.readyState
-        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
-        link.onload = link.onreadystatechange = null
-        resolve()
-      }
-      document.head.appendChild(link)
-    })
-  
-      win.activateDarkMode = function () {
+      
+      const activateDarkMode = () => {
         document.documentElement.setAttribute('data-theme', 'dark')
         if (document.querySelector('meta[name="theme-color"]') !== null) {
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
         }
       }
-      win.activateLightMode = function () {
+      const activateLightMode = () => {
         document.documentElement.setAttribute('data-theme', 'light')
         if (document.querySelector('meta[name="theme-color"]') !== null) {
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
         }
       }
-      const t = saveToLocal.get('theme')
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
     
-          if (t === 'dark') activateDarkMode()
-          else if (t === 'light') activateLightMode()
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
         
+      
       const asideStatus = saveToLocal.get('aside-status')
       if (asideStatus !== undefined) {
-        if (asideStatus === 'hide') {
-          document.documentElement.classList.add('hide-aside')
-        } else {
-          document.documentElement.classList.remove('hide-aside')
-        }
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
       }
     
+      
     const detectApple = () => {
-      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
         document.documentElement.classList.add('apple')
       }
     }
     detectApple()
-    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
-</head><body><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-2.png')"><nav id="nav"><span id="blog-info"><a href="/" title="ByteCoding"><span class="site-name">ByteCoding</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Java并发 -- Lock</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-05-05T01:07:32.000Z" title="Created 2019-05-05 09:07:32">2019-05-05</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/concurrent/">Concurrent</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>4min</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="管程"><a href="#管程" class="headerlink" title="管程"></a>管程</h2><ol>
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java并发 -- Lock',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Java并发 -- Lock</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Java并发 -- Lock</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2019-05-05T01:07:32.000Z" title="Created 2019-05-05 09:07:32">2019-05-05</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">Java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/concurrent/">Concurrent</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">1.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>4mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2023-04-03 18:04:59&quot;}" hidden></div><h2 id="管程"><a href="#管程" class="headerlink" title="管程"></a>管程</h2><ol>
 <li>并发领域的两大核心问题：<strong>互斥</strong> + <strong>同步</strong></li>
 <li>互斥：同一时刻只允许一个线程访问共享资源</li>
 <li>同步：线程之间的通信和协作</li>
@@ -254,46 +260,53 @@
 <!-- indicate-the-source -->
 
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100023901">Java并发编程实战</a></p>
-<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/">https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/java-concurrent/">Java Concurrent</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2019/05/06/java-core-vector-arraylist-linkedlist/" title="Java核心 -- Vector + ArrayList + LinkedList"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">Previous Post</div><div class="prev_info">Java核心 -- Vector + ArrayList + LinkedList</div></div></a></div><div class="next-post pull-right"><a href="/2019/05/04/java-core-int-integer/" title="Java核心 -- int + Integer"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Java核心 -- int + Integer</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2019/06/12/java-concurrent-csp/" title="Java并发 -- CSP模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-12</div><div class="title">Java并发 -- CSP模型</div></div></a></div><div><a href="/2019/06/08/java-concurrent-coroutine/" title="Java并发 -- 协程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-08</div><div class="title">Java并发 -- 协程</div></div></a></div><div><a href="/2019/06/06/java-concurrent-stm/" title="Java并发 -- 软件事务内存"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-06</div><div class="title">Java并发 -- 软件事务内存</div></div></a></div><div><a href="/2019/06/04/java-concurrent-actor/" title="Java并发 -- Actor模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-5.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-04</div><div class="title">Java并发 -- Actor模型</div></div></a></div><div><a href="/2019/05/31/java-concurrent-disruptor/" title="Java并发 -- Disruptor"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-13.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-31</div><div class="title">Java并发 -- Disruptor</div></div></a></div><div><a href="/2019/05/30/java-concurrent-netty/" title="Java并发 -- Netty线程模型"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-23.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-30</div><div class="title">Java并发 -- Netty线程模型</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">zhongmingmao</div><div class="author-info__description">Focus on Infrastructure.</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%A1%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">管程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E9%80%A0%E7%AE%A1%E7%A8%8B%E7%9A%84%E7%90%86%E7%94%B1"><span class="toc-number">2.</span> <span class="toc-text">再造管程的理由</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%9D%E8%AF%81%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="toc-number">3.</span> <span class="toc-text">保证可见性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81"><span class="toc-number">4.</span> <span class="toc-text">可重入锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AC%E5%B9%B3%E9%94%81%E5%92%8C%E9%9D%9E%E5%85%AC%E5%B9%B3%E9%94%81"><span class="toc-number">5.</span> <span class="toc-text">公平锁和非公平锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">6.</span> <span class="toc-text">锁的最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">7.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java-agent.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java Zero Code"/></a><div class="content"><a class="title" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code">Observability - OpenTelemetry Java Zero Code</a><time datetime="2025-01-20T16:06:25.000Z" title="Created 2025-01-21 00:06:25">2025-01-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java"/></a><div class="content"><a class="title" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java">Observability - OpenTelemetry Java</a><time datetime="2025-01-19T16:06:25.000Z" title="Created 2025-01-20 00:06:25">2025-01-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/mcp.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - MCP Overview"/></a><div class="content"><a class="title" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview">AI Agent - MCP Overview</a><time datetime="2025-01-18T16:06:25.000Z" title="Created 2025-01-19 00:06:25">2025-01-19</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/ai-agent.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - Overview"/></a><div class="content"><a class="title" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview">AI Agent - Overview</a><time datetime="2025-01-17T16:06:25.000Z" title="Created 2025-01-18 00:06:25">2025-01-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-feature-1253868755.cos.ap-guangzhou.myqcloud.com/Java-Foreign-Function-API.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="New Java Feature - Foreign Function API"/></a><div class="content"><a class="title" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API">New Java Feature - Foreign Function API</a><time datetime="2025-01-16T16:06:25.000Z" title="Created 2025-01-17 00:06:25">2025-01-17</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('https://cdn.pixabay.com/photo/2018/08/27/15/17/fishing-3635221_1280.png')"><div id="footer-wrap"><div class="copyright">&copy;2015 - 2025 By zhongmingmao</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">繁</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script>function panguFn () {
-  if (typeof pangu === 'object') pangu.autoSpacingPage()
-  else {
-    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
-      .then(() => {
-        pangu.autoSpacingPage()
-      })
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/">https://blog.zhongmingmao.top/2019/05/05/java-concurrent-lock/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">Java</a><a class="post-meta__tags" href="/tags/java-concurrent/">Java Concurrent</a></div><div class="post-share"><div class="social-share" data-image="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-17.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2019/05/06/java-core-vector-arraylist-linkedlist/" title="Java核心 -- Vector + ArrayList + LinkedList"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-8.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">Previous</div><div class="info-item-2">Java核心 -- Vector + ArrayList + LinkedList</div></div><div class="info-2"><div class="info-item-1">概述 Vector、ArrayList、LinkedList都实现了java.util.List接口，即有序集合 Vector是Java早期提供的线程安全的动态数组，同步有一定的额外开销 Vector内部使用对象数组来保存数据，可以自动扩容（创建新的数组，拷贝原有数组的数据）   ArrayList是应用更加广泛的动态数组，本身并不是线程安全的，性能比Vector要好很多 Vector的自动扩容是增加1倍，而ArrayList的自动扩容是增加50%   LinkedList是双向链表，不是线程安全的，也不需要动态调整容量    适用场景 Vector和ArrayList都是动态数组，其内部元素是以数组的形式存储的，非常适合随机访问的场合 除了在尾部插入和删除元素，性能都比较差，因为要移动后续所有的元素   LinkedList进行元素的插入和删除操作会高效很多，但随机访问性能要比动态数组差  集合   容器包括集合和Map，_Map并不是真正的集合_ List：有序结合 Set：不允许重复元素（equals判断） Queue&#x2F;Deque：标准队列，支持FIFO或者LIFO 每种集合的通用逻辑，...</div></div></div></a><a class="pagination-related" href="/2019/05/04/java-core-int-integer/" title="Java核心 -- int + Integer"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-20.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Java核心 -- int + Integer</div></div><div class="info-2"><div class="info-item-1">包装类 Integer是int对应的包装类，里面有一个int类型的字段存储数据，并提供了基本的操作 在Java 5，引入了自动装箱和自动拆箱（boxing&#x2F;unboxing），Java可以根据上下文，自动进行转换 在Java 5，还引入了值缓存（静态工厂方法valueOf），默认缓存范围为**-128 ~ 127** Boolean，缓存Boolean.TRUE&#x2F;Boolean.FALSE Short，缓存**-128 ~ 127** Byte，数值有限，全部缓存 Character，缓存\u0000 ~ \u007F      自动装箱 + 自动拆箱12Integer integer = 1;int unboxing = integer++; 1234561: invokestatic     // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;8: invokevirtual    // Method java/lang/Integer.intValue:()I11: iconst_112: iadd13: invo...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2019/06/12/java-concurrent-csp/" title="Java并发 -- CSP模型"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-1.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-12</div><div class="info-item-2">Java并发 -- CSP模型</div></div><div class="info-2"><div class="info-item-1">Go Go是一门号称从语言层面支持并发的编程语言，支持并发也是Go非常重要的特性之一 Go支持协程，协程可以类比Java中的线程，解决并发问题的难点在于线程（协程）之间的协作 Go提供了两种方案 支持协程之间以共享内存的方式通信，Go提供了管程和原子类来对协程进行同步控制，该方案与Java类似 支持协程之间以消息传递的方式通信，本质上是要避免共享，该方案是基于CSP模型实现的，Go推荐该方案      CSP模型 CSP：Communicating Sequential Processes Do not communicate by sharing memory; instead, share memory by communicating.  累加器12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455package mainimport (    &quot;fmt&quot;    &quot;time&quot;)func main() &#123;...</div></div></div></a><a class="pagination-related" href="/2019/06/08/java-concurrent-coroutine/" title="Java并发 -- 协程"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-08</div><div class="info-item-2">Java并发 -- 协程</div></div><div class="info-2"><div class="info-item-1">协程 协程可以理解为一种轻量级的线程 从操作系统的角度来看，线程是在内核态中调度的，而协程是在用户态调度的，协程的切换成本更低 协程栈比线程栈要小得多，典型的线程栈在1M左右，而协程栈一般在几K或者几十K左右 因此无论在时间维度还是在空间维度，协程都比线程轻量很多 支持协程的语言：Go、Python、Lua、Kotlin Java OpenSDK的Loom项目的目标是为了支持协程      Go中的协程12345678910func hello(msg string) &#123;    fmt.Println(&quot;Hello &quot; + msg)&#125;func TestCoroutine(t *testing.T) &#123;    // 在新的协程中执行hello方法    go hello(&quot;Go&quot;)    // 等待100毫秒让协程执行结束    time.Sleep(100 * time.Millisecond)&#125;  Java中的线程是一个重量级对象，因此无法很好地实现Thread-Per-Message模式，而协程可以 Thread-Per...</div></div></div></a><a class="pagination-related" href="/2019/06/06/java-concurrent-stm/" title="Java并发 -- 软件事务内存"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-19.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-06</div><div class="info-item-2">Java并发 -- 软件事务内存</div></div><div class="info-2"><div class="info-item-1">STM STM：Software Transactional Memory，软件事务内存，借鉴于数据库的事务管理 传统的数据库事务支持ACID，即原子性（A）、一致性（C）、隔离性（I）和持久性（D） STM不支持持久化，即只支持ACI    数据库事务数据库保证在并发情况下不会发生死锁，而且还能保证ACID 1234567891011121314Connection conn = null;try&#123;    // 获取数据库连接    conn = DriverManager.getConnection();    // 设置手动提交事务    conn.setAutoCommit(false);    // 执行转账SQL    ...    // 提交事务    conn.commit();&#125; catch (Exception e) &#123;    // 出现异常回滚事务    conn.rollback();&#125;  synchronized转账12345678910111213141516@AllArgsConstructorpublic class UnsafeA...</div></div></div></a><a class="pagination-related" href="/2019/06/04/java-concurrent-actor/" title="Java并发 -- Actor模型"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-12.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-04</div><div class="info-item-2">Java并发 -- Actor模型</div></div><div class="info-2"><div class="info-item-1">Actor模型 Actor模型在本质上是一种计算模型，基本的计算单元称为Actor，在Actor模型中，所有的计算都在Actor中执行 在面向对象编程里，一切都是对象，在Actor模型里，一切都是Actor，并且Actor之间是完全隔离的，不会共享任何变量 Java本身并不支持Actor模型，如果需要在Java里使用Actor模型，需要借助第三方类库，比较完备的是Akka    Hello Actor12345678910111213141516public class HelloActor extends UntypedAbstractActor &#123;    // 该Actor在收到消息message后，会打印Hello message    @Override    public void onReceive(Object message) throws Throwable &#123;        System.out.printf(&quot;Hello %s%n&quot;, message);    &#125;    public static void main(String[...</div></div></div></a><a class="pagination-related" href="/2019/05/31/java-concurrent-disruptor/" title="Java并发 -- Disruptor"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-6.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-31</div><div class="info-item-2">Java并发 -- Disruptor</div></div><div class="info-2"><div class="info-item-1">有界队列 JUC中的有界队列ArrayBlockingQueue和LinkedBlockingQueue，都是基于ReentrantLock 在高并发场景下，锁的效率并不高，Disruptor是一款性能更高的有界内存队列 Disruptor高性能的原因 内存分配更合理，使用RingBuffer，数组元素在初始化时一次性全部创建 提升缓存命中率，对象循环利用，避免频繁GC   能够避免伪共享，提升缓存利用率 采用无锁算法，避免频繁加锁、解锁的性能消耗 支持批量消费，消费者可以以无锁的方式消费多个消息      简单使用123456789101112131415161718192021222324252627public class DisruptorExample &#123;    public static void main(String[] args) throws InterruptedException &#123;        // RingBuffer大小，必须是2的N次方        int bufferSize = 1024;        // 构建Disruptor      ...</div></div></div></a><a class="pagination-related" href="/2019/05/30/java-concurrent-netty/" title="Java并发 -- Netty线程模型"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-4.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-30</div><div class="info-item-2">Java并发 -- Netty线程模型</div></div><div class="info-2"><div class="info-item-1">BIO      BIO即阻塞式IO，使用BIO模型，一般会为每个Socket分配一个独立的线程 为了避免频繁创建和销毁线程，可以采用线程池，但Socket和线程之间的对应关系不会发生变化   BIO适用于Socket连接不是很多的场景，但现在上百万的连接是很常见的，而创建上百万个线程是不现实的 因此BIO线程模型无法解决百万连接的问题   在互联网场景中，连接虽然很多，但每个连接上的请求并不频繁，因此线程大部分时间都在等待IO就绪  理想的线程模型   用一个线程来处理多个连接，可以提高线程的利用率，降低所需要的线程 使用BIO相关的API是无法实现的，BIO相关的Socket读写操作都是阻塞式的 一旦调用了阻塞式的API，在IO就绪前，调用线程会一直阻塞，也就无法处理其他的Socket连接   利用NIO相关的API能够实现一个线程处理多个连接，通过Reactor模式实现  Reactor模式   Handle指的是IO句柄，在Java网络编程里，本质上是一个网络连接 Event Handler是事件处理器，handle_event()处理IO事件，每个Event Handler处理一个IO Han...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">639</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">191</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">83</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%A1%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">管程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E9%80%A0%E7%AE%A1%E7%A8%8B%E7%9A%84%E7%90%86%E7%94%B1"><span class="toc-number">2.</span> <span class="toc-text">再造管程的理由</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%9D%E8%AF%81%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="toc-number">3.</span> <span class="toc-text">保证可见性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81"><span class="toc-number">4.</span> <span class="toc-text">可重入锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AC%E5%B9%B3%E9%94%81%E5%92%8C%E9%9D%9E%E5%85%AC%E5%B9%B3%E9%94%81"><span class="toc-number">5.</span> <span class="toc-text">公平锁和非公平锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">6.</span> <span class="toc-text">锁的最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">7.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java-agent.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java Zero Code"/></a><div class="content"><a class="title" href="/2025/01/21/cloud-native-observability-opentelemetry-java-zero-code/" title="Observability - OpenTelemetry Java Zero Code">Observability - OpenTelemetry Java Zero Code</a><time datetime="2025-01-20T16:06:25.000Z" title="Created 2025-01-21 00:06:25">2025-01-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/otel-java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Observability - OpenTelemetry Java"/></a><div class="content"><a class="title" href="/2025/01/20/cloud-native-observability-opentelemetry-java/" title="Observability - OpenTelemetry Java">Observability - OpenTelemetry Java</a><time datetime="2025-01-19T16:06:25.000Z" title="Created 2025-01-20 00:06:25">2025-01-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/mcp.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - MCP Overview"/></a><div class="content"><a class="title" href="/2025/01/19/ai-agent-overview-mcp/" title="AI Agent - MCP Overview">AI Agent - MCP Overview</a><time datetime="2025-01-18T16:06:25.000Z" title="Created 2025-01-19 00:06:25">2025-01-19</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://ai-agent-1253868755.cos.ap-guangzhou.myqcloud.com/ai-agent.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="AI Agent - Overview"/></a><div class="content"><a class="title" href="/2025/01/18/ai-agent-overview/" title="AI Agent - Overview">AI Agent - Overview</a><time datetime="2025-01-17T16:06:25.000Z" title="Created 2025-01-18 00:06:25">2025-01-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://java-feature-1253868755.cos.ap-guangzhou.myqcloud.com/Java-Foreign-Function-API.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="New Java Feature - Foreign Function API"/></a><div class="content"><a class="title" href="/2025/01/17/new-java-feature-foreign-function-api/" title="New Java Feature - Foreign Function API">New Java Feature - Foreign Function API</a><time datetime="2025-01-16T16:06:25.000Z" title="Created 2025-01-17 00:06:25">2025-01-17</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2025 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = `%%{init:{ 'theme':'${theme}'}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
   }
-}
 
-function panguInit () {
-  if (false){
-    GLOBAL_CONFIG_SITE.isPost && panguFn()
-  } else {
-    panguFn()
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
   }
-}
 
-document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
-  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
-  if ($mermaidWrap.length) {
-    window.runMermaid = () => {
-      window.loadMermaid = true
-      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
 
-      Array.from($mermaidWrap).forEach((item, index) => {
-        const mermaidSrc = item.firstElementChild
-        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
-        const mermaidID = 'mermaid-' + index
-        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
-        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
-          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
-        })
-      })
-    }
-
-    const loadMermaid = () => {
-      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
-    }
-
-    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
   }
-})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading the Database</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></body></html>
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
