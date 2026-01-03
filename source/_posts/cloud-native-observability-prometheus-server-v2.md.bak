@@ -1,0 +1,1421 @@
+---
+title: Observability - Prometheus Server V2
+mathjax: true
+date: 2025-01-25 00:06:25
+cover: https://observability-1253868755.cos.ap-guangzhou.myqcloud.com/prometheus-server-v2.png
+categories:
+  - Cloud Native
+  - Observability
+tags:
+  - Cloud Native
+  - Observability
+---
+
+# Configuration
+
+## Recording rules
+
+### Configuring rules
+
+1. Prometheus supports **two types of rules** which may be configured and then **evaluated** at regular intervals: **recording rules** and **alerting rules**.
+2. To include rules in Prometheus
+   - create a file containing the **necessary rule statements** and have Prometheus load the file via the **rule_files** field in the Prometheus configuration. 
+3. The rule files can be **reloaded** at **runtime** by sending **SIGHUP** to the Prometheus process.
+   - The changes are **only applied** if **all rule files** are **well-formatted**.
+
+<!-- more -->
+
+### Syntax-checking rules
+
+To **quickly check** whether a **rule file** is **syntactically correct** without starting a Prometheus server, you can use Prometheus's **promtool** command-line utility tool:
+
+```
+$ promtool check rules /path/to/example.rules.yml
+Checking prometheus.rules.yml
+  SUCCESS: 1 rules found
+```
+
+The **promtool** binary is part of the **prometheus archive** offered on the project's download page.
+
+When the file is **syntactically valid**, the checker prints a textual representation of the parsed rules to standard output and then exits with a **0** return status.
+
+If there are **any syntax errors** or **invalid input arguments**, it prints an error message to standard error and exits with a **1** return status.
+
+### Recording rules
+
+1. Recording rules allow you to **precompute** <u>frequently needed</u> or <u>computationally expensive</u> expressions and save their <u>result</u> as a <u>new set of time series</u>.
+   - Querying the **precomputed result** will then often be **much faster** than executing the **original expression** every time it is needed.
+   - This is **especially useful** for **dashboards**, which need to query the **same expression repeatedly every time** they refresh.
+2. **Recording and alerting rules** exist in a **rule group**.
+   - Rules **within a group** are **run sequentially** at a **regular interval**, with the **same evaluation time**.
+   - The **names** of **recording rules** must be **valid metric names**.
+   - The **names** of **alerting rules** must be **valid label values**.
+
+The syntax of a rule file is:
+
+```yaml
+groups:
+  [ - <rule_group> ]
+```
+
+A simple example rules file would be:
+
+```yaml
+groups:
+  - name: example
+    rules:
+    - record: code:prometheus_http_requests_total:sum
+      expr: sum by (code) (prometheus_http_requests_total)
+```
+
+#### rule_group
+
+```
+⏺ 这是一个 Prometheus 规则组配置文件的语法结构，用中文解释如下：
+
+  # 规则组名称，在文件中必须唯一
+  name: <字符串>
+
+  # 规则评估频率
+  [ interval: <时间间隔> | 默认值 = global.evaluation_interval ]
+
+  # 限制告警规则和记录规则可以产生的告警数量和序列数量
+  # 0 表示无限制
+  [ limit: <整数> | 默认值 = 0 ]
+
+  # 将此特定规则组的规则评估时间戳偏移到过去指定的时长
+  [ query_offset: <时间偏移> | 默认值 = global.rule_query_offset ]
+
+  # 在存储规则结果之前要添加或覆盖的标签
+  # 在 <rule> 中定义的标签如果发生冲突将覆盖同名的键
+  labels:
+    [ <标签名>: <标签值> ]
+
+  # 规则列表
+  rules:
+    [ - <规则> ... ]
+
+  主要用途：
+
+  - name: 为规则组定义唯一的标识符
+  - interval: 控制规则执行的频率（如每30秒、每分钟等）
+  - limit: 防止规则产生过多的时间序列数据
+  - query_offset: 允许规则查询历史数据而非实时数据
+  - labels: 为组内所有规则添加统一的标签
+  - rules: 包含具体的告警规则和记录规则
+
+  这种结构用于组织和管理 Prometheus 的告警和记录规则，提供灵活的配置选项。
+```
+
+#### rule
+
+```
+⏺ 这是 Prometheus 中两种主要规则的语法结构，用中文解释如下：
+
+  记录规则 (Recording Rules)
+
+  # 输出的时间序列名称，必须是有效的指标名称
+  record: <字符串>
+
+  # 要评估的 PromQL 表达式。每个评估周期都会在当前时间评估此表达式，
+  # 并将结果作为新的时间序列组记录，指标名由 'record' 指定
+  expr: <字符串>
+
+  # 在存储结果之前要添加或覆盖的标签
+  labels:
+    [ <标签名>: <标签值> ]
+
+  用途: 将复杂或计算密集的 PromQL 查询结果预先计算并存储为新的指标，提高查询性能。
+
+  ---
+  告警规则 (Alerting Rules)
+
+  # 告警名称，必须是有效的标签值
+  alert: <字符串>
+
+  # 要评估的 PromQL 表达式。每个评估周期都会在当前时间评估此表达式，
+  # 所有产生的时间序列都将成为待触发/已触发的告警
+  expr: <字符串>
+
+  # 告警被触发后需要持续返回这么长时间才算真正触发
+  # 尚未达到此时长的告警被认为是待触发状态
+  [ for: <持续时间> | 默认值 = 0s ]
+
+  # 触发告警的条件清除后，告警将继续触发多长时间
+  [ keep_firing_for: <持续时间> | 默认值 = 0s ]
+
+  # 为每个告警要添加或覆盖的标签
+  labels:
+    [ <标签名>: <模板字符串> ]
+
+  # 为每个告警要添加的注释
+  annotations:
+    [ <标签名>: <模板字符串> ]
+
+  关键参数说明：
+
+  告警规则特有参数:
+  - for: 防止瞬时抖动产生误报，只有条件持续满足指定时间才触发告警
+  - keep_firing_for: 告警恢复后的持续通知时间，确保管理员能看到恢复通知
+  - labels: 用于告警分类和路由
+  - annotations: 提供告警的详细信息，如描述、解决方案等
+
+  模板字符串: 可以使用 Go 模板语法，动态插入告警的标签值和查询结果。
+```
+
+### Limiting alerts and series
+
+1. A **limit** for **alerts** produced by **alerting rules** and **series** produced **recording rules** can be configured **per-group**.
+2. When the **limit** is **exceeded**
+   - all **series** produced by the rule are **discarded**, and if it's an alerting rule, all **alerts** for the rule, **active**, **pending**, or **inactive**, are **cleared** as well.
+3. The **event** will be **recorded** as an **error** in the **evaluation**, and as such **no stale markers** are **written**.
+
+```
+⏺ 这是关于 Prometheus 规则组中限制机制的工作原理，用中文解释如下：
+
+  告警和序列限制
+
+  可以为每个规则组配置告警规则产生的告警数量和记录规则产生的时间序列数量的限制。
+
+  限制机制的工作方式
+
+  当超过限制时会发生什么：
+
+  1. 数据丢弃: 规则产生的所有时间序列都会被丢弃
+    - 记录规则：新计算的时间序列被丢弃
+    - 告警规则：相关的时间序列也被丢弃
+  2. 告警清理: 如果是告警规则，所有与此规则相关的告警都会被清除
+    - 包括活跃状态的告警
+    - 包括待触发状态的告警
+    - 包括非活跃状态的告警
+  3. 错误记录: 这个事件会作为错误记录在规则评估中
+    - 评估日志中会显示错误信息
+    - 因此不会写入陈旧标记 (stale markers)
+
+  影响和注意事项
+
+  陈旧标记问题:
+  - 由于被记录为错误而不是正常的规则终止，Prometheus 不会为这些指标写入陈旧标记
+  - 这可能导致依赖这些标记的系统无法正确检测指标消失
+
+  配置建议:
+  - 合理设置 limit 值，既防止数据爆炸，又不影响正常的监控需求
+  - 监控规则评估错误，及时发现限制被触发的情况
+  - 对于可能产生大量序列的规则，考虑优化查询或拆分规则
+
+  这个机制主要起到保护作用，防止配置错误或异常情况导致 Prometheus 存储过多的无用数据。
+```
+
+```
+⏺ 记录规则和告警规则的处理差异主要源于它们的不同设计目的和数据特性：
+
+  核心差异
+
+  1. 数据目的不同
+
+  记录规则:
+  - 用途: 预计算和存储数据，优化查询性能
+  - 目标: 创建新的时间序列供后续查询使用
+  - 本质: 数据预处理
+
+  告警规则:
+  - 用途: 监控异常状态，触发通知
+  - 目标: 根据条件判断是否需要告警
+  - 本质: 状态判断和通知
+
+  2. 数据处理方式
+
+  记录规则:
+  - 每次评估都会产生新数据点
+  - 数据是累积的，需要持久化存储
+  - 主要关注数据完整性
+
+  告警规则:
+  - 主要关注状态变化
+  - 数据是状态性的（活跃/待触发/非活跃）
+  - 主要关注通知准确性
+
+  3. 限制触发的处理逻辑
+
+  # 限制被触发时的处理差异
+
+  记录规则超限:
+  ├── 新时间序列被丢弃
+  ├── 数据查询失败
+  └── 不影响已有历史数据
+
+  告警规则超限:
+  ├── 所有相关告警被清除
+  ├── 包括活跃/待触发/非活跃状态
+  └── 告警状态重置为"无"
+
+  4. 为什么告警规则需要更彻底的清理
+
+  数据一致性:
+  - 如果只丢弃新数据，会留下"孤儿"告警
+  - 导致告警状态与实际数据状态不一致
+
+  避免告警风暴:
+  - 超限通常表示配置有问题
+  - 清理所有相关告警防止持续的错误通知
+
+  状态重置:
+  - 给系统一个"干净"的起点
+  - 修复配置后可以重新正常工作
+
+  设计考虑
+
+  记录规则的保守处理
+
+  # 记录规则更保守
+  limit_exceeded:
+    action: "只丢弃新数据"
+    reason: "保护存储，保留历史"
+    impact: "查询可能返回旧数据"
+
+  告警规则的激进处理
+
+  # 告警规则更激进
+  limit_exceeded:
+    action: "清理所有相关状态"
+    reason: "保证状态一致性，避免误报"
+    impact: "可能暂时丢失告警"
+
+  这种差异体现了 Prometheus 对数据完整性和告警准确性的不同优先级考虑。
+```
+
+### Rule query offset
+
+1. This is useful to **ensure** the **underlying metrics** have been **received** and **stored** in **Prometheus**.
+2. **Metric availability delays** are more likely to occur when **Prometheus** is running as a **remote write target**
+   - due to the **nature** of **distributed systems**, but can also occur when there's **anomalies** with **scraping** and/or **short evaluation intervals**.
+
+```
+⏺ 这是关于 Prometheus 规则查询偏移的说明，用中文解释如下：
+
+  规则查询偏移的作用
+
+  这个功能主要用于确保基础指标已经被 Prometheus 接收并存储。
+
+  为什么需要查询偏移？
+
+  1. 指标可用性延迟问题
+
+  分布式系统中的延迟:
+  指标收集 → 网络传输 → 远程写入 → 存储持久化 → 可供查询
+      ↑            ↑           ↑           ↑
+    可能延迟    网络延迟     写入延迟    持久化延迟
+
+  常见场景:
+  - 远程写入目标: Prometheus 作为远程写入接收端时，由于分布式系统的特性，更容易出现延迟
+  - 数据采集异常: 抓取过程中出现临时问题
+  - 评估间隔过短: 规则评估频率过高，数据还没来得及到达
+
+  2. 查询偏移的工作原理
+
+  # 配置示例
+  groups:
+    - name: example
+      query_offset: 30s  # 查询30秒前的数据
+      rules:
+        - record: job:http_requests:rate5m
+          expr: rate(http_requests_total[5m])
+
+  执行流程:
+  当前时间: 2024-01-01 12:00:30
+  查询时间: 2024-01-01 12:00:00  (偏移30秒)
+  数据范围: 2024-01-01 11:55:00 ~ 2024-01-01 12:00:00
+
+  3. 适用场景
+
+  特别适合的情况:
+  - 高基数指标: 需要更长时间完成写入
+  - 网络不稳定: 指标传输延迟较大
+  - 存储后端延迟: 写入到最终可用之间的延迟
+  - 短期评估间隔: 比如1秒评估一次，但指标收集是5秒间隔
+
+  典型用例:
+  # 远程写入场景
+  groups:
+    - name: remote_write_critical
+      query_offset: 1m
+      interval: 15s
+      rules:
+        - alert: HighErrorRate
+          expr: rate(errors_total[5m]) > 0.1
+
+  # 高频监控场景
+  groups:
+    - name: high_frequency_metrics
+      query_offset: 10s
+      interval: 5s
+      rules:
+        - record: cpu:usage:avg1m
+          expr: avg_over_time(cpu_usage[1m])
+
+  4. 偏移值的建议设置
+
+  基于经验的建议:
+  - 本地部署: 5-15秒
+  - 远程写入: 30秒-2分钟
+  - 跨区域: 2-5分钟
+  - 高延迟网络: 根据实际情况调整
+
+  权衡考虑:
+  - 偏移太小: 仍可能遇到数据不可用问题
+  - 偏移太大: 告警响应延迟增加
+  - 需要平衡: 数据完整性和响应及时性
+
+  这个功能本质上是用响应延迟换取数据可靠性，在分布式系统中是很实用的优化手段
+```
+
+### Failed rule evaluations due to slow evaluation
+
+1. If a rule group **hasn't finished evaluating** before its next evaluation is supposed to start (as defined by the **evaluation_interval**)
+   - the **next evaluation** will be **skipped**.
+2. **Subsequent evaluations** of the **rule group** will continue to be **skipped** until the **initial evaluation** either **completes** or **times out**.
+3. When this happens, there will be a **gap** in the **metric** produced by the **recording rule**.
+4. The `rule_group_iterations_missed_total` metric will be **incremented** for each **missed iteration** of the **rule group**.
+
+```
+  # 配置参数
+  evaluation_interval: 30s  # 每30秒应该评估一次
+  第1次评估实际耗时: 65s    # 第1次评估从开始到完成用了65秒
+
+  时间轴详细解释:
+  T0    - 开始第1次评估 (正常开始)
+  T30   - 应该开始第2次评估，但第1次还在运行中 → 跳过第2次
+  T60   - 应该开始第3次评估，第1次仍在运行中 → 跳过第3次
+  T65   - 第1次评估终于完成了 (耗时65秒)
+  T90   - 开始第4次评估 (恢复正常，因为T65后第1次已完成)
+
+  关键逻辑
+
+  跳过判断:
+  // 伪代码说明判断逻辑
+  if 当前时间 >= 下次评估时间 {
+      if 上次评估还在运行中 {
+          跳过这次评估
+          increment(missed_iterations_metric)
+      } else {
+          开始新的评估
+      }
+  }
+
+  T65的重要性:
+  - 不是评估开始时间，而是第1次评估的结束时间
+  - 关键转折点: 在T65之前，所有计划评估都被跳过
+  - 恢复条件: 只有第1次完成，后续才能正常开始
+
+  更清晰的表示
+
+  评估周期 | 计划开始时间 | 实际执行状态        | 结果
+  --------|------------|-------------------|--------
+  第1次   | T0 (00:00) | T0-T65 (执行65秒)  | 完成
+  第2次   | T30 (00:30)| 被跳过 (第1次未完)  | 跳过
+  第3次   | T60 (01:00)| 被跳过 (第1次未完)  | 跳过
+  第4次   | T90 (01:30)| T90开始 (第1次已完成)| 正常执行
+
+  这样解释就更清楚了：T65是第1次评估的实际完成时间，它决定了从T90开始系统可以恢复正常评估。
+```
+
+## Alerting rules
+
+1. Alerting rules allow you to define **alert conditions** based on **PromQL** and to **send notifications** about **firing alerts** to an **external service**.
+2. Whenever the **alert expression** results in <u>one or more vector elements</u> at a given point in time, the alert counts as **active** for these elements' label sets.
+
+```
+  告警规则的概念
+
+  告警规则允许你基于 Prometheus 表达式语言定义告警条件，并向外部服务发送触发的告警通知。
+
+  工作原理
+
+  1. 告警激活机制
+
+  # 告警表达式示例
+  expr: rate(http_requests_total[5m]) > 100
+
+  激活条件:
+  - 当告警表达式在某个时间点计算结果包含一个或多个向量元素时
+  - 该告警对这些元素的标签集就被标记为活跃状态
+
+  2. 向量元素和标签集
+
+  # 查询结果示例
+  rate(http_requests_total[5m]) > 100
+
+  # 返回结果：
+  {job="api", instance="10.0.1.100:8080"}    150.2    ← 触发告警
+  {job="api", instance="10.0.1.101:8080"}    85.1     ← 不触发告警
+  {job="web", instance="10.0.1.200:8080}    120.7     ← 触发告警
+
+  活跃告警:
+  告警1: 标签集 {job="api", instance="10.0.1.100:8080"} → 活跃
+  告警2: 标签集 {job="web", instance="10.0.1.200:8080"} → 活跃
+
+  3. 告警状态转换
+
+  表达式结果为空 → 非活跃 (无告警)
+  表达式结果非空 → 活跃 (有告警)
+
+  活跃状态细分：
+  ├── 待触发 (Pending) - 刚满足条件，持续时间未达到 'for' 要求
+  └── 已触发 (Firing) - 持续时间超过 'for' 要求，发送通知
+
+  4. 完整告警规则示例
+
+  groups:
+    - name: example_alerts
+      rules:
+        - alert: HighRequestLatency
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+          for: 10m
+          labels:
+            severity: critical
+            service: api
+          annotations:
+            summary: "High request latency detected"
+            description: "95th percentile latency is {{ $value }}s"
+
+  5. 外部服务集成
+
+  通知流程:
+  Prometheus → Alertmanager → 外部服务
+      ↓           ↓           ↓
+    告警规则     路由规则     邮件/Slack/钉钉等
+
+  支持的外部服务:
+  - 邮件系统
+  - 即时通讯工具 (Slack, 钉钉, 企业微信)
+  - 短信服务
+  - 自动化平台 (PagerDuty, OpsGenie)
+  - Webhook 自定义集成
+
+  6. 标签集的作用
+
+  标签集用途:
+  - 告警标识: 每个唯一的标签集代表一个独立的告警实例
+  - 路由决策: Alertmanager 根据标签决定通知策略
+  - 信息丰富: 提供告警的上下文信息
+  - 聚合管理: 可以对相似告警进行分组处理
+
+  示例:
+  # 同一个告警规则产生多个告警实例
+  告警名称: DiskSpaceLow
+  实例1: {instance="server1", mountpoint="/var"} 90% used
+  实例2: {instance="server2", mountpoint="/home"} 85% used
+  实例3: {instance="server3", mountpoint="/var"} 92% used
+
+  这种机制使得 Prometheus 可以精确地监控大量相似但独立的服务或指标，并为每个异常情况提供独立的告警通知。
+```
+
+### Defining alerting rules
+
+**Alerting rules** are configured in Prometheus in the **same way** as **recording rules**.
+
+An example rules file with an alert would be:
+
+```
+groups:
+- name: example
+  labels:
+    team: myteam
+  rules:
+  - alert: HighRequestLatency
+    expr: job:request_latency_seconds:mean5m{job="myjob"} > 0.5
+    for: 10m
+    keep_firing_for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: High request latency
+```
+
+1. The optional **for** clause causes Prometheus to **wait for** a **certain duration**
+   - between **first encountering** a new expression **output vector element** and counting an alert as **firing** for this element.
+2. In this case, Prometheus will check that the alert **continues** to be **active** during **each evaluation** for 10 minutes **before firing** the alert.
+3. Elements that are **active**, but **not firing yet**, are in the **pending** state.
+4. Alerting rules **without** the **for** clause will become **active** on the **first evaluation**.
+5. There is also an optional **keep_firing_for** clause that tells Prometheus to **keep this alert firing** for the **specified duration** after the **firing condition** was **last met**.
+6. This can be used to prevent situations such as **flapping alerts**, **false resolutions** due to **lack of data loss**, etc.
+7. Alerting rules without the `keep_firing_for` clause will **deactivate** on the **first evaluation** where the **condition** is **not met** (assuming any optional `for` duration described above has been satisfied).
+
+```
+⏺ 这是关于 Prometheus 告警规则中两个重要时间控制参数的说明，用中文解释如下：
+
+  for 子句 - 告警触发延迟
+
+  1. 基本作用
+
+  for 子句让 Prometheus 在首次发现新的表达式输出向量元素和将此元素标记为触发告警之间等待一定的持续时间。
+
+  2. 工作机制
+
+  # 示例配置
+  - alert: HighErrorRate
+    expr: rate(errors_total[5m]) > 0.1
+    for: 10m
+
+  告警状态转换:
+  T0   - 首次检测到条件满足 → 进入待触发状态 (Pending)
+  T1   - 持续检测到条件满足
+  T2   - 持续检测到条件满足
+  ...
+  T10  - 持续满足10分钟后 → 进入触发状态 (Firing) → 发送通知
+
+  3. 防止误报
+
+  没有 for 子句:
+  # 瞬时抖动就会触发告警
+  expr: cpu_usage > 90
+  # 结果：可能因为短暂的网络问题或数据抖动产生误报
+
+  有 for 子句:
+  # 需要持续一段时间才触发告警
+  expr: cpu_usage > 90
+  for: 5m
+  # 结果：只有真正持续的高负载才会触发告警
+
+  ---
+  keep_firing_for 子句 - 告警保持时间
+
+  1. 基本作用
+
+  告诉 Prometheus 在触发条件最后一次满足后，继续保持告警触发状态指定的持续时间。
+
+  2. 解决的实际问题
+
+  防止告警抖动:
+  - alert: ServiceDown
+    expr: up == 0
+    for: 1m
+    keep_firing_for: 10m
+
+  问题场景:
+  时间: 08:00-08:05  服务真正宕机 → 告警触发
+  时间: 08:05-08:06  网络问题导致检测不到服务 → 条件误满足
+  时间: 08:06-08:07  网络恢复 → 条件不满足
+
+  解决方案:
+  - 08:05 检测到问题后触发告警
+  - 08:06 条件不满足，但告警继续保持到 08:16
+  - 避免了告警的快速启停
+
+  3. 完整的时间轴示例
+
+  - alert: DatabaseConnectionsHigh
+    expr: db_connections_active > 80
+    for: 3m
+    keep_firing_for: 5m
+
+  时间轴:
+  08:00 - 连接数开始上升到85 (条件满足)
+  08:03 - 持续3分钟满足条件 → 进入Firing状态，发送告警
+  08:10 - 连接数降到60 (条件不再满足)
+  08:15 - keep_firing_for 5分钟结束 → 告警停止
+
+  ---
+  组合使用的效果
+
+  1. 没有时间控制
+
+  expr: error_rate > 0.05
+  # 瞬时触发，瞬时停止，可能产生告警风暴
+
+  2. 只有 for
+
+  expr: error_rate > 0.05
+  for: 5m
+  # 稳定触发，但可能在条件刚不满足时就停止告警
+
+  3. 完整的时间控制
+
+  expr: error_rate > 0.05
+  for: 5m          # 需要持续5分钟才触发
+  keep_firing_for: 10m  # 触发后至少保持10分钟
+  # 既防止误报，又防止过早恢复
+
+  实际应用场景
+
+  1. 服务监控
+
+  - alert: ServiceUnavailable
+    expr: up == 0
+    for: 2m
+    keep_firing_for: 15m
+    # 防止短暂网络抖动产生告警，同时确保服务真正恢复后才停止告警
+
+  2. 业务指标监控
+
+  - alert: OrderProcessingDelay
+    expr: processing_time_seconds > 300
+    for: 10m
+    keep_firing_for: 30m
+    # 业务指标变化通常需要更长的观察和恢复时间
+
+  这两个参数的组合使用可以大大提高告警系统的可靠性和实用性，避免告警抖动和误报问题。
+```
+
+1. The `labels` clause allows specifying a set of **additional labels** to be **attached** to the **alert**.
+   - **Any existing conflicting labels** will be **overwritten**. The **label values** can be **templated**.
+2. The `annotations` clause specifies a set of **informational labels** that can be used to
+   - store **longer additional information** such as **alert descriptions** or runbook links.
+   - The **annotation values** can be **templated**.
+
+```
+⏺ 这是关于 Prometheus 告警规则中 labels 和 annotations 子句的说明，用中文解释如下：
+
+  Labels 子句 - 标签定义
+
+  1. 基本作用
+
+  允许指定一组额外的标签附加到告警上。任何现有的冲突标签都会被覆盖。
+
+  2. 标签的覆盖机制
+
+  # 规则示例
+  - alert: HighCPUUsage
+    expr: cpu_usage > 90
+    labels:
+      severity: critical    # 新增/覆盖标签
+      team: infrastructure  # 新增标签
+      instance: "override"  # 如果表达式中已有instance标签，会被覆盖
+
+  标签优先级:
+  表达式生成的标签 < 规则组labels < 告警规则labels
+
+  覆盖示例:
+  # 表达式结果：{job="api", instance="10.0.1.100:8080"} 95
+
+  # 最终告警标签：{
+  #   job="api",                    # 来自表达式
+  #   instance="override",          # 被规则覆盖
+  #   alertname="HighCPUUsage",     # 系统添加
+  #   severity="critical",          # 规则添加
+  #   team="infrastructure"         # 规则添加
+  # }
+
+  3. 标签模板功能
+
+  # 动态标签值
+  - alert: HighMemoryUsage
+    expr: node_memory_usage_bytes / node_memory_total_bytes > 0.9
+    labels:
+      severity: "{{
+        if $value > 0.95
+          'critical'
+        else
+          'warning'
+        end
+      }}"
+      datacenter: "{{ $labels.datacenter }}"
+      alert_instance: "{{ $labels.instance }}"
+
+  ---
+  Annotations 子句 - 注释信息
+
+  1. 基本作用
+
+  指定一组信息性标签，用于存储较长的附加信息，如告警描述或运维手册链接。
+
+  2. 与 Labels 的区别
+
+  | 特性  | Labels   | Annotations |
+  |-----|----------|-------------|
+  | 用途  | 标识、分类、路由 | 详细信息、描述     |
+  | 长度  | 简短值      | 可以很长        |
+  | 查询  | 可用于标签查询  | 通常不用于查询     |
+  | 索引  | 被索引      | 不被索引        |
+
+  3. 常用注释模板
+
+  - alert: DatabaseConnectionPoolExhausted
+    expr: db_connections_active / db_connections_max > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: database
+    annotations:
+      # 基本描述
+      summary: "Database connection pool nearly exhausted on {{ $labels.instance }}"
+
+      # 详细信息
+      description: |
+        Database connection pool usage is {{ $value | humanizePercentage }}
+        Active connections: {{ query "db_connections_active" | first "value" }}
+        Maximum connections: {{ query "db_connections_max" | first "value" }}
+
+        Current time: {{ now | date "2006-01-02 15:04:05" }}
+        Instance: {{ $labels.instance }}
+        Datacenter: {{ $labels.datacenter }}
+
+      # 运维手册
+      runbook_url: "https://runbooks.company.com/database-connection-issues"
+
+      # 仪表板链接
+      dashboard_url: "https://grafana.company.com/d/database-overview"
+
+      # 联系人信息
+      contact: "{{ $labels.team }}-oncall@company.com"
+
+      # 影响范围
+      impact: "New database connections may be rejected, affecting application performance"
+
+      # 解决建议
+      resolution: |
+        1. Check if there are connection leaks in the application
+        2. Consider increasing connection pool size
+        3. Review long-running queries
+        4. Restart the application if necessary
+
+  4. 高级模板功能
+
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 10m
+    labels:
+      severity: "{{ $value > 0.5 | ternary 'critical', 'warning' }}"
+    annotations:
+      # 条件渲染
+      summary: "{{ $value > 0.5 | ternary 'Critical', 'Warning' }} error rate detected"
+
+      # 格式化数值
+      description: "Error rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      # 时间信息
+      duration: "Condition has been active for {{ $labels.alert_duration | humanizeDuration }}"
+
+      # 链接到相关资源
+      trace_url: "https://tracing.company.com/search?service={{ $labels.job }}&start={{ .StartsAt.Unix }}&end={{ .EndsAt.Unix }}"
+
+      # 环境信息
+      environment_info: "Environment: {{ $labels.env }}, Region: {{ $labels.region }}"
+
+  5. 最佳实践
+
+  Labels 设计原则:
+  - 简短、有意义
+  - 用于告警路由和分组
+  - 避免包含大量信息
+  - 保持一致的命名规范
+
+  Annotations 设计原则:
+  - 提供完整的上下文信息
+  - 包含解决问题的指导
+  - 提供相关资源的链接
+  - 格式化以便阅读
+
+  模板安全:
+  # 安全的模板（有默认值）
+  annotations:
+    service: "{{ $labels.service | default 'unknown' }}"
+
+  # 不安全的模板（可能失败）
+  annotations:
+    service: "{{ $labels.service }}"  # 如果service标签不存在会出错
+
+  通过合理使用 Labels 和 Annotations，可以创建信息丰富、易于管理和自动化的告警系统。
+```
+
+#### Templating
+
+1. **Label and annotation values** can be **templated** using **console templates**.
+2. The `$labels` variable holds the **label key/value pairs** of an **alert instance**.
+3. The configured **external labels** can be accessed via the `$externalLabels` variable.
+4. The `$value` variable holds the **evaluated value** of an **alert instance**.
+
+```
+# To insert a firing element's label values:
+{{ $labels.<labelname> }}
+# To insert the numeric expression value of the firing element:
+{{ $value }}
+```
+
+Examples:
+
+```yaml
+groups:
+- name: example
+  rules:
+
+  # Alert for any instance that is unreachable for >5 minutes.
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+  # Alert for any instance that has a median request latency >1s.
+  - alert: APIHighRequestLatency
+    expr: api_http_request_latencies_second{quantile="0.5"} > 1
+    for: 10m
+    annotations:
+      summary: "High request latency on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has a median request latency above 1s (current value: {{ $value }}s)"
+```
+
+```
+⏺ 这是关于 Prometheus 告警规则模板功能的详细说明，用中文解释如下：
+
+  模板功能概述
+
+  标签和注释值可以使用控制台模板进行模板化处理。
+
+  可用变量
+
+  1. $labels 变量
+
+  保存告警实例的标签键值对。
+
+  2. $externalLabels 变量
+
+  访问配置的外部标签（在 prometheus.yml 中配置的外部标签）。
+
+  3. $value 变量
+
+  保存告警实例的表达式计算值。
+
+  模板语法
+
+  1. 访问标签值
+
+  {{ $labels.<标签名> }}
+
+  2. 访问表达式值
+
+  {{ $value }}
+
+  实际示例解析
+
+  示例1：实例宕机告警
+
+  # 任何实例不可访问超过5分钟的告警
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+  模板处理结果:
+  # 如果表达式返回：{job="node-exporter", instance="10.0.1.100:9100"} up=0
+
+  # 最终告警：
+  summary: "Instance 10.0.1.100:9100 down"
+  description: "10.0.1.100:9100 of job node-exporter has been down for more than 5 minutes."
+
+  示例2：API延迟告警
+
+  # 任何实例中位请求延迟大于1秒的告警
+  - alert: APIHighRequestLatency
+    expr: api_http_request_latencies_second{quantile="0.5"} > 1
+    for: 10m
+    annotations:
+      summary: "High request latency on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has a median request latency above 1s (current value: {{ $value }}s)"
+
+  模板处理结果:
+  # 如果表达式返回：{instance="api-server-1", quantile="0.5"} 1.23
+
+  # 最终告警：
+  summary: "High request latency on api-server-1"
+  description: "api-server-1 has a median request latency above 1s (current value: 1.23s)"
+
+  更多模板用法示例
+
+  1. 复杂的模板表达式
+
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+    annotations:
+      # 条件模板
+      severity_level: "{{ $value | ternary 'Critical', 'Warning' }}"
+
+      # 数值格式化
+      memory_usage: "{{ $value | humanizePercentage }}"
+
+      # 组合多个标签
+      full_identifier: "{{ $labels.instance }}-{{ $labels.job }}-{{ $labels.datacenter }}"
+
+      # 时间信息
+      alert_time: "{{ .StartsAt.Format \"2006-01-02 15:04:05\" }}"
+
+  2. 使用外部标签
+
+  # prometheus.yml 配置
+  external_labels:
+    cluster: production
+    region: us-west-2
+
+  # 告警规则
+  - alert: ServiceDown
+    expr: up == 0
+    annotations:
+      description: "Service {{ $labels.job }} on {{ $labels.instance }} is down in cluster {{ $externalLabels.cluster }}, region {{
+  $externalLabels.region }}"
+
+  3. 高级模板功能
+
+  - alert: MultipleInstancesDown
+    expr: sum by (job) (up == 0) > 1
+    annotations:
+      # 计算宕机实例数量
+      down_instances_count: "{{ $value }}"
+
+      # 使用函数处理
+      down_percentage: "{{ $value | mul 100 | printf \"%.2f\" }}%"
+
+      # 条件渲染
+      impact_level: "{{ $value > 5 | ternary 'High', 'Medium' }}"
+
+      # 列表格式化（如果有多个）
+      affected_jobs: "{{ $labels.job }} and potentially others"
+
+  4. 实用模板模式
+
+  - alert: DiskSpaceLow
+    expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+    annotations:
+      # 简洁的摘要
+      summary: "Low disk space on {{ $labels.instance }}"
+
+      # 详细的描述，包含多个变量
+      description: |
+        Disk space usage alert:
+        Instance: {{ $labels.instance }}
+        Mount point: {{ $labels.mountpoint }}
+        Available space: {{ $value | humanizePercentage }}
+
+        Please check disk usage and clean up if necessary.
+
+        Dashboard: https://grafana.example.com/d/disk-usage
+
+      # 联系信息模板
+      contact: "{{ $labels.team }}-oncall@example.com"
+
+      # 链接模板
+      instance_dashboard: "https://grafana.example.com/d/instance?var-instance={{ $labels.instance }}"
+
+  模板注意事项
+
+  1. 错误处理
+
+  # 安全的模板访问（有默认值）
+  annotations:
+    service: "{{ $labels.service | default \"unknown\" }}"
+
+  # 可能出错的模板（如果标签不存在）
+  annotations:
+    service: "{{ $labels.service }}"  # 如果service标签不存在会报错
+
+  2. 性能考虑
+
+  - 复杂的模板可能影响告警评估性能
+  - 建议在部署前测试模板的正确性
+
+  3. 调试技巧
+
+  # 调试模板：显示所有可用的标签
+  annotations:
+    debug_labels: "{{ $labels }}"
+    debug_value: "{{ $value }}"
+    debug_external: "{{ $externalLabels }}"
+
+  通过合理使用模板功能，可以创建信息丰富、动态的告警消息，大大提升告警系统的可用性和实用性。
+```
+
+### Inspecting alerts during runtime
+
+1. To **manually inspect** which alerts are **active** (**pending** or **firing**), navigate to the "**Alerts**" tab of your **Prometheus instance**.
+2. This will show you the **exact label sets** for which **each defined alert** is **currently active**.
+3. For **pending** and **firing** alerts
+   - Prometheus also stores **synthetic time series** of the form `ALERTS{alertname="<alert name>", alertstate="<pending or firing>", <additional alert labels>}`.
+4. The **sample value** is set to **1** as long as the **alert** is in the indicated **active** (**pending** or **firing**) state, and the **series** is **marked stale** when this is **no longer** the case.
+
+```
+⏺ 这是关于 Prometheus 告警运行时检查机制的说明，用中文解释如下：
+
+  运行时告警检查
+
+  1. Web界面检查
+
+  通过访问 Prometheus 实例的 "Alerts" 标签页，可以手动检查哪些告警当前是活跃的（待触发或已触发）。
+
+  界面显示内容:
+  - 每个定义的告警当前活跃的确切标签集
+  - 告警状态（待触发/已触发）
+  - 活跃持续时间
+  - 相关的指标值
+
+  2. ALERTS 指标系统
+
+  Prometheus 还会存储形式为 ALERTS 的合成时间序列。
+
+  指标格式:
+  ALERTS{
+    alertname="<告警名称>",
+    alertstate="<pending或firing>",
+    <其他告警标签>
+  }
+
+  指标特性:
+  - 样本值: 只要告警处于指定的活跃状态（待触发或已触发），值就设置为 1
+  - 标记过期: 当告警不再处于活跃状态时，序列会被标记为陈旧（stale）
+
+  实际应用示例
+
+  1. 告警状态时间序列
+
+  假设有以下告警规则：
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+      team: infrastructure
+
+  当实例 10.0.1.100:8080 宕机时，会产生以下时间序列：
+
+  # 待触发状态（前5分钟）
+  ALERTS{alertname="InstanceDown", alertstate="pending", instance="10.0.1.100:8080", job="node-exporter", severity="critical",
+  team="infrastructure"} 1
+
+  # 已触发状态（5分钟后）
+  ALERTS{alertname="InstanceDown", alertstate="firing", instance="10.0.1.100:8080", job="node-exporter", severity="critical",
+  team="infrastructure"} 1
+
+  2. 查询告警状态
+
+  查看所有活跃告警:
+  ALERTS{alertstate="firing"}
+
+  查看特定告警:
+  ALERTS{alertname="InstanceDown"}
+
+  按严重程度查看告警:
+  ALERTS{severity="critical", alertstate="firing"}
+
+  统计告警数量:
+  # 按告警名称统计
+  sum by (alertname) (ALERTS{alertstate="firing"})
+
+  # 按严重程度统计
+  sum by (severity) (ALERTS{alertstate="firing"})
+
+  # 总告警数
+  sum(ALERTS{alertstate="firing"})
+
+  3. 告警状态监控
+
+  监控告警变化:
+  # 告警数量趋势
+  increase(ALERTS{alertstate="firing"}[1h])
+
+  # 告警持续时间
+  time() - ALERTS{alertstate="firing"} * 0 + time() - ALERTS{alertstate="pending"} * 0
+
+  创建告警的告警:
+  # 监控告警系统本身
+  - alert: TooManyFiringAlerts
+    expr: sum(ALERTS{alertstate="firing"}) > 50
+    annotations:
+      description: "There are {{ $value }} firing alerts, which might indicate a systemic issue"
+
+  Web界面与指标的关系
+
+  1. 数据来源一致性
+
+  - Web界面的数据来源于 ALERTS 指标
+  - 两者显示的信息是一致的
+  - 界面提供更友好的展示方式
+
+  2. 实时性
+
+  - 界面数据是实时更新的
+  - 指标数据可以用于历史分析
+  - 两者都基于相同的规则评估结果
+
+  使用场景
+
+  1. 故障排查
+
+  # 快速定位问题实例
+  ALERTS{alertstate="firing"} * on(instance) group_left() (up == 0)
+
+  # 查看特定服务的所有告警
+  ALERTS{job="api-server", alertstate="firing"}
+
+  2. 告警趋势分析
+
+  # 告警数量随时间变化
+  sum(ALERTS{alertstate="firing"})[1d]
+
+  # 告警持续时间分析
+  histogram_quantile(0.95,
+    sum by (alertname, instance) (rate(ALERTS_duration_seconds[5m]))
+  )
+
+  3. 自动化响应
+
+  # 基于告警状态的自动化规则
+  - alert: CriticalServiceAlert
+    expr: ALERTS{severity="critical", alertstate="firing"} > 0
+    annotations:
+      description: "Critical alerts are firing: {{ $labels.alertname }}"
+
+  注意事项
+
+  1. 数据持久化
+
+  - ALERTS 指标只存在于 Prometheus 内存中
+  - 重启后历史数据会丢失
+  - 如需持久化，需要配置远程存储
+
+  2. 性能考虑
+
+  - 大量告警会增加内存使用
+  - 复杂的告警查询可能影响性能
+  - 建议合理控制告警数量和复杂度
+
+  这个机制为监控告警状态提供了强大的查询和分析能力，既支持实时监控也支持历史趋势分析。
+```
+
+### Sending alert notifications
+
+1. Prometheus's **alerting rules** are good at **figuring what is broken** right now, but they are **not** a **fully-fledged notification solution**.
+2. **Another layer** is needed to add **summarization**, **notification rate limiting**, **silencing** and alert dependencies on top of the simple alert definitions.
+3. In Prometheus's ecosystem, the **Alertmanager** takes on this role. 
+4. Thus, **Prometheus** may be configured to **periodically send information** about **alert states** to an **Alertmanager instance**
+   - which then takes care of **dispatching** the **right notifications**.
+5. Prometheus can be configured to **automatically discover available Alertmanager instances** through its **service discovery** integrations.
+
+```
+  告警通知架构概述
+
+  1. 责任分离设计
+
+  Prometheus 的角色:
+  - 擅长判断当前什么出了问题
+  - 基于指标数据进行实时监控和规则评估
+  - 但不是完整的通知解决方案
+
+  Alertmanager 的角色:
+  - 在简单告警定义之上添加汇总、通知速率限制、静默和告警依赖等高级功能
+  - 负责调度正确的通知
+
+  2. 架构流程
+
+  [指标收集] → [规则评估] → [告警状态] → [Alertmanager] → [外部通知]
+      ↓           ↓           ↓            ↓            ↓
+    各种数据源   Prometheus   告警列表    智能路由     邮件/短信/IM等
+
+  3. 集成方式
+
+  配置自动发现:
+  # prometheus.yml
+  alerting:
+    alertmanagers:
+      - static_configs:
+          - targets:
+            - alertmanager1:9093
+            - alertmanager2:9093
+      # 或使用服务发现
+      - dns_sd_configs:
+          - names:
+            - alertmanager.service.consul
+      - kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [monitoring]
+
+  Alertmanager 的核心功能
+
+  1. 告警汇总 (Summarization)
+
+  # 将多个相似告警合并为一个通知
+  原始告警:
+  - InstanceDown{instance="10.0.1.100"}
+  - InstanceDown{instance="10.0.1.101"}
+  - InstanceDown{instance="10.0.1.102"}
+
+  汇总通知:
+  "3 instances are down: 10.0.1.100, 10.0.1.101, 10.0.1.102"
+
+  2. 通知速率限制 (Rate Limiting)
+
+  # 防止告警风暴
+  - 同类告警1小时内最多发送5次通知
+  - 避免在短时间内发送大量重复告警
+  - 防止通知系统过载
+
+  3. 静默功能 (Silencing)
+
+  # 维护期间临时禁用某些告警
+  静默规则:
+  - 匹配标签: {instance="10.0.1.100"}
+  - 时间范围: 2024-01-01 14:00 - 2024-01-01 16:00
+  - 原因: "Scheduled maintenance"
+
+  4. 告警依赖 (Dependencies)
+
+  # 智能处理告警关联性
+  依赖关系:
+  - 如果网络设备宕机，不通知连接的实例问题
+  - 如果数据库服务器宕机，不通知应用连接错误
+  - 减少噪音，聚焦根本原因
+
+  配置示例
+
+  1. Prometheus 配置
+
+  # prometheus.yml
+  global:
+    evaluation_interval: 15s
+    external_labels:
+      cluster: production
+      region: us-west-2
+
+  rule_files:
+    - "rules/*.yml"
+
+  alerting:
+    alertmanagers:
+      - static_configs:
+          - targets:
+            - alertmanager1:9093
+            - alertmanager2:9093
+      - kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [monitoring]
+
+  2. Alertmanager 配置
+
+  # alertmanager.yml
+  global:
+    smtp_smarthost: 'localhost:587'
+    smtp_from: 'alerts@company.com'
+
+  route:
+    group_by: ['alertname', 'cluster', 'service']
+    group_wait: 10s
+    group_interval: 10s
+    repeat_interval: 1h
+    receiver: 'web.hook'
+    routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+      - match:
+          severity: warning
+        receiver: 'warning-alerts'
+
+  receivers:
+    - name: 'web.hook'
+      webhook_configs:
+        - url: 'http://127.0.0.1:5001/'
+
+    - name: 'critical-alerts'
+      email_configs:
+        - to: 'oncall@company.com'
+          subject: 'Critical Alert: {{ .GroupLabels.alertname }}'
+      slack_configs:
+        - api_url: 'https://hooks.slack.com/...'
+          channel: '#alerts-critical'
+
+    - name: 'warning-alerts'
+      email_configs:
+        - to: 'team@company.com'
+          subject: 'Warning: {{ .GroupLabels.alertname }}'
+
+  工作流程详解
+
+  1. 告警发现和评估
+
+  T1 - Prometheus 发现指标异常
+  T2 - 评估告警规则
+  T3 - 确定告警状态（pending/firing）
+
+  2. 告警传递
+
+  T4 - Prometheus 发送告警信息到 Alertmanager
+  T5 - Alertmanager 接收并处理告警
+  T6 - 应用路由规则和分组策略
+
+  3. 通知处理
+
+  T7 - 检查静默规则
+  T8 - 应用速率限制
+  T9 - 处理告警依赖
+  T10 - 发送最终通知
+
+  高级特性
+
+  1. 多实例高可用
+
+  # 多个 Alertmanager 实例形成集群
+  alertmanager1:9093 ←→ alertmanager2:9093 ←→ alertmanager3:9093
+       ↑                      ↑                     ↑
+    Prometheus           外部通知服务           外部通知服务
+
+  2. 智能分组
+
+  # 按服务分组
+  group_by: ['service', 'severity']
+
+  # 按集群分组
+  group_by: ['cluster', 'datacenter']
+
+  # 自定义分组
+  group_by: ['team', 'environment']
+
+  3. 模板化通知
+
+  templates:
+    - 'templates/*.tmpl'
+
+  # 通知内容模板
+  {{ define "slack.default.title" }}
+    {{ .CommonLabels.summary }}
+  {{ end }}
+
+  {{ define "slack.default.text" }}
+    {{ range .Alerts }}
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+    {{ end }}
+  {{ end }}
+
+  设计优势
+
+  1. 解耦设计
+
+  - Prometheus 专注于监控和告警检测
+  - Alertmanager 专注于通知管理和调度
+  - 各司其职，性能更好
+
+  2. 可扩展性
+
+  - 支持多个 Prometheus 实例指向同一个 Alertmanager
+  - 支持多实例 Alertmanager 集群
+  - 支持多种通知渠道
+
+  3. 智能管理
+
+  - 避免告警风暴
+  - 减少通知噪音
+  - 提高运维效率
+
+  这种架构设计使得 Prometheus
+  能够专注于它擅长的监控和告警检测，而将复杂的通知管理工作交给专门的服务处理，形成了一个完整而高效的监控告警生态系统。
+```
+
+## Template examples
+
+> TBD
