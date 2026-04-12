@@ -6,7 +6,7 @@
   <link href="https://blog.zhongmingmao.top/atom.xml" rel="self"/>
   
   <link href="https://blog.zhongmingmao.top/"/>
-  <updated>2026-04-07T06:10:16.926Z</updated>
+  <updated>2026-04-12T10:03:12.589Z</updated>
   <id>https://blog.zhongmingmao.top/</id>
   
   <author>
@@ -15,6 +15,73 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Authorization - Casbin Access Control Models</title>
+    <link href="https://blog.zhongmingmao.top/2026/04/10/security-iam-authorization-rbac-casbin-acm/"/>
+    <id>https://blog.zhongmingmao.top/2026/04/10/security-iam-authorization-rbac-casbin-acm/</id>
+    <published>2026-04-10T09:41:46.000Z</published>
+    <updated>2026-04-12T10:03:12.589Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;核心架构&quot;&gt;&lt;a href=&quot;#核心架构&quot; class=&quot;headerlink&quot; title=&quot;核心架构&quot;&gt;&lt;/a&gt;核心架构&lt;/h1&gt;&lt;figure class=&quot;highlight plaintext&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;17&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;18&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;19&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;20&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;21&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;22&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;23&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;24&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;25&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;26&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;27&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;28&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;29&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;30&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;flowchart TB&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      subgraph PERM[&amp;quot;PERM 元模型&amp;quot;]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          direction LR&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          R[Request] --&amp;gt; M[Matchers] --&amp;gt; E[Effect]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          P[Policy] -.-&amp;gt; M&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      end&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      subgraph Storage[&amp;quot;Policy 存储&amp;quot;]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          direction LR&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          Adapter1[文件] --- Adapter2[数据库] --- Adapter3[S3]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      end&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      subgraph RoleManager[&amp;quot;Role Manager&amp;quot;]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          direction TB&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          RM[角色管理器]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          loaders[加载器]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          RM --&amp;gt; loaders&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          loaders --&amp;gt; L1[Casbin Policy]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          loaders --&amp;gt; L2[LDAP]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          loaders --&amp;gt; L3[Okta/Auth0/Azure AD]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      end&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      PERM &amp;amp; Storage &amp;amp; RoleManager&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      Storage -.-&amp;gt; P&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      RoleManager -.-&amp;gt; M&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      style PERM fill:#e1f5fe&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      style Storage fill:#f3e5f5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      style RoleManager fill:#fff3e0&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;核心特性&quot;&gt;&lt;a href=&quot;#核心特性&quot; class=&quot;headerlink&quot; title=&quot;核心特性&quot;&gt;&lt;/a&gt;核心特性&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;将&lt;strong&gt;授权逻辑&lt;/strong&gt;与&lt;strong&gt;业务代码&lt;/strong&gt;分离，通过&lt;strong&gt;配置文件&lt;/strong&gt;实现&lt;strong&gt;复杂的权限模型&lt;/strong&gt;（&lt;u&gt;RBAC&lt;/u&gt;、&lt;u&gt;ABAC&lt;/u&gt; 等）&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&quot;混合访问控制模型&quot;&gt;&lt;a href=&quot;#混合访问控制模型&quot; class=&quot;headerlink&quot; title=&quot;混合访问控制模型&quot;&gt;&lt;/a&gt;混合访问控制模型&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;Casbin 基于 &lt;strong&gt;PERM 元模型&lt;/strong&gt; (&lt;u&gt;Policy&lt;/u&gt;, &lt;u&gt;Effect&lt;/u&gt;, &lt;u&gt;Request&lt;/u&gt;, &lt;u&gt;Matchers&lt;/u&gt;) 来&lt;strong&gt;定义访问控制规则&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;组件&lt;/th&gt;
+&lt;th&gt;描述&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;&lt;tr&gt;
+&lt;td&gt;Request&lt;/td&gt;
+&lt;td&gt;访问请求的结构（谁、想做什么、 ресурс）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Policy&lt;/td&gt;
+&lt;td&gt;权限规则定义&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Matchers&lt;/td&gt;
+&lt;td&gt;匹配规则，决定&lt;strong&gt;请求&lt;/strong&gt;如何对应到&lt;strong&gt;策略&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Effect&lt;/td&gt;
+&lt;td&gt;最终效果（允许&amp;#x2F;拒绝）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+&lt;blockquote&gt;
+&lt;p&gt;通过修改 &lt;strong&gt;CONF 配置文件&lt;/strong&gt;即可&lt;strong&gt;切换授权机制&lt;/strong&gt;，无需改动代码&lt;/p&gt;
+&lt;/blockquote&gt;</summary>
+    
+    
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/categories/security/"/>
+    
+    <category term="IAM" scheme="https://blog.zhongmingmao.top/categories/security/iam/"/>
+    
+    <category term="Authorization" scheme="https://blog.zhongmingmao.top/categories/security/iam/authorization/"/>
+    
+    <category term="RBAC" scheme="https://blog.zhongmingmao.top/categories/security/iam/authorization/rbac/"/>
+    
+    
+    <category term="Security" scheme="https://blog.zhongmingmao.top/tags/security/"/>
+    
+    <category term="IAM" scheme="https://blog.zhongmingmao.top/tags/iam/"/>
+    
+    <category term="Authorization" scheme="https://blog.zhongmingmao.top/tags/authorization/"/>
+    
+    <category term="RBAC" scheme="https://blog.zhongmingmao.top/tags/rbac/"/>
+    
+    <category term="Casbin" scheme="https://blog.zhongmingmao.top/tags/casbin/"/>
+    
+  </entry>
   
   <entry>
     <title>Agentic Harness - Qoder</title>
@@ -634,37 +701,6 @@
 &lt;li&gt;理想的情况下，&lt;strong&gt;一份数据只需要一份内存空间&lt;/strong&gt; - 即&lt;strong&gt;零拷贝&lt;/strong&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;/ol&gt;</summary>
-    
-    
-    
-    <category term="Java" scheme="https://blog.zhongmingmao.top/categories/java/"/>
-    
-    <category term="Feature" scheme="https://blog.zhongmingmao.top/categories/java/feature/"/>
-    
-    
-    <category term="Java" scheme="https://blog.zhongmingmao.top/tags/java/"/>
-    
-    <category term="Java Feature" scheme="https://blog.zhongmingmao.top/tags/java-feature/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>New Java Feature - Flow</title>
-    <link href="https://blog.zhongmingmao.top/2025/01/15/new-java-feature-flow/"/>
-    <id>https://blog.zhongmingmao.top/2025/01/15/new-java-feature-flow/</id>
-    <published>2025-01-14T16:06:25.000Z</published>
-    <updated>2025-08-06T12:04:47.507Z</updated>
-    
-    
-    <summary type="html">&lt;h1 id=&quot;指令式编程&quot;&gt;&lt;a href=&quot;#指令式编程&quot; class=&quot;headerlink&quot; title=&quot;指令式编程&quot;&gt;&lt;/a&gt;指令式编程&lt;/h1&gt;&lt;blockquote&gt;
-&lt;p&gt;最常用的&lt;strong&gt;代码控制&lt;/strong&gt;模式&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;figure class=&quot;highlight java&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;System.out.println(&lt;span class=&quot;string&quot;&gt;&amp;quot;Hello, World!&amp;quot;&lt;/span&gt;);&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;strong&gt;通过代码发布指令&lt;/strong&gt;，然后等待指令的&lt;strong&gt;执行&lt;/strong&gt;以及指令执行带来的&lt;strong&gt;状态变化&lt;/strong&gt;&lt;/li&gt;
-&lt;li&gt;并且根据目前的状态，来确定&lt;strong&gt;下一次&lt;/strong&gt;要发布的指令，并且用&lt;strong&gt;代码&lt;/strong&gt;把&lt;strong&gt;下一个指令&lt;/strong&gt;表示出来&lt;/li&gt;
 &lt;/ol&gt;</summary>
     
     
