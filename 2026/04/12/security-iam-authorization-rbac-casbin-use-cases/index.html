@@ -1,0 +1,835 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Authorization - Casbin Use Cases | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="Data Permissions（数据权限）Implicit Roles &amp; Permissions（隐式角色与权限） RBAC 中权限有两种获取方式：     方式 说明 对应 API    直接赋予 直接把角色&#x2F;权限分配给用户 GetRolesForUser() &#x2F; GetPermissionsForUser()   隐式继承 通过角色继承链传递下来的 GetImp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Authorization - Casbin Use Cases">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="Data Permissions（数据权限）Implicit Roles &amp; Permissions（隐式角色与权限） RBAC 中权限有两种获取方式：     方式 说明 对应 API    直接赋予 直接把角色&#x2F;权限分配给用户 GetRolesForUser() &#x2F; GetPermissionsForUser()   隐式继承 通过角色继承链传递下来的 GetImp">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png">
+<meta property="article:published_time" content="2026-04-12T13:22:37.000Z">
+<meta property="article:modified_time" content="2026-04-12T14:24:14.121Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Security">
+<meta property="article:tag" content="IAM">
+<meta property="article:tag" content="Authorization">
+<meta property="article:tag" content="RBAC">
+<meta property="article:tag" content="Casbin">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Authorization - Casbin Use Cases",
+  "url": "https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/",
+  "image": "https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png",
+  "datePublished": "2026-04-12T13:22:37.000Z",
+  "dateModified": "2026-04-12T14:24:14.121Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Authorization - Casbin Use Cases',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">655</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">198</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">91</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Authorization - Casbin Use Cases</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Authorization - Casbin Use Cases</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-04-12T13:22:37.000Z" title="Created 2026-04-12 21:22:37">2026-04-12</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/">Security</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/">IAM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/authorization/">Authorization</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/authorization/rbac/">RBAC</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">1.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>4mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-04-12 22:24:14&quot;}" hidden></div><h1 id="Data-Permissions（数据权限）"><a href="#Data-Permissions（数据权限）" class="headerlink" title="Data Permissions（数据权限）"></a>Data Permissions（数据权限）</h1><h2 id="Implicit-Roles-Permissions（隐式角色与权限）"><a href="#Implicit-Roles-Permissions（隐式角色与权限）" class="headerlink" title="Implicit Roles &amp; Permissions（隐式角色与权限）"></a>Implicit Roles &amp; Permissions（隐式角色与权限）</h2><blockquote>
+<p>RBAC 中权限有两种获取方式：</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>说明</th>
+<th>对应 API</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>直接赋予</td>
+<td>直接把角色&#x2F;权限分配给用户</td>
+<td>GetRolesForUser() &#x2F; GetPermissionsForUser()</td>
+</tr>
+<tr>
+<td>隐式继承</td>
+<td>通过<strong>角色继承链</strong>传递下来的</td>
+<td>GetImplicitRolesForUser() &#x2F; GetImplicitPermissionsForUser()</td>
+</tr>
+</tbody></table>
+<span id="more"></span>
+
+<blockquote>
+<p>示例：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">g, alice, admin</span><br><span class="line">g, admin, superuser</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>GetRolesForUser(alice)</code> → 只返回 <code>[admin]</code>（直接分配）</li>
+<li><code>GetImplicitRolesForUser(alice)</code> → 返回 <code>[admin, superuser]</code>（含<strong>继承链</strong>）</li>
+</ol>
+<blockquote>
+<p>如果你要做数据过滤（比如”用户能看哪些数据行”），必须用<strong>隐式版本</strong>，否则<strong>继承</strong>来的权限会<strong>被漏掉</strong></p>
+</blockquote>
+<h2 id="BatchEnforce-（批量鉴权）"><a href="#BatchEnforce-（批量鉴权）" class="headerlink" title="BatchEnforce()（批量鉴权）"></a>BatchEnforce()（批量鉴权）</h2><blockquote>
+<p>一次调用传入多个 <code>[subject, object, action]</code> 请求，返回 <code>[]bool</code></p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">boolArray, err := e.BatchEnforce(requests)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>适用场景：</p>
+</blockquote>
+<ol>
+<li><strong>列表页过滤</strong>：一次检查 N 行数据，哪些用户能看</li>
+<li><strong>批量权限校验</strong>：比如渲染一张数据表，每行都需要鉴权</li>
+</ol>
+<h1 id="Menu-Permissions（菜单权限）"><a href="#Menu-Permissions（菜单权限）" class="headerlink" title="Menu Permissions（菜单权限）"></a>Menu Permissions（菜单权限）</h1><blockquote>
+<p>这是 <strong>jCasbin</strong> 的一个具体应用场景：基于<strong>角色</strong>的<strong>层级菜单可见性</strong>控制</p>
+</blockquote>
+<h2 id="Policy-文件的三类规则"><a href="#Policy-文件的三类规则" class="headerlink" title="Policy 文件的三类规则"></a>Policy 文件的三类规则</h2><table>
+<thead>
+<tr>
+<th>前缀</th>
+<th>含义</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>p</td>
+<td><strong>角色</strong>对<strong>菜单</strong>的<strong>权限规则</strong></td>
+<td>p, ROLE_ROOT, SystemMenu, read, allow</td>
+</tr>
+<tr>
+<td>g</td>
+<td><strong>用户→角色</strong> &#x2F; <strong>角色→角色 继承</strong></td>
+<td>g, ROLE_ADMIN, ROLE_USER</td>
+</tr>
+<tr>
+<td>g2</td>
+<td><strong>菜单父子层级关系</strong></td>
+<td>g2, UserSubMenu_allow, UserMenu</td>
+</tr>
+</tbody></table>
+<h2 id="核心继承规则（最重要）"><a href="#核心继承规则（最重要）" class="headerlink" title="核心继承规则（最重要）"></a>核心继承规则（最重要）</h2><blockquote>
+<p><u>菜单父子继承</u>：</p>
+</blockquote>
+<ol>
+<li><strong>父允许 → 子默认允许</strong>（除非<strong>子有显式 deny</strong>）</li>
+<li><strong>子有 allow → 父被推导为 allow</strong>（让用户能<strong>导航</strong>到子菜单）</li>
+</ol>
+<blockquote>
+<p><strong>角色继承</strong>中的 <strong>deny</strong>：</p>
+</blockquote>
+<ol>
+<li><strong>显式 deny</strong> 会沿<strong>继承链</strong>传递，<strong>不被覆盖</strong></li>
+<li><strong>隐式 deny（没有 allow 规则）</strong>可以<strong>被更高权限角色的 allow 覆盖</strong></li>
+</ol>
+<h2 id="结合示例表格理解"><a href="#结合示例表格理解" class="headerlink" title="结合示例表格理解"></a>结合示例表格理解</h2><table>
+<thead>
+<tr>
+<th>菜单</th>
+<th>ROOT</th>
+<th>ADMIN</th>
+<th>USER</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SystemMenu</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>UserMenu</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>UserSubMenu_allow</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminSubMenu_deny</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<h2 id="关键推导"><a href="#关键推导" class="headerlink" title="关键推导"></a>关键推导</h2><ol>
+<li><strong>ROLE_ADMIN 继承 ROLE_USER</strong>，所以 <strong>ADMIN</strong> 也有 <strong>UserSubMenu_allow</strong> 的权限</li>
+<li><strong>ROOT</strong> 对 <strong>UserMenu</strong> 是<strong>显式 deny</strong>，虽然<strong>权限最高</strong>，但 <strong>deny 不被继承链覆盖</strong></li>
+<li><strong>AdminSubMenu_deny</strong> 对 <strong>ADMIN</strong> 是<strong>显式 deny</strong>，<strong>ROOT 没有此规则</strong>所以<strong>默认继承父菜单 AdminMenu 的 allow</strong></li>
+</ol>
+<h2 id="代码层面"><a href="#代码层面" class="headerlink" title="代码层面"></a>代码层面</h2><blockquote>
+<p>MenuService 提供两个方法</p>
+</blockquote>
+<ol>
+<li><strong>findAccessibleMenus</strong>(user) - 返回用户能看到的所有菜单</li>
+<li><strong>checkMenuAccess</strong>(user, menu) - 检查用户对某个菜单的访问权</li>
+</ol>
+<blockquote>
+<p>两者底层都走 jCasbin Enforcer 的 enforce() 逻辑</p>
+</blockquote>
+<h2 id="核心思路"><a href="#核心思路" class="headerlink" title="核心思路"></a>核心思路</h2><ol>
+<li>菜单权限要解决一个问题：<strong>不同角色的用户</strong>，登录后<strong>看到的菜单不一样</strong></li>
+<li>Casbin 用三张”表”来描述这件事</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">谁能看哪个菜单    →  p 规则</span><br><span class="line">谁是什么角色      →  g 规则</span><br><span class="line">菜单的父子关系    →  g2 规则</span><br></pre></td></tr></table></figure>
+
+<h2 id="先看菜单结构（g2）"><a href="#先看菜单结构（g2）" class="headerlink" title="先看菜单结构（g2）"></a>先看菜单结构（g2）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">SystemMenu          ← 顶级菜单（无父）</span><br><span class="line"></span><br><span class="line">UserMenu            ← 顶级菜单</span><br><span class="line">  ├── UserSubMenu_allow</span><br><span class="line">  │     └── UserSubSubMenu</span><br><span class="line">  └── UserSubMenu_deny</span><br><span class="line"></span><br><span class="line">AdminMenu           ← 顶级菜单</span><br><span class="line">  ├── AdminSubMenu_allow</span><br><span class="line">  └── AdminSubMenu_deny</span><br></pre></td></tr></table></figure>
+
+<h2 id="再看角色继承（g）"><a href="#再看角色继承（g）" class="headerlink" title="再看角色继承（g）"></a>再看角色继承（g）</h2><blockquote>
+<p>权限从低到高：ROLE_USER &lt; ROLE_ADMIN &lt; ROLE_ROOT</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root  →  ROLE_ROOT</span><br><span class="line">admin →  ROLE_ADMIN  →  ROLE_USER（ADMIN 继承 USER 的权限）</span><br><span class="line">user  →  ROLE_USER</span><br></pre></td></tr></table></figure>
+
+<h2 id="最后看权限规则（p）"><a href="#最后看权限规则（p）" class="headerlink" title="最后看权限规则（p）"></a>最后看权限规则（p）</h2><blockquote>
+<p>只列出<strong>显式定义的规则</strong>，没写的就是”没有明确 allow”：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ROLE_ROOT:   SystemMenu=allow,  AdminMenu=allow,  UserMenu=deny</span><br><span class="line">ROLE_ADMIN:  UserMenu=allow,    AdminMenu=allow,  AdminSubMenu_deny=deny</span><br><span class="line">ROLE_USER:   UserSubMenu_allow=allow</span><br></pre></td></tr></table></figure>
+
+<h2 id="逐行推导结果表"><a href="#逐行推导结果表" class="headerlink" title="逐行推导结果表"></a>逐行推导结果表</h2><h3 id="ROLE-USER（最简单）"><a href="#ROLE-USER（最简单）" class="headerlink" title="ROLE_USER（最简单）"></a>ROLE_USER（最简单）</h3><table>
+<thead>
+<tr>
+<th>菜单</th>
+<th>规则</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UserSubMenu_allow</td>
+<td>直接 allow</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>UserMenu</td>
+<td>子菜单有 allow → 父推导为 allow</td>
+<td>✅（否则用户根本进不去）</td>
+</tr>
+<tr>
+<td>UserSubSubMenu</td>
+<td>父 UserSubMenu_allow 是 allow → 继承</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>其余菜单</td>
+<td>没有任何 allow 规则</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<h3 id="ROLE-ADMIN（继承-ROLE-USER）"><a href="#ROLE-ADMIN（继承-ROLE-USER）" class="headerlink" title="ROLE_ADMIN（继承 ROLE_USER）"></a>ROLE_ADMIN（继承 ROLE_USER）</h3><blockquote>
+<p>先继承 ROLE_USER 的所有权限，再叠加自己的规则</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>菜单</th>
+<th>来源</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UserSubMenu_allow</td>
+<td>继承自 ROLE_USER</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>UserSubSubMenu</td>
+<td>继承自 ROLE_USER</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>UserMenu</td>
+<td>直接 allow</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>UserSubMenu_deny</td>
+<td>父 UserMenu 是 allow → 继承 allow，但没有 deny 规则</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminMenu</td>
+<td>直接 allow</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminSubMenu_allow</td>
+<td>父 AdminMenu 是 allow → 继承</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminSubMenu_deny</td>
+<td>显式 deny，优先级最高</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>SystemMenu</td>
+<td>没有任何 allow 规则</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<h3 id="ROLE-ROOT（最高权限，但有显式-deny）"><a href="#ROLE-ROOT（最高权限，但有显式-deny）" class="headerlink" title="ROLE_ROOT（最高权限，但有显式 deny）"></a>ROLE_ROOT（最高权限，但有显式 deny）</h3><table>
+<thead>
+<tr>
+<th>菜单</th>
+<th>规则</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SystemMenu</td>
+<td>直接 allow</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminMenu</td>
+<td>直接 allow</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminSubMenu_allow</td>
+<td>父 allow → 继承</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AdminSubMenu_deny</td>
+<td>父 allow → 继承（ROOT 自己没有 deny 规则）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>UserMenu</td>
+<td>显式 deny，权限再高也没用</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>UserSubMenu_allow</td>
+<td>父 deny → 子继承 deny</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>UserSubSubMenu</td>
+<td>祖先 deny → 继承 deny</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<h2 id="两条最关键的规则"><a href="#两条最关键的规则" class="headerlink" title="两条最关键的规则"></a>两条最关键的规则</h2><blockquote>
+<p>这两条规则组合起来，就实现了：<strong>精细控制</strong>每个<strong>角色</strong>能看到的<strong>菜单树</strong>，且 <strong>deny 不会被继承或覆盖</strong></p>
+</blockquote>
+<h3 id="规则一：显式-deny-一切"><a href="#规则一：显式-deny-一切" class="headerlink" title="规则一：显式 deny &gt; 一切"></a>规则一：显式 deny &gt; 一切</h3><ol>
+<li>ROOT 权限最高，但 UserMenu&#x3D;deny → 整棵子树都看不到</li>
+<li>ADMIN 的 AdminSubMenu_deny&#x3D;deny → 该菜单看不到</li>
+</ol>
+<h3 id="规则二：子有-allow-→-父自动可见"><a href="#规则二：子有-allow-→-父自动可见" class="headerlink" title="规则二：子有 allow → 父自动可见"></a>规则二：子有 allow → 父自动可见</h3><ol>
+<li>ROLE_USER 只有 UserSubMenu_allow&#x3D;allow</li>
+<li>但 UserMenu 作为父菜单，系统自动推导为可见</li>
+<li>否则用户连入口都找不到</li>
+</ol>
+<h2 id="职责"><a href="#职责" class="headerlink" title="职责"></a>职责</h2><h3 id="Casbin-原生能力边界"><a href="#Casbin-原生能力边界" class="headerlink" title="Casbin 原生能力边界"></a>Casbin 原生能力边界</h3><ol>
+<li>Casbin 的 <code>enforce(user, menu, action)</code> 只回答一件事：<u>这个用户，对这个菜单，此次操作，是 allow 还是 deny？</u></li>
+<li>它不会主动帮你<ul>
+<li><u>遍历所有菜单，算出哪些可见</u></li>
+<li><u>处理”子有 allow → 父自动可见”的推导</u></li>
+<li><u>返回一棵过滤后的菜单树</u></li>
+</ul>
+</li>
+</ol>
+<h3 id="两条规则的实际归属"><a href="#两条规则的实际归属" class="headerlink" title="两条规则的实际归属"></a>两条规则的实际归属</h3><table>
+<thead>
+<tr>
+<th>规则</th>
+<th>归属</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>显式 deny &gt; 一切</td>
+<td>Casbin 原生</td>
+<td>policy 中写了 deny，enforce 直接返回 false</td>
+</tr>
+<tr>
+<td>子有 allow → 父自动可见</td>
+<td>业务层处理</td>
+<td>Casbin 不知道菜单树结构，需要你自己遍历推导</td>
+</tr>
+</tbody></table>
+<h3 id="业务层要做的事"><a href="#业务层要做的事" class="headerlink" title="业务层要做的事"></a>业务层要做的事</h3><ol>
+<li>拿到<strong>完整菜单列表</strong></li>
+<li>对每个菜单调用 enforce(user, menu, read)</li>
+<li>得到 [可见菜单] 集合</li>
+<li>遍历菜单树，把”有可见子孙”的父菜单补充进来</li>
+<li>返回最终可见菜单树</li>
+</ol>
+<blockquote>
+<p>第 4 步就是”<u>子有 allow → 父自动可见</u>“，<strong>完全是业务逻辑，Casbin 不参与</strong></p>
+</blockquote>
+<h3 id="所以-jCasbin-示例里的-MenuService"><a href="#所以-jCasbin-示例里的-MenuService" class="headerlink" title="所以 jCasbin 示例里的 MenuService"></a>所以 jCasbin 示例里的 MenuService</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">findAccessibleMenus(user)   <span class="comment">// 业务层：遍历 + 推导父菜单可见性</span></span><br><span class="line">checkMenuAccess(user, menu) <span class="comment">// 直接调用 enforce()，这个是 Casbin 原生</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>findAccessibleMenus 之所以单独封装，正是因为它包含了 Casbin <strong>无法自动完成</strong>的<strong>树形推导逻辑</strong></p>
+</blockquote>
+<h3 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h3><blockquote>
+<p><strong>Casbin</strong> 负责<strong>判断单个节点的权限</strong>，<strong>菜单树的整体可见性推导</strong>是<strong>业务层的责任</strong></p>
+</blockquote>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/">https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/security/">Security</a><a class="post-meta__tags" href="/tags/iam/">IAM</a><a class="post-meta__tags" href="/tags/authorization/">Authorization</a><a class="post-meta__tags" href="/tags/rbac/">RBAC</a><a class="post-meta__tags" href="/tags/casbin/">Casbin</a></div><div class="post-share"><div class="social-share" data-image="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412181205101.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Authorization - Casbin Storage</div></div><div class="info-2"><div class="info-item-1">Model Storage Casbin 中模型的三种加载方式 模型是”只读“的 Casbin 的 Model 定义了访问控制逻辑（谁能对什么资源做什么操作），运行时被视为静态配置 没有 API 可以保存或更新模型 - 它是设计时确定的，不是动态变化的     关键区别     方式 适用场景 优点    CONF 文件 大多数情况 清晰、可分享、易维护   代码构建 需要程序化组装模型 灵活、可条件拼接   字符串 配置中心&#x2F;DB 存储 适合集中管理    三种方式加载的模型内容完全相同，区别只在于来源不同 模型一旦加载完成，后续的动态变化都体现在 Policy（策略） 上，而不是 Model 上    从 .conf 文件加载（推荐） 最常用的方式，把模型定义写在独立的配置文件中，便于分享和讨论  1234567891011121314[request_definition]                        # 请求定义：请求有哪些字段r = sub, obj, act                           # sub=主体, obj=客体/资源, act=操作...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412181205101.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-12</div><div class="info-item-2">Authorization - Casbin Storage</div></div><div class="info-2"><div class="info-item-1">Model Storage Casbin 中模型的三种加载方式 模型是”只读“的 Casbin 的 Model 定义了访问控制逻辑（谁能对什么资源做什么操作），运行时被视为静态配置 没有 API 可以保存或更新模型 - 它是设计时确定的，不是动态变化的     关键区别     方式 适用场景 优点    CONF 文件 大多数情况 清晰、可分享、易维护   代码构建 需要程序化组装模型 灵活、可条件拼接   字符串 配置中心&#x2F;DB 存储 适合集中管理    三种方式加载的模型内容完全相同，区别只在于来源不同 模型一旦加载完成，后续的动态变化都体现在 Policy（策略） 上，而不是 Model 上    从 .conf 文件加载（推荐） 最常用的方式，把模型定义写在独立的配置文件中，便于分享和讨论  1234567891011121314[request_definition]                        # 请求定义：请求有哪些字段r = sub, obj, act                           # sub=主体, obj=客体/资源, act=操作...</div></div></div></a><a class="pagination-related" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-10</div><div class="info-item-2">Authorization - Casbin Access Control Models</div></div><div class="info-2"><div class="info-item-1">核心架构123456789101112131415161718192021222324252627282930flowchart TB      subgraph PERM[&quot;PERM 元模型&quot;]          direction LR          R[Request] --&gt; M[Matchers] --&gt; E[Effect]          P[Policy] -.-&gt; M      end      subgraph Storage[&quot;Policy 存储&quot;]          direction LR          Adapter1[文件] --- Adapter2[数据库] --- Adapter3[S3]      end      subgraph RoleManager[&quot;Role Manager&quot;]          direction TB          RM[角色管理器]          loaders[加载器]          RM --&gt; loaders          ...</div></div></div></a><a class="pagination-related" href="/2022/09/14/microservices-governance-security-oauth2-authorization-code-flow/" title="Oauth2 - Authorization Code Flow"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-14</div><div class="info-item-2">Oauth2 - Authorization Code Flow</div></div><div class="info-2"><div class="info-item-1">Authorization ServerMaven12345678910111213141516171819&lt;dependencies&gt;  &lt;dependency&gt;    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;    &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;  &lt;/dependency&gt;  &lt;dependency&gt;    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;    &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;  &lt;/dependency&gt;  &lt;dependency&gt;    &lt;groupId&gt;org.springframework.security.oauth&lt;/groupId&gt;    &lt;artif...</div></div></div></a><a class="pagination-related" href="/2022/09/12/microservices-governance-security-oauth2-overview/" title="Oauth2 - Overview"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-12</div><div class="info-item-2">Oauth2 - Overview</div></div><div class="info-2"><div class="info-item-1">问题域 开放系统间授权     账号密码 不安全   万能钥匙 适用于公司内部   特殊令牌 核心挑战是令牌的生命周期管理   微服务安全 核心是 Token   OAuth2最简向导 正式定义 Token 是核心，可类比为仆从钥匙（给应用授予有限的访问权限，让应用代表用户去访问用户数据）   优劣主要优势 OAuth2 使用代理授权的方式解决密码共享的反模式问题   主要劣势 OAuth2 不是认证协议，而是一个代理授权框架   OAuth2 提供一个宽泛的协议框架，具体安全场景需要定制   主要角色 主要术语  Token 类型 常见误区 典型 Flow https://www.rfc-editor.org/rfc/rfc6749  Authorization Code Flow 最复杂 + 最安全 + 应用最广泛   Implicit Grant Flow 减少了授权码兑换的过程（通过 Script 解析 Access Token），适用于单页应用（无后端）   Resource Owner Password Credentials Flow 适用于公司内部应用等风险可控的场景   Client ...</div></div></div></a><a class="pagination-related" href="/2022/09/13/microservices-governance-security-oauth2-spring-security-oauth2-authorization-server/" title="Spring Security OAuth2 - Authorization Server"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-13</div><div class="info-item-2">Spring Security OAuth2 - Authorization Server</div></div><div class="info-2"><div class="info-item-1">授权服务器 Introspection Endpoint：校验 Access Token 的合法性     Spring Security OAuth2 架构 Authorization flowAuthorization Code Flow Maven12345678&lt;dependency&gt;  &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;  &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;&lt;/dependency&gt;&lt;dependency&gt;  &lt;groupId&gt;org.springframework.security.oauth&lt;/groupId&gt;  &lt;artifactId&gt;spring-security-oauth2&lt;/artifactId&gt;&lt;/dependency&gt;  API1234567@Data@Builder@FieldDefaults(level = ...</div></div></div></a><a class="pagination-related" href="/2022/05/14/infrastructure-security-oauth2-authorization-code-grant/" title="Infrastructure - Security - OAuth 2.0 - Authorization Code Grant"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-14</div><div class="info-item-2">Infrastructure - Security - OAuth 2.0 - Authorization Code Grant</div></div><div class="info-2"><div class="info-item-1">  </div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">655</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">198</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">91</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Data-Permissions%EF%BC%88%E6%95%B0%E6%8D%AE%E6%9D%83%E9%99%90%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">Data Permissions（数据权限）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Implicit-Roles-Permissions%EF%BC%88%E9%9A%90%E5%BC%8F%E8%A7%92%E8%89%B2%E4%B8%8E%E6%9D%83%E9%99%90%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">Implicit Roles &amp; Permissions（隐式角色与权限）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BatchEnforce-%EF%BC%88%E6%89%B9%E9%87%8F%E9%89%B4%E6%9D%83%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">BatchEnforce()（批量鉴权）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Menu-Permissions%EF%BC%88%E8%8F%9C%E5%8D%95%E6%9D%83%E9%99%90%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">Menu Permissions（菜单权限）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Policy-%E6%96%87%E4%BB%B6%E7%9A%84%E4%B8%89%E7%B1%BB%E8%A7%84%E5%88%99"><span class="toc-number">2.1.</span> <span class="toc-text">Policy 文件的三类规则</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E7%BB%A7%E6%89%BF%E8%A7%84%E5%88%99%EF%BC%88%E6%9C%80%E9%87%8D%E8%A6%81%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">核心继承规则（最重要）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E5%90%88%E7%A4%BA%E4%BE%8B%E8%A1%A8%E6%A0%BC%E7%90%86%E8%A7%A3"><span class="toc-number">2.3.</span> <span class="toc-text">结合示例表格理解</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%8E%A8%E5%AF%BC"><span class="toc-number">2.4.</span> <span class="toc-text">关键推导</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E5%B1%82%E9%9D%A2"><span class="toc-number">2.5.</span> <span class="toc-text">代码层面</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E8%B7%AF"><span class="toc-number">2.6.</span> <span class="toc-text">核心思路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E7%9C%8B%E8%8F%9C%E5%8D%95%E7%BB%93%E6%9E%84%EF%BC%88g2%EF%BC%89"><span class="toc-number">2.7.</span> <span class="toc-text">先看菜单结构（g2）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E7%9C%8B%E8%A7%92%E8%89%B2%E7%BB%A7%E6%89%BF%EF%BC%88g%EF%BC%89"><span class="toc-number">2.8.</span> <span class="toc-text">再看角色继承（g）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E5%90%8E%E7%9C%8B%E6%9D%83%E9%99%90%E8%A7%84%E5%88%99%EF%BC%88p%EF%BC%89"><span class="toc-number">2.9.</span> <span class="toc-text">最后看权限规则（p）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%90%E8%A1%8C%E6%8E%A8%E5%AF%BC%E7%BB%93%E6%9E%9C%E8%A1%A8"><span class="toc-number">2.10.</span> <span class="toc-text">逐行推导结果表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ROLE-USER%EF%BC%88%E6%9C%80%E7%AE%80%E5%8D%95%EF%BC%89"><span class="toc-number">2.10.1.</span> <span class="toc-text">ROLE_USER（最简单）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ROLE-ADMIN%EF%BC%88%E7%BB%A7%E6%89%BF-ROLE-USER%EF%BC%89"><span class="toc-number">2.10.2.</span> <span class="toc-text">ROLE_ADMIN（继承 ROLE_USER）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ROLE-ROOT%EF%BC%88%E6%9C%80%E9%AB%98%E6%9D%83%E9%99%90%EF%BC%8C%E4%BD%86%E6%9C%89%E6%98%BE%E5%BC%8F-deny%EF%BC%89"><span class="toc-number">2.10.3.</span> <span class="toc-text">ROLE_ROOT（最高权限，但有显式 deny）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E6%9D%A1%E6%9C%80%E5%85%B3%E9%94%AE%E7%9A%84%E8%A7%84%E5%88%99"><span class="toc-number">2.11.</span> <span class="toc-text">两条最关键的规则</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%84%E5%88%99%E4%B8%80%EF%BC%9A%E6%98%BE%E5%BC%8F-deny-%E4%B8%80%E5%88%87"><span class="toc-number">2.11.1.</span> <span class="toc-text">规则一：显式 deny &gt; 一切</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%84%E5%88%99%E4%BA%8C%EF%BC%9A%E5%AD%90%E6%9C%89-allow-%E2%86%92-%E7%88%B6%E8%87%AA%E5%8A%A8%E5%8F%AF%E8%A7%81"><span class="toc-number">2.11.2.</span> <span class="toc-text">规则二：子有 allow → 父自动可见</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%81%8C%E8%B4%A3"><span class="toc-number">2.12.</span> <span class="toc-text">职责</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Casbin-%E5%8E%9F%E7%94%9F%E8%83%BD%E5%8A%9B%E8%BE%B9%E7%95%8C"><span class="toc-number">2.12.1.</span> <span class="toc-text">Casbin 原生能力边界</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E6%9D%A1%E8%A7%84%E5%88%99%E7%9A%84%E5%AE%9E%E9%99%85%E5%BD%92%E5%B1%9E"><span class="toc-number">2.12.2.</span> <span class="toc-text">两条规则的实际归属</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E5%B1%82%E8%A6%81%E5%81%9A%E7%9A%84%E4%BA%8B"><span class="toc-number">2.12.3.</span> <span class="toc-text">业务层要做的事</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%80%E4%BB%A5-jCasbin-%E7%A4%BA%E4%BE%8B%E9%87%8C%E7%9A%84-MenuService"><span class="toc-number">2.12.4.</span> <span class="toc-text">所以 jCasbin 示例里的 MenuService</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%80%BB%E7%BB%93"><span class="toc-number">2.12.5.</span> <span class="toc-text">一句话总结</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Use Cases"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases">Authorization - Casbin Use Cases</a><time datetime="2026-04-12T13:22:37.000Z" title="Created 2026-04-12 21:22:37">2026-04-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412181205101.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Storage"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage">Authorization - Casbin Storage</a><time datetime="2026-04-12T10:07:24.000Z" title="Created 2026-04-12 18:07:24">2026-04-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Access Control Models"/></a><div class="content"><a class="title" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models">Authorization - Casbin Access Control Models</a><time datetime="2026-04-10T09:41:46.000Z" title="Created 2026-04-10 17:41:46">2026-04-10</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/07/ai-agent-harness-qoder/" title="Agentic Harness - Qoder"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://harness-1253868755.cos.ap-guangzhou.myqcloud.com/O1CN01xYeyqK1lcJgEQfELo_!!6000000004839-2-tps-1712-1152.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agentic Harness - Qoder"/></a><div class="content"><a class="title" href="/2026/04/07/ai-agent-harness-qoder/" title="Agentic Harness - Qoder">Agentic Harness - Qoder</a><time datetime="2026-04-07T02:20:29.000Z" title="Created 2026-04-07 10:20:29">2026-04-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/ai-agent-harness-concept/" title="Agentic Harness - Concept"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://harness-1253868755.cos.ap-guangzhou.myqcloud.com/agent-components.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agentic Harness - Concept"/></a><div class="content"><a class="title" href="/2026/04/01/ai-agent-harness-concept/" title="Agentic Harness - Concept">Agentic Harness - Concept</a><time datetime="2026-04-01T08:50:25.000Z" title="Created 2026-04-01 16:50:25">2026-04-01</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
