@@ -172,13 +172,11 @@ Policy = 规则数据（具体谁能做什么）
 
 ```mermaid
 flowchart LR
-    subgraph App["应用层"]
-        E["Enforcer"]
-    end
+    E["Enforcer"]
 
     subgraph Core["Casbin Core"]
-        M["Model<br/>规则引擎逻辑"]
-        P["Policy<br/>规则数据"]
+        M["Model - 规则引擎逻辑（只读）"]
+        P["Policy - 规则数据（动态）"]
     end
 
     subgraph Adapters["Adapter 接口"]
@@ -186,9 +184,10 @@ flowchart LR
         A2["SavePolicy"]
         A3["AddPolicy"]
         A4["RemovePolicy"]
+        A5["RemoveFilteredPolicy"]
     end
 
-    subgraph Store["存储后端"]
+    subgraph Store["存储后端（都实现同一 Adapter 接口）"]
         S1["CSV"]
         S2["MySQL"]
         S3["PostgreSQL"]
@@ -196,19 +195,15 @@ flowchart LR
         S5["MongoDB"]
     end
 
-    E --> M
-    E --> P
-
-    M --- N1["⬇ 加载一次，运行时不变"]
-    P --- N2["⬇ 动态增删改查"]
-
+    E -->|"加载一次，运行时不变"| M
+    E -->|"动态增删改查"| P
     P <--> Adapters
     Adapters <--> Store
 
-    style M fill:#e1f5fe
-    style P fill:#fff3e0
-    style Adapters fill:#f3e5f5
-    style Store fill:#e8f5e9
+    style M fill:#e1f5fe,stroke:#0277bd
+    style P fill:#fff3e0,stroke:#ef6c00
+    style Adapters fill:#f3e5f5,stroke:#7b1fa2
+    style Store fill:#e8f5e9,stroke:#2e7d32
 ```
 
 # Loading Policy Subsets
