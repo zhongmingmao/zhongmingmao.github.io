@@ -1,0 +1,980 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Authorization - Casbin Plugin | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="Overview Casbin 的核心只负责策略执行逻辑（model + policy），而插件负责连接外部世界 - 数据库、消息队列、Web 框架等     类别 中文名 作用    Enforcers 专用执行器 针对特定环境或场景定制的执行器   Adapters 存储适配器 对接数据库&#x2F;文件&#x2F;云存储，读写 model 和 policy   Watchers 变更监听器">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Authorization - Casbin Plugin">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-plugin/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="Overview Casbin 的核心只负责策略执行逻辑（model + policy），而插件负责连接外部世界 - 数据库、消息队列、Web 框架等     类别 中文名 作用    Enforcers 专用执行器 针对特定环境或场景定制的执行器   Adapters 存储适配器 对接数据库&#x2F;文件&#x2F;云存储，读写 model 和 policy   Watchers 变更监听器">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp">
+<meta property="article:published_time" content="2026-04-12T14:29:24.000Z">
+<meta property="article:modified_time" content="2026-04-12T16:25:53.302Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Security">
+<meta property="article:tag" content="IAM">
+<meta property="article:tag" content="Authorization">
+<meta property="article:tag" content="RBAC">
+<meta property="article:tag" content="Casbin">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Authorization - Casbin Plugin",
+  "url": "https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-plugin/",
+  "image": "https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp",
+  "datePublished": "2026-04-12T14:29:24.000Z",
+  "dateModified": "2026-04-12T16:25:53.302Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-plugin/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Authorization - Casbin Plugin',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">657</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">198</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">91</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Authorization - Casbin Plugin</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Authorization - Casbin Plugin</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-04-12T14:29:24.000Z" title="Created 2026-04-12 22:29:24">2026-04-12</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/">Security</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/">IAM</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/authorization/">Authorization</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/security/iam/authorization/rbac/">RBAC</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">2.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>7mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-04-13 00:25:53&quot;}" hidden></div><h1 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h1><blockquote>
+<p>Casbin 的<strong>核心</strong>只负责<strong>策略执行逻辑（model + policy）</strong>，而<strong>插件负责连接外部世界</strong> - 数据库、消息队列、Web 框架等</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>中文名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Enforcers</td>
+<td>专用执行器</td>
+<td>针对特定<strong>环境</strong>或<strong>场景</strong>定制的执行器</td>
+</tr>
+<tr>
+<td>Adapters</td>
+<td>存储适配器</td>
+<td>对接<strong>数据库&#x2F;文件&#x2F;云存储</strong>，读写 model 和 policy</td>
+</tr>
+<tr>
+<td>Watchers</td>
+<td>变更监听器</td>
+<td><strong>多实例之间同步 policy 变更</strong></td>
+</tr>
+<tr>
+<td>Dispatchers</td>
+<td>分发协调器</td>
+<td>分布式部署下<strong>协调策略更新</strong></td>
+</tr>
+<tr>
+<td>Role Managers</td>
+<td>角色管理器</td>
+<td>自定义<strong>角色继承&#x2F;层级</strong>逻辑</td>
+</tr>
+<tr>
+<td>Middlewares</td>
+<td>框架中间件</td>
+<td>集成 Gin、Nest.js、GraphQL、Kong 等</td>
+</tr>
+</tbody></table>
+<span id="more"></span>
+
+<blockquote>
+<p>Adapters（最常用）</p>
+</blockquote>
+<ol>
+<li>解决”<strong>policy 存哪</strong>“的问题</li>
+<li>支持 <strong>MySQL</strong>、<strong>PostgreSQL</strong>、<strong>Redis</strong>、<strong>MongoDB</strong>、<strong>文件</strong>等</li>
+<li>Casbin 核心本身只内置了<strong>文件 Adapter</strong></li>
+</ol>
+<blockquote>
+<p>Watchers（分布式关键）</p>
+</blockquote>
+<ol>
+<li>解决”<strong>多个 Casbin 实例间 policy 如何保持一致</strong>“的问题</li>
+<li>典型实现：<strong>Redis Pub&#x2F;Sub</strong>、Etcd</li>
+<li><strong>一个实例更新 policy → watcher 广播 → 其他实例重载</strong></li>
+</ol>
+<blockquote>
+<p>Dispatchers（<strong>更强一致性</strong>）</p>
+</blockquote>
+<ol>
+<li>比 Watcher 更进一步，<strong>协调分布式下的写操作</strong></li>
+<li>适用于需要<strong>强一致性</strong>的场景</li>
+</ol>
+<blockquote>
+<p>Role Managers</p>
+</blockquote>
+<ol>
+<li>解决”<strong>角色继承逻辑如何定制</strong>“的问题</li>
+<li>默认内置一个<strong>内存 role manager</strong>，插件可替换为<strong>图数据库</strong>等</li>
+</ol>
+<blockquote>
+<p>使用流程</p>
+</blockquote>
+<p>选择<strong>插件类别</strong> → <strong>安装对应包</strong> → <strong>创建 Enforcer 时注入</strong> → 按插件文档<strong>配置高级选项</strong></p>
+<h1 id="Enforcers"><a href="#Enforcers" class="headerlink" title="Enforcers"></a>Enforcers</h1><blockquote>
+<p>Casbin 提供了<strong>多种 Enforcer 变体</strong>，满足<strong>不同部署场景</strong>的需求</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Enforcer</th>
+<th>核心特性</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Enforcer</td>
+<td>基础实现，核心 API</td>
+<td>单节点、简单场景</td>
+</tr>
+<tr>
+<td>CachedEnforcer</td>
+<td>内存缓存鉴权结果，可配置过期时间，读写锁线程安全</td>
+<td>高频鉴权、性能敏感</td>
+</tr>
+<tr>
+<td>SyncedEnforcer</td>
+<td>全 API 加<strong>同步锁</strong></td>
+<td><strong>多线程并发写</strong></td>
+</tr>
+<tr>
+<td>SyncedCachedEnforcer</td>
+<td>缓存 + 同步锁，两者结合</td>
+<td>多线程 + 高频鉴权</td>
+</tr>
+<tr>
+<td>DistributedEnforcer</td>
+<td>包装 SyncedEnforcer，配合 Dispatcher 工作</td>
+<td>多节点分布式部署</td>
+</tr>
+<tr>
+<td>ContextEnforcer</td>
+<td>支持 Context 参数的 Adapter 操作</td>
+<td>需要超时&#x2F;取消控制的场景</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>关键区别</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>系列</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cached 系列</td>
+<td>缓存的是<strong>鉴权结果</strong>（Enforce() 的返回值），减少重复计算开销</td>
+</tr>
+<tr>
+<td>Synced 系列</td>
+<td>对<strong>所有操作</strong>加锁，保证并发安全</td>
+</tr>
+<tr>
+<td>Distributed</td>
+<td>依赖 <strong>Dispatcher</strong> 实现<strong>跨节点策略广播</strong>，是<strong>真正的分布式方案</strong></td>
+</tr>
+<tr>
+<td>Context</td>
+<td>为 Adapter 操作注入 context.Context，便于与<strong>链路追踪</strong>、<strong>超时控制</strong>集成</td>
+</tr>
+</tbody></table>
+<h1 id="Adapters"><a href="#Adapters" class="headerlink" title="Adapters"></a>Adapters</h1><blockquote>
+<p>Casbin Adapter 是<strong>策略持久化</strong>的<strong>核心扩展点</strong></p>
+</blockquote>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><blockquote>
+<p>Adapter 的职责：<strong>Enforcer</strong> 通过 <strong>Adapter</strong> 调用 <strong>LoadPolicy()</strong> 加载规则、<strong>SavePolicy()</strong> 持久化规则，Adapter 把 <strong>Casbin 与具体存储解耦</strong></p>
+</blockquote>
+<h2 id="Adapter-分类"><a href="#Adapter-分类" class="headerlink" title="Adapter 分类"></a>Adapter 分类</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>代表</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>File</td>
+<td><strong>内置 File Adapter</strong></td>
+<td>CSV 文件，最简单，<strong>不支持 AutoSave</strong></td>
+</tr>
+<tr>
+<td>SQL</td>
+<td>SQL Adapter, Filtered PostgreSQL</td>
+<td>直接用 database&#x2F;sql</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td>GORM&#x2F;Xorm&#x2F;Ent&#x2F;Beego</td>
+<td>主流 ORM 封装，<strong>大多支持 AutoSave</strong></td>
+</tr>
+<tr>
+<td>NoSQL</td>
+<td>MongoDB&#x2F;RethinkDB&#x2F;Cassandra&#x2F;DynamoDB</td>
+<td>文档&#x2F;列式数据库</td>
+</tr>
+<tr>
+<td>KV store</td>
+<td>Redis&#x2F;Etcd&#x2F;BoltDB&#x2F;BadgerDB</td>
+<td>键值存储</td>
+</tr>
+<tr>
+<td>Cloud</td>
+<td>S3&#x2F;Firestore&#x2F;DynamoDB&#x2F;CosmosDB</td>
+<td>云原生存储</td>
+</tr>
+<tr>
+<td>String&#x2F;Stream</td>
+<td>JSON&#x2F;Protobuf&#x2F;String</td>
+<td>内存&#x2F;序列化场景</td>
+</tr>
+</tbody></table>
+<h2 id="四个接口层次"><a href="#四个接口层次" class="headerlink" title="四个接口层次"></a>四个接口层次</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Adapter（必须）</span><br><span class="line">├── LoadPolicy()    — 全量加载</span><br><span class="line">└── SavePolicy()    — 全量保存（覆盖写）</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Auto-Save（可选，单条增量操作）</span><br><span class="line">├── AddPolicy()</span><br><span class="line">├── RemovePolicy()</span><br><span class="line">└── RemoveFilteredPolicy()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">UpdateAdapter（可选，更新操作）</span><br><span class="line">├── UpdatePolicy()          — 更新单条</span><br><span class="line">├── UpdatePolicies()        — 批量更新</span><br><span class="line">└── UpdateFilteredPolicies()— 按过滤条件更新</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ContextAdapter（可选，注入 context）</span><br><span class="line">└── 所有操作的 Ctx 变体（超时控制、链路追踪）</span><br></pre></td></tr></table></figure>
+
+<h2 id="AutoSave-vs-SavePolicy"><a href="#AutoSave-vs-SavePolicy" class="headerlink" title="AutoSave vs SavePolicy()"></a>AutoSave vs SavePolicy()</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>SavePolicy()</th>
+<th>AutoSave</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>操作方式</td>
+<td><strong>清空全表 + 全量重写</strong></td>
+<td><strong>单条增量写</strong></td>
+</tr>
+<tr>
+<td>性能</td>
+<td>策略量大时慢</td>
+<td>高效</td>
+</tr>
+<tr>
+<td>原子性</td>
+<td><strong>全量替换</strong></td>
+<td><strong>单条操作</strong></td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>策略迁移、初始化</td>
+<td>日常增删改</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>通过 <strong>e.EnableAutoSave(false) 可关闭 AutoSave</strong>，此时 <strong>AddPolicy()</strong> 等 API <strong>只更新内存</strong>，需<strong>手动调用 SavePolicy() 落盘</strong></p>
+</blockquote>
+<h2 id="策略迁移方法"><a href="#策略迁移方法" class="headerlink" title="策略迁移方法"></a>策略迁移方法</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">e.SetAdapter(A); e.LoadPolicy()    <span class="comment">// 从 A 加载</span></span><br><span class="line">e.SetAdapter(B); e.SavePolicy()    <span class="comment">// 写入 B</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="自定义-Adapter-要点"><a href="#自定义-Adapter-要点" class="headerlink" title="自定义 Adapter 要点"></a>自定义 Adapter 要点</h2><ol>
+<li>表名默认 <strong>casbin_rule</strong>，字段 <strong>ptype, v0~v5</strong>，唯一索引建在 (<strong>ptype,v0,v1,v2,v3,v4,v5</strong>)</li>
+<li><strong>不支持 AutoSave 时</strong>，三个可选方法返回 <strong>errors.New(“not implemented”)<strong>，Casbin 会</strong>自动忽略</strong>该错误</li>
+<li>约定：Adapter 应<strong>自动创建 casbin 数据库</strong>（如不存在）</li>
+<li>事务支持：实现 <strong>TransactionalAdapter</strong> 接口，配合 <strong>casbin.NewTransactionalEnforcer</strong> 使用</li>
+</ol>
+<h1 id="Watchers"><a href="#Watchers" class="headerlink" title="Watchers"></a>Watchers</h1><blockquote>
+<p>Watcher 的职责：在<strong>多节点部署</strong>中保持<strong>策略同步</strong>。某个 <strong>Enforcer 实例更新策略后</strong>，通过<strong>消息总线</strong>通知<strong>其他实例重载策略</strong>，避免<strong>负载均衡</strong>后各<strong>节点策略不一致</strong></p>
+</blockquote>
+<h2 id="两种接口"><a href="#两种接口" class="headerlink" title="两种接口"></a>两种接口</h2><blockquote>
+<p>Watcher vs WatcherEx 对比 - 注：<strong>WatcherEx 目前没有官方实现</strong>，官方推荐用 <strong>Dispatcher</strong> 实现<strong>增量同步</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Watcher</th>
+<th>WatcherEx</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>通知粒度</td>
+<td>仅信号（”<strong>有变更</strong>“）</td>
+<td><strong>操作类型 + 具体规则</strong></td>
+</tr>
+<tr>
+<td>接收端处理</td>
+<td><strong>全量 LoadPolicy() 重载</strong></td>
+<td>可<strong>增量更新</strong>对应规则</td>
+</tr>
+<tr>
+<td>一致性</td>
+<td><strong>最终一致</strong></td>
+<td>最终一致，但延迟更低</td>
+</tr>
+<tr>
+<td>实现复杂度</td>
+<td>低</td>
+<td>高</td>
+</tr>
+<tr>
+<td>官方建议</td>
+<td>简单场景</td>
+<td>官方建议用 <strong>Dispatcher</strong> 替代</td>
+</tr>
+</tbody></table>
+<h3 id="Watcher（基础接口）"><a href="#Watcher（基础接口）" class="headerlink" title="Watcher（基础接口）"></a>Watcher（基础接口）</h3><blockquote>
+<p>工作模式：只传递”<strong>有策略变更</strong>“的信号，<strong>不携带变更内容</strong>。收到通知的节点<strong>全量 LoadPolicy() 重载</strong></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SetUpdateCallback()  — 注册收到通知后的回调（通常是 enforcer.LoadPolicy()）</span><br><span class="line">Update()             — 发送通知给其他实例</span><br><span class="line">Close()              — 关闭 Watcher</span><br></pre></td></tr></table></figure>
+
+<h3 id="WatcherEx（扩展接口，继承-Watcher）"><a href="#WatcherEx（扩展接口，继承-Watcher）" class="headerlink" title="WatcherEx（扩展接口，继承 Watcher）"></a>WatcherEx（扩展接口，继承 Watcher）</h3><blockquote>
+<p>在基础接口上新增了 <strong>按操作类型区分</strong> 的通知方法</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>触发时机</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UpdateForAddPolicy()</td>
+<td>AddPolicy &#x2F; AddNamedPolicy &#x2F; AddGroupingPolicy</td>
+</tr>
+<tr>
+<td>UpdateForRemovePolicy()</td>
+<td>RemovePolicy &#x2F; RemoveNamedPolicy &#x2F; RemoveGroupingPolicy</td>
+</tr>
+<tr>
+<td>UpdateForRemoveFilteredPolicy()</td>
+<td>RemoveFilteredPolicy &#x2F; RemoveFilteredNamedPolicy</td>
+</tr>
+<tr>
+<td>UpdateForSavePolicy()</td>
+<td>SavePolicy</td>
+</tr>
+<tr>
+<td>UpdateForAddPolicies()</td>
+<td>AddPolicies &#x2F; AddNamedPolicies &#x2F; AddGroupingPolicies</td>
+</tr>
+<tr>
+<td>UpdateForRemovePolicies()</td>
+<td>RemovePolicies &#x2F; RemoveNamedPolicies &#x2F; RemoveGroupingPolicies</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>优势：接收端可根据<strong>操作类型</strong>做<strong>增量更新</strong>，而非全量 LoadPolicy()，<strong>性能更好</strong></p>
+</blockquote>
+<h2 id="支持的后端"><a href="#支持的后端" class="headerlink" title="支持的后端"></a>支持的后端</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>KV store</td>
+<td><strong>Redis</strong>、Redis WatcherEx、Etcd、TiKV</td>
+</tr>
+<tr>
+<td>消息系统</td>
+<td><strong>Kafka</strong>、NATS、RabbitMQ、ZooKeeper、<strong>RocketMQ</strong>、GCP Pub&#x2F;Sub、AWS SNS&#x2F;SQS</td>
+</tr>
+<tr>
+<td>数据库</td>
+<td>PostgreSQL WatcherEx</td>
+</tr>
+</tbody></table>
+<h1 id="Dispatchers"><a href="#Dispatchers" class="headerlink" title="Dispatchers"></a>Dispatchers</h1><blockquote>
+<p>Dispatcher 的职责：在<strong>多节点集群</strong>中，通过<strong>共识协议</strong>（如 <strong>Raft</strong>）<strong>传播增量策略变更</strong>，保证<strong>所有 Enforcer 实例最终看到相同的策略</strong></p>
+</blockquote>
+<h2 id="与-Watcher-的本质区别"><a href="#与-Watcher-的本质区别" class="headerlink" title="与 Watcher 的本质区别"></a>与 Watcher 的本质区别</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Watcher</th>
+<th>Dispatcher</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>同步协议</td>
+<td><strong>Pub&#x2F;Sub（消息广播，无确认）</strong></td>
+<td><strong>Raft 共识（强一致，有日志）</strong></td>
+</tr>
+<tr>
+<td>一致性保证</td>
+<td><strong>最终一致</strong>（<strong>消息可能丢失</strong>）</td>
+<td><strong>强一致</strong>（<strong>Raft</strong> 保证多数派提交）</td>
+</tr>
+<tr>
+<td>初始状态</td>
+<td><strong>各节点独立加载初始策略</strong></td>
+<td><strong>要求所有节点初始策略相同</strong></td>
+</tr>
+<tr>
+<td>增量同步</td>
+<td><em><em>WatcherEx 携带规则，Self</em> 更新内存</em>*</td>
+<td>Dispatcher 实现 Casbin 内部钩子，<strong>统一分发</strong></td>
+</tr>
+<tr>
+<td>网络分区</td>
+<td>分区期间<strong>各节点独立运行</strong>，<strong>可能不一致</strong></td>
+<td>Raft <strong>在分区时阻塞写入</strong>（<u>保护一致性</u>）</td>
+</tr>
+<tr>
+<td>实现复杂度</td>
+<td>低（Pub&#x2F;Sub 即可）</td>
+<td>高（需维护 Raft 集群）</td>
+</tr>
+</tbody></table>
+<h2 id="关键约束"><a href="#关键约束" class="headerlink" title="关键约束"></a>关键约束</h2><ol>
+<li>Dispatcher 只同步初始化之后的变更，<strong>不修复已有的不一致</strong></li>
+<li>用 Dispatcher 前，必须保证<strong>所有节点从相同的数据源</strong>（同一个 DB 快照）<strong>加载初始策略</strong></li>
+</ol>
+<h2 id="DistributedEnforcer"><a href="#DistributedEnforcer" class="headerlink" title="DistributedEnforcer"></a>DistributedEnforcer</h2><blockquote>
+<p>专为 <strong>Dispatcher</strong> 场景设计的 <strong>Enforcer 变体</strong></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">DistributedEnforcer</span><br><span class="line">  └─ 包装 SyncedEnforcer（线程安全）</span><br><span class="line">       └─ 通过 Dispatcher 钩子，将 AddPolicy/RemovePolicy 等操作</span><br><span class="line">          广播给集群其他节点，而非本地独立执行</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>用法：</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e, _ := casbin.NewDistributedEnforcer(<span class="string">&quot;examples/basic_model.conf&quot;</span>, <span class="string">&quot;examples/basic_policy.csv&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h1 id="Role-Managers"><a href="#Role-Managers" class="headerlink" title="Role Managers"></a>Role Managers</h1><blockquote>
+<p>Role Manager 的职责：管理 RBAC 中”<strong>谁拥有哪个角色、角色如何继承</strong>“的层级关系。它是 <strong>g(user, role)</strong> 规则的<strong>执行引擎</strong></p>
+</blockquote>
+<h2 id="两类-Role-Manager"><a href="#两类-Role-Manager" class="headerlink" title="两类 Role Manager"></a>两类 Role Manager</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>数据来源</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内置（默认）</td>
+<td>Casbin policy（g 规则，内存）</td>
+<td>Default Role Manager</td>
+</tr>
+<tr>
+<td>外部集成</td>
+<td>LDAP &#x2F; IdP 系统</td>
+<td>Okta、Auth0、Azure AD</td>
+</tr>
+</tbody></table>
+<h2 id="内置-Default-Role-Manager"><a href="#内置-Default-Role-Manager" class="headerlink" title="内置 Default Role Manager"></a>内置 Default Role Manager</h2><ol>
+<li>从 policy 中的 <code>g = _, _</code> 规则构建<strong>内存角色图</strong></li>
+<li>支持<strong>角色继承</strong>（g, alice, admin、g, admin, superadmin）</li>
+<li><strong>所有操作在内存中完成</strong>，速度最快</li>
+</ol>
+<h2 id="Session-Role-Manager"><a href="#Session-Role-Manager" class="headerlink" title="Session Role Manager"></a>Session Role Manager</h2><ol>
+<li>在<strong>默认 Role Manager</strong> 基础上扩展，支持<strong>基于时间范围的会话</strong></li>
+<li>即：<strong>某用户在某时间段内才拥有某角色</strong>（临时授权场景）</li>
+</ol>
+<h2 id="外部-Role-Manager（Okta-Auth0）"><a href="#外部-Role-Manager（Okta-Auth0）" class="headerlink" title="外部 Role Manager（Okta &#x2F; Auth0）"></a>外部 Role Manager（Okta &#x2F; Auth0）</h2><ol>
+<li><strong>直接查询 IdP 的角色&#x2F;组数据</strong>，不依赖 Casbin policy 中的 <strong>g 规则</strong></li>
+<li>合企业已有统一身份系统、不想在 Casbin 维护一份<strong>重复角色数据</strong>的场景</li>
+</ol>
+<h1 id="Middleware"><a href="#Middleware" class="headerlink" title="Middleware"></a>Middleware</h1><blockquote>
+<p>Middleware 的职责：将 <strong>enforcer.Enforce(sub, obj, act) 调用</strong>嵌入 <strong>Web 框架</strong>的<strong>请求处理链</strong>，免去每个 <strong>handler</strong> 手写鉴权样板代码</p>
+</blockquote>
+<blockquote>
+<p>Go 生态覆盖范围 - 几乎所有主流 Go Web 框架都有对应插件</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>代表框架</th>
+<th>Casbin 插件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>通用 HTTP</td>
+<td>Gin</td>
+<td>gin-authz &#x2F; gin-casbin</td>
+</tr>
+<tr>
+<td>全栈框架</td>
+<td>Beego、Revel、GoFrame</td>
+<td>内置 plugins&#x2F;authz</td>
+</tr>
+<tr>
+<td>微服务</td>
+<td>Go kit、Kratos、go-zero</td>
+<td>plugins&#x2F;authz &#x2F; tx7do&#x2F;kratos-casbin</td>
+</tr>
+<tr>
+<td>高性能</td>
+<td>Fiber、FastHTTP、Hertz</td>
+<td>casbin in gofiber&#x2F;contrib</td>
+</tr>
+<tr>
+<td>API 网关</td>
+<td>Traefik、Caddy、Tyk</td>
+<td>casbin-forward-auth &#x2F; caddy-authz</td>
+</tr>
+<tr>
+<td>轻量路由</td>
+<td>Chi、Negroni、Echo</td>
+<td>chi-authz &#x2F; echo-authz</td>
+</tr>
+</tbody></table>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-plugin/">https://blog.zhongmingmao.top/2026/04/12/security-iam-authorization-rbac-casbin-plugin/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/security/">Security</a><a class="post-meta__tags" href="/tags/iam/">IAM</a><a class="post-meta__tags" href="/tags/authorization/">Authorization</a><a class="post-meta__tags" href="/tags/rbac/">RBAC</a><a class="post-meta__tags" href="/tags/casbin/">Casbin</a></div><div class="post-share"><div class="social-share" data-image="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260413004636325.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">Previous</div><div class="info-item-2">Authorization - Casbin Management</div></div><div class="info-2"><div class="info-item-1">Admin PortalCasdoor - 官方管理平台 Casdoor 是 Casbin 团队自己开发的 Web 端身份与访问管理平台，提供   Model Editor（模型编辑器）：可视化编辑 Casbin 模型（如 RBAC、ABAC 等的 .conf 文件） Policy Editor（策略编辑器）：可视化编辑策略规则（policy）   本质上就是一个 Casbin 的 GUI 管理后台，让你不用手写配置文件，通过网页界面就能管理权限模型和策略    第三方开源 Admin 项目 表格列出的是 基于 Casbin 做鉴权的开源后台管理系统，当前展示的是 Go 语言 部分的项目     项目 核心技术栈 亮点    Casdoor Beego + XORM + React 官方出品，功能最全   go-admin Gin + GORM + Vue + Element UI 社区活跃，国产热门脚手架   gin-vue-admin Gin + GORM + Vue + Element UI 非常流行的 Go 后台框架   gin-admin Gin + GORM + React + Ant De...</div></div></div></a><a class="pagination-related" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Authorization - Casbin Use Cases</div></div><div class="info-2"><div class="info-item-1">Data Permissions（数据权限）Implicit Roles &amp; Permissions（隐式角色与权限） RBAC 中权限有两种获取方式：     方式 说明 对应 API    直接赋予 直接把角色&#x2F;权限分配给用户 GetRolesForUser() &#x2F; GetPermissionsForUser()   隐式继承 通过角色继承链传递下来的 GetImplicitRolesForUser() &#x2F; GetImplicitPermissionsForUser()      示例：  12g, alice, adming, admin, superuser   GetRolesForUser(alice) → 只返回 [admin]（直接分配） GetImplicitRolesForUser(alice) → 返回 [admin, superuser]（含继承链）   如果你要做数据过滤（比如”用户能看哪些数据行”），必须用隐式版本，否则继承来的权限会被漏掉  BatchEnforce()（批量鉴权） 一次调用传入多个 [subject, object, ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-12</div><div class="info-item-2">Authorization - Casbin Use Cases</div></div><div class="info-2"><div class="info-item-1">Data Permissions（数据权限）Implicit Roles &amp; Permissions（隐式角色与权限） RBAC 中权限有两种获取方式：     方式 说明 对应 API    直接赋予 直接把角色&#x2F;权限分配给用户 GetRolesForUser() &#x2F; GetPermissionsForUser()   隐式继承 通过角色继承链传递下来的 GetImplicitRolesForUser() &#x2F; GetImplicitPermissionsForUser()      示例：  12g, alice, adming, admin, superuser   GetRolesForUser(alice) → 只返回 [admin]（直接分配） GetImplicitRolesForUser(alice) → 返回 [admin, superuser]（含继承链）   如果你要做数据过滤（比如”用户能看哪些数据行”），必须用隐式版本，否则继承来的权限会被漏掉  BatchEnforce()（批量鉴权） 一次调用传入多个 [subject, object, ...</div></div></div></a><a class="pagination-related" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412181205101.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-12</div><div class="info-item-2">Authorization - Casbin Storage</div></div><div class="info-2"><div class="info-item-1">Model Storage Casbin 中模型的三种加载方式 模型是”只读“的 Casbin 的 Model 定义了访问控制逻辑（谁能对什么资源做什么操作），运行时被视为静态配置 没有 API 可以保存或更新模型 - 它是设计时确定的，不是动态变化的     关键区别     方式 适用场景 优点    CONF 文件 大多数情况 清晰、可分享、易维护   代码构建 需要程序化组装模型 灵活、可条件拼接   字符串 配置中心&#x2F;DB 存储 适合集中管理    三种方式加载的模型内容完全相同，区别只在于来源不同 模型一旦加载完成，后续的动态变化都体现在 Policy（策略） 上，而不是 Model 上    从 .conf 文件加载（推荐） 最常用的方式，把模型定义写在独立的配置文件中，便于分享和讨论  1234567891011121314[request_definition]                        # 请求定义：请求有哪些字段r = sub, obj, act                           # sub=主体, obj=客体/资源, act=操作...</div></div></div></a><a class="pagination-related" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260413004636325.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-13</div><div class="info-item-2">Authorization - Casbin Management</div></div><div class="info-2"><div class="info-item-1">Admin PortalCasdoor - 官方管理平台 Casdoor 是 Casbin 团队自己开发的 Web 端身份与访问管理平台，提供   Model Editor（模型编辑器）：可视化编辑 Casbin 模型（如 RBAC、ABAC 等的 .conf 文件） Policy Editor（策略编辑器）：可视化编辑策略规则（policy）   本质上就是一个 Casbin 的 GUI 管理后台，让你不用手写配置文件，通过网页界面就能管理权限模型和策略    第三方开源 Admin 项目 表格列出的是 基于 Casbin 做鉴权的开源后台管理系统，当前展示的是 Go 语言 部分的项目     项目 核心技术栈 亮点    Casdoor Beego + XORM + React 官方出品，功能最全   go-admin Gin + GORM + Vue + Element UI 社区活跃，国产热门脚手架   gin-vue-admin Gin + GORM + Vue + Element UI 非常流行的 Go 后台框架   gin-admin Gin + GORM + React + Ant De...</div></div></div></a><a class="pagination-related" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-10</div><div class="info-item-2">Authorization - Casbin Access Control Models</div></div><div class="info-2"><div class="info-item-1">核心架构123456789101112131415161718192021222324252627282930flowchart TB      subgraph PERM[&quot;PERM 元模型&quot;]          direction LR          R[Request] --&gt; M[Matchers] --&gt; E[Effect]          P[Policy] -.-&gt; M      end      subgraph Storage[&quot;Policy 存储&quot;]          direction LR          Adapter1[文件] --- Adapter2[数据库] --- Adapter3[S3]      end      subgraph RoleManager[&quot;Role Manager&quot;]          direction TB          RM[角色管理器]          loaders[加载器]          RM --&gt; loaders          ...</div></div></div></a><a class="pagination-related" href="/2022/09/13/microservices-governance-security-oauth2-spring-security-oauth2-authorization-server/" title="Spring Security OAuth2 - Authorization Server"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-13</div><div class="info-item-2">Spring Security OAuth2 - Authorization Server</div></div><div class="info-2"><div class="info-item-1">授权服务器 Introspection Endpoint：校验 Access Token 的合法性     Spring Security OAuth2 架构 Authorization flowAuthorization Code Flow Maven12345678&lt;dependency&gt;  &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;  &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;&lt;/dependency&gt;&lt;dependency&gt;  &lt;groupId&gt;org.springframework.security.oauth&lt;/groupId&gt;  &lt;artifactId&gt;spring-security-oauth2&lt;/artifactId&gt;&lt;/dependency&gt;  API1234567@Data@Builder@FieldDefaults(level = ...</div></div></div></a><a class="pagination-related" href="/2022/05/14/infrastructure-security-oauth2-integration/" title="Infrastructure - Security - OAuth 2.0 - Integration"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-05-14</div><div class="info-item-2">Infrastructure - Security - OAuth 2.0 - Integration</div></div><div class="info-2"><div class="info-item-1">  </div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">657</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">198</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">91</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Overview"><span class="toc-number">1.</span> <span class="toc-text">Overview</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Enforcers"><span class="toc-number">2.</span> <span class="toc-text">Enforcers</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Adapters"><span class="toc-number">3.</span> <span class="toc-text">Adapters</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">3.1.</span> <span class="toc-text">核心概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Adapter-%E5%88%86%E7%B1%BB"><span class="toc-number">3.2.</span> <span class="toc-text">Adapter 分类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E4%B8%AA%E6%8E%A5%E5%8F%A3%E5%B1%82%E6%AC%A1"><span class="toc-number">3.3.</span> <span class="toc-text">四个接口层次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AutoSave-vs-SavePolicy"><span class="toc-number">3.4.</span> <span class="toc-text">AutoSave vs SavePolicy()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AD%96%E7%95%A5%E8%BF%81%E7%A7%BB%E6%96%B9%E6%B3%95"><span class="toc-number">3.5.</span> <span class="toc-text">策略迁移方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89-Adapter-%E8%A6%81%E7%82%B9"><span class="toc-number">3.6.</span> <span class="toc-text">自定义 Adapter 要点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Watchers"><span class="toc-number">4.</span> <span class="toc-text">Watchers</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E7%A7%8D%E6%8E%A5%E5%8F%A3"><span class="toc-number">4.1.</span> <span class="toc-text">两种接口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Watcher%EF%BC%88%E5%9F%BA%E7%A1%80%E6%8E%A5%E5%8F%A3%EF%BC%89"><span class="toc-number">4.1.1.</span> <span class="toc-text">Watcher（基础接口）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#WatcherEx%EF%BC%88%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3%EF%BC%8C%E7%BB%A7%E6%89%BF-Watcher%EF%BC%89"><span class="toc-number">4.1.2.</span> <span class="toc-text">WatcherEx（扩展接口，继承 Watcher）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E5%90%8E%E7%AB%AF"><span class="toc-number">4.2.</span> <span class="toc-text">支持的后端</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dispatchers"><span class="toc-number">5.</span> <span class="toc-text">Dispatchers</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8E-Watcher-%E7%9A%84%E6%9C%AC%E8%B4%A8%E5%8C%BA%E5%88%AB"><span class="toc-number">5.1.</span> <span class="toc-text">与 Watcher 的本质区别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E7%BA%A6%E6%9D%9F"><span class="toc-number">5.2.</span> <span class="toc-text">关键约束</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DistributedEnforcer"><span class="toc-number">5.3.</span> <span class="toc-text">DistributedEnforcer</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Role-Managers"><span class="toc-number">6.</span> <span class="toc-text">Role Managers</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E7%B1%BB-Role-Manager"><span class="toc-number">6.1.</span> <span class="toc-text">两类 Role Manager</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E7%BD%AE-Default-Role-Manager"><span class="toc-number">6.2.</span> <span class="toc-text">内置 Default Role Manager</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Session-Role-Manager"><span class="toc-number">6.3.</span> <span class="toc-text">Session Role Manager</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%96%E9%83%A8-Role-Manager%EF%BC%88Okta-Auth0%EF%BC%89"><span class="toc-number">6.4.</span> <span class="toc-text">外部 Role Manager（Okta &#x2F; Auth0）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Middleware"><span class="toc-number">7.</span> <span class="toc-text">Middleware</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260413004636325.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Management"/></a><div class="content"><a class="title" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management">Authorization - Casbin Management</a><time datetime="2026-04-12T16:43:43.000Z" title="Created 2026-04-13 00:43:43">2026-04-13</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-plugin/" title="Authorization - Casbin Plugin"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Plugin"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-plugin/" title="Authorization - Casbin Plugin">Authorization - Casbin Plugin</a><time datetime="2026-04-12T14:29:24.000Z" title="Created 2026-04-12 22:29:24">2026-04-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412212722917.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Use Cases"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-use-cases/" title="Authorization - Casbin Use Cases">Authorization - Casbin Use Cases</a><time datetime="2026-04-12T13:22:37.000Z" title="Created 2026-04-12 21:22:37">2026-04-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260412181205101.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Storage"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-storage/" title="Authorization - Casbin Storage">Authorization - Casbin Storage</a><time datetime="2026-04-12T10:07:24.000Z" title="Created 2026-04-12 18:07:24">2026-04-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Access Control Models"/></a><div class="content"><a class="title" href="/2026/04/10/security-iam-authorization-rbac-casbin-acm/" title="Authorization - Casbin Access Control Models">Authorization - Casbin Access Control Models</a><time datetime="2026-04-10T09:41:46.000Z" title="Created 2026-04-10 17:41:46">2026-04-10</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
