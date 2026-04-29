@@ -1,0 +1,979 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>K8S Orchestration - KRO V2 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="ResourceGraphDefinitions概述生命周期 写一个 RGD YAML，kro 就帮你把它变成一个完整的 Operator  定义 RGD 是 KRO 中唯一需要你编写的 API   定义 Schema - 用户能看到&#x2F;配置哪些字段 定义 Resources - 底层要创建哪些 K8s 资源 用 CEL 表达式把 Schema 的值绑定到 Resources 上  执行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="K8S Orchestration - KRO V2">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/04/29/k8s-orchestration-kro-v2/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="ResourceGraphDefinitions概述生命周期 写一个 RGD YAML，kro 就帮你把它变成一个完整的 Operator  定义 RGD 是 KRO 中唯一需要你编写的 API   定义 Schema - 用户能看到&#x2F;配置哪些字段 定义 Resources - 底层要创建哪些 K8s 资源 用 CEL 表达式把 Schema 的值绑定到 Resources 上  执行">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg">
+<meta property="article:published_time" content="2026-04-29T01:45:09.000Z">
+<meta property="article:modified_time" content="2026-04-29T07:00:05.762Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Cloud Native">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Orchestration">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "K8S Orchestration - KRO V2",
+  "url": "https://blog.zhongmingmao.top/2026/04/29/k8s-orchestration-kro-v2/",
+  "image": "https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg",
+  "datePublished": "2026-04-29T01:45:09.000Z",
+  "dateModified": "2026-04-29T07:00:05.762Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/04/29/k8s-orchestration-kro-v2/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'K8S Orchestration - KRO V2',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">660</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">199</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">92</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">K8S Orchestration - KRO V2</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">K8S Orchestration - KRO V2</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-04-29T01:45:09.000Z" title="Created 2026-04-29 09:45:09">2026-04-29</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/">Cloud Native</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/kubernetes/">Kubernetes</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/cloud-native/kubernetes/k8s-orchestration/">K8S Orchestration</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">3.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>17mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-04-29 15:00:05&quot;}" hidden></div><h1 id="ResourceGraphDefinitions"><a href="#ResourceGraphDefinitions" class="headerlink" title="ResourceGraphDefinitions"></a>ResourceGraphDefinitions</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="生命周期"><a href="#生命周期" class="headerlink" title="生命周期"></a>生命周期</h3><blockquote>
+<p>写一个 <strong>RGD YAML</strong>，kro 就帮你把它变成一个<strong>完整的 Operator</strong></p>
+</blockquote>
+<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><blockquote>
+<p><strong>RGD</strong> 是 KRO 中<strong>唯一</strong>需要你编写的 <strong>API</strong></p>
+</blockquote>
+<ol>
+<li><strong>定义 Schema</strong> - 用户能看到&#x2F;配置哪些字段</li>
+<li><strong>定义 Resources</strong> - 底层要创建哪些 K8s 资源</li>
+<li>用 <strong>CEL 表达式</strong>把 <strong>Schema</strong> 的值<strong>绑定</strong>到 <strong>Resources</strong> 上</li>
+</ol>
+<h4 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h4><blockquote>
+<p><strong>apply</strong> 这个 RGD 后，kro 全自动完成</p>
+</blockquote>
+<ol>
+<li><strong>生成 CRD</strong> - 把你的 <strong>Schema</strong> 转成真正的 <strong>Kubernetes API</strong></li>
+<li><strong>注册到 API Server</strong> - 集群里立刻就能用 kubectl get Application 这样的命令</li>
+<li><strong>监听实例</strong> - 用户创建实例后，kro 按<strong>依赖拓扑排序</strong>创建<strong>底层资源</strong>，并持续管理<strong>生命周期</strong></li>
+</ol>
+<span id="more"></span>
+
+<h3 id="How-it-Works"><a href="#How-it-Works" class="headerlink" title="How it Works"></a>How it Works</h3><blockquote>
+<p>RGD 从<strong>定义</strong>到<strong>运行</strong>的 4 步核心流程：<u>你定义蓝图 → kro 造工厂 → 用户下订单 → kro 自动生产</u></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>谁</th>
+<th>做什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>你</td>
+<td>写一个 <strong>RGD</strong>，定义新的 <strong>API</strong>（比如 Application）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>kro</td>
+<td><strong>自动生成 CRD，注册到集群</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>用户</td>
+<td>用 kubectl apply <strong>创建实例</strong>，像用<strong>原生 K8s 资源</strong>一样</td>
+</tr>
+<tr>
+<td>4</td>
+<td>kro</td>
+<td>按<strong>依赖顺序</strong>创建<strong>底层资源</strong>（Deployment、Service 等），并<strong>持续管理</strong></td>
+</tr>
+</tbody></table>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/image-20260429100437067.png" alt="image-20260429100437067"></p>
+<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><ol>
+<li>Here’s an RGD that creates a new <code>Application</code> API. </li>
+<li>When users create an <code>Application</code>, kro automatically creates a <strong>Deployment</strong>:</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kro.run/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ResourceGraphDefinition</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">application</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">schema:</span></span><br><span class="line">    <span class="attr">apiVersion:</span> <span class="string">v1alpha1</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Application</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">string</span></span><br><span class="line">      <span class="attr">image:</span> <span class="string">string</span> <span class="string">|</span> <span class="string">default=&quot;nginx:latest&quot;</span></span><br><span class="line">      <span class="attr">replicas:</span> <span class="string">integer</span> <span class="string">|</span> <span class="string">default=3</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">      <span class="attr">template:</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line">        <span class="attr">metadata:</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">$&#123;schema.spec.name&#125;</span></span><br><span class="line">        <span class="attr">spec:</span></span><br><span class="line">          <span class="attr">replicas:</span> <span class="string">$&#123;schema.spec.replicas&#125;</span></span><br><span class="line">          <span class="attr">selector:</span></span><br><span class="line">            <span class="attr">matchLabels:</span></span><br><span class="line">              <span class="attr">app:</span> <span class="string">$&#123;schema.spec.name&#125;</span></span><br><span class="line">          <span class="attr">template:</span></span><br><span class="line">            <span class="attr">metadata:</span></span><br><span class="line">              <span class="attr">labels:</span></span><br><span class="line">                <span class="attr">app:</span> <span class="string">$&#123;schema.spec.name&#125;</span></span><br><span class="line">            <span class="attr">spec:</span></span><br><span class="line">              <span class="attr">containers:</span></span><br><span class="line">                <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">app</span></span><br><span class="line">                  <span class="attr">image:</span> <span class="string">$&#123;schema.spec.image&#125;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Users can now create applications:</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Application</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-app</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-app</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">nginx:1.27</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">5</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>kro will create and manage the Deployment <strong>automatically</strong>.</p>
+</blockquote>
+<h3 id="结构详解"><a href="#结构详解" class="headerlink" title="结构详解"></a>结构详解</h3><h4 id="整体结构"><a href="#整体结构" class="headerlink" title="整体结构"></a>整体结构</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│          ResourceGraphDefinition 结构                       │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  apiVersion: kro.run/v1alpha1                               │</span><br><span class="line">│  kind: ResourceGraphDefinition                              │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ metadata:        # 标准 K8s 元数据                    │   │</span><br><span class="line">│  │   - name                                             │   │</span><br><span class="line">│  │   - labels                                           │   │</span><br><span class="line">│  │   - annotations                                      │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ spec:             # 用户定义部分                      │   │</span><br><span class="line">│  │   ├── schema:     # 自定义 API                       │   │</span><br><span class="line">│  │   └── resources:  # 要创建的资源                      │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ status:          # kro 管理的状态                     │   │</span><br><span class="line">│  │   - conditions                                      │   │</span><br><span class="line">│  │   - state                                           │   │</span><br><span class="line">│  │   - topologicalOrder                                │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h4 id="各字段详解"><a href="#各字段详解" class="headerlink" title="各字段详解"></a>各字段详解</h4><h5 id="metadata-标准-K8s-元数据"><a href="#metadata-标准-K8s-元数据" class="headerlink" title="metadata - 标准 K8s 元数据"></a>metadata - 标准 K8s 元数据</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-application</span>              <span class="comment"># RGD 名称</span></span><br><span class="line">  <span class="attr">labels:</span>                           <span class="comment"># 标签</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line">    <span class="attr">env:</span> <span class="string">production</span></span><br><span class="line">  <span class="attr">annotations:</span>                      <span class="comment"># 注解</span></span><br><span class="line">    <span class="attr">description:</span> <span class="string">&quot;My application RGD&quot;</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>name</td>
+<td>string</td>
+<td>✅</td>
+<td>RGD 的<strong>唯一标识</strong></td>
+</tr>
+<tr>
+<td>labels</td>
+<td>map[string]string</td>
+<td>❌</td>
+<td>用于<strong>组织</strong>和<strong>选择</strong></td>
+</tr>
+<tr>
+<td>annotations</td>
+<td>map[string]string</td>
+<td>❌</td>
+<td>存储<strong>额外元数据</strong></td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    M[&quot;metadata&quot;] --&gt; N[&quot;name&lt;br/&gt;唯一标识&quot;]</span><br><span class="line">    M --&gt; L[&quot;labels&lt;br/&gt;组织分类&quot;]</span><br><span class="line">    M --&gt; A[&quot;annotations&lt;br/&gt;额外信息&quot;]</span><br><span class="line"></span><br><span class="line">    style M fill:#e3f2fd</span><br><span class="line">    style N fill:#fff3e0</span><br><span class="line">    style L fill:#fff3e0</span><br><span class="line">    style A fill:#fff3e0</span><br></pre></td></tr></table></figure>
+
+<h5 id="spec-schema-自定义-API-定义"><a href="#spec-schema-自定义-API-定义" class="headerlink" title="spec.schema - 自定义 API 定义"></a>spec.schema - 自定义 API 定义</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">schema:</span></span><br><span class="line">    <span class="attr">apiVersion:</span> <span class="string">v1alpha1</span>             <span class="comment"># 生成的 CRD 版本</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Application</span>                <span class="comment"># 生成的 CRD 类型名</span></span><br><span class="line"></span><br><span class="line">    <span class="attr">spec:</span>                            <span class="comment"># 用户可配置的字段</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">string</span></span><br><span class="line">      <span class="attr">image:</span> <span class="string">string</span> <span class="string">|</span> <span class="string">default=&quot;nginx&quot;</span></span><br><span class="line">      <span class="attr">replicas:</span> <span class="string">integer</span> <span class="string">|</span> <span class="string">default=3</span> <span class="string">|</span> <span class="string">min=1</span></span><br><span class="line"></span><br><span class="line">    <span class="attr">status:</span>                          <span class="comment"># kro 回写的状态</span></span><br><span class="line">      <span class="attr">availableReplicas:</span> <span class="string">$&#123;deployment.status.availableReplicas&#125;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              schema 结构                                    │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  apiVersion + kind                                          │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       ▼                                                     │</span><br><span class="line">│  定义生成的 CRD                                             │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────┐         ┌─────────────────┐           │</span><br><span class="line">│  │     spec        │  输入   │   用户填写       │           │</span><br><span class="line">│  │   (输入参数)     │ ──────▶ │   实例时         │           │</span><br><span class="line">│  └─────────────────┘         └─────────────────┘           │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────┐         ┌─────────────────┐           │</span><br><span class="line">│  │    status       │  输出   │   kro 回写       │           │</span><br><span class="line">│  │  (计算状态)      │ ──────▶ │   实例状态       │           │</span><br><span class="line">│  └─────────────────┘         └─────────────────┘           │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>schema 部分</th>
+<th>作用</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>apiVersion</td>
+<td>CRD 版本</td>
+<td>v1alpha1</td>
+</tr>
+<tr>
+<td>kind</td>
+<td>CRD 类型名</td>
+<td>Application</td>
+</tr>
+<tr>
+<td>spec</td>
+<td>用户输入字段</td>
+<td>name, image, replicas</td>
+</tr>
+<tr>
+<td>status</td>
+<td>kro 计算的输出</td>
+<td>availableReplicas</td>
+</tr>
+</tbody></table>
+<h5 id="spec-resources-资源定义"><a href="#spec-resources-资源定义" class="headerlink" title="spec.resources - 资源定义"></a>spec.resources - 资源定义</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span>                    <span class="comment"># 资源 ID</span></span><br><span class="line">      <span class="attr">template:</span>                         <span class="comment"># K8s 资源模板</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line">        <span class="attr">metadata:</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">$&#123;schema.spec.name&#125;</span></span><br><span class="line">        <span class="attr">spec:</span></span><br><span class="line">          <span class="attr">replicas:</span> <span class="string">$&#123;schema.spec.replicas&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">      <span class="attr">template:</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">        <span class="attr">metadata:</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">$&#123;schema.spec.name&#125;-svc</span></span><br><span class="line">        <span class="attr">spec:</span></span><br><span class="line">          <span class="attr">selector:</span> <span class="string">$&#123;deployment.spec.selector.matchLabels&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">ingress</span></span><br><span class="line">      <span class="attr">includeWhen:</span>                      <span class="comment"># 条件创建</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">$&#123;schema.spec.ingress.enabled&#125;</span></span><br><span class="line">      <span class="attr">template:</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">networking.k8s.io/v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line">        <span class="attr">metadata:</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">$&#123;schema.spec.name&#125;-ingress</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              resources 结构                                 │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ Resource Item                                        │   │</span><br><span class="line">│  │ ├─ id: 唯一标识符 (用于引用)                          │   │</span><br><span class="line">│  │ ├─ includeWhen: 条件表达式 (可选)                    │   │</span><br><span class="line">│  │ └─ template: K8s 资源模板                             │   │</span><br><span class="line">│  │    ├─ apiVersion                                     │   │</span><br><span class="line">│  │    ├─ kind                                           │   │</span><br><span class="line">│  │    ├─ metadata                                       │   │</span><br><span class="line">│  │    └─ spec                                           │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│                                                             │</span><br><span class="line">│  CEL 表达式连接:                                            │</span><br><span class="line">│  $&#123;schema.spec.*&#125;    ← 引用用户输入                          │</span><br><span class="line">│  $&#123;resource.id.*&#125;    ← 引用其他资源                          │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>✅</td>
+<td><strong>资源唯一标识</strong>，用于<strong>跨资源引用</strong></td>
+</tr>
+<tr>
+<td>includeWhen</td>
+<td>[]string</td>
+<td>❌</td>
+<td>条件表达式，<strong>满足时才创建</strong></td>
+</tr>
+<tr>
+<td>template</td>
+<td>object</td>
+<td>✅</td>
+<td>K8s 资源<strong>完整定义</strong></td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    R[&quot;Resource Item&quot;] --&gt; ID[&quot;id&lt;br/&gt;唯一标识&quot;]</span><br><span class="line">    R --&gt; Cond[&quot;includeWhen&lt;br/&gt;条件创建 (可选)&quot;]</span><br><span class="line">    R --&gt; Tmpl[&quot;template&lt;br/&gt;K8s 资源模板&quot;]</span><br><span class="line"></span><br><span class="line">    Tmpl --&gt; API[&quot;apiVersion&quot;]</span><br><span class="line">    Tmpl --&gt; Kind[&quot;kind&quot;]</span><br><span class="line">    Tmpl --&gt; Meta[&quot;metadata&quot;]</span><br><span class="line">    Tmpl --&gt; Spec[&quot;spec&quot;]</span><br><span class="line"></span><br><span class="line">    style R fill:#e3f2fd</span><br><span class="line">    style ID fill:#fff3e0</span><br><span class="line">    style Cond fill:#ffe082</span><br><span class="line">    style Tmpl fill:#c8e6c9</span><br></pre></td></tr></table></figure>
+
+<h5 id="status-kro-管理的状态"><a href="#status-kro-管理的状态" class="headerlink" title="status - kro 管理的状态"></a>status - kro 管理的状态</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">state:</span> <span class="string">Active</span>                       <span class="comment"># 总体状态</span></span><br><span class="line">  <span class="attr">conditions:</span>                         <span class="comment"># 详细条件</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">Ready</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;RGDActive&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;RGD is active&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">CRDInstalled</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;CRDCreated&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;CRD application is installed&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">topologicalOrder:</span>                   <span class="comment"># 拓扑排序</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">deployment</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">service</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">ingress</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              status 结构                                    │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────┐                                       │</span><br><span class="line">│  │     state       │  总体状态                              │</span><br><span class="line">│  │  (Active/Error) │                                       │</span><br><span class="line">│  └─────────────────┘                                       │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────┐                                       │</span><br><span class="line">│  │   conditions    │  详细条件数组                          │</span><br><span class="line">│  │  - Ready        │   • type: 条件类型                     │</span><br><span class="line">│  │  - CRDInstalled │   • status: True/False                │</span><br><span class="line">│  │  - Controller   │   • reason: 原因                       │</span><br><span class="line">│  │                 │   • message: 详情                      │</span><br><span class="line">│  └─────────────────┘                                       │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────┐                                       │</span><br><span class="line">│  │ topologicalOrder│  资源创建顺序                          │</span><br><span class="line">│  │  - deployment   │  (DAG 排序结果)                        │</span><br><span class="line">│  │  - service      │                                       │</span><br><span class="line">│  │  - ingress      │                                       │</span><br><span class="line">│  └─────────────────┘                                       │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>state</td>
+<td>string</td>
+<td><strong>总体状态</strong>: <strong>Active</strong>, <strong>Error</strong>, <strong>Pending</strong></td>
+</tr>
+<tr>
+<td>conditions</td>
+<td>[]Condition</td>
+<td>详细条件数组</td>
+</tr>
+<tr>
+<td>topologicalOrder</td>
+<td>[]string</td>
+<td>按 DAG 排序的资源 ID 列表</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    S[&quot;status&quot;] --&gt; St[&quot;state&lt;br/&gt;总体状态&quot;]</span><br><span class="line">    S --&gt; C[&quot;conditions&lt;br/&gt;详细条件&quot;]</span><br><span class="line">    S --&gt; TO[&quot;topologicalOrder&lt;br/&gt;创建顺序&quot;]</span><br><span class="line"></span><br><span class="line">    C --&gt; C1[&quot;Ready&quot;]</span><br><span class="line">    C --&gt; C2[&quot;CRDInstalled&quot;]</span><br><span class="line">    C --&gt; C3[&quot;ControllerReady&quot;]</span><br><span class="line"></span><br><span class="line">    TO --&gt; O1[&quot;deployment&quot;]</span><br><span class="line">    TO --&gt; O2[&quot;service&quot;]</span><br><span class="line">    TO --&gt; O3[&quot;ingress&quot;]</span><br><span class="line"></span><br><span class="line">    style S fill:#e3f2fd</span><br><span class="line">    style St fill:#fff3e0</span><br><span class="line">    style C fill:#c8e6c9</span><br><span class="line">    style TO fill:#f3e5f5</span><br></pre></td></tr></table></figure>
+
+<h4 id="字段所有权"><a href="#字段所有权" class="headerlink" title="字段所有权"></a>字段所有权</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph User[&quot;用户定义&quot;]</span><br><span class="line">        U1[&quot;metadata&quot;]</span><br><span class="line">        U2[&quot;spec.schema&quot;]</span><br><span class="line">        U3[&quot;spec.resources&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph KRO[&quot;kro 管理&quot;]</span><br><span class="line">        K1[&quot;status.state&quot;]</span><br><span class="line">        K2[&quot;status.conditions&quot;]</span><br><span class="line">        K3[&quot;status.topologicalOrder&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Output[&quot;kro 生成&quot;]</span><br><span class="line">        O1[&quot;自动创建的 CRD&quot;]</span><br><span class="line">        O2[&quot;专用 Controller&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    User --&gt; KRO</span><br><span class="line">    KRO --&gt; Output</span><br><span class="line"></span><br><span class="line">    style User fill:#e3f2fd</span><br><span class="line">    style KRO fill:#fff3e0</span><br><span class="line">    style Output fill:#c8e6c9</span><br></pre></td></tr></table></figure>
+
+
+
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>所有者</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>metadata</td>
+<td>用户</td>
+<td>用户定义和修改</td>
+</tr>
+<tr>
+<td>spec.schema</td>
+<td>用户</td>
+<td>用户定义 API</td>
+</tr>
+<tr>
+<td>spec.resources</td>
+<td>用户</td>
+<td>用户定义资源</td>
+</tr>
+<tr>
+<td>status</td>
+<td>kro</td>
+<td>kro 独占管理</td>
+</tr>
+</tbody></table>
+<h4 id="完整示例"><a href="#完整示例" class="headerlink" title="完整示例"></a>完整示例</h4><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kro.run/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ResourceGraphDefinition</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-application</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">    <span class="attr">apiVersion:</span> <span class="string">v1alpha1</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Application</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">string</span></span><br><span class="line">      <span class="attr">image:</span> <span class="string">string</span> <span class="string">|</span> <span class="string">default=&quot;nginx&quot;</span></span><br><span class="line">      <span class="attr">replicas:</span> <span class="string">integer</span> <span class="string">|</span> <span class="string">default=3</span></span><br><span class="line">    <span class="attr">status:</span></span><br><span class="line">      <span class="attr">availableReplicas:</span> <span class="string">$&#123;deployment.status.availableReplicas&#125;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">      <span class="attr">template:</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line">        <span class="attr">metadata:</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">$&#123;schema.spec.name&#125;</span></span><br><span class="line">        <span class="attr">spec:</span></span><br><span class="line">          <span class="attr">replicas:</span> <span class="string">$&#123;schema.spec.replicas&#125;</span></span><br><span class="line">          <span class="attr">template:</span></span><br><span class="line">            <span class="attr">spec:</span></span><br><span class="line">              <span class="attr">containers:</span></span><br><span class="line">                <span class="bullet">-</span> <span class="attr">image:</span> <span class="string">$&#123;schema.spec.image&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">      <span class="attr">template:</span></span><br><span class="line">        <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">        <span class="attr">spec:</span></span><br><span class="line">          <span class="attr">selector:</span> <span class="string">$&#123;deployment.spec.template.metadata.labels&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">state:</span> <span class="string">Active</span></span><br><span class="line">  <span class="attr">conditions:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">Ready</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;RGDActive&quot;</span></span><br><span class="line">  <span class="attr">topologicalOrder:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">deployment</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">service</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><table>
+<thead>
+<tr>
+<th>部分</th>
+<th>所有者</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>metadata</td>
+<td>用户</td>
+<td>标识和组织 RGD</td>
+</tr>
+<tr>
+<td>spec.schema</td>
+<td>用户</td>
+<td>定义生成的 <strong>API</strong></td>
+</tr>
+<tr>
+<td>spec.resources</td>
+<td>用户</td>
+<td>定义要管理的<strong>资源</strong></td>
+</tr>
+<tr>
+<td>status</td>
+<td>kro</td>
+<td>反映<strong>当前状态</strong></td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              RGD 数据流                                     │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  用户定义 ──────▶ kro 处理 ──────▶ 状态输出                  │</span><br><span class="line">│  metadata        分析依赖          status                    │</span><br><span class="line">│  spec            生成 CRD                                  │</span><br><span class="line">│                  部署 controller                            │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="KRO-处理-RGD-详解"><a href="#KRO-处理-RGD-详解" class="headerlink" title="KRO 处理 RGD 详解"></a>KRO 处理 RGD 详解</h3><p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/rgd-validation-0df045230845d0a26a4b1e13c7b4a78e.svg" alt="rgd-validation-0df045230845d0a26a4b1e13c7b4a78e"></p>
+<h4 id="RGD-验证流程总览"><a href="#RGD-验证流程总览" class="headerlink" title="RGD 验证流程总览"></a>RGD 验证流程总览</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    Input[&quot;用户创建 RGD&quot;]</span><br><span class="line"></span><br><span class="line">    Validate[&quot;静态分析与验证&quot;]</span><br><span class="line"></span><br><span class="line">    V1[&quot;Schema 验证&quot;]</span><br><span class="line">    V2[&quot;CRD 验证&quot;]</span><br><span class="line">    V3[&quot;CEL 类型检查&quot;]</span><br><span class="line">    V4[&quot;依赖推断&quot;]</span><br><span class="line"></span><br><span class="line">    Pass[&quot;✅ 验证通过&quot;]</span><br><span class="line"></span><br><span class="line">    Gen[&quot;生成 CRD 和 Controller&quot;]</span><br><span class="line"></span><br><span class="line">    Active[&quot;🟢 RGD Active&quot;]</span><br><span class="line"></span><br><span class="line">    Fail[&quot;❌ 验证失败&quot;]</span><br><span class="line"></span><br><span class="line">    Input --&gt; Validate</span><br><span class="line">    Validate --&gt; V1</span><br><span class="line">    Validate --&gt; V2</span><br><span class="line">    Validate --&gt; V3</span><br><span class="line">    Validate --&gt; V4</span><br><span class="line"></span><br><span class="line">    V1 --&gt; Check&#123;全部通过?&#125;</span><br><span class="line">    V2 --&gt; Check</span><br><span class="line">    V3 --&gt; Check</span><br><span class="line">    V4 --&gt; Check</span><br><span class="line"></span><br><span class="line">    Check --&gt;|是| Pass</span><br><span class="line">    Check --&gt;|否| Fail</span><br><span class="line"></span><br><span class="line">    Pass --&gt; Gen --&gt; Active</span><br><span class="line"></span><br><span class="line">    style Input fill:#e3f2fd</span><br><span class="line">    style Validate fill:#fff3e0</span><br><span class="line">    style Pass fill:#c8e6c9</span><br><span class="line">    style Fail fill:#ffcdd2</span><br><span class="line">    style Active fill:#81c784</span><br></pre></td></tr></table></figure>
+
+<h4 id="静态分析与验证"><a href="#静态分析与验证" class="headerlink" title="静态分析与验证"></a>静态分析与验证</h4><h5 id="Schema-验证"><a href="#Schema-验证" class="headerlink" title="Schema 验证"></a>Schema 验证</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 确保 Schema 遵循 SimpleSchema 格式</span></span><br><span class="line"><span class="attr">schema:</span></span><br><span class="line">  <span class="attr">apiVersion:</span> <span class="string">v1alpha1</span></span><br><span class="line">  <span class="attr">kind:</span> <span class="string">Application</span></span><br><span class="line">  <span class="attr">spec:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">string</span>                    <span class="comment"># ✅ 正确格式</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="string">integer</span> <span class="string">|</span> <span class="string">default=3</span>   <span class="comment"># ✅ 正确格式</span></span><br><span class="line">    <span class="attr">count:</span> <span class="string">int</span>                      <span class="comment"># ❌ 错误: 应为 integer</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              Schema 验证规则                                 │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  ✅ 允许的类型:                                              │</span><br><span class="line">│  • string, integer, boolean, number, object, array          │</span><br><span class="line">│  • 默认值: | default=value                                   │</span><br><span class="line">│  • 约束: | min=value, max=value, pattern=regex              │</span><br><span class="line">│  • 必填: | required                                          │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ❌ 常见错误:                                               │</span><br><span class="line">│  • 使用简写类型 (int → integer)                             │</span><br><span class="line">│  • 无效的约束条件                                            │</span><br><span class="line">│  • 必填字段无默认值                                          │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="CRD-验证"><a href="#CRD-验证" class="headerlink" title="CRD 验证"></a>CRD 验证</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">resources:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">apiVersion:</span> <span class="string">apps/v1</span>            <span class="comment"># ✅ 核心 K8s API，总是存在</span></span><br><span class="line">      <span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">      <span class="attr">kind:</span> <span class="string">Service</span>                 <span class="comment"># ✅ 核心 K8s API</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">bucket</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">apiVersion:</span> <span class="string">s3.services.k8s.aws/v1alpha1</span>  <span class="comment"># 需要验证</span></span><br><span class="line">      <span class="attr">kind:</span> <span class="string">Bucket</span>                              <span class="comment"># ✅ 如果 ACK 已安装</span></span><br><span class="line">                                                <span class="comment"># ❌ 如果 ACK 未安装</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              CRD 验证流程                                   │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  遍历每个资源模板:                                          │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       ▼                                                     │</span><br><span class="line">│  提取 apiVersion 和 kind                                    │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       ▼                                                     │</span><br><span class="line">│  检查是否为核心 K8s 资源                                    │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       ├── 是 → ✅ 跳过                                      │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       └── 否 → 查询集群中的 CRD                             │</span><br><span class="line">│                   │                                         │</span><br><span class="line">│                   ├── 存在 → ✅ 通过                         │</span><br><span class="line">│                   │                                         │</span><br><span class="line">│                   └── 不存在 → ❌ 拒绝                       │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="CEL-类型检查"><a href="#CEL-类型检查" class="headerlink" title="CEL 类型检查"></a>CEL 类型检查</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">schema:</span></span><br><span class="line">  <span class="attr">spec:</span></span><br><span class="line">    <span class="attr">replicas:</span> <span class="string">integer</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">string</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="string">boolean</span></span><br><span class="line"></span><br><span class="line"><span class="attr">resources:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">spec:</span></span><br><span class="line">        <span class="attr">replicas:</span> <span class="string">&quot;$&#123;schema.spec.replicas&#125;&quot;</span>      <span class="comment"># ✅ integer → integer</span></span><br><span class="line">        <span class="attr">image:</span> <span class="string">&quot;$&#123;schema.spec.image&#125;&quot;</span>            <span class="comment"># ✅ string → string</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">spec:</span></span><br><span class="line">        <span class="attr">ports:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">port:</span> <span class="string">&quot;$&#123;schema.spec.enabled&#125;&quot;</span>       <span class="comment"># ❌ boolean → integer 错误</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              CEL 类型检查                                   │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  检查项目:                                                  │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ 1. 引用字段存在于实际 Schema 中                      │   │</span><br><span class="line">│  │    $&#123;schema.spec.replicas&#125;  → replicas 存在? ✅       │   │</span><br><span class="line">│  │    $&#123;schema.spec.unknown&#125;   → unknown 不存在? ❌     │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ 2. 表达式输出类型匹配目标字段类型                     │   │</span><br><span class="line">│  │    replicas: integer  ← &quot;$&#123;schema.spec.replicas&#125;&quot;   │   │</span><br><span class="line">│  │         │                    │                      │   │</span><br><span class="line">│  │    integer ────────────────── integer ✅             │   │</span><br><span class="line">│  │         │                    │                      │   │</span><br><span class="line">│  │    integer ────────────────── string ❌             │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│                                                             │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────┐   │</span><br><span class="line">│  │ 3. 表达式语法正确性                                   │   │</span><br><span class="line">│  │    &quot;$&#123;schema.spec.name&#125;&quot;           ✅               │   │</span><br><span class="line">│  │    &quot;$&#123;schema.spec.name + suffix&#125;&quot;  ✅               │   │</span><br><span class="line">│  │    &quot;$&#123;schema.spec.name&quot;             ❌ 缺少 &#125;        │   │</span><br><span class="line">│  └─────────────────────────────────────────────────────┘   │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="依赖推断"><a href="#依赖推断" class="headerlink" title="依赖推断"></a>依赖推断</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">resources:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">configmap</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">metadata:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">$&#123;schema.metadata.name&#125;-cm</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">spec:</span></span><br><span class="line">        <span class="attr">containers:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">envFrom:</span></span><br><span class="line">              <span class="bullet">-</span> <span class="attr">configMapRef:</span></span><br><span class="line">                  <span class="attr">name:</span> <span class="string">$&#123;configmap.metadata.name&#125;</span>  <span class="comment"># 依赖 configmap</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">    <span class="attr">template:</span></span><br><span class="line">      <span class="attr">spec:</span></span><br><span class="line">        <span class="attr">selector:</span> <span class="string">$&#123;deployment.spec.selector.matchLabels&#125;</span>  <span class="comment"># 依赖 deployment</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              依赖推断结果                                   │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  kro 分析 CEL 表达式:                                       │</span><br><span class="line">│                                                             │</span><br><span class="line">│  deployment 引用 $&#123;configmap.metadata.name&#125;                 │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       └──→ deployment 依赖 configmap                        │</span><br><span class="line">│                                                             │</span><br><span class="line">│  service 引用 $&#123;deployment.spec.selector.matchLabels&#125;       │</span><br><span class="line">│       │                                                     │</span><br><span class="line">│       └──→ service 依赖 deployment                          │</span><br><span class="line">│                                                             │</span><br><span class="line">│  构建依赖图:                                                │</span><br><span class="line">│                                                             │</span><br><span class="line">│     configmap ──▶ deployment ──▶ service                    │</span><br><span class="line">│                                                             │</span><br><span class="line">│  拓扑排序结果:                                              │</span><br><span class="line">│  status.topologicalOrder = [&quot;configmap&quot;, &quot;deployment&quot;, &quot;service&quot;] │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h4 id="自动依赖管理"><a href="#自动依赖管理" class="headerlink" title="自动依赖管理"></a>自动依赖管理</h4><h5 id="依赖图的用途"><a href="#依赖图的用途" class="headerlink" title="依赖图的用途"></a>依赖图的用途</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph DAG[&quot;依赖图 DAG&quot;]</span><br><span class="line">        A[&quot;configmap&quot;]</span><br><span class="line">        B[&quot;deployment&quot;]</span><br><span class="line">        C[&quot;service&quot;]</span><br><span class="line"></span><br><span class="line">        A --&gt; B</span><br><span class="line">        B --&gt; C</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Uses[&quot;用途&quot;]</span><br><span class="line">        U1[&quot;计算创建顺序&quot;]</span><br><span class="line">        U2[&quot;计算删除顺序&quot;]</span><br><span class="line">        U3[&quot;检测循环依赖&quot;]</span><br><span class="line">        U4[&quot;显示顺序&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    DAG --&gt; Uses</span><br><span class="line"></span><br><span class="line">    style DAG fill:#e3f2fd</span><br><span class="line">    style Uses fill:#fff3e0</span><br></pre></td></tr></table></figure>
+
+<h5 id="创建与删除顺序"><a href="#创建与删除顺序" class="headerlink" title="创建与删除顺序"></a>创建与删除顺序</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              创建顺序 (拓扑序)                              │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  依赖图: A → B → C                                          │</span><br><span class="line">│                                                             │</span><br><span class="line">│  创建顺序:                                                  │</span><br><span class="line">│  1. A (无依赖)                                              │</span><br><span class="line">│  2. B (依赖 A)                                              │</span><br><span class="line">│  3. C (依赖 B)                                              │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              删除顺序 (逆拓扑序)                            │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  依赖图: A → B → C                                          │</span><br><span class="line">│                                                             │</span><br><span class="line">│  删除顺序:                                                  │</span><br><span class="line">│  1. C (被其他依赖最少)                                      │</span><br><span class="line">│  2. B                                                       │</span><br><span class="line">│  3. A (被其他依赖最多)                                      │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="循环依赖检测"><a href="#循环依赖检测" class="headerlink" title="循环依赖检测"></a>循环依赖检测</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              循环依赖检测                                   │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  正常 DAG:                                                 │</span><br><span class="line">│     A ──▶ B ──▶ C                                          │</span><br><span class="line">│     ✅ 可以拓扑排序                                         │</span><br><span class="line">│                                                             │</span><br><span class="line">│  循环依赖:                                                  │</span><br><span class="line">│     A ──▶ B                                                 │</span><br><span class="line">│     ▲    │                                                  │</span><br><span class="line">│     └────┘                                                  │</span><br><span class="line">│     ❌ 无法拓扑排序                                         │</span><br><span class="line">│     ❌ kro 拒绝 RGD                                         │</span><br><span class="line">│                                                             │</span><br><span class="line">│  检测时机: RGD 创建时                                       │</span><br><span class="line">│  错误信息: &quot;circular dependency detected: A ↔ B&quot;            │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h4 id="生成的-CRD-和-Controller"><a href="#生成的-CRD-和-Controller" class="headerlink" title="生成的 CRD 和 Controller"></a>生成的 CRD 和 Controller</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    RGD[&quot;RGD 验证通过&quot;]</span><br><span class="line"></span><br><span class="line">    GenCRD[&quot;生成 CRD&quot;]</span><br><span class="line">    RegCRD[&quot;注册到 API Server&quot;]</span><br><span class="line"></span><br><span class="line">    GenCtrl[&quot;配置动态 Controller&quot;]</span><br><span class="line">    Watch[&quot;监听实例&quot;]</span><br><span class="line"></span><br><span class="line">    Manage[&quot;生命周期管理&quot;]</span><br><span class="line"></span><br><span class="line">    RGD --&gt; GenCRD --&gt; RegCRD</span><br><span class="line">    RGD --&gt; GenCtrl --&gt; Watch --&gt; Manage</span><br><span class="line"></span><br><span class="line">    Manage --&gt; M1[&quot;按依赖顺序创建&quot;]</span><br><span class="line">    Manage --&gt; M2[&quot;评估 CEL 表达式&quot;]</span><br><span class="line">    Manage --&gt; M3[&quot;更新状态&quot;]</span><br><span class="line">    Manage --&gt; M4[&quot;处理删除&quot;]</span><br><span class="line"></span><br><span class="line">    style RGD fill:#e3f2fd</span><br><span class="line">    style GenCRD fill:#fff3e0</span><br><span class="line">    style GenCtrl fill:#f3e5f5</span><br><span class="line">    style Manage fill:#c8e6c9</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><u>CRD 生成</u></td>
+<td>根据 <strong>schema</strong> 创建 <strong>CustomResourceDefinition</strong></td>
+</tr>
+<tr>
+<td><u>注册 API</u></td>
+<td>将 <strong>CRD</strong> 注册到 <strong>Kubernetes API Server</strong></td>
+</tr>
+<tr>
+<td><u>动态 Controller</u></td>
+<td>配置 <strong>kro 监听新 API 的实例</strong></td>
+</tr>
+<tr>
+<td><u>生命周期管理</u></td>
+<td>创建、更新、删除<strong>底层资源</strong></td>
+</tr>
+</tbody></table>
+<h4 id="RGD-状态条件"><a href="#RGD-状态条件" class="headerlink" title="RGD 状态条件"></a>RGD 状态条件</h4><h5 id="五种状态条件"><a href="#五种状态条件" class="headerlink" title="五种状态条件"></a>五种状态条件</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              RGD 状态条件                                   │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│                     Ready (聚合状态)                        │</span><br><span class="line">│                          │                                 │</span><br><span class="line">│        ┌─────────────────┼─────────────────┐               │</span><br><span class="line">│        ▼                 ▼                 ▼               │</span><br><span class="line">│  GraphRevisions   GraphAccepted       KindReady           │</span><br><span class="line">│  Resolved                            ControllerReady       │</span><br><span class="line">│                                                             │</span><br><span class="line">│  全部为 True → Ready = True                                │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="条件详解"><a href="#条件详解" class="headerlink" title="条件详解"></a>条件详解</h5><table>
+<thead>
+<tr>
+<th>条件</th>
+<th>说明</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><u>Ready</u></td>
+<td><strong>聚合状态</strong>，只有当以下<strong>全部为 True</strong> 时才为 <strong>True</strong></td>
+<td>True &#x2F; False &#x2F; Unknown</td>
+</tr>
+<tr>
+<td><u>GraphRevisionsResolved</u></td>
+<td><strong>图版本</strong>已 <strong>settles</strong>，最新版本已<strong>编译</strong>并<strong>激活</strong></td>
+<td>True &#x2F; False &#x2F; Unknown</td>
+</tr>
+<tr>
+<td><u>GraphAccepted</u></td>
+<td>kro <strong>接受</strong>当前<strong>图</strong>的<strong>最新版本路径</strong></td>
+<td>True &#x2F; False</td>
+</tr>
+<tr>
+<td><u>KindReady</u></td>
+<td>生成的 <strong>CRD</strong> 已被 <strong>Kubernetes API Server</strong> 接受</td>
+<td>True &#x2F; False</td>
+</tr>
+<tr>
+<td><u>ControllerReady</u></td>
+<td><strong>kro</strong> 成功注册了<strong>动态 controller</strong></td>
+<td>True &#x2F; False</td>
+</tr>
+</tbody></table>
+<h5 id="状态状态"><a href="#状态状态" class="headerlink" title="状态状态"></a>状态状态</h5><blockquote>
+<p><u>GraphAccepted</u> + <u>KindReady</u> + <u>ControllerReady</u></p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    Check[&quot;检查条件&quot;]</span><br><span class="line"></span><br><span class="line">    GA&#123;&quot;GraphAccepted?&quot;&#125;</span><br><span class="line">    KR&#123;&quot;KindReady?&quot;&#125;</span><br><span class="line">    CR&#123;&quot;ControllerReady?&quot;&#125;</span><br><span class="line"></span><br><span class="line">    Active[&quot;🟢 Active&lt;br/&gt;RGD 可用&quot;]</span><br><span class="line">    Inactive[&quot;🔴 Inactive&lt;br/&gt;RGD 不可用&quot;]</span><br><span class="line"></span><br><span class="line">    Check --&gt; GA</span><br><span class="line">    GA --&gt;|True| KR</span><br><span class="line">    GA --&gt;|False| Inactive</span><br><span class="line"></span><br><span class="line">    KR --&gt;|True| CR</span><br><span class="line">    KR --&gt;|False| Inactive</span><br><span class="line"></span><br><span class="line">    CR --&gt;|True| Active</span><br><span class="line">    CR --&gt;|False| Inactive</span><br><span class="line"></span><br><span class="line">    style Active fill:#c8e6c9</span><br><span class="line">    style Inactive fill:#ffcdd2</span><br></pre></td></tr></table></figure>
+
+<h5 id="查看状态"><a href="#查看状态" class="headerlink" title="查看状态"></a>查看状态</h5><blockquote>
+<p>kubectl get rgd my-application -o yaml</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">state:</span> <span class="string">Active</span></span><br><span class="line">  <span class="attr">conditions:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">Ready</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;RGDActive&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;RGD is active and serving&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">GraphRevisionsResolved</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;GraphCompiled&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;Latest graph revision is compiled&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">GraphAccepted</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;GraphValid&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;Graph is valid and accepted&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">KindReady</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;CRDInstalled&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;CRD is installed and accepted&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">ControllerReady</span></span><br><span class="line">      <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">      <span class="attr">reason:</span> <span class="string">&quot;ControllerRegistered&quot;</span></span><br><span class="line">      <span class="attr">message:</span> <span class="string">&quot;Dynamic controller is registered&quot;</span></span><br><span class="line">  <span class="attr">topologicalOrder:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">deployment</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">service</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">ingress</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>本机实际数据</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">conditions:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">lastTransitionTime:</span> <span class="string">&quot;2026-04-28T12:58:19Z&quot;</span></span><br><span class="line">    <span class="attr">message:</span> <span class="string">resource</span> <span class="string">graph</span> <span class="string">and</span> <span class="string">schema</span> <span class="string">are</span> <span class="string">valid</span></span><br><span class="line">    <span class="attr">observedGeneration:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">reason:</span> <span class="string">Valid</span></span><br><span class="line">    <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">GraphAccepted</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">lastTransitionTime:</span> <span class="string">&quot;2026-04-28T12:58:19Z&quot;</span></span><br><span class="line">    <span class="attr">message:</span> <span class="string">revision</span> <span class="number">1</span> <span class="string">compiled</span> <span class="string">and</span> <span class="string">active</span></span><br><span class="line">    <span class="attr">observedGeneration:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">reason:</span> <span class="string">Resolved</span></span><br><span class="line">    <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">GraphRevisionsResolved</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">lastTransitionTime:</span> <span class="string">&quot;2026-04-28T12:58:19Z&quot;</span></span><br><span class="line">    <span class="attr">message:</span> <span class="string">kind</span> <span class="string">Application</span> <span class="string">has</span> <span class="string">been</span> <span class="string">accepted</span> <span class="string">and</span> <span class="string">ready</span></span><br><span class="line">    <span class="attr">observedGeneration:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">reason:</span> <span class="string">Ready</span></span><br><span class="line">    <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">KindReady</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">lastTransitionTime:</span> <span class="string">&quot;2026-04-28T12:58:20Z&quot;</span></span><br><span class="line">    <span class="attr">message:</span> <span class="string">controller</span> <span class="string">is</span> <span class="string">running</span></span><br><span class="line">    <span class="attr">observedGeneration:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">reason:</span> <span class="string">Running</span></span><br><span class="line">    <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">ControllerReady</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">lastTransitionTime:</span> <span class="string">&quot;2026-04-28T12:58:20Z&quot;</span></span><br><span class="line">    <span class="attr">message:</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="attr">observedGeneration:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">reason:</span> <span class="string">Ready</span></span><br><span class="line">    <span class="attr">status:</span> <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">Ready</span></span><br><span class="line">  <span class="attr">lastIssuedRevision:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">dependencies:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">deployment</span></span><br><span class="line">    <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">dependencies:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">service</span></span><br><span class="line">    <span class="attr">id:</span> <span class="string">ingress</span></span><br><span class="line">  <span class="attr">state:</span> <span class="string">Active</span></span><br><span class="line">  <span class="attr">topologicalOrder:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deployment</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">service</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">ingress</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>状态</th>
+<th>原因</th>
+<th>消息</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ready</td>
+<td>True</td>
+<td>Ready</td>
+<td>-</td>
+</tr>
+<tr>
+<td>GraphRevisionsResolved</td>
+<td>True</td>
+<td>Resolved</td>
+<td>revision 1 <strong>compiled</strong> and <strong>active</strong></td>
+</tr>
+<tr>
+<td>GraphAccepted</td>
+<td>True</td>
+<td>Valid</td>
+<td>resource <strong>graph</strong> and <strong>schema</strong> are valid</td>
+</tr>
+<tr>
+<td>KindReady</td>
+<td>True</td>
+<td>Ready</td>
+<td>kind Application has been <strong>accepted</strong> and <strong>ready</strong></td>
+</tr>
+<tr>
+<td>ControllerReady</td>
+<td>True</td>
+<td>Running</td>
+<td>controller is running</td>
+</tr>
+</tbody></table>
+<h4 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h4><h5 id="支持的注解"><a href="#支持的注解" class="headerlink" title="支持的注解"></a>支持的注解</h5><table>
+<thead>
+<tr>
+<th>注解</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>kro.run&#x2F;<u>allow-breaking-changes</u></td>
+<td>允许通常会被阻止的<strong>破坏性变更</strong></td>
+</tr>
+</tbody></table>
+<h5 id="破坏性变更检测"><a href="#破坏性变更检测" class="headerlink" title="破坏性变更检测"></a>破坏性变更检测</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│              破坏性变更类型 (Schema 部分)                    │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                             │</span><br><span class="line">│  1. 字段移除                                                │</span><br><span class="line">│     schema.spec.oldField  ❌ 被删除                         │</span><br><span class="line">│                                                             │</span><br><span class="line">│  2. 类型变更                                                │</span><br><span class="line">│     replicas: integer → string  ❌                         │</span><br><span class="line">│                                                             │</span><br><span class="line">│  3. 新增必填字段且无默认值                                  │</span><br><span class="line">│     newField: string | required  ❌                        │</span><br><span class="line">│                                                             │</span><br><span class="line">│  4. 枚举限制                                                │</span><br><span class="line">│     env: string | values=[dev, prod]  ❌                   │</span><br><span class="line">│                                                             │</span><br><span class="line">│  5. 模式变更                                                │</span><br><span class="line">│     name: string | pattern=^[a-z]+$  ❌                    │</span><br><span class="line">│                                                             │</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h5 id="强制破坏性变更"><a href="#强制破坏性变更" class="headerlink" title="强制破坏性变更"></a>强制破坏性变更</h5><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kro.run/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ResourceGraphDefinition</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-rgd</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">kro.run/allow-breaking-changes:</span> <span class="string">&quot;true&quot;</span>  <span class="comment"># ⚠️ 谨慎使用</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">schema:</span></span><br><span class="line">    <span class="comment"># 破坏性变更...</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph Impact[&quot;破坏性变更影响&quot;]</span><br><span class="line">        direction TB</span><br><span class="line">        I1[&quot;现有实例变为无效&quot;]</span><br><span class="line">        I2[&quot;实例无法正常更新&quot;]</span><br><span class="line">        I3[&quot;需要手动迁移数据&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Recommendation[&quot;建议&quot;]</span><br><span class="line">        direction TB</span><br><span class="line">        R1[&quot;创建新版本的 RGD&quot;]</span><br><span class="line">        R2[&quot;逐步迁移现有实例&quot;]</span><br><span class="line">        R3[&quot;确认无问题后删除旧 RGD&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    Impact --&gt; Recommendation</span><br><span class="line"></span><br><span class="line">    style Impact fill:#ffcdd2</span><br><span class="line">    style Recommendation fill:#c8e6c9</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph Input[&quot;输入&quot;]</span><br><span class="line">        I1[&quot;RGD YAML&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Validation[&quot;验证&quot;]</span><br><span class="line">        V1[&quot;Schema 验证&quot;]</span><br><span class="line">        V2[&quot;CRD 验证&quot;]</span><br><span class="line">        V3[&quot;CEL 检查&quot;]</span><br><span class="line">        V4[&quot;依赖推断&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Generation[&quot;生成&quot;]</span><br><span class="line">        G1[&quot;CRD&quot;]</span><br><span class="line">        G2[&quot;Controller&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph Status[&quot;状态&quot;]</span><br><span class="line">        S1[&quot;5 个条件&quot;]</span><br><span class="line">        S2[&quot;Active/Inactive&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    I1 --&gt; Validation</span><br><span class="line">    Validation --&gt; Generation</span><br><span class="line">    Generation --&gt; Status</span><br><span class="line"></span><br><span class="line">    style Input fill:#e3f2fd</span><br><span class="line">    style Validation fill:#fff3e0</span><br><span class="line">    style Generation fill:#f3e5f5</span><br><span class="line">    style Status fill:#c8e6c9</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>动作</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><u>输入</u></td>
+<td><strong>用户</strong>提交 <strong>RGD YAML</strong></td>
+<td>-</td>
+</tr>
+<tr>
+<td><u>验证</u></td>
+<td><strong>静态分析</strong></td>
+<td>错误或通过</td>
+</tr>
+<tr>
+<td><u>生成</u></td>
+<td>创建 <strong>CRD</strong> 和 <strong>Controller</strong></td>
+<td>可用 <strong>API</strong></td>
+</tr>
+<tr>
+<td><u>状态</u></td>
+<td>持续报告条件</td>
+<td>Ready 状态</td>
+</tr>
+</tbody></table>
+<h3 id="RGD-提供的核心价值"><a href="#RGD-提供的核心价值" class="headerlink" title="RGD 提供的核心价值"></a>RGD 提供的核心价值</h3><blockquote>
+<p>RGD &#x3D; <strong>预先验证</strong>的<strong>多资源模板</strong>，<strong>自动处理依赖</strong>，可<strong>反复使用</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><u>类型安全</u></td>
+<td>创建 <strong>RGD</strong> 时验证所有 <strong>CEL 表达式类型</strong>是否匹配</td>
+</tr>
+<tr>
+<td><u>依赖管理</u></td>
+<td>kro <strong>自动分析</strong>资源依赖关系，确定创建顺序</td>
+</tr>
+<tr>
+<td><u>验证</u></td>
+<td>用户填写错误值时立即反馈，不会等到<strong>运行时</strong>才发现</td>
+</tr>
+<tr>
+<td><u>可复用性</u></td>
+<td><strong>定义一次</strong>，团队内可以<strong>多次使用</strong></td>
+</tr>
+</tbody></table>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/04/29/k8s-orchestration-kro-v2/">https://blog.zhongmingmao.top/2026/04/29/k8s-orchestration-kro-v2/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/cloud-native/">Cloud Native</a><a class="post-meta__tags" href="/tags/kubernetes/">Kubernetes</a><a class="post-meta__tags" href="/tags/orchestration/">Orchestration</a></div><div class="post-share"><div class="social-share" data-image="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/28/k8s-orchestration-kro-v1/" title="K8S Orchestration - KRO V1"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kro.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">K8S Orchestration - KRO V1</div></div><div class="info-2"><div class="info-item-1">概述 KRO 是 Kubernetes SIG Cloud Provider 下的子项目，旨在简化 Kubernetes 中复杂自定义资源的创建和管理  核心概念 KRO 的核心自定义资源是 ResourceGraphDefinition - RGD，它允许你：   将多个 Kubernetes 资源组合成一个可复用的组件 定义资源之间的依赖关系 为这些资源提供默认配置    工作原理123456789101112131415161718192021222324252627282930313233343536373839flowchart TB    subgraph User[&quot;用户层&quot;]        A[&quot;📝 ResourceGraphDefinition&lt;br/&gt;(RGD)&quot;]        B[&quot;创建资源实例&quot;]    end    subgraph KRO[&quot;KRO 控制层&quot;]        C[&quot;🔄 KRO Controller&quot;]        D[&quot;🔍 分析依...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/28/k8s-orchestration-kro-v1/" title="K8S Orchestration - KRO V1"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kro.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-28</div><div class="info-item-2">K8S Orchestration - KRO V1</div></div><div class="info-2"><div class="info-item-1">概述 KRO 是 Kubernetes SIG Cloud Provider 下的子项目，旨在简化 Kubernetes 中复杂自定义资源的创建和管理  核心概念 KRO 的核心自定义资源是 ResourceGraphDefinition - RGD，它允许你：   将多个 Kubernetes 资源组合成一个可复用的组件 定义资源之间的依赖关系 为这些资源提供默认配置    工作原理123456789101112131415161718192021222324252627282930313233343536373839flowchart TB    subgraph User[&quot;用户层&quot;]        A[&quot;📝 ResourceGraphDefinition&lt;br/&gt;(RGD)&quot;]        B[&quot;创建资源实例&quot;]    end    subgraph KRO[&quot;KRO 控制层&quot;]        C[&quot;🔄 KRO Controller&quot;]        D[&quot;🔍 分析依...</div></div></div></a><a class="pagination-related" href="/2021/06/06/k8s-container-basic-namespace-cgroups/" title="容器基础 -- Namespace &amp; Cgroups"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-10.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2021-06-06</div><div class="info-item-2">容器基础 -- Namespace &amp; Cgroups</div></div><div class="info-2"><div class="info-item-1">VM vs Container  Hypervisor 通过硬件虚拟化，模拟出一个操作系统所需要的各种硬件，然后在虚拟的硬件上安装Guest OS 对应用进程的隔离环境负责 额外的资源消耗和占用 使用虚拟化技术作为应用沙盒，必须由Hypervisor来负责创建VM，该VM是真实存在的且里面运行一个完整的Guest OS     Docker Engine 『轻量级』虚拟化 不存在真正的『Docker容器』运行在宿主机里面，Docker只是在创建进程时，加上各种不同的Namespace参数 真正对隔离环境负责的是宿主机操作系统，而非Docker Engine 容器化后的用户应用，依然还是宿主机上的普通进程 相对于VM的优势：敏捷 + 高性能 基于Linux Namespace劣势：隔离不彻底 多个容器之间使用的还是同一个宿主机的操作系统内核 低版本的Linux宿主机不能运行高版本的Linux容器 容器给应用暴露出来的攻击面是很大的 – Seccomp（对容器内部发起的系统调用做过滤拦截，影响容器性能）   在Linux内核中，很多资源和对象是不能被Namespace化的，如时间        Namesp...</div></div></div></a><a class="pagination-related" href="/2022/07/15/cloud-native-foundation-k8s-deprecating-docker/" title="Kubernetes - Deprecating Docker"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-22.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-07-15</div><div class="info-item-2">Kubernetes - Deprecating Docker</div></div><div class="info-2"><div class="info-item-1">  </div></div></div></a><a class="pagination-related" href="/2022/10/25/cloud-native-foundation-k8s-deployment/" title="Kubernetes - Deployment"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/Kubernetes-Deployments-Rolling-Update-Configuration.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-10-25</div><div class="info-item-2">Kubernetes - Deployment</div></div><div class="info-2"><div class="info-item-1">API1234567$ k api-resources --api-group=appsNAME                  SHORTNAMES   APIVERSION   NAMESPACED   KINDcontrollerrevisions                apps/v1      true         ControllerRevisiondaemonsets            ds           apps/v1      true         DaemonSetdeployments           deploy       apps/v1      true         Deploymentreplicasets           rs           apps/v1      true         ReplicaSetstatefulsets          sts          apps/v1      true         StatefulSet    YAML12345678910111213141516171819...</div></div></div></a><a class="pagination-related" href="/2023/02/09/cloud-native-serverless-faas-cold-start/" title="FaaS - Cold Start"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://serverless-1253868755.cos.ap-guangzhou.myqcloud.com/foundation/faas-cold-start.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2023-02-09</div><div class="info-item-2">FaaS - Cold Start</div></div><div class="info-2"><div class="info-item-1">触发时机 类似于 LoadingCache   首次请求 容器实例在服务请求后被回收    启动过程 容器创建 当所有容器实例都在处理请求时，需要向集群申请创建新的容器 函数计算平台会支持多种语言的运行时 这些运行时一般来说会打包成一个镜像，然后以 DeamonSet 的方式运行在 Kubernetes 中 在冷启动时，会根据不同的参数请求，动态挂载所需的运行时到对应的运行路径    代码包 &#x2F; 层依赖 是整个冷启动耗时比较长的过程 函数计算本身不具备持久化的能力，代码包和层依赖通常都是从其它存储服务端拉取 代码包通常是压缩包的形式，下载到本地后，再解压  环境变量 &#x2F; 参数文件 耗时相对较短 主流的函数计算平台往往提供了环境变量注入的能力，发生在冷启动阶段 运行时以及容器本身还需要准备一些参数配置文件  VPC 打通 &#x2F; 资源准备 如果用户还为函数接入了私有网络，还需要为容器进行一些 VPC 网络打通的初始化工作 如果用户使用了类似分布式文件系统等功能，还需要进行挂载  运行时初始化 通常指的是云厂商标准的 Runtime 环境的启动过程 受编程语言类型的影响比较大（JV...</div></div></div></a><a class="pagination-related" href="/2021/07/07/cloud-native-k8s-container/" title="Kubernetes -- 容器"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-16.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2021-07-07</div><div class="info-item-2">Kubernetes -- 容器</div></div><div class="info-2"><div class="info-item-1">容器与镜像容器容器是一个资源视图隔离、资源可限制、独立文件系统的进程集合    镜像容器镜像：运行容器所需要的所有文件集合  构建镜像 运行容器 容器生命周期 Moby 容器引擎架构containerd-shim： 插件化、动态接管  容器 vs VM 参考资料 CNCF × Alibaba 云原生技术公开课  </div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">660</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">199</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">92</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#ResourceGraphDefinitions"><span class="toc-number">1.</span> <span class="toc-text">ResourceGraphDefinitions</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">1.1.</span> <span class="toc-text">概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">1.1.1.</span> <span class="toc-text">生命周期</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">定义</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%89%A7%E8%A1%8C"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">执行</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#How-it-Works"><span class="toc-number">1.1.2.</span> <span class="toc-text">How it Works</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Example"><span class="toc-number">1.1.3.</span> <span class="toc-text">Example</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BB%93%E6%9E%84%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.1.4.</span> <span class="toc-text">结构详解</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.4.1.</span> <span class="toc-text">整体结构</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%90%84%E5%AD%97%E6%AE%B5%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.1.4.2.</span> <span class="toc-text">各字段详解</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#metadata-%E6%A0%87%E5%87%86-K8s-%E5%85%83%E6%95%B0%E6%8D%AE"><span class="toc-number">1.1.4.2.1.</span> <span class="toc-text">metadata - 标准 K8s 元数据</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#spec-schema-%E8%87%AA%E5%AE%9A%E4%B9%89-API-%E5%AE%9A%E4%B9%89"><span class="toc-number">1.1.4.2.2.</span> <span class="toc-text">spec.schema - 自定义 API 定义</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#spec-resources-%E8%B5%84%E6%BA%90%E5%AE%9A%E4%B9%89"><span class="toc-number">1.1.4.2.3.</span> <span class="toc-text">spec.resources - 资源定义</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#status-kro-%E7%AE%A1%E7%90%86%E7%9A%84%E7%8A%B6%E6%80%81"><span class="toc-number">1.1.4.2.4.</span> <span class="toc-text">status - kro 管理的状态</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%97%E6%AE%B5%E6%89%80%E6%9C%89%E6%9D%83"><span class="toc-number">1.1.4.3.</span> <span class="toc-text">字段所有权</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.1.4.4.</span> <span class="toc-text">完整示例</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.1.4.5.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#KRO-%E5%A4%84%E7%90%86-RGD-%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.1.5.</span> <span class="toc-text">KRO 处理 RGD 详解</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#RGD-%E9%AA%8C%E8%AF%81%E6%B5%81%E7%A8%8B%E6%80%BB%E8%A7%88"><span class="toc-number">1.1.5.1.</span> <span class="toc-text">RGD 验证流程总览</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9D%99%E6%80%81%E5%88%86%E6%9E%90%E4%B8%8E%E9%AA%8C%E8%AF%81"><span class="toc-number">1.1.5.2.</span> <span class="toc-text">静态分析与验证</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#Schema-%E9%AA%8C%E8%AF%81"><span class="toc-number">1.1.5.2.1.</span> <span class="toc-text">Schema 验证</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#CRD-%E9%AA%8C%E8%AF%81"><span class="toc-number">1.1.5.2.2.</span> <span class="toc-text">CRD 验证</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#CEL-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5"><span class="toc-number">1.1.5.2.3.</span> <span class="toc-text">CEL 类型检查</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E6%8E%A8%E6%96%AD"><span class="toc-number">1.1.5.2.4.</span> <span class="toc-text">依赖推断</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86"><span class="toc-number">1.1.5.3.</span> <span class="toc-text">自动依赖管理</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E5%9B%BE%E7%9A%84%E7%94%A8%E9%80%94"><span class="toc-number">1.1.5.3.1.</span> <span class="toc-text">依赖图的用途</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%88%A0%E9%99%A4%E9%A1%BA%E5%BA%8F"><span class="toc-number">1.1.5.3.2.</span> <span class="toc-text">创建与删除顺序</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E6%A3%80%E6%B5%8B"><span class="toc-number">1.1.5.3.3.</span> <span class="toc-text">循环依赖检测</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%9F%E6%88%90%E7%9A%84-CRD-%E5%92%8C-Controller"><span class="toc-number">1.1.5.4.</span> <span class="toc-text">生成的 CRD 和 Controller</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#RGD-%E7%8A%B6%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.1.5.5.</span> <span class="toc-text">RGD 状态条件</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BA%94%E7%A7%8D%E7%8A%B6%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.1.5.5.1.</span> <span class="toc-text">五种状态条件</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.1.5.5.2.</span> <span class="toc-text">条件详解</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%8A%B6%E6%80%81%E7%8A%B6%E6%80%81"><span class="toc-number">1.1.5.5.3.</span> <span class="toc-text">状态状态</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E7%8A%B6%E6%80%81"><span class="toc-number">1.1.5.5.4.</span> <span class="toc-text">查看状态</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E8%A7%A3"><span class="toc-number">1.1.5.6.</span> <span class="toc-text">注解</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B3%A8%E8%A7%A3"><span class="toc-number">1.1.5.6.1.</span> <span class="toc-text">支持的注解</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%A0%B4%E5%9D%8F%E6%80%A7%E5%8F%98%E6%9B%B4%E6%A3%80%E6%B5%8B"><span class="toc-number">1.1.5.6.2.</span> <span class="toc-text">破坏性变更检测</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%BC%BA%E5%88%B6%E7%A0%B4%E5%9D%8F%E6%80%A7%E5%8F%98%E6%9B%B4"><span class="toc-number">1.1.5.6.3.</span> <span class="toc-text">强制破坏性变更</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-1"><span class="toc-number">1.1.5.7.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RGD-%E6%8F%90%E4%BE%9B%E7%9A%84%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC"><span class="toc-number">1.1.6.</span> <span class="toc-text">RGD 提供的核心价值</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/29/k8s-orchestration-kro-v2/" title="K8S Orchestration - KRO V2"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/instance-resources-84e72f59c62ad09141c2dd13b332a4c6.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="K8S Orchestration - KRO V2"/></a><div class="content"><a class="title" href="/2026/04/29/k8s-orchestration-kro-v2/" title="K8S Orchestration - KRO V2">K8S Orchestration - KRO V2</a><time datetime="2026-04-29T01:45:09.000Z" title="Created 2026-04-29 09:45:09">2026-04-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/28/k8s-orchestration-kro-v1/" title="K8S Orchestration - KRO V1"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cnf-1253868755.cos.ap-guangzhou.myqcloud.com/k8s/kro.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="K8S Orchestration - KRO V1"/></a><div class="content"><a class="title" href="/2026/04/28/k8s-orchestration-kro-v1/" title="K8S Orchestration - KRO V1">K8S Orchestration - KRO V1</a><time datetime="2026-04-28T06:11:30.000Z" title="Created 2026-04-28 14:11:30">2026-04-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/13/security-iam-authorization-rbac-casbin-api/" title="Authorization - Casbin API"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/eczi071vpbhbdakptsng.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin API"/></a><div class="content"><a class="title" href="/2026/04/13/security-iam-authorization-rbac-casbin-api/" title="Authorization - Casbin API">Authorization - Casbin API</a><time datetime="2026-04-13T03:45:28.000Z" title="Created 2026-04-13 11:45:28">2026-04-13</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/image-20260413004636325.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Management"/></a><div class="content"><a class="title" href="/2026/04/13/security-iam-authorization-rbac-casbin-management/" title="Authorization - Casbin Management">Authorization - Casbin Management</a><time datetime="2026-04-12T16:43:43.000Z" title="Created 2026-04-13 00:43:43">2026-04-13</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/12/security-iam-authorization-rbac-casbin-plugin/" title="Authorization - Casbin Plugin"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cn-security-1253868755.cos.ap-guangzhou.myqcloud.com/iam/authorization/rbac/casbin/security-iam-authorization-rbac-casbin.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Authorization - Casbin Plugin"/></a><div class="content"><a class="title" href="/2026/04/12/security-iam-authorization-rbac-casbin-plugin/" title="Authorization - Casbin Plugin">Authorization - Casbin Plugin</a><time datetime="2026-04-12T14:29:24.000Z" title="Created 2026-04-12 22:29:24">2026-04-12</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
