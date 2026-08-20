@@ -1,0 +1,1160 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Agent Infra - Cloud Agents V3 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="启动 Session 创建、运行、查看和归档 Cloud Agent Sessions Session 是 Agent 的运行工作区 它把 Agent 快照、Environment、可选资源和可选 Vault 凭证绑定在一起 新 Session 初始为 idle，发送事件后开始执行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent Infra - Cloud Agents V3">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/08/20/agent-infra-cloud-agents-v3/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="启动 Session 创建、运行、查看和归档 Cloud Agent Sessions Session 是 Agent 的运行工作区 它把 Agent 快照、Environment、可选资源和可选 Vault 凭证绑定在一起 新 Session 初始为 idle，发送事件后开始执行">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp">
+<meta property="article:published_time" content="2026-08-19T16:06:25.000Z">
+<meta property="article:modified_time" content="2026-08-20T08:36:37.120Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Agent Infra">
+<meta property="article:tag" content="Cloud Agents">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Agent Infra - Cloud Agents V3",
+  "url": "https://blog.zhongmingmao.top/2026/08/20/agent-infra-cloud-agents-v3/",
+  "image": "https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp",
+  "datePublished": "2026-08-19T16:06:25.000Z",
+  "dateModified": "2026-08-20T08:36:37.120Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/08/20/agent-infra-cloud-agents-v3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Agent Infra - Cloud Agents V3',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">668</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">204</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">96</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Agent Infra - Cloud Agents V3</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Agent Infra - Cloud Agents V3</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-08-19T16:06:25.000Z" title="Created 2026-08-20 00:06:25">2026-08-20</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/agent-infra/">Agent Infra</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/agent-infra/cloud-agents/">Cloud Agents</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">8.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>37mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-08-20 16:36:37&quot;}" hidden></div><h1 id="启动-Session"><a href="#启动-Session" class="headerlink" title="启动 Session"></a>启动 Session</h1><ol>
+<li>创建、运行、查看和归档 Cloud Agent Sessions</li>
+<li><strong>Session</strong> 是 <strong>Agent</strong> 的<strong>运行工作区</strong></li>
+<li>它把 <strong>Agent 快照</strong>、<strong>Environment</strong>、<strong>可选资源</strong>和<strong>可选 Vault 凭证</strong>绑定在一起</li>
+<li>新 Session 初始为 <code>idle</code>，<strong>发送事件</strong>后开始执行</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="Session-状态生命周期"><a href="#Session-状态生命周期" class="headerlink" title="Session 状态生命周期"></a>Session 状态生命周期</h2><p>Session 是一个<strong>状态机</strong>。Session 资源上的 <code>status</code> 字段取以下值之一：</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>说明</th>
+<th>可流转到</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>idle</code></td>
+<td>Session 空闲，可以发送消息</td>
+<td><code>running</code>、<code>rescheduling</code>、<code>terminated</code></td>
+</tr>
+<tr>
+<td><code>running</code></td>
+<td>Agent 正在处理 turn</td>
+<td><code>idle</code>、<code>rescheduling</code>、<code>terminated</code></td>
+</tr>
+<tr>
+<td><code>rescheduling</code></td>
+<td>底层运行时正在<strong>重新调度</strong>，期间 Session 不可用，恢复后回到 <code>idle</code></td>
+<td><code>idle</code>、<code>terminated</code></td>
+</tr>
+<tr>
+<td><code>terminated</code></td>
+<td>Session 已终止（终态）</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">stateDiagram-v2</span><br><span class="line">    [*] --&gt; idle: 创建 Session</span><br><span class="line">    </span><br><span class="line">    idle --&gt; running: 发送 user.message</span><br><span class="line">    idle --&gt; rescheduling: 运行时重新调度</span><br><span class="line">    idle --&gt; terminated: 终止</span><br><span class="line">    </span><br><span class="line">    running --&gt; idle: turn 完成</span><br><span class="line">    running --&gt; rescheduling: 运行时重新调度</span><br><span class="line">    running --&gt; terminated: 终止</span><br><span class="line">    </span><br><span class="line">    rescheduling --&gt; idle: 调度完成</span><br><span class="line">    rescheduling --&gt; terminated: 调度失败</span><br><span class="line">    </span><br><span class="line">    terminated --&gt; [*]: 终态</span><br><span class="line">    </span><br><span class="line">    note right of idle</span><br><span class="line">        可发送新消息</span><br><span class="line">        等待事件输入</span><br><span class="line">    end note</span><br><span class="line">    </span><br><span class="line">    note right of running</span><br><span class="line">        Agent 处理中</span><br><span class="line">        向 running 发消息 = 409</span><br><span class="line">    end note</span><br><span class="line">    </span><br><span class="line">    note right of rescheduling</span><br><span class="line">        底层重新调度</span><br><span class="line">        Session 临时不可用</span><br><span class="line">    end note</span><br><span class="line">    </span><br><span class="line">    note right of terminated</span><br><span class="line">        永久结束</span><br><span class="line">        无法恢复</span><br><span class="line">    end note</span><br></pre></td></tr></table></figure>
+
+<p>另外两个<strong>生命周期标记</strong>不出现在 <code>status</code> 字段中：</p>
+<ol>
+<li><strong>已归档（archived）</strong>：通过非空 <code>archived_at</code> 时间戳标识<ul>
+<li><code>status</code> 字段本身<strong>不会</strong>变成 <code>archived</code> - Session 仍<strong>可被读取</strong>，但<strong>拒绝新事件</strong></li>
+</ul>
+</li>
+<li><strong>cancel 响应</strong>：<code>POST /api/v1/cloud/sessions/&#123;id&#125;/cancel</code> 接口的响应体始终是<strong>固定字面量</strong> <code>&quot;status&quot;: &quot;canceling&quot;</code><ul>
+<li>这只是<strong>响应结构</strong>，不是 Session <strong>持久化</strong>的 status</li>
+<li><strong>turn 中止后</strong> Session 的 <code>status</code> 仍回到 <code>idle</code></li>
+</ul>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>创建 → idle</td>
+<td><strong>新 Session</strong> 进入 <code>idle</code>，<strong>等待输入</strong></td>
+</tr>
+<tr>
+<td>idle → running</td>
+<td>发送 <code>user.message</code> 事件后，状态切换到 <code>running</code></td>
+</tr>
+<tr>
+<td>running → idle</td>
+<td><strong>本轮完成后</strong>回到 <code>idle</code>，可继续下一轮</td>
+</tr>
+<tr>
+<td>running → idle（cancel 后）</td>
+<td>取消<strong>正在执行</strong>的 Session 会<strong>中断</strong>当前 turn，Session 回到 <code>idle</code><br />cancel 接口响应体使用固定 <code>&quot;status&quot;: &quot;canceling&quot;</code> 字面量，与<strong>持久化的状态</strong>无关<br />Session 仍可继续使用</td>
+</tr>
+<tr>
+<td>rescheduling</td>
+<td><strong>运行时</strong>可能<strong>临时进入</strong> <code>rescheduling</code>，<strong>重新调度</strong>完成后会回到 <code>idle</code></td>
+</tr>
+<tr>
+<td>archived &#x2F; terminated（终态）</td>
+<td>归档（通过 <code>archived_at</code>）或终止后 Session <strong>永久结束</strong>，<strong>无法恢复</strong></td>
+</tr>
+</tbody></table>
+<h2 id="Cancel-语义"><a href="#Cancel-语义" class="headerlink" title="Cancel 语义"></a>Cancel 语义</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph IDLE[&quot;对 idle Session cancel&quot;]</span><br><span class="line">        I1[&quot;POST /cancel&lt;br/&gt;HTTP 200&quot;]</span><br><span class="line">        I2[&quot;no-op 空操作&lt;br/&gt;状态保持 idle&quot;]</span><br><span class="line">        I1 --&gt; I2</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph RUN[&quot;对 running Session cancel&quot;]</span><br><span class="line">        R1[&quot;POST /cancel&lt;br/&gt;HTTP 202&quot;]</span><br><span class="line">        R2[&quot;临时状态: canceling&lt;br/&gt;（响应体，非持久化）&quot;]</span><br><span class="line">        R3[&quot;中断当前 turn&quot;]</span><br><span class="line">        R4[&quot;回到 idle&lt;br/&gt;可继续使用&quot;]</span><br><span class="line">        R1 --&gt; R2 --&gt; R3 --&gt; R4</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph REUSE[&quot;cancel 后复用&quot;]</span><br><span class="line">        C1[&quot;发送下一条 user.message&quot;]</span><br><span class="line">        C2[&quot;开始新 turn&quot;]</span><br><span class="line">        C1 --&gt; C2</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    I2 --&gt; REUSE</span><br><span class="line">    R4 --&gt; REUSE</span><br><span class="line">    </span><br><span class="line">    style IDLE fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style RUN fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style REUSE fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>对 <code>idle</code> Session 调用 cancel</strong>：空操作（<strong>no-op</strong>），返回 HTTP <code>200</code>，状态保持 <code>idle</code></li>
+<li><strong>对 <code>running</code> Session 调用 cancel</strong>：中断 Agent，返回 HTTP <code>202</code>。状态先变为 <code>canceling</code>，<strong>中断</strong>完成后回到 <code>idle</code></li>
+<li><strong>cancel 后</strong>：Session 仍可<strong>复用</strong> - 直接发送下一条 <code>user.message</code> 即可开始新 <strong>turn</strong></li>
+</ol>
+<p>取消当前 turn</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/cancel&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>只有 <code>archived</code> 和 <code>terminated</code> 是<strong>终态</strong>。<strong>取消</strong>后的 Session 总会回到 <code>idle</code>，可以<strong>继续接受消息</strong>。</p>
+<h2 id="向-running-Session-发消息（409-错误）"><a href="#向-running-Session-发消息（409-错误）" class="headerlink" title="向 running Session 发消息（409 错误）"></a>向 running Session 发消息（409 错误）</h2><p>如果向正在 <code>running</code> 的 Session 发送 <code>user.message</code>，API 返回 <strong>HTTP 409</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;error&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;request_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;cb80235f-76a2-4ff3-9e28-5aa2da12dc14&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;error&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;invalid_request_error&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Session is currently processing a turn. Cancel the current turn or wait for completion.&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph ERROR[&quot;❌ 错误场景：向 running 发消息&quot;]</span><br><span class="line">        E1[&quot;Session 状态: running&quot;]</span><br><span class="line">        E2[&quot;POST user.message&quot;]</span><br><span class="line">        E3[&quot;HTTP 409&lt;br/&gt;invalid_request_error&quot;]</span><br><span class="line">        E4[&quot;Session is currently processing a turn&quot;]</span><br><span class="line">        E1 --&gt; E2 --&gt; E3 --&gt; E4</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph FIX[&quot;✅ 解决方案&quot;]</span><br><span class="line">        F1[&quot;方案 1: 等待&quot;]</span><br><span class="line">        F2[&quot;监听 SSE&lt;br/&gt;等待 status_idle&quot;]</span><br><span class="line">        F3[&quot;再发消息&quot;]</span><br><span class="line">        F1 --&gt; F2 --&gt; F3</span><br><span class="line">        </span><br><span class="line">        G1[&quot;方案 2: 取消&quot;]</span><br><span class="line">        G2[&quot;POST /cancel&quot;]</span><br><span class="line">        G4[&quot;回到 idle&quot;]</span><br><span class="line">        G5[&quot;发消息&quot;]</span><br><span class="line">        G1 --&gt; G2 --&gt; G4 --&gt; G5</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    E4 --&gt; FIX</span><br><span class="line">    </span><br><span class="line">    style ERROR fill:#fce8e6,stroke:#ea4335</span><br><span class="line">    style FIX fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<p>这是新用户最常踩的坑。请始终等待 <code>session.status_idle</code> 事件后再发送下一条消息，或者先 <strong>cancel</strong> 当前 turn。</p>
+<h2 id="创建-Session"><a href="#创建-Session" class="headerlink" title="创建 Session"></a>创建 Session</h2><p>使用已有 <code>agent</code> 和 <code>environment_id</code> 创建 Session：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;agent&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent_019e390add9f7bac9b6cc806db46fcbd&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;environment_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;env_019e2590d33f711fabf42f2857cecd8a&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;title&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Code review session&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;purpose&quot;</span><span class="punctuation">:</span> <span class="string">&quot;review&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span>&#x27;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>创建响应是 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/api/sessions/schemas#session-%E5%AF%B9%E8%B1%A1">Session 对象</a>，包含 <code>agent</code>、<code>environment_id</code>、<code>status</code>、<code>resources</code>、<code>vault_ids</code>、<code>deployment_id</code>、<code>outcome_evaluations</code>、<code>stats</code>、<code>usage</code>、<code>environment_variables</code>、<code>archived_at</code>、<code>created_at</code> 和 <code>updated_at</code></li>
+<li><code>usage.total_credits</code> 是 Session 中已记录模型调用消耗 <strong>credits</strong> 的<strong>累计快照</strong>，向下取整并最多保留 2 位小数</li>
+</ol>
+<h2 id="创建时挂载资源"><a href="#创建时挂载资源" class="headerlink" title="创建时挂载资源"></a>创建时挂载资源</h2><p>通过 <code>resources</code> 数组挂载<strong>文件</strong>、<strong>仓库</strong>和 <strong>Memory Store</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;resources&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;file&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;file_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;file_019e5ce0bf307a1a8f952eb814aea3d5&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/input/spec.md&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;github_repository&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;url&quot;</span><span class="punctuation">:</span> <span class="string">&quot;https://github.com/your-org/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/workspace/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;authorization_token&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memory_store&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;memory_store_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memstore_019eed05b61e78cea61bfd366e072878&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;access&quot;</span><span class="punctuation">:</span> <span class="string">&quot;read_write&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;instructions&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Use this memory for long-lived project context.&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>创建后追加文件请调用 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/api/sessions/add-resource">添加 Session 资源 API</a></li>
+<li>当前 <strong>CAS</strong> 创建后追加仅支持 <strong>file resource</strong></li>
+<li>resource list&#x2F;get&#x2F;update&#x2F;delete 接口可用于查看、轮转 GitHub token 或移除资源</li>
+</ol>
+<h2 id="发送消息"><a href="#发送消息" class="headerlink" title="发送消息"></a>发送消息</h2><p>通过 <strong>Events API</strong> 发送 <code>user.message</code>。<code>content</code> 必须是<strong>非空 content block 数组</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/events&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user.message&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">          <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;text&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;text&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Review this repository and summarize the risks.&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">]</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span>&#x27;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>send-events</strong> 接口返回 <strong>HTTP 200</strong> 和 <code>&#123;&quot;data&quot;:[...]&#125;</code></li>
+<li><strong>可发送事件类型</strong>包括：<code>user.message</code>、<code>user.interrupt</code>、<code>user.tool_confirmation</code>、<code>user.tool_result</code>、<code>user.custom_tool_result</code> 和 <code>user.define_outcome</code></li>
+</ol>
+<h2 id="读取事件"><a href="#读取事件" class="headerlink" title="读取事件"></a>读取事件</h2><p>使用<strong>事件流</strong>实时读取：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -s -N <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/events/stream&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Accept: text/event-stream&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>事件流以 <strong>Server-Sent Events</strong> 输出 <code>id</code>、<code>event</code> 和 <code>data</code></li>
+<li>Stream endpoint 支持 <code>Last-Event-ID</code> header 进行<strong>断线重连</strong></li>
+<li>事件类型 <strong>query filter</strong> 当前不支持</li>
+</ol>
+<p>使用 list endpoint <strong>读取历史</strong>和分页：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/events?limit=20&amp;order=desc&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>列表响应使用 <code>data</code> 和 <code>next_page</code>。</p>
+<h2 id="读取和更新-Sessions"><a href="#读取和更新-Sessions" class="headerlink" title="读取和更新 Sessions"></a>读取和更新 Sessions</h2><p>获取一个 Session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>列出 Sessions</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s &quot;https://api.qoder.com/api/v1/cloud/sessions?limit=20&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>更新 title、metadata 或 Agent 配置（tools、MCP servers）</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span><span class="attr">&quot;title&quot;</span><span class="punctuation">:</span><span class="string">&quot;Updated title&quot;</span><span class="punctuation">,</span><span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="attr">&quot;priority&quot;</span><span class="punctuation">:</span><span class="string">&quot;high&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span>&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>Session list 使用 <code>page</code> &#x2F; <code>next_page</code> 分页，并支持 <code>agent_id</code>、<code>agent_version</code>、<code>deployment_id</code>、<code>memory_store_id</code>、<code>statuses</code> 和 <code>created_at[...]</code> 等过滤。</p>
+<h2 id="Threads"><a href="#Threads" class="headerlink" title="Threads"></a>Threads</h2><ol>
+<li><strong>Managed-agent Session</strong> 可以包含<strong>协调器主线程</strong>和<strong>子线程</strong></li>
+<li>Thread endpoint 使用公开 <code>session_thread</code> 结构，不再包含 <code>role</code>、<code>name</code>、<code>agent_id</code>、<code>agent_version</code> 或 <code>stop_reason</code> 等旧字段</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/threads&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><strong>子线程</strong>可以通过 <code>POST /api/v1/cloud/sessions/&#123;session_id&#125;/threads/&#123;thread_id&#125;/archive</code> <strong>归档</strong></li>
+<li>当前 <strong>CAS</strong> 对<strong>协调器主线程归档</strong>返回 <code>409</code></li>
+</ol>
+<h3 id="Session-与-Threads-架构关系"><a href="#Session-与-Threads-架构关系" class="headerlink" title="Session 与 Threads 架构关系"></a>Session 与 Threads 架构关系</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph SESSION[&quot;Session（运行工作区）&quot;]</span><br><span class="line">        direction TB</span><br><span class="line">        </span><br><span class="line">        subgraph MAIN[&quot;协调器主线程&lt;br/&gt;Coordinator Main Thread&quot;]</span><br><span class="line">            M1[&quot;接收 user.message&quot;]</span><br><span class="line">            M2[&quot;任务分解&quot;]</span><br><span class="line">            M3[&quot;结果汇总&quot;]</span><br><span class="line">        end</span><br><span class="line">        </span><br><span class="line">        subgraph CHILDREN[&quot;子线程池&lt;br/&gt;Child Threads（并行执行）&quot;]</span><br><span class="line">            C1[&quot;子线程 1&lt;br/&gt;执行子任务 A&quot;]</span><br><span class="line">            C2[&quot;子线程 2&lt;br/&gt;执行子任务 B&quot;]</span><br><span class="line">            C3[&quot;子线程 N&lt;br/&gt;执行子任务 N&quot;]</span><br><span class="line">        end</span><br><span class="line">        </span><br><span class="line">        M2 --&gt; C1</span><br><span class="line">        M2 --&gt; C2</span><br><span class="line">        M2 --&gt; C3</span><br><span class="line">        </span><br><span class="line">        C1 --&gt; M3</span><br><span class="line">        C2 --&gt; M3</span><br><span class="line">        C3 --&gt; M3</span><br><span class="line">        </span><br><span class="line">        M3 --&gt; R[&quot;agent.message&lt;br/&gt;返回用户&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph API[&quot;CAS API 层&quot;]</span><br><span class="line">        GET1[&quot;GET /sessions/&#123;id&#125;/threads&lt;br/&gt;列出所有线程&quot;]</span><br><span class="line">        ARC[&quot;POST /threads/&#123;id&#125;/archive&lt;br/&gt;归档子线程（409 对主线程）&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    SESSION -.-&gt;|查询/管理| API</span><br><span class="line">    </span><br><span class="line">    style SESSION fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style MAIN fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style CHILDREN fill:#e6f4ea,stroke:#34a853</span><br><span class="line">    style API fill:#f3e8fd,stroke:#a142f4</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>角色</th>
+<th>特性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Session</strong></td>
+<td>运行工作区<strong>容器</strong></td>
+<td>绑定 Agent、Environment、资源</td>
+</tr>
+<tr>
+<td><strong>协调器主线程</strong></td>
+<td><strong>任务协调与汇总</strong></td>
+<td>接收消息、分解任务、汇总结果、归档返回 409</td>
+</tr>
+<tr>
+<td><strong>子线程</strong></td>
+<td>并行执行具体任务</td>
+<td><strong>由主线程调度、可独立归档</strong></td>
+</tr>
+</tbody></table>
+<p><strong>工作流程</strong>：</p>
+<ol>
+<li>用户发送 <code>user.message</code> 到 Session</li>
+<li>协调器主线程<strong>接收并分解任务</strong></li>
+<li>创建<strong>多个子线程</strong>并行<strong>执行子任务</strong></li>
+<li>子线程完成后，主线程<strong>汇总结果</strong></li>
+<li>通过 <code>agent.message</code> 返回给用户</li>
+</ol>
+<h2 id="生命周期"><a href="#生命周期" class="headerlink" title="生命周期"></a>生命周期</h2><p>归档 Session：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/archive&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>删除 Session：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X DELETE &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<p>删除返回：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;id&quot;: &quot;sess_019e3bb1e8c171fd9abbb1477ffb84cc&quot;,</span><br><span class="line">  &quot;type&quot;: &quot;session_deleted&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>cancel 接口返回 <code>&#123;&quot;id&quot;:&quot;...&quot;,&quot;type&quot;:&quot;session&quot;,&quot;status&quot;:&quot;canceling&quot;&#125;</code></li>
+<li>当存在<strong>活跃 turn</strong> 需要<strong>取消</strong>时返回 <strong>202 Accepted</strong></li>
+<li>当 Session 已处于 <code>idle</code> 时为<strong>幂等 no-op</strong>，返回 <strong>200 OK</strong></li>
+</ol>
+<h2 id="多轮对话工作流"><a href="#多轮对话工作流" class="headerlink" title="多轮对话工作流"></a>多轮对话工作流</h2><p>Session 支持<strong>多轮对话</strong>。推荐流程如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    subgraph TURN1[&quot;第一轮 Turn&quot;]</span><br><span class="line">        T1M[&quot;发送 user.message&quot;]</span><br><span class="line">        T1W[&quot;监听 SSE 事件流&quot;]</span><br><span class="line">        T1I[&quot;等待 status_idle&quot;]</span><br><span class="line">        T1M --&gt; T1W --&gt; T1I</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph TURN2[&quot;第二轮 Turn&quot;]</span><br><span class="line">        T2M[&quot;发送 user.message&quot;]</span><br><span class="line">        T2W[&quot;监听 SSE 事件流&quot;]</span><br><span class="line">        T2I[&quot;等待 status_idle&quot;]</span><br><span class="line">        T2M --&gt; T2W --&gt; T2I</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph TURNN[&quot;第 N 轮 Turn&quot;]</span><br><span class="line">        TNM[&quot;发送 user.message&quot;]</span><br><span class="line">        TNW[&quot;监听 SSE 事件流&quot;]</span><br><span class="line">        TNI[&quot;等待 status_idle&quot;]</span><br><span class="line">        TNM --&gt; TNW --&gt; TNI</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    TURN1 --&gt;|&quot;idle 后继续&quot;| TURN2</span><br><span class="line">    TURN2 --&gt;|&quot;idle 后继续&quot;| TURNN</span><br><span class="line">    </span><br><span class="line">    style TURN1 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style TURN2 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style TURNN fill:#e8f0fe,stroke:#4285f4</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>发送 <code>user.message</code> 事件</li>
+<li>监听 <strong>SSE</strong> 事件流</li>
+<li>等待 <code>session.status_idle</code> 事件</li>
+<li>发送下一条 <code>user.message</code></li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"># 多轮对话示例</span><br><span class="line">BASE_URL=<span class="string">&quot;https://api.qoder.com/api/v1/cloud&quot;</span></span><br><span class="line">SESSION_ID=<span class="string">&quot;sess_019e5ce0bf9074b69c3481e93771a522&quot;</span></span><br><span class="line">HEADERS=(</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 第一轮：提出需求</span><br><span class="line">curl -s -X POST <span class="string">&quot;$BASE_URL/sessions/$SESSION_ID/events&quot;</span> \</span><br><span class="line">  <span class="string">&quot;$&#123;HEADERS[@]&#125;&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span><span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user.message&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;text&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;text&quot;</span><span class="punctuation">:</span> <span class="string">&quot;创建一个 Python Flask 项目脚手架。&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span>&#x27;</span><br><span class="line"></span><br><span class="line"># 等待处理完成...（轮询或监听 SSE）</span><br><span class="line">sleep <span class="number">30</span></span><br><span class="line"></span><br><span class="line"># 第二轮：追加要求</span><br><span class="line">curl -s -X POST <span class="string">&quot;$BASE_URL/sessions/$SESSION_ID/events&quot;</span> \</span><br><span class="line">  <span class="string">&quot;$&#123;HEADERS[@]&#125;&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span><span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user.message&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;text&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;text&quot;</span><span class="punctuation">:</span> <span class="string">&quot;给项目添加单元测试和 CI 配置。&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span>&#x27;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>请始终等待 <code>session.status_idle</code> 后再发送下一条消息</li>
+<li>在 Session 仍处于 <code>running</code> 时发消息会返回 <strong>HTTP 409</strong></li>
+</ol>
+<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h2><table>
+<thead>
+<tr>
+<th>最佳实践</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>版本锁定</strong></td>
+<td>生产环境始终使用 <code>&#123;&quot;id&quot;: ..., &quot;type&quot;: &quot;agent&quot;, &quot;version&quot;: ...&#125;</code> 形式创建 Session，避免因 Agent 更新导致行为变化</td>
+</tr>
+<tr>
+<td><strong>元数据标记</strong></td>
+<td>用 <code>metadata</code> 记录<strong>业务上下文</strong>（任务 ID、触发来源等），便于<strong>追溯</strong>和<strong>调试</strong></td>
+</tr>
+<tr>
+<td><strong>及时取消</strong></td>
+<td>不再需要的 Session 及时 cancel，<strong>释放计算资源</strong></td>
+</tr>
+</tbody></table>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><blockquote>
+<p>Q: 向 running 状态的 Session 发消息会怎样？</p>
+</blockquote>
+<p>A: 会返回 <strong>HTTP 409</strong>，<code>type: &quot;invalid_request_error&quot;</code>，错误信息为 <em>“Session is currently processing a turn. Cancel the current turn or wait for completion.”<em>。需要先<strong>取消</strong>当前轮（cancel）或**等待</em></em> Session 回到 <code>idle</code>，再发送新消息。</p>
+<blockquote>
+<p>Q: 取消后的 Session 还能继续用吗？</p>
+</blockquote>
+<p>A: 可以。cancel 后状态从 <code>canceling</code> 自动回到 <code>idle</code>，Session 保持<strong>可用</strong> - 直接发送下一条 <code>user.message</code> 即可<strong>继续对话</strong>。仅 <code>archived</code> 和 <code>terminated</code> 是<strong>终态</strong>。</p>
+<blockquote>
+<p>Q: 如何获取 Session 的完整对话历史？</p>
+</blockquote>
+<p>A: 通过 <code>GET /api/v1/cloud/sessions/&#123;id&#125;/events</code> 获取该 <strong>Session</strong> 的<strong>所有事件</strong>，包括<strong>用户消息</strong>和 <strong>Agent 响应</strong>。</p>
+<blockquote>
+<p>Q: SSE 断线怎么重连？</p>
+</blockquote>
+<p>A: 重连时在请求头中传入 <code>Last-Event-ID</code>，服务端会从该 ID 之后<strong>重放事件</strong>。</p>
+<blockquote>
+<p>Q: GET &#x2F;api&#x2F;v1&#x2F;cloud&#x2F;environments 返回空数组？</p>
+</blockquote>
+<p>A: 请检查你的 <strong>PAT</strong> 或 <strong>SAT</strong> 是否具有<strong>目标工作区</strong>的权限。<strong>Environment 的访问范围</strong>取决于<strong>认证主体的权限</strong>。</p>
+<h1 id="SSE-事件流"><a href="#SSE-事件流" class="headerlink" title="SSE 事件流"></a>SSE 事件流</h1><p>Qoder Cloud Agents 通过 <strong>Server-Sent Events (SSE)</strong> 流式输出 Session 公开事件</p>
+<h2 id="多连接模型"><a href="#多连接模型" class="headerlink" title="多连接模型"></a>多连接模型</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph SESSION[&quot;Session sess_123&quot;]</span><br><span class="line">        direction LR</span><br><span class="line">        EVENTS[&quot;事件流&lt;br/&gt;agent.message&lt;br/&gt;agent.thinking&lt;br/&gt;session.status_idle&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph CONN1[&quot;连接 A：Web UI&quot;]</span><br><span class="line">        C1[&quot;event_deltas[]=agent.message&quot;]</span><br><span class="line">        C1R[&quot;接收：&lt;br/&gt;✅ event_start&lt;br/&gt;✅ event_delta&lt;br/&gt;✅ buffered agent.message&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph CONN2[&quot;连接 B：CLI 监控&quot;]</span><br><span class="line">        C2[&quot;无 event_deltas&quot;]</span><br><span class="line">        C2R[&quot;接收：&lt;br/&gt;❌ 无增量&lt;br/&gt;✅ buffered agent.message&lt;br/&gt;✅ session.status_idle&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph CONN3[&quot;连接 C：日志服务&quot;]</span><br><span class="line">        C3[&quot;event_deltas[]=agent.thinking&quot;]</span><br><span class="line">        C3R[&quot;接收：&lt;br/&gt;✅ event_start(thinking)&lt;br/&gt;✅ buffered agent.message&quot;]</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    EVENTS --&gt; C1R</span><br><span class="line">    EVENTS --&gt; C2R</span><br><span class="line">    EVENTS --&gt; C3R</span><br><span class="line">    </span><br><span class="line">    style SESSION fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style CONN1 fill:#e6f4ea,stroke:#34a853</span><br><span class="line">    style CONN2 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style CONN3 fill:#f3e8fd,stroke:#a142f4</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特性</strong>：</p>
+<ul>
+<li><strong>同一 Session</strong> 支持多个<strong>并发 SSE 连接</strong></li>
+<li><code>event_deltas[]</code> 参数<strong>只对当前连接生效</strong></li>
+<li>不同连接可以有不同的增量配置，<strong>互不影响</strong></li>
+</ul>
+<p><strong>典型场景</strong>：</p>
+<ul>
+<li><strong>Web UI</strong>：请求 <code>agent.message</code> 增量，实现<strong>流式显示</strong></li>
+<li><strong>CLI 监控</strong>：只收<strong>完整事件</strong>和<strong>状态变化</strong></li>
+<li><strong>日志服务</strong>：请求 <code>agent.thinking</code> 增量，记录<strong>推理过程</strong></li>
+</ul>
+<h2 id="连接-URL"><a href="#连接-URL" class="headerlink" title="连接 URL"></a>连接 URL</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET https://api.qoder.com/api/v1/cloud/sessions/&#123;session_id&#125;/events/stream</span><br></pre></td></tr></table></figure>
+
+<p>请求头：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Authorization: Bearer $QODER_ACCESS_TOKEN</span><br><span class="line">Accept: text/event-stream</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>默认情况下，<strong>Agent 响应</strong>会在<strong>生成完成</strong>后，以<strong>完整公开事件</strong>（例如 <code>agent.message</code>）的形式写入 <strong>Session 事件历史</strong>并通过 <strong>stream 输出</strong>。下文将这种<strong>完整事件</strong>称为 <strong>buffered 事件</strong>。</li>
+<li>Stream endpoint 支持使用 <code>Last-Event-ID</code> header <strong>断线重连</strong>。对于<strong>普通 buffered 事件</strong>，stream 从该 ID 之后继续；<strong>在途 event delta</strong> 的特殊行为见下文。</li>
+<li>使用 <code>event_deltas[]</code> 可在<strong>当前 stream 连接</strong>中<strong>增量接收 Agent 响应</strong>。重复传入该参数可<strong>同时请求</strong>两种支持的事件类型：<code>agent.message</code> + <code>agent.thinking</code></li>
+<li>该选项只对<strong>当前 stream 连接</strong>生效，不会影响<strong>同一 Session 的其它连接</strong>。不传 <code>event_deltas[]</code> 时，连接只会在<strong>响应完成</strong>后收到<strong>完整事件</strong>。Thread event stream 不支持该参数。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">GET /api/v1/cloud/sessions/&#123;session_id&#125;/events/stream?event_deltas[]=agent.message</span><br><span class="line">GET /api/v1/cloud/sessions/&#123;session_id&#125;/events/stream?event_deltas[]=agent.thinking</span><br><span class="line">GET /api/v1/cloud/sessions/&#123;session_id&#125;/events/stream?event_deltas[]=agent.message&amp;event_deltas[]=agent.thinking</span><br></pre></td></tr></table></figure>
+
+<h2 id="SSE-格式"><a href="#SSE-格式" class="headerlink" title="SSE 格式"></a>SSE 格式</h2><p>每条事件使用<strong>标准 SSE 字段</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id<span class="punctuation">:</span> evt_019e392c0d787cfaa21bda98e06cd913</span><br><span class="line">event<span class="punctuation">:</span> agent.message</span><br><span class="line">data<span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span><span class="string">&quot;evt_019e392c0d787cfaa21bda98e06cd913&quot;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;agent.message&quot;</span><span class="punctuation">,</span><span class="attr">&quot;content&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;text&quot;</span><span class="punctuation">,</span><span class="attr">&quot;text&quot;</span><span class="punctuation">:</span><span class="string">&quot;Hello&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">,</span><span class="attr">&quot;processed_at&quot;</span><span class="punctuation">:</span><span class="string">&quot;2026-05-18T03:40:48.888851795Z&quot;</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>服务端</strong>可能发送 <strong>heartbeat</strong> comment 以保持连接。</p>
+<h2 id="Event-Delta"><a href="#Event-Delta" class="headerlink" title="Event Delta"></a>Event Delta</h2><h3 id="增量输出机制"><a href="#增量输出机制" class="headerlink" title="增量输出机制"></a>增量输出机制</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph MSG[&quot;agent.message 增量输出&quot;]</span><br><span class="line">        direction TB</span><br><span class="line">        M1[&quot;event_start&lt;br/&gt;标记开始&quot;]</span><br><span class="line">        M2[&quot;event_delta 1&lt;br/&gt;增量内容: 你&quot;]</span><br><span class="line">        M3[&quot;event_delta 2&lt;br/&gt;增量内容: 好&quot;]</span><br><span class="line">        M4[&quot;event_delta N&lt;br/&gt;增量内容: ...&quot;]</span><br><span class="line">        M5[&quot;agent.message&lt;br/&gt;完整 buffered 事件&lt;br/&gt;（权威结果）&quot;]</span><br><span class="line">        M1 --&gt; M2 --&gt; M3 --&gt; M4 --&gt; M5</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    subgraph THINK[&quot;agent.thinking 增量输出&quot;]</span><br><span class="line">        direction TB</span><br><span class="line">        T1[&quot;event_start&lt;br/&gt;标记开始&quot;]</span><br><span class="line">        T2[&quot;agent.thinking&lt;br/&gt;完整 buffered 事件&lt;br/&gt;（不暴露内容）&quot;]</span><br><span class="line">        T1 --&gt; T2</span><br><span class="line">    end</span><br><span class="line">    </span><br><span class="line">    style MSG fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style THINK fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style M5 fill:#e6f4ea,stroke:#34a853</span><br><span class="line">    style T2 fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特性</strong>：</p>
+<ul>
+<li><strong>agent.message</strong>：<code>event_start</code> → 多个 <code>event_delta</code> → <code>agent.message</code>（完整）</li>
+<li><strong>agent.thinking</strong>：<code>event_start</code> → <code>agent.thinking</code>（完整，无内容暴露）</li>
+<li>所有帧使用<strong>相同 ID</strong>（<code>evt_...</code>）</li>
+</ul>
+<p><code>agent.message</code> 的<strong>增量输出</strong>以 <code>event_start</code> 开始，随后输出一个或多个 <code>event_delta</code>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">id<span class="punctuation">:</span> evt_00jjujk9fbnr4wkj2gh8</span><br><span class="line">event<span class="punctuation">:</span> event_start</span><br><span class="line">data<span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;event&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span><span class="string">&quot;evt_00jjujk9fbnr4wkj2gh8&quot;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;agent.message&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;event_start&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">id<span class="punctuation">:</span> evt_00jjujk9fbnr4wkj2gh8</span><br><span class="line">event<span class="punctuation">:</span> event_delta</span><br><span class="line">data<span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;delta&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="attr">&quot;content&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="attr">&quot;text&quot;</span><span class="punctuation">:</span><span class="string">&quot;你好&quot;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;text&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="attr">&quot;index&quot;</span><span class="punctuation">:</span><span class="number">0</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;content_delta&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="attr">&quot;event_id&quot;</span><span class="punctuation">:</span><span class="string">&quot;evt_00jjujk9fbnr4wkj2gh8&quot;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;event_delta&quot;</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>agent.thinking</code> 的<strong>增量输出</strong>只有<strong>开始事件</strong>，不会输出 <code>event_delta</code>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id<span class="punctuation">:</span> evt_00jjujk9fbnr55q5rtyp</span><br><span class="line">event<span class="punctuation">:</span> event_start</span><br><span class="line">data<span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;event&quot;</span><span class="punctuation">:</span><span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span><span class="string">&quot;evt_00jjujk9fbnr55q5rtyp&quot;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;agent.thinking&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span><span class="string">&quot;event_start&quot;</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>对于同一个 <strong>message</strong> 或 <strong>thinking</strong> 事件，SSE <code>id:</code>、<code>event_start.event.id</code>、每个 <code>event_delta.event_id</code> 以及后续 buffered 事件的 <code>id</code> 完全相同。</p>
+<h3 id="完整事件流顺序"><a href="#完整事件流顺序" class="headerlink" title="完整事件流顺序"></a>完整事件流顺序</h3><p>同时请求<strong>两种事件类型</strong>时，典型顺序如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    E1[&quot;span.model_request_start&quot;]</span><br><span class="line">    E2[&quot;event_start&lt;br/&gt;agent.thinking&quot;]</span><br><span class="line">    E3[&quot;agent.thinking&lt;br/&gt;（完整）&quot;]</span><br><span class="line">    E4[&quot;event_start&lt;br/&gt;agent.message&quot;]</span><br><span class="line">    E5[&quot;event_delta&lt;br/&gt;agent.message&quot;]</span><br><span class="line">    E6[&quot;agent.message&lt;br/&gt;（完整）&quot;]</span><br><span class="line">    E7[&quot;span.model_request_end&quot;]</span><br><span class="line">    </span><br><span class="line">    E1 --&gt; E2 --&gt; E3 --&gt; E4 --&gt; E5 --&gt; E6 --&gt; E7</span><br><span class="line">    </span><br><span class="line">    style E1 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style E2 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style E3 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style E4 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style E5 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style E6 fill:#e6f4ea,stroke:#34a853</span><br><span class="line">    style E7 fill:#e8f0fe,stroke:#4285f4</span><br></pre></td></tr></table></figure>
+
+<p><strong>Event delta 帧</strong>的 <strong>JSON payload</strong> 不包含顶层 <code>id</code> 或 <code>processed_at</code> 字段，也不会出现在事件 <strong>list&#x2F;history</strong> 响应中。</p>
+<blockquote>
+<p><strong>Event Delta 的本质</strong>：</p>
+<ul>
+<li>❌ <strong>不是完整事件</strong>：缺少标准事件字段（<code>id</code>、<code>processed_at</code>）</li>
+<li>❌ <strong>不保存到历史</strong>：不会出现在事件 list&#x2F;history 响应中</li>
+<li>✅ <strong>仅用于流式传输</strong>：只存在于 SSE 实时流中</li>
+</ul>
+<p><strong>设计目的</strong>：</p>
+<ul>
+<li>📺 <strong>流式显示</strong>：支持实时打字效果（类似 ChatGPT）</li>
+<li>⚡ <strong>降低延迟感</strong>：用户无需等待完整响应生成</li>
+</ul>
+<p><strong>权威结果</strong>：</p>
+<ul>
+<li>只有最终的 <strong>buffered <code>agent.message</code></strong> 才是完整事件</li>
+<li>它会被保存到事件历史，可用于重放和查询</li>
+</ul>
+</blockquote>
+<p>buffered <code>agent.message</code> 是<strong>权威结果</strong>，<code>agent.thinking</code> <strong>不会暴露思考内容</strong>。</p>
+<h2 id="Event-Delta-期间重连"><a href="#Event-Delta-期间重连" class="headerlink" title="Event Delta 期间重连"></a>Event Delta 期间重连</h2><h3 id="具体场景示例"><a href="#具体场景示例" class="headerlink" title="具体场景示例"></a>具体场景示例</h3><blockquote>
+<p><strong>核心概念</strong>：<code>event_start</code> 是 Agent 开始生成一个新 <code>agent.message</code> 时发送的<strong>开始标记事件</strong>。下面的三种场景都是相对于<strong>同一个正在生成中的 message</strong> 的 <code>event_start</code> 来说的。</p>
+</blockquote>
+<p><strong>断线重连</strong>时使用 SSE <code>Last-Event-ID</code> header。具体行为取决于<strong>游标位置</strong>，以及当前 message 是否<strong>仍在生成</strong>：</p>
+<h4 id="🟢-场景-1：游标在-event-start-之前"><a href="#🟢-场景-1：游标在-event-start-之前" class="headerlink" title="🟢 场景 1：游标在 event_start 之前"></a>🟢 场景 1：游标在 event_start 之前</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    A1[&quot;原始事件流&lt;br/&gt;evt_001 (user.message)&lt;br/&gt;evt_002 (event_start)&lt;br/&gt;evt_002 (delta: &#x27;你好&#x27;)&lt;br/&gt;evt_002 (delta: &#x27;世界&#x27;) ⬅️ 断线&lt;br/&gt;evt_002 (delta: &#x27;!!!&#x27;)&quot;]</span><br><span class="line">    A2[&quot;重连设置&lt;br/&gt;Last-Event-ID: evt_001&quot;]</span><br><span class="line">    A3[&quot;服务端输出&lt;br/&gt;✅ event_start (evt_002)&lt;br/&gt;✅ delta: &#x27;你好&#x27; (重放)&lt;br/&gt;✅ delta: &#x27;世界&#x27; (重放)&lt;br/&gt;✅ delta: &#x27;!!!&#x27; (新生成)&lt;br/&gt;✅ buffered (evt_002)&quot;]</span><br><span class="line">    A1 --&gt; A2 --&gt; A3</span><br><span class="line">    </span><br><span class="line">    style A1 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style A2 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style A3 fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<p><strong>特点</strong>：完整重建，重放所有历史增量</p>
+<h4 id="🟡-场景-2：游标等于-event-start-id"><a href="#🟡-场景-2：游标等于-event-start-id" class="headerlink" title="🟡 场景 2：游标等于 event_start.id"></a>🟡 场景 2：游标等于 event_start.id</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    B1[&quot;原始事件流&lt;br/&gt;evt_001 (user.message)&lt;br/&gt;evt_002 (event_start) ⬅️ 断线&lt;br/&gt;evt_002 (delta: &#x27;你好&#x27;)&lt;br/&gt;evt_002 (delta: &#x27;世界&#x27;)&quot;]</span><br><span class="line">    B2[&quot;重连设置&lt;br/&gt;Last-Event-ID: evt_002&quot;]</span><br><span class="line">    B3[&quot;服务端输出&lt;br/&gt;❌ 不重放 event_start&lt;br/&gt;❌ 不重放历史 delta&lt;br/&gt;✅ delta: &#x27;你好&#x27; (新生成)&lt;br/&gt;✅ delta: &#x27;世界&#x27; (新生成)&lt;br/&gt;✅ buffered (evt_002)&quot;]</span><br><span class="line">    B1 --&gt; B2 --&gt; B3</span><br><span class="line">    </span><br><span class="line">    style B1 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style B2 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style B3 fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<p><strong>特点</strong>：节省带宽，只获取新增内容</p>
+<h4 id="🔵-场景-3：Message-已生成完成"><a href="#🔵-场景-3：Message-已生成完成" class="headerlink" title="🔵 场景 3：Message 已生成完成"></a>🔵 场景 3：Message 已生成完成</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    C1[&quot;原始事件流&lt;br/&gt;evt_001 (user.message)&lt;br/&gt;evt_002 (event_start)&lt;br/&gt;evt_002 (delta: &#x27;你好&#x27;)&lt;br/&gt;evt_002 (buffered) ⬅️ 断线&lt;br/&gt;evt_003 (other event)&quot;]</span><br><span class="line">    C2[&quot;重连设置 A: evt_001&lt;br/&gt;服务端输出 A:&lt;br/&gt;❌ 不重放 event_start&lt;br/&gt;❌ 不重放 delta&lt;br/&gt;✅ buffered (evt_002)&quot;]</span><br><span class="line">    C3[&quot;重连设置 B: evt_002&lt;br/&gt;服务端输出 B:&lt;br/&gt;✅ 从 evt_002 之后继续&lt;br/&gt;✅ evt_003 (other event)&quot;]</span><br><span class="line">    C1 --&gt; C2</span><br><span class="line">    C1 --&gt; C3</span><br><span class="line">    </span><br><span class="line">    style C1 fill:#fef7e0,stroke:#f9ab00</span><br><span class="line">    style C2 fill:#e8f0fe,stroke:#4285f4</span><br><span class="line">    style C3 fill:#e6f4ea,stroke:#34a853</span><br></pre></td></tr></table></figure>
+
+<h3 id="三种场景对照表"><a href="#三种场景对照表" class="headerlink" title="三种场景对照表"></a>三种场景对照表</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>游标位置</th>
+<th>Message 状态</th>
+<th>服务端行为</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>🟢 场景 1</strong></td>
+<td>在 <code>event_start</code> 之前</td>
+<td>仍在生成</td>
+<td>重放 <code>event_start</code> + 历史 <code>delta</code> + 新 <code>delta</code> + <code>buffered</code></td>
+<td>需要<strong>完整重建增量事件</strong></td>
+</tr>
+<tr>
+<td><strong>🟡 场景 2</strong></td>
+<td>等于 <code>event_start</code> 的 ID</td>
+<td>仍在生成</td>
+<td>只输出新生成的 <code>delta</code> + <code>buffered</code>（不重放历史）</td>
+<td>节省带宽，<strong>只获取新增内容</strong></td>
+</tr>
+<tr>
+<td><strong>🔵 场景 3</strong></td>
+<td>任意位置</td>
+<td>已生成完成</td>
+<td>只输出 <code>buffered</code> 事件（无 <code>delta</code> 重放）</td>
+<td>跳过增量，<strong>直接获取最终结果</strong></td>
+</tr>
+</tbody></table>
+<h3 id="客户端处理策略"><a href="#客户端处理策略" class="headerlink" title="客户端处理策略"></a>客户端处理策略</h3><p><strong>同一个增量事件</strong>的<strong>所有帧</strong>使用<strong>相同 ID</strong>。根据<strong>重连需求</strong>选择策略：</p>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>推荐做法</th>
+<th>Last-Event-ID 设置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>完整重建增量事件</strong></td>
+<td>游标回退到 <code>event_start</code> <strong>之前</strong>的 buffered 事件</td>
+<td>使用 <code>evt_001</code>（event_start 之前的 ID）</td>
+</tr>
+<tr>
+<td><strong>继续接收新增量</strong></td>
+<td>使用当前 <code>event_start.event.id</code> 作为游标</td>
+<td>使用 <code>evt_002</code>（event_start 的 ID）</td>
+</tr>
+<tr>
+<td><strong>跳过增量获取结果</strong></td>
+<td>等待生成完成后再重连</td>
+<td>使用任意已接收的 ID</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>⚠️ 去重提醒</strong>：同一 ID 的 <code>event_delta</code> 可能在场景 1 中重复接收，建议客户端根据 <code>event_id</code> 进行去重处理。</p>
+</blockquote>
+<h2 id="常见事件流"><a href="#常见事件流" class="headerlink" title="常见事件流"></a>常见事件流</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">session.status_running</span><br><span class="line">session.thread_status_running</span><br><span class="line">user.message</span><br><span class="line">span.model_request_start</span><br><span class="line">agent.thinking</span><br><span class="line">agent.tool_use</span><br><span class="line">agent.tool_result</span><br><span class="line">agent.message</span><br><span class="line">span.model_request_end</span><br><span class="line">session.thread_status_idle</span><br><span class="line">session.status_idle</span><br></pre></td></tr></table></figure>
+
+<h3 id="一个-Turn-的完整事件时序"><a href="#一个-Turn-的完整事件时序" class="headerlink" title="一个 Turn 的完整事件时序"></a>一个 Turn 的完整事件时序</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">sequenceDiagram</span><br><span class="line">    participant U as 客户端</span><br><span class="line">    participant S as SSE 事件流</span><br><span class="line">    participant A as Agent（模型）</span><br><span class="line">    participant SB as 沙箱</span><br><span class="line"></span><br><span class="line">    Note over U,S: ① Turn 开始</span><br><span class="line">    U-&gt;&gt;S: POST user.message</span><br><span class="line">    S--&gt;&gt;U: session.status_running</span><br><span class="line">    S--&gt;&gt;U: session.thread_status_running</span><br><span class="line">    S--&gt;&gt;U: user.message（服务端回显）</span><br><span class="line"></span><br><span class="line">    Note over U,SB: ② 模型请求 span（一次模型调用）</span><br><span class="line">    S--&gt;&gt;U: span.model_request_start</span><br><span class="line">    S--&gt;&gt;U: agent.thinking（推理标记，无内容）</span><br><span class="line"></span><br><span class="line">    loop 工具调用循环（0..N 次）</span><br><span class="line">        S--&gt;&gt;U: agent.tool_use</span><br><span class="line">        A-&gt;&gt;SB: 执行工具（沙箱内）</span><br><span class="line">        S--&gt;&gt;U: agent.tool_result</span><br><span class="line">        Note over A: 注入结果后&lt;br/&gt;可能再次发起模型请求</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    S--&gt;&gt;U: agent.message（最终回复，权威结果）</span><br><span class="line">    S--&gt;&gt;U: span.model_request_end（可含 credits）</span><br><span class="line"></span><br><span class="line">    Note over U,S: ③ Turn 结束</span><br><span class="line">    S--&gt;&gt;U: session.thread_status_idle</span><br><span class="line">    S--&gt;&gt;U: session.status_idle（等待下一条消息）</span><br></pre></td></tr></table></figure>
+
+<h3 id="事件分组速查"><a href="#事件分组速查" class="headerlink" title="事件分组速查"></a>事件分组速查</h3><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>事件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Turn 开始</strong></td>
+<td><code>session.status_running</code> → <code>session.thread_status_running</code> → <code>user.message</code></td>
+<td>状态切换 + 服务端回显用户消息</td>
+</tr>
+<tr>
+<td><strong>模型请求 span</strong></td>
+<td><code>span.model_request_start</code> … <code>span.model_request_end</code></td>
+<td>一对 start&#x2F;end 包裹一次模型调用，end 可含 <code>model_usage.credits</code></td>
+</tr>
+<tr>
+<td><strong>Agent 活动</strong></td>
+<td><code>agent.thinking</code> &#x2F; <code>agent.tool_use</code> &#x2F; <code>agent.tool_result</code> &#x2F; <code>agent.message</code></td>
+<td><strong>thinking</strong> 与 <strong>tool</strong> 调用可<strong>交替出现多轮</strong>，<code>agent.message</code> 是<strong>最终回复</strong></td>
+</tr>
+<tr>
+<td><strong>Turn 结束</strong></td>
+<td><code>session.thread_status_idle</code> → <code>session.status_idle</code></td>
+<td>回到 idle，可发送下一条消息</td>
+</tr>
+</tbody></table>
+<ol>
+<li><strong>并非每一轮</strong>都会包含<strong>全部事件</strong></li>
+<li><strong>Managed-agent Session</strong> 还可能产生 <code>session.thread_created</code>、<code>session.thread_status_running</code>、<code>agent.thread_message_sent</code>、<code>agent.thread_message_received</code> 等 <strong>thread 事件</strong></li>
+</ol>
+<blockquote>
+<p>模型请求 span</p>
+</blockquote>
+<ol>
+<li><code>span.model_request_start</code> 包含 <code>id</code>、<code>processed_at</code> 和 <code>type</code></li>
+<li>与之配对的 <code>span.model_request_end</code> 包含 <code>id</code>、<code>is_error</code>、<code>model_request_start_id</code>、<code>processed_at</code> 和 <code>type</code>，其中 <code>model_request_start_id</code> 等于对应 start 事件的 <code>id</code></li>
+<li>本次模型调用有 <strong>credits</strong> 数据时，end 事件还包含 <code>model_usage: &#123;&quot;credits&quot;: 1.25&#125;</code>；<code>credits</code> 向下取整，最多保留 2 位小数</li>
+<li>说明：公开的 <code>agent.thinking</code> 事件 <strong>payload</strong> 只包含 <code>id</code>、<code>processed_at</code>、<code>type</code> 三个字段，<strong>思考内容不对外公开</strong><ul>
+<li>把该事件当作”<strong>Agent 暂停推理</strong>“的标记即可</li>
+<li>其它若干 <strong>agent.</strong>* 事件也可能省略 <code>processed_at</code>，解析时请将其视为可选字段</li>
+</ul>
+</li>
+</ol>
+<h2 id="连接生命周期"><a href="#连接生命周期" class="headerlink" title="连接生命周期"></a>连接生命周期</h2><table>
+<thead>
+<tr>
+<th>生命周期</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>session.status_idle</code></td>
+<td>表示当前 turn 结束，连接应当保持，<strong>等待下一轮</strong></td>
+</tr>
+<tr>
+<td><code>session.status_terminated</code> 和 <code>session.deleted</code></td>
+<td>是<strong>终态事件</strong> - 客户端应停止重连，不会再有更多事件</td>
+</tr>
+<tr>
+<td><code>session.status_rescheduled</code></td>
+<td>是<strong>临时信号</strong>，连接可能<strong>短暂断开</strong>，运行时恢复后会<strong>自动重连</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>网络中断</strong>时使用 <strong>Last-Event-ID header</strong> 重连；在<strong>途增量事件</strong>的特殊处理见 <strong>Event Delta 期间重连</strong></td>
+</tr>
+</tbody></table>
+<h2 id="工具响应"><a href="#工具响应" class="headerlink" title="工具响应"></a>工具响应</h2><p>当<strong>事件流</strong>产生需要确认的 <code>agent.tool_use</code> 时，向 <code>POST /api/v1/cloud/sessions/&#123;session_id&#125;/events</code> 发送 <code>user.tool_confirmation</code>，并使用<strong>工具事件 ID</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user.tool_confirmation&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;tool_use_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;evt_01JZ6Q3FB6SG8F7J1M2N&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;result&quot;</span><span class="punctuation">:</span> <span class="string">&quot;allow&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>当<strong>事件流</strong>产生 <code>agent.custom_tool_use</code> 时，<strong>由客户端执行自定义工具</strong>，并发送 <code>user.custom_tool_result</code>。</p>
+<h2 id="事件历史"><a href="#事件历史" class="headerlink" title="事件历史"></a>事件历史</h2><p><strong>历史事件</strong>和分页请使用 list endpoint：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s &quot;https://api.qoder.com/api/v1/cloud/sessions/$SESSION_ID/events?limit=20&amp;order=desc&quot; \</span><br><span class="line">  -H &quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="访问-GitHub"><a href="#访问-GitHub" class="headerlink" title="访问 GitHub"></a>访问 GitHub</h1><ol>
+<li>把 <strong>GitHub 仓库</strong>挂载到 <strong>Session 容器</strong>，让 Agent 直接读取、修改代码并提交 <strong>Pull Request</strong></li>
+<li>Qoder Cloud Agents 支持把 GitHub 仓库作为 Session 的<strong>资源</strong>挂载到容器中</li>
+<li>Session 启动后，平台会<strong>自动 clone 仓库</strong>到<strong>指定路径</strong>，Agent 可以像在<strong>本地工作树</strong>中一样读取、修改、提交、推送代码，并配合 <a target="_blank" rel="noopener" href="https://cli.github.com/">gh CLI</a> 创建 Pull Request</li>
+<li><strong>仓库资源的归属</strong>与 Session 一致<ul>
+<li><strong>Session 归档</strong>后<strong>挂载关系一并失效</strong>，Session 期内若需要<strong>替换仓库</strong>或<strong>修改克隆路径</strong>，必须<strong>创建新的 Session</strong></li>
+</ul>
+</li>
+</ol>
+<h2 id="核心流程"><a href="#核心流程" class="headerlink" title="核心流程"></a>核心流程</h2><ol>
+<li><strong>准备 GitHub 令牌</strong><ul>
+<li>生成 <strong>GitHub Personal Access Token</strong>（推荐使用 <strong>fine-grained PAT</strong>），授予仓库读取&#x2F;写入、Pull Request 等所需权限。该 token 是 GitHub 仓库资源的<strong>必填字段</strong>。</li>
+</ul>
+</li>
+<li><strong>创建 Session 时挂载仓库</strong><ul>
+<li>在创建 Session 的 <code>resources</code> 数组中加入 <code>type: &quot;github_repository&quot;</code>，把<strong>仓库 URL</strong> 与 <strong>PAT</strong> 一并传入。</li>
+</ul>
+</li>
+<li><strong>Agent 在容器内访问代码</strong><ul>
+<li>Agent 启动后即可在<strong>挂载路径</strong>下读取代码，使用 <code>Bash</code>&#x2F;<code>Read</code>&#x2F;<code>Write</code>&#x2F;<code>Edit</code> 等工具修改文件。</li>
+</ul>
+</li>
+<li><strong>（可选）创建 Pull Request</strong><ul>
+<li>Agent 在仓库目录中使用 <code>git push</code> 推送分支，再调用 gh CLI 创建 <strong>Pull Request</strong>。</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>文件持久化</p>
+</blockquote>
+<ol>
+<li><strong>仓库资源的克隆</strong>与<strong>容器临时存储</strong>共享<strong>同一份磁盘空间</strong></li>
+<li>容器临时存储在<strong>连续 24 小时未活跃</strong>后可能<strong>被回收</strong>；回收后再次<strong>唤醒 Session</strong> 时，平台会<strong>重新初始化容器</strong>并<strong>按需重新克隆仓库</strong>，磁盘<strong>上未提交的中间产物</strong>会<strong>丢失</strong></li>
+<li>请<strong>及时 commit 并 push</strong>，或通过 <strong>Files API</strong> 保存<strong>重要产物</strong></li>
+</ol>
+<h2 id="仓库资源字段"><a href="#仓库资源字段" class="headerlink" title="仓库资源字段"></a>仓库资源字段</h2><p>GitHub 仓库资源使用以下字段；推荐在<strong>创建 Session</strong> 时<strong>一次性传入</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>string</td>
+<td>是</td>
+<td>固定为 <code>&quot;github_repository&quot;</code></td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td>string</td>
+<td>是</td>
+<td>仓库 URL，例如 <code>https://github.com/your-org/your-repo</code></td>
+</tr>
+<tr>
+<td><code>mount_path</code></td>
+<td>string</td>
+<td>否</td>
+<td>克隆到<strong>容器中的路径</strong>。省略时<strong>按仓库名自动推断</strong></td>
+</tr>
+<tr>
+<td><code>authorization_token</code></td>
+<td>string</td>
+<td>是</td>
+<td><strong>GitHub Personal Access Token</strong>，用于<strong>克隆</strong>与<strong>推送</strong>仓库</td>
+</tr>
+</tbody></table>
+<ol>
+<li><code>authorization_token</code> 仅在<strong>创建请求</strong>或 <strong>token 轮转请求</strong>中传入</li>
+<li>读取 <strong>Session 详情</strong>或 <strong>Session resources</strong> 时<strong>不会返回</strong>该字段</li>
+<li>建议每个 Session 使用<strong>最小权限</strong>的 <strong>PAT</strong>，并在<strong>用完后吊销</strong></li>
+</ol>
+<h2 id="创建-Session-时挂载-GitHub-仓库"><a href="#创建-Session-时挂载-GitHub-仓库" class="headerlink" title="创建 Session 时挂载 GitHub 仓库"></a>创建 Session 时挂载 GitHub 仓库</h2><p>调用 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/api/sessions/create">创建 Session</a> 接口，在 <code>resources[]</code> 中传入<strong>仓库描述</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST https<span class="punctuation">:</span><span class="comment">//api.qoder.com/api/v1/cloud/sessions \</span></span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;agent&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent_019e5ce0bf307a1a8f952eb814aea3d5&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;environment_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;env_019e44eb66bb748cabcd1489f6fa4428&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;title&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为 your-repo 修复 bug&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;resources&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;github_repository&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;url&quot;</span><span class="punctuation">:</span> <span class="string">&quot;https://github.com/your-org/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/workspace/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;authorization_token&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span>&#x27; | jq .</span><br></pre></td></tr></table></figure>
+
+<p>成功返回 <strong>HTTP 200 OK</strong>，<code>resources</code> 字段包含<strong>归一化</strong>后的<strong>挂载描述</strong>。响应中<strong>不会返回 token</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;sess_019e5ce0bf9074b69c3481e93771a522&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;session&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;agent&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent_019e5ce0bf307a1a8f952eb814aea3d5&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;code-reviewer&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ultimate&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;effective_context_window&quot;</span><span class="punctuation">:</span> <span class="number">200000</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;system&quot;</span><span class="punctuation">:</span> <span class="string">&quot;你是代码审查专家。&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tools&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent_toolset_20260401&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;enabled_tools&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;Bash&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Read&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Write&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Edit&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Glob&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Grep&quot;</span><span class="punctuation">]</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;skills&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">2</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;environment_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;env_019e44eb66bb748cabcd1489f6fa4428&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;idle&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;title&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为 your-repo 修复 bug&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;resources&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;github_repository&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;url&quot;</span><span class="punctuation">:</span> <span class="string">&quot;https://github.com/your-org/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/workspace/your-repo&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;checkout&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;created_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T12:00:00Z&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;updated_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T12:00:00Z&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;vault_ids&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;deployment_id&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;outcome_evaluations&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;stats&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;active_seconds&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;duration_seconds&quot;</span><span class="punctuation">:</span> <span class="number">0</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;environment_variables&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;archived_at&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;created_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T12:00:00Z&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;updated_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T12:00:00Z&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>Agent 命令默认 <strong>cwd</strong> 为 <code>/data</code></li>
+<li>建议把 <code>mount_path</code> 设为 <code>/data/workspace/&lt;repo-name&gt;</code>，并在 system prompt 或用户消息中<strong>明确仓库路径</strong>。</li>
+</ol>
+<h2 id="挂载多个仓库"><a href="#挂载多个仓库" class="headerlink" title="挂载多个仓库"></a>挂载多个仓库</h2><p><strong>一次请求</strong>即可<strong>挂载多个仓库</strong>到不同 <code>mount_path</code>，例如同时挂载前端和后端代码：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST https<span class="punctuation">:</span><span class="comment">//api.qoder.com/api/v1/cloud/sessions \</span></span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;agent&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent_019e5ce0bf307a1a8f952eb814aea3d5&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">2</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;environment_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;env_019e44eb66bb748cabcd1489f6fa4428&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;title&quot;</span><span class="punctuation">:</span> <span class="string">&quot;全栈联调&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;resources&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;github_repository&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;url&quot;</span><span class="punctuation">:</span> <span class="string">&quot;https://github.com/your-org/frontend&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/workspace/frontend&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;authorization_token&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span></span><br><span class="line">      <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;github_repository&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;url&quot;</span><span class="punctuation">:</span> <span class="string">&quot;https://github.com/your-org/backend&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;mount_path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/data/workspace/backend&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;authorization_token&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span>&#x27; | jq .</span><br></pre></td></tr></table></figure>
+
+<p>也可以与<strong>文件</strong>、<strong>Memory Store</strong>、<strong>Vault</strong> 等其他资源混用，详见 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/sessions#%E5%88%9B%E5%BB%BA%E6%97%B6%E6%8C%82%E8%BD%BD%E8%B5%84%E6%BA%90">Sessions — 创建时挂载资源</a>。</p>
+<h2 id="令牌权限模型"><a href="#令牌权限模型" class="headerlink" title="令牌权限模型"></a>令牌权限模型</h2><ol>
+<li>GitHub 提供两种 PAT：<strong>fine-grained PAT</strong>（推荐）和 <strong>classic PAT</strong></li>
+<li>在 Qoder Cloud Agents 中使用时，按”<strong>最小权限原则</strong>“申请仅与本次任务相关的权限</li>
+</ol>
+<h3 id="推荐权限对照"><a href="#推荐权限对照" class="headerlink" title="推荐权限对照"></a>推荐权限对照</h3><p>下表给出常见 Agent 操作对应的 <strong>fine-grained PAT</strong> 权限。<strong>classic PAT</strong> 对应的是<strong>仓库范围</strong>的 <code>repo</code> scope。</p>
+<table>
+<thead>
+<tr>
+<th>Agent 操作</th>
+<th>fine-grained PAT 权限（Repository permissions）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>克隆&#x2F;读取私有仓库</td>
+<td><code>Contents: Read</code></td>
+</tr>
+<tr>
+<td>创建分支并推送</td>
+<td><code>Contents: Read &amp; Write</code></td>
+</tr>
+<tr>
+<td>创建 &#x2F; 评论 Pull Request</td>
+<td><code>Pull requests: Read &amp; Write</code></td>
+</tr>
+<tr>
+<td>读取 Issues</td>
+<td><code>Issues: Read</code></td>
+</tr>
+<tr>
+<td>创建 &#x2F; 评论 Issues</td>
+<td><code>Issues: Read &amp; Write</code></td>
+</tr>
+<tr>
+<td>读取仓库元信息（必备）</td>
+<td><code>Metadata: Read</code></td>
+</tr>
+</tbody></table>
+<ol>
+<li><strong>fine-grained PAT</strong> 可绑定到<strong>具体仓库</strong>（甚至特定的 <strong>organization</strong> 资源），相比 classic PAT <strong>风险更低</strong></li>
+<li>建议为<strong>每个 Agent 任务</strong>申请<strong>独立</strong>的、<strong>短期有效</strong>的 <strong>PAT</strong></li>
+</ol>
+<h3 id="安全建议"><a href="#安全建议" class="headerlink" title="安全建议"></a>安全建议</h3><ol>
+<li>不要将包含 <code>authorization_token</code> 的 Session 创建或 token 轮转请求写入<strong>日志</strong>、<strong>截图</strong>或<strong>版本库</strong>。Session 查询响应<strong>不会返回 PAT</strong></li>
+<li><strong>任务完成后</strong>及时在 GitHub 设置中<strong>吊销 PAT</strong>；fine-grained PAT 也支持设置<strong>较短</strong>的 <code>Expiration</code></li>
+<li>即使是<strong>公开仓库</strong>也需要传入 <strong>PAT</strong>；建议为公开仓库使用<strong>只读、短期有效</strong>的 <strong>token</strong>，将<strong>权限暴露面</strong>降到最低</li>
+<li>不同环境（开发 &#x2F; 生产）使用不同的 PAT，便于<strong>审计</strong></li>
+</ol>
+<h2 id="创建-Pull-Request-工作流"><a href="#创建-Pull-Request-工作流" class="headerlink" title="创建 Pull Request 工作流"></a>创建 Pull Request 工作流</h2><ol>
+<li>Agent 在挂载好的仓库目录中可以直接执行 <code>git</code> 与 <code>gh</code> 命令</li>
+<li>运行<strong>镜像</strong>已内置 <code>git</code> 与 <strong>gh CLI</strong>，平台也会用仓库资源的 <code>authorization_token</code> <strong>自动</strong>为容器配置 <code>GH_TOKEN</code>，无需手动安装或导出环境变量</li>
+<li>要让 Agent 完成”修改 -&gt; push -&gt; 创建 PR”全流程，只需：<ul>
+<li>Agent 配置中启用 <code>agent_toolset_20260401</code> 工具集，至少包含 <code>Bash</code>、<code>Read</code>、<code>Write</code>、<code>Edit</code></li>
+<li>在 user message 中清晰描述任务、仓库路径与目标分支</li>
+</ul>
+</li>
+</ol>
+<p>下面是一个端到端示例，假设 Session ID 为 <code>sess_019e5ce0bf9074b69c3481e93771a522</code>、仓库挂载在 <code>/data/workspace/your-repo</code>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/sess_019e5ce0bf9074b69c3481e93771a522/events&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer $QODER_ACCESS_TOKEN&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d &#x27;<span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user.message&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">          <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;text&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;text&quot;</span><span class="punctuation">:</span> <span class="string">&quot;请在 /data/workspace/your-repo 中修复 issue #128（用户登录后无法刷新 token）。完整流程：\n1) cd /data/workspace/your-repo；\n2) git checkout -b fix/refresh-token；\n3) 修复 src/auth/refresh.ts 中的 bug 并补充单测；\n4) git add 改动并 git commit -m \&quot;fix(auth): rotate refresh token on login\&quot;；\n5) git push -u origin fix/refresh-token；\n6) 用 gh pr create --base main --head fix/refresh-token --title \&quot;fix(auth): rotate refresh token on login\&quot; --body \&quot;Fixes #128\&quot; 创建 Pull Request。&quot;</span></span><br><span class="line">          <span class="punctuation">&#125;</span></span><br><span class="line">        <span class="punctuation">]</span></span><br><span class="line">      <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span>&#x27;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>平台会用仓库资源的 <code>authorization_token</code> 自动为容器配置 <code>GH_TOKEN</code>，<code>gh pr create</code> 在容器内可直接调用</li>
+<li>如果该 PAT 没有 <code>Pull requests: Read &amp; Write</code> 权限，PR 创建会失败；申请 PAT 时请按上文 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/github-repositories#%E6%8E%A8%E8%8D%90%E6%9D%83%E9%99%90%E5%AF%B9%E7%85%A7">推荐权限对照</a> 一并授予</li>
+</ol>
+<h2 id="配合-Agent-配置的最佳实践"><a href="#配合-Agent-配置的最佳实践" class="headerlink" title="配合 Agent 配置的最佳实践"></a>配合 Agent 配置的最佳实践</h2><ol>
+<li>在 Agent 的 <code>tools</code> 中启用 <code>Bash</code>、<code>Read</code>、<code>Write</code>、<code>Edit</code>、<code>Glob</code>、<code>Grep</code>，覆盖<strong>代码搜索</strong>与<strong>修改</strong>场景。</li>
+<li>在 Agent 的 <code>system</code> 提示中明确<strong>仓库挂载路径</strong>，例如：”你的仓库目录是 <code>/data/workspace/your-repo</code>，所有 git 与 <code>gh</code> 操作都应在该目录下执行。”</li>
+<li>对<strong>长任务</strong>可以在 system prompt 中要求 Agent 在每轮结束时执行 <code>git status</code> 自检，避免漏 commit。</li>
+<li>如需<strong>跨 Session 复用产物</strong>，让 Agent 在每轮结束前用 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/files">Files API</a> <strong>上传关键产物</strong>（patch 文件、报告）；沙箱被<strong>回收</strong>或<strong>重建</strong>后，<strong>未上传的中间文件</strong>可能<strong>丢失</strong>。</li>
+</ol>
+<h2 id="常见问题-1"><a href="#常见问题-1" class="headerlink" title="常见问题"></a>常见问题</h2><blockquote>
+<p>Q: 仓库太大，克隆很慢怎么办？</p>
+</blockquote>
+<p>A: 当前资源挂载使用<strong>完整 clone</strong>，资源字段里<strong>没有浅克隆开关</strong>。对于体积非常大的 monorepo，建议<strong>拆分任务范围</strong>，或使用 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/files">Files API</a> 上传关键子目录&#x2F;文件作为补充上下文。</p>
+<blockquote>
+<p>Q: PAT 过期或被吊销了怎么办？</p>
+</blockquote>
+<p>A: 后续 git&#x2F;<code>gh</code> 操作会返回 401。需要<strong>创建新的 Session 并使用新 PAT</strong>；对于<strong>已挂载但尚未推送的修改</strong>，可以让 Agent 在 Session 内先 <code>git diff</code> 输出 <strong>patch</strong>，再用 <a target="_blank" rel="noopener" href="https://docs.qoder.com/zh/cloud-agents/files">Files API</a> 上传<strong>备份</strong>。</p>
+<blockquote>
+<p>Q: 是否支持 fork 私有仓库或访问 organization 内部仓库？</p>
+</blockquote>
+<p>A: 支持，只要 PAT 对<strong>目标仓库</strong>具备 <code>Contents: Read</code> 权限即可。组织开启了 SSO 时，PAT 必须先经过 <strong>SSO</strong> 授权（Authorize 按钮）才能用于克隆。</p>
+<blockquote>
+<p>Q: 是否支持 git submodule？</p>
+</blockquote>
+<p>A: 仓库资源<strong>不会额外声明 submodule 字段</strong>。需要使用 submodule 时，让 Agent 在仓库目录中执行 <code>git submodule update --init --recursive</code>，并确保 <strong>PAT</strong> 对<strong>所有 submodule 仓库</strong>都有<strong>读权限</strong>。</p>
+<blockquote>
+<p>Q: Session 运行中能换仓库吗？</p>
+</blockquote>
+<p>A: <strong>不能</strong>。一旦 Session 创建完成且某个仓库已挂载，挂载关系不会因为 <strong>update</strong> 调用而被替换。如需<strong>切换仓库</strong>，请创建<strong>新的 Session</strong>。</p>
+<blockquote>
+<p>Q: Agent 修改的代码会自动推回 GitHub 吗？</p>
+</blockquote>
+<p>A: 不会。除非 Agent 在任务中显式执行 <code>git push</code>，所有修改只存在于<strong>容器临时存储</strong>。请在 user message 中明确要求”push 分支”或”创建 PR”。</p>
+<blockquote>
+<p>Q: GitHub Enterprise Server (GHES) 是否支持？</p>
+</blockquote>
+<p>A: GitHub 仓库资源只暴露 <code>url</code>、<code>mount_path</code> 和 <code>authorization_token</code> 字段，没有单独的 <strong>GHES</strong> 配置字段。使用 GitHub Enterprise Server 时，请确认 GHES 端点对外可达，并确认对应 token 可被 <code>gh</code>&#x2F;git 用于该主机。</p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/08/20/agent-infra-cloud-agents-v3/">https://blog.zhongmingmao.top/2026/08/20/agent-infra-cloud-agents-v3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/agent-infra/">Agent Infra</a><a class="post-meta__tags" href="/tags/cloud-agents/">Cloud Agents</a></div><div class="post-share"><div class="social-share" data-image="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v2.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Agent Infra - Cloud Agents V2</div></div><div class="info-2"><div class="info-item-1">Agent Skills 为 Agent 附加领域专业知识 Skills 为 Agent 附加领域专业知识 一个 Skill 是一组结构化的指令和流程，让 Agent 在特定任务上表现得更专业、更可靠    架构概览123456789101112131415161718192021222324252627282930313233flowchart TB    subgraph STATIC[&quot;🔵 静态层 - 配置模板（可复用、版本化）&quot;]        direction TB        AG[&quot;Agent&lt;br/&gt;📋 配置模板&lt;br/&gt;— · model · system&lt;br/&gt;— tools · skills&quot;]        ENV[&quot;Environment&lt;br/&gt;🐳 容器环境&lt;br/&gt;— · packages · setup_script&quot;]        SK[&quot;Skill&lt;br/&gt;🎯 领域知识&lt;br/&gt;— · 版本化 · 可...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v2.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-18</div><div class="info-item-2">Agent Infra - Cloud Agents V2</div></div><div class="info-2"><div class="info-item-1">Agent Skills 为 Agent 附加领域专业知识 Skills 为 Agent 附加领域专业知识 一个 Skill 是一组结构化的指令和流程，让 Agent 在特定任务上表现得更专业、更可靠    架构概览123456789101112131415161718192021222324252627282930313233flowchart TB    subgraph STATIC[&quot;🔵 静态层 - 配置模板（可复用、版本化）&quot;]        direction TB        AG[&quot;Agent&lt;br/&gt;📋 配置模板&lt;br/&gt;— · model · system&lt;br/&gt;— tools · skills&quot;]        ENV[&quot;Environment&lt;br/&gt;🐳 容器环境&lt;br/&gt;— · packages · setup_script&quot;]        SK[&quot;Skill&lt;br/&gt;🎯 领域知识&lt;br/&gt;— · 版本化 · 可...</div></div></div></a><a class="pagination-related" href="/2026/08/18/agent-infra-cloud-agents-v1/" title="Agent Infra - Cloud Agents V1"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-18</div><div class="info-item-2">Agent Infra - Cloud Agents V1</div></div><div class="info-2"><div class="info-item-1">概述 Qoder Cloud Agents 是一个全托管的 AI Agent 运行平台 通过 API 定义 Agent、启动 Session，即可在云端运行复杂任务并实时接收结果 为软件装上不断进化的大脑 通过 API 将持续进化的 Agent 能力嵌入你的应用 一次接入 - 智能能力随平台升级自动成长，无需修改任何代码   特性 一次调用即生产，长程执行，全程可观测 10000+ - 秒级并发实例弹性调度，按需扩缩 26 小时 - 单 Session 最长持续运行时长 1 天 - 从零到生产级 Agent 的交付时间   特点 一次调用，端到端交付 Agent 自主完成理解、规划、工具调用、代码生成、测试验证的完整链路，直接交付可用结果   长程执行，断点恢复 Session 基于事件流持久化，不绑定单一进程 支持数小时乃至数天的长时运行任务：批量审查、跨仓库重构、多轮迭代修复 中断自动恢复，进度永不丢失   安全可信，全程可观测 每个 Agent 运行在独立 Sandbox 中，租户间零数据渗透 所有行为通过 SSE 实时可观测 每一步思考、每一次工具调用、每一个输出，精确可追溯可审计     接入...</div></div></div></a><a class="pagination-related" href="/2026/05/20/agent-infra-envoy-ai-gateway/" title="Agent Infra - Envoy AI Gateway"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/gateway/envoy-ai-gateway.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-20</div><div class="info-item-2">Agent Infra - Envoy AI Gateway</div></div><div class="info-2"><div class="info-item-1">OverviewEnvoy AI Gateway is an open source project for using Envoy Gateway to handle request traffic from application clients to Generative AI services.   Usage When using Envoy AI Gateway, we refer to a two-tier gateway pattern.   The Tier One Gateway functions as a centralized entry point handles authentication, top-level routing, and global rate limiting   The Tier Two Gateway handles ingress traffic to a self-hosted model serving cluster provides fine-grained control over self-hosted model access, wi...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">668</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">204</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">96</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8-Session"><span class="toc-number">1.</span> <span class="toc-text">启动 Session</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Session-%E7%8A%B6%E6%80%81%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">1.1.</span> <span class="toc-text">Session 状态生命周期</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Cancel-%E8%AF%AD%E4%B9%89"><span class="toc-number">1.2.</span> <span class="toc-text">Cancel 语义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%91-running-Session-%E5%8F%91%E6%B6%88%E6%81%AF%EF%BC%88409-%E9%94%99%E8%AF%AF%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">向 running Session 发消息（409 错误）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-Session"><span class="toc-number">1.4.</span> <span class="toc-text">创建 Session</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E6%97%B6%E6%8C%82%E8%BD%BD%E8%B5%84%E6%BA%90"><span class="toc-number">1.5.</span> <span class="toc-text">创建时挂载资源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF"><span class="toc-number">1.6.</span> <span class="toc-text">发送消息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%BB%E5%8F%96%E4%BA%8B%E4%BB%B6"><span class="toc-number">1.7.</span> <span class="toc-text">读取事件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%BB%E5%8F%96%E5%92%8C%E6%9B%B4%E6%96%B0-Sessions"><span class="toc-number">1.8.</span> <span class="toc-text">读取和更新 Sessions</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Threads"><span class="toc-number">1.9.</span> <span class="toc-text">Threads</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Session-%E4%B8%8E-Threads-%E6%9E%B6%E6%9E%84%E5%85%B3%E7%B3%BB"><span class="toc-number">1.9.1.</span> <span class="toc-text">Session 与 Threads 架构关系</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">1.10.</span> <span class="toc-text">生命周期</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">1.11.</span> <span class="toc-text">多轮对话工作流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.12.</span> <span class="toc-text">最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">1.13.</span> <span class="toc-text">常见问题</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#SSE-%E4%BA%8B%E4%BB%B6%E6%B5%81"><span class="toc-number">2.</span> <span class="toc-text">SSE 事件流</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E8%BF%9E%E6%8E%A5%E6%A8%A1%E5%9E%8B"><span class="toc-number">2.1.</span> <span class="toc-text">多连接模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9E%E6%8E%A5-URL"><span class="toc-number">2.2.</span> <span class="toc-text">连接 URL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SSE-%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.3.</span> <span class="toc-text">SSE 格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Event-Delta"><span class="toc-number">2.4.</span> <span class="toc-text">Event Delta</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A2%9E%E9%87%8F%E8%BE%93%E5%87%BA%E6%9C%BA%E5%88%B6"><span class="toc-number">2.4.1.</span> <span class="toc-text">增量输出机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E4%BA%8B%E4%BB%B6%E6%B5%81%E9%A1%BA%E5%BA%8F"><span class="toc-number">2.4.2.</span> <span class="toc-text">完整事件流顺序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Event-Delta-%E6%9C%9F%E9%97%B4%E9%87%8D%E8%BF%9E"><span class="toc-number">2.5.</span> <span class="toc-text">Event Delta 期间重连</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E5%9C%BA%E6%99%AF%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.5.1.</span> <span class="toc-text">具体场景示例</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%F0%9F%9F%A2-%E5%9C%BA%E6%99%AF-1%EF%BC%9A%E6%B8%B8%E6%A0%87%E5%9C%A8-event-start-%E4%B9%8B%E5%89%8D"><span class="toc-number">2.5.1.1.</span> <span class="toc-text">🟢 场景 1：游标在 event_start 之前</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%F0%9F%9F%A1-%E5%9C%BA%E6%99%AF-2%EF%BC%9A%E6%B8%B8%E6%A0%87%E7%AD%89%E4%BA%8E-event-start-id"><span class="toc-number">2.5.1.2.</span> <span class="toc-text">🟡 场景 2：游标等于 event_start.id</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%F0%9F%94%B5-%E5%9C%BA%E6%99%AF-3%EF%BC%9AMessage-%E5%B7%B2%E7%94%9F%E6%88%90%E5%AE%8C%E6%88%90"><span class="toc-number">2.5.1.3.</span> <span class="toc-text">🔵 场景 3：Message 已生成完成</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%89%E7%A7%8D%E5%9C%BA%E6%99%AF%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">2.5.2.</span> <span class="toc-text">三种场景对照表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%A4%84%E7%90%86%E7%AD%96%E7%95%A5"><span class="toc-number">2.5.3.</span> <span class="toc-text">客户端处理策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E4%BA%8B%E4%BB%B6%E6%B5%81"><span class="toc-number">2.6.</span> <span class="toc-text">常见事件流</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA-Turn-%E7%9A%84%E5%AE%8C%E6%95%B4%E4%BA%8B%E4%BB%B6%E6%97%B6%E5%BA%8F"><span class="toc-number">2.6.1.</span> <span class="toc-text">一个 Turn 的完整事件时序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8B%E4%BB%B6%E5%88%86%E7%BB%84%E9%80%9F%E6%9F%A5"><span class="toc-number">2.6.2.</span> <span class="toc-text">事件分组速查</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9E%E6%8E%A5%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">2.7.</span> <span class="toc-text">连接生命周期</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E5%85%B7%E5%93%8D%E5%BA%94"><span class="toc-number">2.8.</span> <span class="toc-text">工具响应</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E4%BB%B6%E5%8E%86%E5%8F%B2"><span class="toc-number">2.9.</span> <span class="toc-text">事件历史</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%BF%E9%97%AE-GitHub"><span class="toc-number">3.</span> <span class="toc-text">访问 GitHub</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B"><span class="toc-number">3.1.</span> <span class="toc-text">核心流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%93%E5%BA%93%E8%B5%84%E6%BA%90%E5%AD%97%E6%AE%B5"><span class="toc-number">3.2.</span> <span class="toc-text">仓库资源字段</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-Session-%E6%97%B6%E6%8C%82%E8%BD%BD-GitHub-%E4%BB%93%E5%BA%93"><span class="toc-number">3.3.</span> <span class="toc-text">创建 Session 时挂载 GitHub 仓库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%82%E8%BD%BD%E5%A4%9A%E4%B8%AA%E4%BB%93%E5%BA%93"><span class="toc-number">3.4.</span> <span class="toc-text">挂载多个仓库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A4%E7%89%8C%E6%9D%83%E9%99%90%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.5.</span> <span class="toc-text">令牌权限模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A8%E8%8D%90%E6%9D%83%E9%99%90%E5%AF%B9%E7%85%A7"><span class="toc-number">3.5.1.</span> <span class="toc-text">推荐权限对照</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E5%BB%BA%E8%AE%AE"><span class="toc-number">3.5.2.</span> <span class="toc-text">安全建议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-Pull-Request-%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">3.6.</span> <span class="toc-text">创建 Pull Request 工作流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E5%90%88-Agent-%E9%85%8D%E7%BD%AE%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">3.7.</span> <span class="toc-text">配合 Agent 配置的最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98-1"><span class="toc-number">3.8.</span> <span class="toc-text">常见问题</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/08/20/agent-infra-cloud-agents-v3/" title="Agent Infra - Cloud Agents V3"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V3"/></a><div class="content"><a class="title" href="/2026/08/20/agent-infra-cloud-agents-v3/" title="Agent Infra - Cloud Agents V3">Agent Infra - Cloud Agents V3</a><time datetime="2026-08-19T16:06:25.000Z" title="Created 2026-08-20 00:06:25">2026-08-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v2.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V2"/></a><div class="content"><a class="title" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2">Agent Infra - Cloud Agents V2</a><time datetime="2026-08-18T04:06:25.000Z" title="Created 2026-08-18 12:06:25">2026-08-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/18/agent-infra-cloud-agents-v1/" title="Agent Infra - Cloud Agents V1"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V1"/></a><div class="content"><a class="title" href="/2026/08/18/agent-infra-cloud-agents-v1/" title="Agent Infra - Cloud Agents V1">Agent Infra - Cloud Agents V1</a><time datetime="2026-08-17T16:06:25.000Z" title="Created 2026-08-18 00:06:25">2026-08-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/03/cloud-computing-agenticfs/" title="Cloud Computing - AgenticFS"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cloud-computing-1253868755.cos.ap-guangzhou.myqcloud.com/nas/image-20260803100307919.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Cloud Computing - AgenticFS"/></a><div class="content"><a class="title" href="/2026/08/03/cloud-computing-agenticfs/" title="Cloud Computing - AgenticFS">Cloud Computing - AgenticFS</a><time datetime="2026-08-02T16:06:25.000Z" title="Created 2026-08-03 00:06:25">2026-08-03</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/07/27/cloud-computing-nas-v1/" title="Cloud Computing - NAS V1"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cloud-computing-1253868755.cos.ap-guangzhou.myqcloud.com/nas/cloud-computing-nas.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Cloud Computing - NAS V1"/></a><div class="content"><a class="title" href="/2026/07/27/cloud-computing-nas-v1/" title="Cloud Computing - NAS V1">Cloud Computing - NAS V1</a><time datetime="2026-07-26T16:06:25.000Z" title="Created 2026-07-27 00:06:25">2026-07-27</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
