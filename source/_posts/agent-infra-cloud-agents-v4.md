@@ -2,7 +2,7 @@
 title: Agent Infra - Cloud Agents V4
 mathjax: false
 date: 2026-08-20 12:06:25
-cover: https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp
+cover: https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloudcomputing.jpg
 categories:
   - Agent Infra
   - Cloud Agents
