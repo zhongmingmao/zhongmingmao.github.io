@@ -1,0 +1,2030 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Agent Infra - Cloud Agents V6 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="文件上传与挂载 上传文件为 Agent 提供上下文，并下载 Agent 产出的文件 文件 API 让你向 Session 提供文件上下文 - 代码仓库、配置文件、参考文档等 Agent 可以读取这些文件来理解任务背景   Files &#x2F; Resources 属于 Managed Mode 资源（base URL &#x2F;api&#x2F;v1&#x2F;cloud），系列分界线见 V5">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent Infra - Cloud Agents V6">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/08/21/agent-infra-cloud-agents-v6/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="文件上传与挂载 上传文件为 Agent 提供上下文，并下载 Agent 产出的文件 文件 API 让你向 Session 提供文件上下文 - 代码仓库、配置文件、参考文档等 Agent 可以读取这些文件来理解任务背景   Files &#x2F; Resources 属于 Managed Mode 资源（base URL &#x2F;api&#x2F;v1&#x2F;cloud），系列分界线见 V5">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp">
+<meta property="article:published_time" content="2026-08-21T04:06:25.000Z">
+<meta property="article:modified_time" content="2026-08-22T06:47:19.216Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Agent Infra">
+<meta property="article:tag" content="Cloud Agents">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Agent Infra - Cloud Agents V6",
+  "url": "https://blog.zhongmingmao.top/2026/08/21/agent-infra-cloud-agents-v6/",
+  "image": "https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp",
+  "datePublished": "2026-08-21T04:06:25.000Z",
+  "dateModified": "2026-08-22T06:47:19.216Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/08/21/agent-infra-cloud-agents-v6/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Agent Infra - Cloud Agents V6',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">671</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">204</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">96</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Agent Infra - Cloud Agents V6</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Agent Infra - Cloud Agents V6</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-08-21T04:06:25.000Z" title="Created 2026-08-21 12:06:25">2026-08-21</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/agent-infra/">Agent Infra</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/agent-infra/cloud-agents/">Cloud Agents</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">10.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>42mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-08-22 14:47:19&quot;}" hidden></div><h1 id="文件上传与挂载"><a href="#文件上传与挂载" class="headerlink" title="文件上传与挂载"></a>文件上传与挂载</h1><ol>
+<li>上传文件为 Agent 提供<strong>上下文</strong>，并下载 Agent 产出的文件</li>
+<li><strong>文件 API</strong> 让你向 <strong>Session</strong> 提供文件上下文 - 代码仓库、配置文件、参考文档等</li>
+<li>Agent 可以读取这些文件来理解任务背景</li>
+</ol>
+<blockquote>
+<p><strong>Files &#x2F; Resources</strong> 属于 <strong>Managed Mode</strong> 资源（base URL <code>/api/v1/cloud</code>），系列分界线见 <a href="/2026/08/21/agent-infra-cloud-agents-v5/">V5</a></p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="全景：一张图看懂"><a href="#全景：一张图看懂" class="headerlink" title="全景：一张图看懂"></a>全景：一张图看懂</h2><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    subgraph CTRL[&quot;🎛️ 控制面（记账）&quot;]
+        API[&quot;Files API&quot;]
+        OSS[(&quot;对象存储&lt;br&#x2F;&gt;file 正文&quot;)]
+        DB[(&quot;元数据库&lt;br&#x2F;&gt;scope · 引用计数&quot;)]
+        SPEC[&quot;Session 资源表&lt;br&#x2F;&gt;sesr_: file_id → mount_path&quot;]
+        W[(&quot;工作队列&lt;br&#x2F;&gt;work_&quot;)]
+    end
+
+    U[&quot;开发者&quot;] --&gt;|&quot;① 上传 multipart ≤5MB 文本&quot;| API
+    API --&gt;|&quot;流式写正文&quot;| OSS
+    API --&gt;|&quot;元数据落库&quot;| DB
+    U --&gt;|&quot;②a 创建时: resources 字段&quot;| SPEC
+    U --&gt;|&quot;②b 创建后: POST &#x2F;resources&lt;br&#x2F;&gt;（仅支持 file）&quot;| SPEC
+    SPEC --&gt;|&quot;③ Session 激活时&lt;br&#x2F;&gt;随会话工作一起派发&quot;| W
+
+    subgraph RUN[&quot;🏃 运行时（物化）&quot;]
+        RT[&quot;Runner（环境）&quot;]
+        FS[&quot;容器文件系统&lt;br&#x2F;&gt;&#x2F;mnt&#x2F;session&#x2F;uploads&#x2F;file_xxx&quot;]
+        AG[&quot;Agent&quot;]
+    end
+
+    W --&gt;|&quot;poll → ack → heartbeat&quot;| RT
+    RT --&gt;|&quot;④ GET &#x2F;content 拉取&quot;| OSS
+    RT --&gt;|&quot;⑤ 只读写入&quot;| FS
+    AG --&gt;|&quot;⑥ 读取&quot;| FS
+
+    classDef user fill:#e8f0fe,stroke:#4285f4
+    classDef store fill:#e6f4ea,stroke:#34a853
+    classDef queue fill:#fef7e0,stroke:#f9ab00
+    classDef run fill:#f3e8fd,stroke:#a142f4
+    class U,API user
+    class OSS,DB,SPEC store
+    class W queue
+    class RT,FS,AG run
+  </pre></div>
+
+<h2 id="心智模型"><a href="#心智模型" class="headerlink" title="心智模型"></a>心智模型</h2><blockquote>
+<p><strong>一句话</strong>：对象存储存正文、元数据库记账；”mount” 借了<strong>文件系统</strong>的词，干的是 <strong>K8s 的活</strong> - <strong>声明式资源投影</strong>，物化延迟到 <strong>Session 激活</strong>。</p>
+</blockquote>
+<blockquote>
+<p><strong>说明</strong>：存储后端（OSS&#x2F;S3&#x2F;NAS）官方<strong>未披露</strong>，本文「机制剖析」章节的结论是从 <strong>API 形态</strong>倒推的<strong>推断</strong>，但每条推断都附有 API 证据；<strong>work 队列模型</strong>则有公开 API 文档佐证。</p>
+</blockquote>
+<h2 id="核心流程"><a href="#核心流程" class="headerlink" title="核心流程"></a>核心流程</h2><ol>
+<li><strong>上传文件</strong><ul>
+<li><code>POST /api/v1/cloud/files</code> - 上传文本类文件内容</li>
+</ul>
+</li>
+<li><strong>挂载到 Session</strong><ul>
+<li><code>POST /api/v1/cloud/sessions/&#123;session_id&#125;/resources</code> - 把<strong>已上传文件</strong>挂载到 <strong>Session</strong></li>
+</ul>
+</li>
+<li><strong>Agent 使用</strong><ul>
+<li>Session <strong>运行期间</strong> Agent 读取文件内容，完成任务</li>
+</ul>
+</li>
+</ol>
+<h2 id="上传文件"><a href="#上传文件" class="headerlink" title="上传文件"></a>上传文件</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">POST https://api.qoder.com/api/v1/cloud/files</span><br><span class="line">Content-Type: multipart/form-data</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数与约束"><a href="#参数与约束" class="headerlink" title="参数与约束"></a>参数与约束</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>file</code></td>
+<td>binary</td>
+<td>是</td>
+<td><strong>文件内容</strong>（仅文本类）</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>否</td>
+<td>自定义文件名（1-255 字节，服务端清洗）</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>JSON</td>
+<td>否</td>
+<td><strong>自定义元数据</strong>（原始长度 ≤ 8KB，默认 <code>&#123;&#125;</code>）</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>约束维度</th>
+<th>限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>大小</td>
+<td>multipart 请求体约 <strong>≤ 5MB</strong> 文件内容 + 表单开销</td>
+</tr>
+<tr>
+<td>类型</td>
+<td><strong>仅文本类</strong>；二进制文档、图片、音视频、压缩包会被拒绝</td>
+</tr>
+<tr>
+<td>下载</td>
+<td>是否可通过 <code>/content</code> 下载，以 File 对象的 <code>downloadable</code> 为准</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>单个文件</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/files \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -F <span class="string">&quot;file=@./src/main.py&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>响应：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;file_019e6a18dc0978e9a2104c9b269748ac&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;file&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;filename&quot;</span><span class="punctuation">:</span> <span class="string">&quot;main.py&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;size_bytes&quot;</span><span class="punctuation">:</span> <span class="number">4096</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;downloadable&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;mime_type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;text/plain&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;scope&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;created_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-01T10:00:00Z&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="响应字段解读"><a href="#响应字段解读" class="headerlink" title="响应字段解读"></a>响应字段解读</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td><code>file_</code> 前缀 + <strong>UUIDv7</strong>（时间戳开头，按创建时间排序友好）</td>
+</tr>
+<tr>
+<td><code>filename</code></td>
+<td>存储文件名（<code>name</code> 参数或原始文件名）</td>
+</tr>
+<tr>
+<td><code>size_bytes</code></td>
+<td>文件字节数</td>
+</tr>
+<tr>
+<td><code>mime_type</code></td>
+<td>上传时提供，或按文件名探测</td>
+</tr>
+<tr>
+<td><code>downloadable</code></td>
+<td>平台侧 ACL：能否走 <code>/content</code> 端点下载</td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>关联对象 <code>&#123;id, type: &quot;session&quot;&#125;</code>，无关联为 <code>null</code></td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>上传时传入的自定义元数据</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>RFC 3339 UTC 时间戳</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>多个文件（逐个上传）</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/files \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -F <span class="string">&quot;file=@./config.yaml&quot;</span></span><br><span class="line"></span><br><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/files \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -F <span class="string">&quot;file=@./requirements.txt&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="挂载到-Session"><a href="#挂载到-Session" class="headerlink" title="挂载到 Session"></a>挂载到 Session</h2><p>上传后，通过 <strong>Resources API</strong> 将文件<strong>挂载</strong>到<strong>指定 Session</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST https://api.qoder.com/api/v1/cloud/sessions/&#123;session_id&#125;/resources</span><br></pre></td></tr></table></figure>
+
+<h3 id="两种挂载时机"><a href="#两种挂载时机" class="headerlink" title="两种挂载时机"></a>两种挂载时机</h3><table>
+<thead>
+<tr>
+<th>时机</th>
+<th>方式</th>
+<th>支持的资源类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>创建时挂载</strong></td>
+<td>创建 Session 的 <code>resources</code> 字段</td>
+<td><code>file</code> &#x2F; <code>github_repository</code> &#x2F; <code>memory_store</code></td>
+</tr>
+<tr>
+<td><strong>创建后追加</strong></td>
+<td><code>POST /sessions/&#123;id&#125;/resources</code></td>
+<td>**仅 <code>file</code>**（API 参考明确限制）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>为什么创建后只能补挂 file？</strong> git clone 和 memory store 是<strong>重资源</strong>，只能在建容器时一次性做好；<strong>纯文本小文件</strong>的补挂才是<strong>廉价可增量</strong>的事。</p>
+</blockquote>
+<h3 id="resources-的三种类型（同一个抽象）"><a href="#resources-的三种类型（同一个抽象）" class="headerlink" title="resources 的三种类型（同一个抽象）"></a>resources 的三种类型（同一个抽象）</h3><table>
+<thead>
+<tr>
+<th>type</th>
+<th>关键字段</th>
+<th>本质</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>file</code></td>
+<td><code>file_id</code>, <code>mount_path</code></td>
+<td>对象内容<strong>投影</strong>到容器路径</td>
+</tr>
+<tr>
+<td><code>github_repository</code></td>
+<td><code>url</code>, <code>mount_path</code>, <code>authorization_token</code></td>
+<td>仓库 <strong>clone</strong> 进容器</td>
+</tr>
+<tr>
+<td><code>memory_store</code></td>
+<td><code>memory_store_id</code>, <code>access</code>, <code>instructions</code></td>
+<td>记忆库以<strong>工具形式</strong>注入</td>
+</tr>
+</tbody></table>
+<p>三种<strong>异构资源</strong>共用<strong>一个抽象</strong> - 这说明”挂载”<strong>不是文件系统意义上的 mount</strong>（没有 <strong>NFS&#x2F;FUSE</strong>），而是<strong>声明式资源投影</strong>（详见下文机制剖析）。</p>
+<h3 id="mount-path-规则"><a href="#mount-path-规则" class="headerlink" title="mount_path 规则"></a>mount_path 规则</h3><ul>
+<li>官方定义：<strong>文件在 container 中出现的位置</strong>（如 <code>/data/inputs/spec.md</code>）</li>
+<li>可选字段，缺省默认 <strong><code>/mnt/session/uploads/&lt;file_id&gt;</code></strong> - 默认值直接暴露了实现：物化进容器文件系统的 <code>uploads</code> 目录</li>
+</ul>
+<h3 id="请求示例"><a href="#请求示例" class="headerlink" title="请求示例"></a>请求示例</h3><p>按 API 参考，<strong>Add Resource</strong> 的请求体是<strong>单个 resource 对象</strong>；多个文件请<strong>逐个调用</strong>（指南页 <code>resources</code> 数组示例与此略有不一致，以 API 参考为准）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/sessions/sess_abc123/resources \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;type&quot;: &quot;file&quot;,</span></span><br><span class="line"><span class="string">    &quot;file_id&quot;: &quot;file_abc123&quot;,</span></span><br><span class="line"><span class="string">    &quot;mount_path&quot;: &quot;/data/input.txt&quot;</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>响应返回一个 <strong><code>sesr_</code> 前缀的资源对象</strong>（含 <code>mount_path</code>、<code>created_at</code>、<code>updated_at</code>）- <strong>挂载</strong>在<strong>控制面</strong>创建了<strong>一等实体</strong>，而非<strong>即时文件系统</strong>操作。</p>
+<h3 id="典型错误"><a href="#典型错误" class="headerlink" title="典型错误"></a>典型错误</h3><table>
+<thead>
+<tr>
+<th>HTTP</th>
+<th>触发条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td>请求畸形 &#x2F; 不支持的 type &#x2F; <code>mount_path</code> 非法</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Session 或 File 不存在</td>
+</tr>
+<tr>
+<td>409</td>
+<td>Session 已归档 &#x2F; 文件未就绪 &#x2F; <strong>文件已挂载过</strong>（防重复）</td>
+</tr>
+</tbody></table>
+<h2 id="机制剖析：两个关键问题"><a href="#机制剖析：两个关键问题" class="headerlink" title="机制剖析：两个关键问题"></a>机制剖析：两个关键问题</h2><h3 id="Q1：文件存储背后是-OSS-还是-NAS？"><a href="#Q1：文件存储背后是-OSS-还是-NAS？" class="headerlink" title="Q1：文件存储背后是 OSS 还是 NAS？"></a>Q1：文件存储背后是 OSS 还是 NAS？</h3><p>官方未披露，但 API 形态几乎锁定了答案：<strong>对象存储（OSS&#x2F;S3 类）+ 元数据库，基本排除 NAS</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>API 证据</th>
+<th>指向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>file_</code> 前缀 + UUIDv7，全流程无真实存储路径</td>
+<td><strong>ID 寻址</strong>，非路径寻址</td>
+</tr>
+<tr>
+<td>下载统一走 <code>GET /files/&#123;id&#125;/content</code>，<code>downloadable=false</code> → 403</td>
+<td>鉴权网关 &#x2F; <strong>presigned-URL</strong> 模式</td>
+</tr>
+<tr>
+<td>~5MB 小对象 + 只读 + 8KB 自定义 <code>metadata</code></td>
+<td>教科书式 <strong>S3 语义</strong></td>
+</tr>
+<tr>
+<td><code>scope: &#123;id, type: &quot;session&quot;&#125;</code></td>
+<td>对象<strong>打标</strong>过滤，不是<strong>目录结构</strong></td>
+</tr>
+<tr>
+<td>软删除状态（<code>deleted</code> 后 <code>GET</code> 返回 404）</td>
+<td>元数据生命周期状态机</td>
+</tr>
+<tr>
+<td>显式删除才删 + 活跃 Session 引用不可删</td>
+<td>元数据库<strong>引用计数</strong></td>
+</tr>
+<tr>
+<td><strong>只读多</strong>、<strong>无并发写</strong>、<strong>无 POSIX 锁需求</strong></td>
+<td><strong>NAS</strong> 的核心价值（<strong>共享读写&#x2F;低延迟</strong>）用不上</td>
+</tr>
+</tbody></table>
+<p>排除 NAS 的架构理由：<strong>多租户 SaaS</strong> 下 <strong>NAS</strong> 难做<strong>配额</strong>、<strong>快照</strong>、<strong>生命周期</strong>、<strong>跨区</strong>；而 Agent 沙箱是<strong>临时容器</strong> - 它要的是”<strong>可丢弃的物化副本</strong>“，不是”<strong>共享卷</strong>“。</p>
+<p>推断的<strong>写入链路</strong>一行：<strong>API 服务收 multipart → 流式写对象存储 → 元数据（id&#x2F;size&#x2F;mime&#x2F;scope&#x2F;引用计数）落库</strong>。</p>
+<h3 id="Q2：Session-起来之后再挂载，是怎么生效的？"><a href="#Q2：Session-起来之后再挂载，是怎么生效的？" class="headerlink" title="Q2：Session 起来之后再挂载，是怎么生效的？"></a>Q2：Session 起来之后再挂载，是怎么生效的？</h3><p>先修正一个前提：<strong>两种时机都支持</strong>（FAQ 明确<strong>创建</strong>时可在 <code>resources</code> 字段带文件）。<strong>挂载不是一次性的启动动作</strong>，而是 Session <strong>期望状态（desired state）</strong>的一部分，可以<strong>随时 patch</strong>。</p>
+<p>关键证据来自 <strong>Environment Work API</strong>（面向<strong>自托管</strong>环境 <strong>runner</strong> 的<strong>公开协议</strong>，暴露了平台的<strong>执行模型</strong>）：</p>
+<ul>
+<li>工作项 <code>work_</code>（<code>data.type = &quot;session&quot;</code>）通过<strong>工作队列</strong>派发</li>
+<li>runner <code>poll</code> 领取 → <code>ack</code> 确认（需同 <code>Worker-ID</code>，否则 409）→ 周期 <code>heartbeat</code></li>
+<li><strong>5 秒未 ack 会被重派</strong>（<code>reclaim_older_than_ms</code> 默认 5000ms）</li>
+</ul>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    sequenceDiagram
+    autonumber
+    participant U as 开发者
+    participant C as 控制面 API
+    participant R as 资源表（sesr_）
+    participant Q as 工作队列（work_）
+    participant RT as Runner（环境）
+    participant FS as 容器文件系统
+    participant A as Agent
+
+    rect rgb(232, 240, 254)
+        Note over U,R: ① 记账（同步，秒回）
+        U-&gt;&gt;C: POST &#x2F;sessions&#x2F;id&#x2F;resources&lt;br&#x2F;&gt;{file_id, mount_path?}
+        C-&gt;&gt;R: 写入 sesr_ 记录（file_id → mount_path）
+        C--&gt;&gt;U: 201 返回资源对象
+        Note over U,FS: 此刻容器里还没有这个文件
+    end
+
+    rect rgb(230, 244, 234)
+        Note over Q,FS: ② 物化（异步，随 Session 激活）
+        U-&gt;&gt;C: POST &#x2F;events 发送新任务
+        C-&gt;&gt;Q: Session 激活，入队 work_
+        RT-&gt;&gt;Q: poll（携带 Worker-ID）
+        Q--&gt;&gt;RT: work_（data.type &#x3D; session）
+        RT-&gt;&gt;Q: ack（同 Worker-ID）+ 周期 heartbeat
+        RT-&gt;&gt;RT: reconcile：读取资源表期望状态
+        RT-&gt;&gt;FS: GET &#x2F;content 拉取并只读写入&lt;br&#x2F;&gt;&#x2F;mnt&#x2F;session&#x2F;uploads&#x2F;file_xxx
+        A-&gt;&gt;FS: 读取文件，完成任务
+        Note over Q,RT: 5 秒未 ack 会被重派给其他 runner
+    end
+  </pre></div>
+
+<p>三层机制总结：</p>
+<ol>
+<li><strong>控制面记账</strong>：<code>(session_id, file_id, mount_path)</code> 存为 <code>sesr_</code> 资源记录 - <strong>逻辑映射</strong>，不动<strong>真实文件系统</strong></li>
+<li><strong>工作队列派发</strong>：Session 激活（<strong>新 turn</strong>）作为 <code>work_</code> 派给环境 <strong>runner</strong>（poll&#x2F;ack&#x2F;heartbeat，<strong>可重派</strong>）</li>
+<li><strong>运行时物化</strong>：runner <strong>reconcile</strong> 期望状态，从对象存储拉内容写到容器内路径，产出<strong>只读副本</strong></li>
+</ol>
+<p><strong>为什么”Session 起来后再挂”也能生效</strong>：Session 是 <strong>serverless</strong> 的（会休眠&#x2F;唤醒），挂载本来就是<strong>声明式</strong>的 - <code>POST /resources</code> 改的是<strong>期望状态</strong>，runtime 下次活动时 reconcile 兜平。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>文件系统 mount（NFS&#x2F;FUSE）</th>
+<th>Session 资源挂载</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>寻址</td>
+<td><strong>路径</strong></td>
+<td><code>file_id</code></td>
+</tr>
+<tr>
+<td>生效时机</td>
+<td><code>mount()</code> 调用即时</td>
+<td><strong>期望状态 patch → 运行时物化</strong></td>
+</tr>
+<tr>
+<td>语义</td>
+<td>共享卷、可读写</td>
+<td><strong>只读投影（副本）</strong></td>
+</tr>
+<tr>
+<td>实现</td>
+<td>内核 &#x2F; <strong>网络文件系统</strong></td>
+<td><strong>控制面记账 + 工作队列 + reconcile</strong></td>
+</tr>
+</tbody></table>
+<h2 id="管理文件"><a href="#管理文件" class="headerlink" title="管理文件"></a>管理文件</h2><h3 id="查看文件元信息"><a href="#查看文件元信息" class="headerlink" title="查看文件元信息"></a>查看文件元信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /api/v1/cloud/files/&#123;file_id&#125;</span><br></pre></td></tr></table></figure>
+
+<p>返回 File 对象（同上传响应）；<code>deleted</code> 状态的文件返回 404。</p>
+<blockquote>
+<p>指南页「查看文件元信息」小节误贴了挂载接口的示例，正确端点以 Files API 参考（<code>GET /files/&#123;file_id&#125;</code>）为准。</p>
+</blockquote>
+<h3 id="资源也是一等公民：Resource-CRUD"><a href="#资源也是一等公民：Resource-CRUD" class="headerlink" title="资源也是一等公民：Resource CRUD"></a>资源也是一等公民：Resource CRUD</h3><p>文档为 Session 资源提供了完整的管理端点（<code>api/sessions/*-resource</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>端点族</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>追加</td>
+<td><strong>Add Session Resource</strong></td>
+<td><strong>创建后补挂（仅 file）</strong></td>
+</tr>
+<tr>
+<td>查询</td>
+<td>List &#x2F; Get Resource</td>
+<td>列出 &#x2F;查看 <code>sesr_</code> 资源</td>
+</tr>
+<tr>
+<td>变更</td>
+<td>Update Resource</td>
+<td>更新资源属性</td>
+</tr>
+<tr>
+<td>卸载</td>
+<td>Delete Resource</td>
+<td>取消挂载</td>
+</tr>
+</tbody></table>
+<p>这正是”<strong>期望状态 + reconcile</strong>“模型的接口形态：资源可独立增删改查，<strong>运行时</strong>负责<strong>兜平</strong>。</p>
+<h3 id="列出文件"><a href="#列出文件" class="headerlink" title="列出文件"></a>列出文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl <span class="string">&quot;https://api.qoder.com/api/v1/cloud/files?scope_id=sess_abc123&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>支持按 <strong>scope_id</strong> 过滤 Session 范围文件。</p>
+<h3 id="下载文件"><a href="#下载文件" class="headerlink" title="下载文件"></a>下载文件</h3><p><code>downloadable</code> 为 <code>true</code> 的文件可下载：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl https://api.qoder.com/api/v1/cloud/files/file_abc123/content \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -o output.txt</span><br></pre></td></tr></table></figure>
+
+<p>不可下载文件请求 <code>/content</code> 端点将返回 <code>403 Forbidden</code>。</p>
+<h2 id="完整工作流示例"><a href="#完整工作流示例" class="headerlink" title="完整工作流示例"></a>完整工作流示例</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ① 上传源代码文件（正文入对象存储，元数据落库）</span></span><br><span class="line">FILE_ID=$(curl -s -X POST https://api.qoder.com/api/v1/cloud/files \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -F <span class="string">&quot;file=@./app.py&quot;</span> | jq -r <span class="string">&#x27;.id&#x27;</span>)</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;上传完成: <span class="variable">$FILE_ID</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ② 创建 Session（也可以在这一步直接带 resources 字段挂载）</span></span><br><span class="line">SESSION_ID=$(curl -s -X POST https://api.qoder.com/api/v1/cloud/sessions \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;&quot;agent&quot;: &quot;agent_abc123&quot;, &quot;environment_id&quot;: &quot;env_abc123&quot;&#125;&#x27;</span> | jq -r <span class="string">&#x27;.id&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ③ 挂载文件到 Session（控制面写入 sesr_ 记录，此刻容器里还没有文件）</span></span><br><span class="line">curl -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/<span class="variable">$SESSION_ID</span>/resources&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&quot;&#123;\&quot;type\&quot;: \&quot;file\&quot;, \&quot;file_id\&quot;: \&quot;<span class="variable">$FILE_ID</span>\&quot;&#125;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ④ 发送任务 → Session 激活 → runner 物化文件 → Agent 引用</span></span><br><span class="line">curl -X POST <span class="string">&quot;https://api.qoder.com/api/v1/cloud/sessions/<span class="variable">$SESSION_ID</span>/events&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;events&quot;: [</span></span><br><span class="line"><span class="string">      &#123;&quot;type&quot;: &quot;user.message&quot;, &quot;content&quot;: [&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;审查 app.py 并修复其中的 bug&quot;&#125;]&#125;</span></span><br><span class="line"><span class="string">    ]</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>对照心智模型：①② 是<strong>记账</strong>，③ 是<strong>期望状态 patch</strong>，④ 触发<strong>物化</strong> - 三段在时间上<strong>完全解耦</strong>。</p>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><blockquote>
+<p>Q：上传的文件存储多久？</p>
+</blockquote>
+<p>A：文件在你调用 <code>DELETE /api/v1/cloud/files/&#123;file_id&#125;</code> <strong>显式删除</strong>前会持续保留。仍被活跃 Session <strong>引用</strong>的文件<strong>无法删除</strong>，需先删除或取消挂载相关 Session。</p>
+<blockquote>
+<p>Q：能否直接在创建 Session 时附带文件？</p>
+</blockquote>
+<p>A：可以。<strong>创建 Session</strong> 时在 <strong>resources</strong> 字段中传入文件资源即可（此时还支持 <code>github_repository</code> &#x2F; <code>memory_store</code>）。</p>
+<blockquote>
+<p>Q：为什么有些文件不可下载？</p>
+</blockquote>
+<p>A：出于安全考虑，部分文件仅供 Agent 内部使用。如需导出结果，请使用 File 对象中 <code>downloadable</code> 为 <code>true</code> 的文件。</p>
+<blockquote>
+<p>Q：支持哪些文件格式？</p>
+</blockquote>
+<p>A：上传接口接受文本类文件。代码、配置和纯文本参考文档效果最佳。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>存储后端（推断）</td>
+<td><strong>对象存储存正文</strong> + <strong>元数据库记账</strong>（引用计数、软删除、scope 打标）</td>
+</tr>
+<tr>
+<td>挂载本质</td>
+<td><strong>声明式资源投影</strong>：<code>sesr_</code> 记账 + <strong>运行时物化</strong>（K8s <strong>ConfigMap</strong> 同构）</td>
+</tr>
+<tr>
+<td>两种挂载时机</td>
+<td>创建时 <code>resources</code> 字段（三种类型）&#x2F; <strong>创建后追加（仅 file）</strong></td>
+</tr>
+<tr>
+<td>默认挂载路径</td>
+<td><code>/mnt/session/uploads/&lt;file_id&gt;</code></td>
+</tr>
+<tr>
+<td>大小 &#x2F; 类型限制</td>
+<td><strong>~5MB、仅文本类、metadata ≤ 8KB</strong></td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td><strong>显式删除 + 活跃 Session 引用保护</strong></td>
+</tr>
+<tr>
+<td>物化触发</td>
+<td>Session 激活作为 <code>work_</code> 派发（<strong>poll&#x2F;ack&#x2F;heartbeat，5s 重派</strong>）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一图流记忆</strong>：上传即<strong>入桶</strong>，挂载即<strong>记账</strong>，激活才<strong>物化</strong> - <code>mount</code> 借了文件系统的词，干的是 K8s 的活。</p>
+</blockquote>
+<h1 id="持久化记忆"><a href="#持久化记忆" class="headerlink" title="持久化记忆"></a>持久化记忆</h1><ol>
+<li><strong>Session 结束</strong>后，Agent 的<strong>上下文</strong>默认<strong>随之消失</strong></li>
+<li><strong>Memory Stores</strong> 让 Agent 的学习成果和工作产出<strong>跨 Session 持久保留</strong> - 下次启动时，Agent 可以“<strong>回忆</strong>”之前的内容</li>
+</ol>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><table>
+<thead>
+<tr>
+<th>概念</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Memory Store</td>
+<td><strong>记忆仓库</strong>，按<strong>项目</strong>或<strong>领域</strong>划分</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td><strong>一条记忆</strong>，由 <code>path</code> 标识，每条有<strong>唯一</strong>的 <code>mem_...</code> ID</td>
+</tr>
+<tr>
+<td>Version</td>
+<td>每次<strong>创建</strong>、<strong>更新</strong>或<strong>删除</strong>时<strong>自动生成</strong>的<strong>版本快照</strong></td>
+</tr>
+</tbody></table>
+<p>层级关系：<strong>Store → Memory → Version</strong></p>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    S[&quot;🗂️ Memory Store&lt;br&#x2F;&gt;memstore_019e5cdb…&lt;br&#x2F;&gt;name · description · status&lt;br&#x2F;&gt;entry_count · total_size&quot;]
+    M1[&quot;📄 Memory&lt;br&#x2F;&gt;mem_019e5cdba1b6…&lt;br&#x2F;&gt;path &#x3D; decisions&#x2F;arch-choice.md&quot;]
+    M2[&quot;📄 Memory&lt;br&#x2F;&gt;mem_019e7f88…&lt;br&#x2F;&gt;path &#x3D; config.yaml&quot;]
+    V1[&quot;📦 Version 1&lt;br&#x2F;&gt;创建时生成&quot;]
+    V2[&quot;📦 Version 2&lt;br&#x2F;&gt;更新时生成&quot;]
+    V3[&quot;📦 Version N&lt;br&#x2F;&gt;删除时也生成快照&quot;]
+
+    S --&gt; M1
+    S --&gt; M2
+    M1 --&gt; V1
+    M1 --&gt; V2
+    M1 --&gt; V3
+
+    classDef store fill:#e8f0fe,stroke:#4285f4
+    classDef mem fill:#e6f4ea,stroke:#34a853
+    classDef ver fill:#fef7e0,stroke:#f9ab00
+    class S store
+    class M1,M2 mem
+    class V1,V2,V3 ver
+  </pre></div>
+
+<blockquote>
+<p>版本链是 <strong>append-only</strong>：创建、更新、删除各追加一个快照，版本本身<strong>不可修改</strong>（治理与审计的基础）。</p>
+</blockquote>
+<h2 id="API-端点一览"><a href="#API-端点一览" class="headerlink" title="API 端点一览"></a>API 端点一览</h2><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>路径</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/memory_stores</code></td>
+<td>创建 Memory Store</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores</code></td>
+<td>列出所有 Memory Store</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores/&#123;id&#125;</code></td>
+<td>获取 Memory Store 详情</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/memory_stores/&#123;id&#125;</code></td>
+<td>更新 Memory Store</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/memory_stores/&#123;id&#125;/archive</code></td>
+<td>归档 Memory Store</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/memory_stores/&#123;id&#125;</code></td>
+<td>删除 Memory Store</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/memory_stores/&#123;id&#125;/memories</code></td>
+<td>创建 Memory</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores/&#123;id&#125;/memories</code></td>
+<td>列出所有 Memory</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores/&#123;id&#125;/memories/&#123;memory_id&#125;</code></td>
+<td>获取单条 Memory（含 <code>content</code>）</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/memory_stores/&#123;id&#125;/memories/&#123;memory_id&#125;</code></td>
+<td>更新 Memory</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/memory_stores/&#123;id&#125;/memories/&#123;memory_id&#125;</code></td>
+<td>删除 Memory</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores/&#123;id&#125;/memory_versions</code></td>
+<td>列出 Memory 版本</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/memory_stores/&#123;id&#125;/memory_versions/&#123;memory_version_id&#125;</code></td>
+<td>获取单个版本（含 <code>content</code>）</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/memory_stores/&#123;id&#125;/memory_versions/&#123;memory_version_id&#125;/redact</code></td>
+<td>Redact 某个版本</td>
+</tr>
+</tbody></table>
+<h2 id="路径规则"><a href="#路径规则" class="headerlink" title="路径规则"></a>路径规则</h2><p>Memory 的 <code>path</code> 必须是<strong>相对路径</strong>：</p>
+<ol>
+<li>合法：<code>notes/meeting-2026-05-18.md</code>、<code>config.yaml</code></li>
+<li>非法：<code>/notes/meeting.md</code>（不能以 <code>/</code> 开头）、<code>../secrets</code>（不能包含 <code>..</code>）</li>
+</ol>
+<p>路径用于<strong>组织记忆结构</strong>，类似<strong>文件系统</strong>。</p>
+<h2 id="完整流程"><a href="#完整流程" class="headerlink" title="完整流程"></a>完整流程</h2><h3 id="创建-Memory-Store"><a href="#创建-Memory-Store" class="headerlink" title="创建 Memory Store"></a>创建 Memory Store</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/memory_stores \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;project-alpha-memory&quot;,</span></span><br><span class="line"><span class="string">    &quot;description&quot;: &quot;Alpha 项目的 Agent 知识库&quot;</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>响应示例：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memstore_019e5cdb9c3f71c3b6505eba937a40b4&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;created_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T08:00:00.000Z&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;project-alpha-memory&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memory_store&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;updated_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T08:00:00.000Z&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;archived_at&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Alpha 项目的 Agent 知识库&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;active&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;entry_count&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;total_size&quot;</span><span class="punctuation">:</span> <span class="number">0</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="创建-Memory"><a href="#创建-Memory" class="headerlink" title="创建 Memory"></a>创建 Memory</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/memory_stores/memstore_019e5cdb9c3f71c3b6505eba937a40b4/memories \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;path&quot;: &quot;decisions/arch-choice.md&quot;,</span></span><br><span class="line"><span class="string">    &quot;content&quot;: &quot;# 架构决策\n\n选择微服务架构，原因：团队规模扩大，需要独立部署。&quot;</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>列表</strong>接口不返回 <code>content</code> 字段，需要调用<strong>单条</strong>获取接口才能读取内容。</p>
+<h3 id="获取单条-Memory"><a href="#获取单条-Memory" class="headerlink" title="获取单条 Memory"></a>获取单条 Memory</h3><p>通过 <code>memory_id</code> 获取完整内容（包括 <code>content</code> 字段）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl https://api.qoder.com/api/v1/cloud/memory_stores/memstore_019e5cdb9c3f71c3b6505eba937a40b4/memories/mem_019e5cdba1b674e4a6a7d4f8c9b3e2a1 \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>响应示例：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mem_019e5cdba1b674e4a6a7d4f8c9b3e2a1&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memory&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;memory_store_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memstore_019e5cdb9c3f71c3b6505eba937a40b4&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;decisions/arch-choice.md&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;# 架构决策\n\n选择微服务架构，原因：团队规模扩大，需要独立部署。&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;content_size_bytes&quot;</span><span class="punctuation">:</span> <span class="number">99</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;content_sha256&quot;</span><span class="punctuation">:</span> <span class="string">&quot;1712de0d497a5aeef2beeccf4fbb7d5a16944975438d0c25447b9c1fba13099a&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;metadata&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;created_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T08:00:00.000Z&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;updated_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-05-18T08:00:00.000Z&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="更新-Memory"><a href="#更新-Memory" class="headerlink" title="更新 Memory"></a>更新 Memory</h3><ol>
+<li>更新使用 <code>POST</code> 方法，路径中带 <code>memory_id</code>，系统会<strong>自动生成</strong>新的<strong>版本快照</strong></li>
+<li>为<strong>防止并发写入</strong>，可携带上次读取到的 <code>content_sha256</code> - 若与服务端当前内容不一致，API 返回 <strong>409 Conflict</strong>： - <strong>乐观并发控制</strong></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/memory_stores/memstore_019e5cdb9c3f71c3b6505eba937a40b4/memories/mem_019e5cdba1b674e4a6a7d4f8c9b3e2a1 \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;content&quot;: &quot;# 架构决策 v2\n\n改为 Modular Monolith，原因：微服务运维成本超出预算。&quot;,</span></span><br><span class="line"><span class="string">    &quot;content_sha256&quot;: &quot;1712de0d497a5aeef2beeccf4fbb7d5a16944975438d0c25447b9c1fba13099a&quot;</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>请求字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>content</code></td>
+<td>string</td>
+<td>是</td>
+<td>新的内容，最大 <strong>100 KB</strong></td>
+</tr>
+<tr>
+<td><code>content_sha256</code></td>
+<td>string</td>
+<td>否</td>
+<td>当前内容的<strong>期望</strong> SHA-256（<strong>乐观并发控制</strong>）。省略则跳过校验</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>object</td>
+<td>否</td>
+<td>要附加的元数据</td>
+</tr>
+</tbody></table>
+<p>如果传入的 <code>content_sha256</code> 与服务端不一致（说明有<strong>并发写入</strong>），API 将返回 <strong>409 Conflict</strong>，需要先重新 GET 该 memory 再重试。</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    sequenceDiagram
+    autonumber
+    participant D as 开发者 &#x2F; Agent
+    participant API as Memory API
+    participant VS as 版本链（append-only）
+
+    rect rgb(232, 240, 254)
+        Note over D,VS: 写入即版本化
+        D-&gt;&gt;API: POST &#x2F;memories&lt;br&#x2F;&gt;{path, content}
+        API-&gt;&gt;VS: 追加 Version 1（记录 content_sha256）
+        API--&gt;&gt;D: 201 Memory（version&#x3D;1, sha256）
+    end
+
+    D-&gt;&gt;API: GET &#x2F;memories&#x2F;{memory_id}&lt;br&#x2F;&gt;（读 content + 最新 sha256）
+
+    rect rgb(230, 244, 234)
+        Note over D,VS: 乐观并发控制
+        D-&gt;&gt;API: POST &#x2F;memories&#x2F;{memory_id}&lt;br&#x2F;&gt;{content_v2, content_sha256&#x3D;v1 的}
+        alt 服务端 sha256 一致
+            API-&gt;&gt;VS: 追加 Version 2
+            API--&gt;&gt;D: 200（version&#x3D;2）
+        else 已被并发修改
+            API--&gt;&gt;D: 409 Conflict
+            D-&gt;&gt;API: 重新 GET → 拿最新 sha256 → 重试
+        end
+    end
+  </pre></div>
+
+<blockquote>
+<p>这是<strong>乐观锁</strong>的经典形态（<strong>CAS</strong>）：不带 <code>content_sha256</code> 则<strong>跳过校验</strong> - <strong>last-write-wins</strong>；带上则是”我知道我基于哪个版本改的”。</p>
+</blockquote>
+<h3 id="在-Session-中使用"><a href="#在-Session-中使用" class="headerlink" title="在 Session 中使用"></a>在 Session 中使用</h3><p><strong>创建 Session</strong> 时通过 <code>resources[]</code> 关联 <strong>Memory Store</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST https://api.qoder.com/api/v1/cloud/sessions \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;agent&quot;: &quot;agent_xxx&quot;,</span></span><br><span class="line"><span class="string">    &quot;environment_id&quot;: &quot;env_xxx&quot;,</span></span><br><span class="line"><span class="string">    &quot;resources&quot;: [</span></span><br><span class="line"><span class="string">      &#123;</span></span><br><span class="line"><span class="string">        &quot;type&quot;: &quot;memory_store&quot;,</span></span><br><span class="line"><span class="string">        &quot;memory_store_id&quot;: &quot;memstore_019e5cdb9c3f71c3b6505eba937a40b4&quot;,</span></span><br><span class="line"><span class="string">        &quot;access&quot;: &quot;read_write&quot;,</span></span><br><span class="line"><span class="string">        &quot;instructions&quot;: &quot;Use this memory for project context.&quot;</span></span><br><span class="line"><span class="string">      &#125;</span></span><br><span class="line"><span class="string">    ]</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>Session 内 Agent 可<strong>读取</strong>和<strong>写入</strong>关联的 Memory Store。</p>
+<h3 id="Memory-在-sandbox-内的路径"><a href="#Memory-在-sandbox-内的路径" class="headerlink" title="Memory 在 sandbox 内的路径"></a>Memory 在 sandbox 内的路径</h3><p>memory_store 绑定 Session 后，每条 memory 在 sandbox 内挂在：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/data/.qoder/awareness/&lt;memory.path&gt;</span><br></pre></td></tr></table></figure>
+
+<p>例如 <code>path = &quot;shared/note.txt&quot;</code> → sandbox 路径 <code>/data/.qoder/awareness/shared/note.txt</code>：</p>
+<ol>
+<li>sandbox 内<strong>没有</strong> <code>memory_store</code> &#x2F; <code>mem_</code> 这些命名层级，全部<strong>平铺</strong>到 <code>awareness/</code> 下</li>
+<li><strong>Agent</strong> 看不到也搜不到 <strong>memory_store</strong> 这个概念，只能按 <code>path</code> 直接读取文件</li>
+</ol>
+<h3 id="从挂载到读写：全景图"><a href="#从挂载到读写：全景图" class="headerlink" title="从挂载到读写：全景图"></a>从挂载到读写：全景图</h3><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    subgraph CTRL[&quot;🎛️ 控制面&quot;]
+        MS[(&quot;Memory Store&lt;br&#x2F;&gt;memstore_…&lt;br&#x2F;&gt;path 寻址 + 版本链&quot;)]
+        RS[&quot;Session 资源表&lt;br&#x2F;&gt;memory_store 资源&lt;br&#x2F;&gt;access · instructions&quot;]
+    end
+
+    U[&quot;开发者&quot;] --&gt;|&quot;① POST &#x2F;memory_stores&lt;br&#x2F;&gt;建库 · 写记忆&quot;| MS
+    U --&gt;|&quot;② 创建 Session&lt;br&#x2F;&gt;resources: memory_store&quot;| RS
+    MS -.-&gt;|&quot;挂载引用&quot;| RS
+
+    subgraph SBX[&quot;🐳 Sandbox（Agent 视角）&quot;]
+        AW[&quot;📁 &#x2F;data&#x2F;.qoder&#x2F;awareness&#x2F;&lt;br&#x2F;&gt;decisions&#x2F;arch-choice.md&lt;br&#x2F;&gt;shared&#x2F;note.txt&quot;]
+        AG[&quot;Agent&quot;]
+    end
+
+    RS -.-&gt;|&quot;③ 激活时物化：&lt;br&#x2F;&gt;按 path 平铺投影&lt;br&#x2F;&gt;（隐藏 memory_store 概念）&quot;| AW
+    AG --&gt;|&quot;读：按 path 直接读文件&quot;| AW
+    AG -.-&gt;|&quot;写：文件写回 或 记忆工具&lt;br&#x2F;&gt;（官方未明说 → 见机制剖析 Q3）&quot;| MS
+
+    classDef ctrl fill:#e8f0fe,stroke:#4285f4
+    classDef sbx fill:#fef7e0,stroke:#f9ab00
+    classDef store fill:#e6f4ea,stroke:#34a853
+    class MS,RS ctrl
+    class AW,AG sbx
+    class MS store
+  </pre></div>
+
+<blockquote>
+<p>与「文件上传」章节同一个模式：<strong>控制面记账，激活时物化</strong>。区别在于 <strong>file</strong> 投影是<strong>只读副本</strong>，memory_store 是 <strong>read_write 双向</strong>的（<code>access</code> 字段控制）。</p>
+</blockquote>
+<h2 id="版本追踪"><a href="#版本追踪" class="headerlink" title="版本追踪"></a>版本追踪</h2><ol>
+<li>每次对 Memory 执行<strong>创建</strong>、<strong>更新</strong>或<strong>删除</strong>操作，系统都会<strong>自动生成</strong>一个<strong>版本快照</strong></li>
+<li><strong>版本不可修改</strong>，提供<strong>完整的变更历史</strong><ul>
+<li>用 <code>GET /memory_stores/&#123;id&#125;/memory_versions</code>（可用 <code>memory_id</code> 过滤）列出版本</li>
+<li>用 <code>GET /memory_stores/&#123;id&#125;/memory_versions/&#123;memory_version_id&#125;</code> 读取单个版本的 <code>content</code></li>
+</ul>
+</li>
+<li>如果某个版本记录了<strong>敏感内容</strong>，可以 <strong>redact</strong> <strong>永久移除其存储内容</strong>，同时<strong>保留版本元数据</strong>用于审计 - 删内容不删历史</li>
+</ol>
+<h2 id="统计字段"><a href="#统计字段" class="headerlink" title="统计字段"></a>统计字段</h2><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>entry_count</code></td>
+<td>Store 中的 <strong>Memory 总数</strong></td>
+</tr>
+<tr>
+<td><code>total_size</code></td>
+<td>所有 Memory 内容的总字节数</td>
+</tr>
+</tbody></table>
+<h2 id="机制剖析：三个关键问题"><a href="#机制剖析：三个关键问题" class="headerlink" title="机制剖析：三个关键问题"></a>机制剖析：三个关键问题</h2><h3 id="Q1：记忆是自研的，还是集成了-Mem0-PolarDB-这类方案？"><a href="#Q1：记忆是自研的，还是集成了-Mem0-PolarDB-这类方案？" class="headerlink" title="Q1：记忆是自研的，还是集成了 Mem0 &#x2F; PolarDB 这类方案？"></a>Q1：记忆是自研的，还是集成了 Mem0 &#x2F; PolarDB 这类方案？</h3><p>官方未披露实现，但<strong>接口形态可以下结论：产品语义是自研的一套</strong>（无论底层存储复用了什么组件）。</p>
+<table>
+<thead>
+<tr>
+<th>判定证据</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mem0 的核心接口是 <code>add()</code>（喂对话 → LLM 抽取 → 自动合并）与 <code>search()</code>（向量召回），Qoder <strong>一个都没有</strong></td>
+<td>不是 Mem0 形态</td>
+</tr>
+<tr>
+<td>Qoder 是 <strong>path 寻址 + sha256 + 不可变版本链 + redact</strong></td>
+<td><strong>版本化文档库</strong>语义（Git &#x2F; S3 版本化桶同款）</td>
+</tr>
+<tr>
+<td>消费端是 sandbox <strong>文件投影</strong>（<code>awareness/</code>），Agent 感知不到”记忆系统”</td>
+<td><strong>记忆的抽象</strong>是<strong>文件</strong>，不是语义条目</td>
+</tr>
+<tr>
+<td><code>memstore_</code> &#x2F; <code>mem_</code> 的 <strong>UUIDv7</strong> 与 Files 一脉相承</td>
+<td>大概率<strong>复用同一套对象存储 + 元数据底座</strong>（推断，与「文件上传」章节一致）</td>
+</tr>
+</tbody></table>
+<p>至于 “PolarDB + Mem0” 组合：<strong>PolarDB</strong> 在其中扮演的是 <strong>Mem0</strong> 的<strong>向量存储后端</strong>；而 Qoder 的 API 里连<strong>向量</strong>的影子都没有（<strong>无 embedding</strong>、<strong>无相似度检索</strong>），这条路线从接口上就排除了。</p>
+<h3 id="Q2：Mem0-的设计理念是什么？两边一样吗？"><a href="#Q2：Mem0-的设计理念是什么？两边一样吗？" class="headerlink" title="Q2：Mem0 的设计理念是什么？两边一样吗？"></a>Q2：Mem0 的设计理念是什么？两边一样吗？</h3><p><strong>完全不同，是两种记忆哲学。</strong> Mem0 快速入门（没用过的话看这张表就够）：</p>
+<table>
+<thead>
+<tr>
+<th>Mem0 概念</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>add(messages)</code></td>
+<td>把对话喂给 Mem0，<strong>内部 LLM 管线</strong>抽取事实，自动决定 ADD &#x2F; UPDATE &#x2F; DELETE</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>抽取出的<strong>自然语言事实条目</strong>（如 “用户偏好中文回复”）</td>
+</tr>
+<tr>
+<td><code>search(query)</code></td>
+<td><strong>向量相似度</strong>检索 top-k，结果注入 prompt</td>
+</tr>
+<tr>
+<td>作用域</td>
+<td><code>user_id</code> &#x2F; <code>session_id</code> &#x2F; <code>agent_id</code> 隔离</td>
+</tr>
+<tr>
+<td>底座</td>
+<td>可插拔<strong>向量数据库</strong>（Qdrant &#x2F; pgvector &#x2F; Redis…，PolarDB 亦在其中）</td>
+</tr>
+</tbody></table>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    subgraph MEM0[&quot;🧠 Mem0：记忆 &#x3D; 提取出来的知识&quot;]
+        direction TB
+        C1[&quot;对话 &#x2F; 消息&quot;] --&gt; EX[&quot;LLM 提取管线 add()&quot;]
+        EX --&gt; DEC[&quot;自动决策&lt;br&#x2F;&gt;ADD &#x2F; UPDATE &#x2F; DELETE&quot;]
+        DEC --&gt; VDB[(&quot;向量库&lt;br&#x2F;&gt;PolarDB &#x2F; Qdrant &#x2F; …&quot;)]
+        Q[&quot;检索 search()&quot;] --&gt;|&quot;语义相似度 top-k&quot;| VDB
+    end
+
+    subgraph QD[&quot;🗂️ Qoder：记忆 &#x3D; Agent 维护的文件系统&quot;]
+        direction TB
+        AG2[&quot;Agent 自主决策&lt;br&#x2F;&gt;记什么 · 记在哪&quot;] --&gt;|&quot;写 path + content&lt;br&#x2F;&gt;（sha256 乐观锁）&quot;| F[(&quot;Memory Store&lt;br&#x2F;&gt;版本链 append-only&quot;)]
+        F --&gt;|&quot;激活时投影成文件&quot;| AW2[&quot;📁 &#x2F;data&#x2F;.qoder&#x2F;awareness&#x2F;&quot;]
+        AG2 --&gt;|&quot;读：按 path 直接读&quot;| AW2
+    end
+
+    classDef m0 fill:#f3e8fd,stroke:#a142f4
+    classDef qd fill:#e8f0fe,stroke:#4285f4
+    class C1,EX,DEC,VDB,Q m0
+    class AG2,F,AW2 qd
+  </pre></div>
+
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Mem0</th>
+<th>Qoder Memory Store</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>谁决定记什么</td>
+<td><strong>提取管线</strong>（对开发者透明）</td>
+<td><strong>Agent 自己</strong>（显式决策）</td>
+</tr>
+<tr>
+<td>记忆形态</td>
+<td>抽取的事实条目</td>
+<td>path 寻址的文本文件</td>
+</tr>
+<tr>
+<td>怎么找回</td>
+<td>语义相似度 <code>search()</code></td>
+<td>Agent 按 path 读文件</td>
+</tr>
+<tr>
+<td>并发控制</td>
+<td>管线内部处理</td>
+<td><code>content_sha256</code> 乐观锁</td>
+</tr>
+<tr>
+<td>治理 &#x2F; 审计</td>
+<td>history（可选）</td>
+<td>不可变版本链 + redact</td>
+</tr>
+<tr>
+<td>心智模型</td>
+<td><strong>海马体</strong>：自动沉淀</td>
+<td><strong>笔记本</strong>：手工维护</td>
+</tr>
+<tr>
+<td>更像</td>
+<td><strong>RAG</strong> 的写入侧</td>
+<td>Claude Code 的 CLAUDE.md &#x2F; memory 目录</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>「海马体」是大脑中负责把日常经历<strong>自动</strong>转化为长期记忆的器官——你从不需要决定”记住这件事”，它默默完成沉淀（经典病例 H.M. 切除海马体后无法形成新长期记忆）。这正是 Mem0 提取管线的隐喻：<strong>记忆的形成是无意识的</strong>；而”笔记本”意味着<strong>写什么、放哪个抽屉，自己决定</strong>。</p>
+</blockquote>
+<blockquote>
+<p>一句话：<strong>Mem0 优化”召回”（怕忘），Qoder 优化”治理”（怕乱）</strong>。Qoder 的选择与其平台哲学一脉相承 - 一切都是<strong>显式资源</strong>：可声明、可版本化、可投影、可审计。</p>
+</blockquote>
+<h3 id="Q3：Agent-更新记忆，是写文件还是调-API？"><a href="#Q3：Agent-更新记忆，是写文件还是调-API？" class="headerlink" title="Q3：Agent 更新记忆，是写文件还是调 API？"></a>Q3：Agent 更新记忆，是写文件还是调 API？</h3><p>官方文档<strong>没有明说</strong> Agent 侧的写路径（以下为推断）。<strong>读路径是确定的</strong> - 文件幻象：memory 按 path 平铺到 <code>/data/.qoder/awareness/</code>，Agent 直接读文件。写路径有两个候选：</p>
+<table>
+<thead>
+<tr>
+<th>候选</th>
+<th>机制</th>
+<th>证据倾向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A. 双向文件同步</td>
+<td>Agent 直接写 <code>awareness/</code> 下的文件，runtime 在 turn 结束时把改动<strong>翻译成 Memory API 调用</strong>（自动算 sha256、生成版本）</td>
+<td>与”Agent 看不到 memory_store 概念”的<strong>完整幻象</strong>一致</td>
+</tr>
+<tr>
+<td>B. 注入记忆工具</td>
+<td>挂载时 runtime 向 Agent 注入一组记忆工具，<code>instructions</code> 字段正是<strong>使用说明</strong></td>
+<td>与 <strong>Vault 的运行时注入模式</strong>（见 <a href="/2026/08/21/agent-infra-cloud-agents-v4/">V4</a>）同构；乐观锁语义更容易在工具层表达</td>
+</tr>
+</tbody></table>
+<p>无论哪种，<strong>乐观锁与版本快照都由 runtime 兜底</strong> - Agent 不需要理解 sha256。验证方法：跑一个带 memory_store 的 Session，观察事件流里 Agent 的<strong>工具调用名</strong>（thread events），或对比 turn 前后 sandbox 的文件变化。</p>
+<h3 id="Q4：Memory-Store、Memory、Session、User-之间是什么关系？"><a href="#Q4：Memory-Store、Memory、Session、User-之间是什么关系？" class="headerlink" title="Q4：Memory Store、Memory、Session、User 之间是什么关系？"></a>Q4：Memory Store、Memory、Session、User 之间是什么关系？</h3><p><strong>答案：唯一的强结构是 Store → Memory → Version；其余全是松耦合的”运行时接线”，归属模型在 Managed Mode 下完全交给上层设计，Forward Mode 下才由平台托管。</strong></p>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    subgraph STRONG[&quot;📐 唯一的强结构（schema 层）&quot;]
+        MS[(&quot;Memory Store ×N&lt;br&#x2F;&gt;org 级扁平资源池&quot;)]
+        MEM[&quot;Memory ×N&lt;br&#x2F;&gt;path 仅 Store 内唯一&quot;]
+        VER[&quot;Version ×N&lt;br&#x2F;&gt;append-only&quot;]
+        MS --&gt;|&quot;1 : N&quot;| MEM
+        MEM --&gt;|&quot;1 : N&quot;| VER
+    end
+
+    subgraph RT[&quot;🔌 运行时接线（声明式 · 临时）&quot;]
+        SESS[&quot;Session ×N&lt;br&#x2F;&gt;resources[] + access&quot;]
+        AGENT[&quot;Agent&quot;]
+        AGENT --&gt;|&quot;定义&quot;| SESS
+        SESS -.-&gt;|&quot;N : M · 创建时声明&lt;br&#x2F;&gt;Session 亡 ≠ Store 亡&quot;| MS
+    end
+
+    subgraph WHO[&quot;👤 归属：谁的记忆？&quot;]
+        direction LR
+        M1[&quot;Managed Mode&lt;br&#x2F;&gt;User 实体**不存在**&lt;br&#x2F;&gt;调用方自查映射&lt;br&#x2F;&gt;metadata 留钩子&quot;]
+        F1[&quot;Forward Mode&lt;br&#x2F;&gt;内建 Identity&lt;br&#x2F;&gt;记忆自动隔离&lt;br&#x2F;&gt;mount&#x2F;detach 配置级挂载&quot;]
+    end
+
+    WHO -.-&gt;|&quot;业务装配&quot;| RT
+
+    DRM[&quot;Dream（记忆整理）&lt;br&#x2F;&gt;inputs → 克隆 → outputs&quot;]
+    MS --&gt;|&quot;输入&quot;| DRM
+    DRM --&gt;|&quot;输出（新 Store）&quot;| MS
+
+    classDef strong fill:#e8f0fe,stroke:#4285f4
+    classDef run fill:#fef7e0,stroke:#f9ab00
+    classDef who fill:#f3e8fd,stroke:#a142f4
+    classDef dream fill:#e6f4ea,stroke:#34a853
+    class MS,MEM,VER strong
+    class SESS,AGENT run
+    class M1,F1 who
+    class DRM dream
+  </pre></div>
+
+<p><strong>Session ↔ Store 是接线，不是外键</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>证据</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>唯一关联机制 &#x3D; 创建 Session 时 <code>resources[]</code>（+ <code>access</code> + <code>instructions</code>）</td>
+<td>多对多、临时、声明式</td>
+</tr>
+<tr>
+<td>FAQ 明确”一个 Session 可关联多个 Store”</td>
+<td>N : M</td>
+</tr>
+<tr>
+<td>Session 结束 Store 毫发无损；创建后追加资源<strong>仅支持 file</strong></td>
+<td>生命周期独立，接线是一次性的</td>
+</tr>
+</tbody></table>
+<p><strong>Managed Mode 里 User 根本不存在</strong>（API 证据）：</p>
+<ul>
+<li><code>POST /memory_stores</code> 请求体只有 <code>name</code> &#x2F; <code>description</code> &#x2F; <code>metadata</code> - <strong>没有 user_id、没有 owner</strong></li>
+<li>Memory 对象上没有任何<strong>用户&#x2F;会话</strong>归因字段；认证是 <strong>PAT&#x2F;SAT（平台账号级）</strong></li>
+<li>对比：Files 还有 <code>scope: &#123;type: &quot;session&quot;&#125;</code> 可绑会话，<strong>Memory Store 连这个都没有</strong> - 完全<strong>扁平</strong></li>
+<li>Store 与 Memory 的 <code>metadata</code>（≤8KB）就是官方留的<strong>业务关联钩子</strong>（如 <code>&#123;&quot;user_id&quot;: &quot;...&quot;&#125;</code>）</li>
+</ul>
+<p><strong>Forward Mode 才有托管归属</strong>：V1 对比表原文 - “内建 Identity，每个 C 端用户一个身份，<strong>记忆与权限自动隔离</strong>“（Managed 则”<strong>不内建</strong>，需调用方<strong>自行管理隔离</strong>“）。且 <strong>mount &#x2F; detach &#x2F; list-mounts 端点只存在于 Forward API 族</strong>（官方 llms.txt 索引可见，Managed 侧没有）- 把<strong>记忆挂载</strong>从”每次建 Session 手动带”升级为”<strong>配置级声明</strong>“。</p>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>类型</th>
+<th>机制</th>
+<th>谁定义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Store → Memory → Version</td>
+<td><strong>强</strong>（schema 层级）</td>
+<td>路径嵌套 + 版本链</td>
+<td>平台</td>
+</tr>
+<tr>
+<td>Session ↔ Store</td>
+<td><strong>弱</strong>（运行时接线）</td>
+<td><code>resources[]</code> + <code>access</code>，N : M</td>
+<td>调用方每次声明</td>
+</tr>
+<tr>
+<td>User ↔ Store</td>
+<td>Managed：<strong>不存在</strong>；Forward：Identity 隔离</td>
+<td><strong>Forward: Identity + mount&#x2F;detach</strong></td>
+<td><strong>平台（Forward）&#x2F; 调用方（Managed）</strong></td>
+</tr>
+<tr>
+<td>Agent ↔ Store</td>
+<td>无直接关系</td>
+<td>只经 <strong>Session</strong> 间接使用</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Dream ↔ Store</td>
+<td>任务输入输出</td>
+<td>inputs → 克隆 outputs</td>
+<td>平台</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一句话</strong>：平台只定义”积木”和”插口”（Store 层级 + resources 挂载协议），”<strong>谁的积木插给谁</strong>“是业务决策 - Managed 把它留给你，Forward 替你做了。这正是 <a href="/2026/08/21/agent-infra-cloud-agents-v5/">V5</a> 两模式哲学在记忆子系统上的投影。类比 K8s：<strong>Memory Store 像 PV（独立生命周期），Session 像 Pod（声明式引用）</strong>。</p>
+</blockquote>
+<h2 id="常见问题-1"><a href="#常见问题-1" class="headerlink" title="常见问题"></a>常见问题</h2><blockquote>
+<p>Q: 一个 Session 可以关联多少个 Memory Store？</p>
+</blockquote>
+<p>A: 支持多个，按需关联。</p>
+<blockquote>
+<p>Q: Memory 的 path 可以包含<strong>子目录</strong>吗？</p>
+</blockquote>
+<p>A: 可以，如 <code>notes/2026/05/daily.md</code>，支持<strong>多级路径</strong>。</p>
+<blockquote>
+<p>Q: Memory Store 有<strong>容量限制</strong>吗？</p>
+</blockquote>
+<p>A: 具体限制请参考账户配额，通常足够一般项目使用。</p>
+<blockquote>
+<p>建议为每个<strong>独立项目</strong>创建单独的 <strong>Memory Store</strong>，避免不同项目的<strong>记忆混淆</strong>。</p>
+</blockquote>
+<h2 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>自研 or Mem0？</td>
+<td>接口形态完全不是 Mem0（无 add&#x2F;search&#x2F;向量）；自研，大概率复用 Files 同款<strong>对象存储 + 元数据底座</strong>（推断）</td>
+</tr>
+<tr>
+<td>记忆形态</td>
+<td><strong>path 寻址文本</strong> + <code>content_sha256</code> + <strong>不可变版本链</strong>（append-only）</td>
+</tr>
+<tr>
+<td>并发控制</td>
+<td>乐观锁：带旧 sha256 更新，冲突 409，重读重试</td>
+</tr>
+<tr>
+<td>治理</td>
+<td>版本快照全保留 + <strong>redact</strong>（删内容不删历史）</td>
+</tr>
+<tr>
+<td>Agent 怎么读</td>
+<td>文件幻象：激活时<strong>平铺投影</strong>到 <code>/data/.qoder/awareness/&lt;path&gt;</code></td>
+</tr>
+<tr>
+<td>Agent 怎么写</td>
+<td>文件写回 <strong>或</strong> 注入记忆工具（官方未明说，推断；乐观锁由 <strong>runtime</strong> 兜底）</td>
+</tr>
+<tr>
+<td>与 Mem0 的哲学差</td>
+<td>Mem0 优化<strong>召回</strong>（海马体），Qoder 优化<strong>治理</strong>（笔记本）</td>
+</tr>
+<tr>
+<td>与 Session&#x2F;User 关系</td>
+<td>唯一强结构 <strong>Store→Memory→Version</strong>；Session 是<strong>运行时接线</strong>（N:M）；Managed <strong>无 User 实体</strong>（<strong>metadata</strong> 留钩子），Forward 用 <strong>Identity</strong> 隔离</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一图流记忆</strong>：Mem0 把记忆交给<strong>管线</strong>，Qoder 把记忆交给 <strong>Agent</strong>；一个是海马体，一个是笔记本。</p>
+</blockquote>
+<h1 id="记忆整理"><a href="#记忆整理" class="headerlink" title="记忆整理"></a>记忆整理</h1><ol>
+<li>Memory Store 中的<strong>记忆</strong>会随着使用<strong>不断积累</strong>，可能出现<strong>重复</strong>、<strong>过时</strong>或<strong>遗漏</strong>的问题</li>
+<li><strong>Dreams</strong> 提供<strong>异步</strong>的<strong>记忆整理</strong>能力 - 系统会启动一个<strong>专用 Agent</strong>，回顾<strong>近期会话</strong>，对 Memory Store 进行<strong>合并</strong>、<strong>删减</strong>和<strong>补充</strong></li>
+</ol>
+<h2 id="核心概念-1"><a href="#核心概念-1" class="headerlink" title="核心概念"></a>核心概念</h2><table>
+<thead>
+<tr>
+<th>概念</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dream</td>
+<td>一次<strong>异步记忆整理</strong>任务</td>
+</tr>
+<tr>
+<td>输入 Memory Store</td>
+<td>整理的数据源，<strong>不会被修改</strong></td>
+</tr>
+<tr>
+<td>输出 Memory Store</td>
+<td>系统<strong>自动克隆</strong>的副本，整理结果写入此处</td>
+</tr>
+<tr>
+<td>Dreaming Session</td>
+<td>Dream 运行时创建的<strong>内部 Session</strong>，不会出现在普通 Session 列表中</td>
+</tr>
+</tbody></table>
+<h2 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h2><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    U[&quot;开发者&quot;] --&gt;|&quot;POST &#x2F;dreams&lt;br&#x2F;&gt;inputs: [memory_store]&lt;br&#x2F;&gt;可选: sessions · model · instructions&quot;| D[&quot;Dream（drm_…）&lt;br&#x2F;&gt;single-flight：每账号同时仅 1 个活跃&quot;]
+    MS1[(&quot;输入 Memory Store&lt;br&#x2F;&gt;只读 · 永不修改&quot;)]
+    D --&gt;|&quot;① Copy-on-Write 克隆&quot;| MS2[(&quot;输出 Memory Store&lt;br&#x2F;&gt;新 ID · 写入整理结果&quot;)]
+    D --&gt;|&quot;② 创建&quot;| DS[&quot;Dreaming Session（内部）&lt;br&#x2F;&gt;Memory Consolidation Agent&lt;br&#x2F;&gt;仅 3 工具：memory &#x2F; session_list &#x2F; session_read&lt;br&#x2F;&gt;无代码执行 · 无网络&quot;]
+    DS --&gt;|&quot;回顾（可指定 ≤100 个）&quot;| SESS[&quot;近期 Sessions&quot;]
+    DS --&gt;|&quot;③ 合并 &#x2F; 删减 &#x2F; 补充&quot;| MS2
+    D --&gt;|&quot;完成（通常 1-5 分钟）&quot;| OUT[&quot;outputs：新 Store ID&lt;br&#x2F;&gt;files_touched 变更清单&quot;]
+
+    classDef dream fill:#e6f4ea,stroke:#34a853
+    classDef store fill:#e8f0fe,stroke:#4285f4
+    classDef run fill:#fef7e0,stroke:#f9ab00
+    class D dream
+    class MS1,MS2 store
+    class DS,SESS run
+  </pre></div>
+
+<blockquote>
+<p>Dreams 的输入输出<strong>都只认 Memory Store</strong> - 再次印证 <strong>Store</strong> 是<strong>记忆的一等单元</strong>，Session 只是”<strong>使用现场</strong>“（见下文 Q4 关系模型）。</p>
+</blockquote>
+<h2 id="API-端点一览-1"><a href="#API-端点一览-1" class="headerlink" title="API 端点一览"></a>API 端点一览</h2><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>路径</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/dreams</code></td>
+<td>创建 Dream</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/dreams</code></td>
+<td>列出 Dreams</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/dreams/&#123;id&#125;</code></td>
+<td>获取 Dream 详情</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/dreams/&#123;id&#125;/cancel</code></td>
+<td>取消运行中的 Dream</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/dreams/&#123;id&#125;/archive</code></td>
+<td>归档已完成的 Dream</td>
+</tr>
+</tbody></table>
+<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="触发一次记忆整理"><a href="#触发一次记忆整理" class="headerlink" title="触发一次记忆整理"></a>触发一次记忆整理</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">curl -s -X POST <span class="string">&#x27;https://api.qoder.com/api/v1/cloud/dreams&#x27;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span> \</span><br><span class="line">  -H <span class="string">&quot;Content-Type: application/json&quot;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    &quot;inputs&quot;: [</span></span><br><span class="line"><span class="string">      &#123; &quot;type&quot;: &quot;memory_store&quot;, &quot;memory_store_id&quot;: &quot;memstore_019e5cdb9c3f71c3b6505eba937a40b4&quot; &#125;</span></span><br><span class="line"><span class="string">    ]</span></span><br><span class="line"><span class="string">  &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查询进度"><a href="#查询进度" class="headerlink" title="查询进度"></a>查询进度</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -s <span class="string">&#x27;https://api.qoder.com/api/v1/cloud/dreams/drm_019e86b4a8f070a3b6c5d4e3f2a1b0c9&#x27;</span> \</span><br><span class="line">  -H <span class="string">&quot;Authorization: Bearer <span class="variable">$QODER_ACCESS_TOKEN</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查看结果"><a href="#查看结果" class="headerlink" title="查看结果"></a>查看结果</h3><p>Dream 完成后，<code>outputs</code> 字段中包含<strong>整理后</strong>的 <strong>Memory Store ID</strong>：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;completed&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;outputs&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memory_store&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;memory_store_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;memstore_019e86b4b10578059435632bb357c5ed&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;files_touched&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;preferences.md&quot;</span><span class="punctuation">,</span> <span class="string">&quot;project/arch.md&quot;</span><span class="punctuation">]</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="可选参数"><a href="#可选参数" class="headerlink" title="可选参数"></a>可选参数</h2><table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>model</code></td>
+<td>选择整理使用的模型：<code>auto</code>（<strong>默认</strong>）、<code>lite</code>、<code>ultimate</code></td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td><strong>自定义指令</strong>（如”重点关注 Python 项目约定”），最长 <strong>4096 字符</strong></td>
+</tr>
+<tr>
+<td><code>inputs[].type: &quot;sessions&quot;</code></td>
+<td><strong>指定重点回顾的 Session ID 列表（最多 100 个）</strong></td>
+</tr>
+</tbody></table>
+<h2 id="安全设计"><a href="#安全设计" class="headerlink" title="安全设计"></a>安全设计</h2><ol>
+<li><strong>Copy-on-Write</strong>：输入 Memory Store <strong>永不被修改</strong>，所有写入发生在<strong>克隆副本</strong>上</li>
+<li><strong>最小权限</strong>：Dreaming Agent 仅可使用 <code>memory</code>、<code>session_list</code>、<code>session_read</code> 三个工具，无法<strong>执行代码</strong>或<strong>访问网络</strong></li>
+<li><strong>Single-flight</strong>：<strong>每个用户同一时间</strong>只能有一个<strong>活跃 Dream</strong>（状态为 <strong>pending</strong> 或 <strong>running</strong>），重复创建返回 409</li>
+</ol>
+<h2 id="常见问题-2"><a href="#常见问题-2" class="headerlink" title="常见问题"></a>常见问题</h2><blockquote>
+<p>Q: Dream 会修改我原来的 Memory Store 吗？</p>
+</blockquote>
+<p>A: 不会。Dream 始终在<strong>克隆副本</strong>上操作，原始 Memory Store 完全不受影响。</p>
+<blockquote>
+<p>Q: Dream 需要多长时间？</p>
+</blockquote>
+<p>A: 通常 1-5 分钟，取决于 <strong>Memory Store 大小</strong>和需要<strong>回顾的会话数量</strong></p>
+<h1 id="计费"><a href="#计费" class="headerlink" title="计费"></a>计费</h1><ol>
+<li><strong>Credits</strong> 消耗项只有两类：<strong>模型调用</strong>（按 <strong>Token</strong> 折算）与<strong>沙箱运行</strong>（按 <code>running</code> 秒）</li>
+<li>所有费用从 <strong>Credits 余额</strong>统一扣减；<strong>模型调用失败不扣费</strong></li>
+<li><strong>存储类资源</strong>（对话历史、任务产出、上传附件、Skill 仓库、持久化数据）当前<strong>限时免费</strong></li>
+</ol>
+<h2 id="心智模型-1"><a href="#心智模型-1" class="headerlink" title="心智模型"></a>心智模型</h2><blockquote>
+<p><strong>一句话</strong>：烧脑的按 <strong>Token</strong> 收，烧机的按<strong>秒</strong>收 - 且<strong>只罚 running</strong>：idle 休眠不收钱。</p>
+</blockquote>
+<h2 id="Credits-消耗项"><a href="#Credits-消耗项" class="headerlink" title="Credits 消耗项"></a>Credits 消耗项</h2><table>
+<thead>
+<tr>
+<th>计费项</th>
+<th>计费方式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>模型调用</td>
+<td>按 <strong>Token 消耗折算</strong></td>
+<td>不同模型、不同任务复杂度消耗不同</td>
+</tr>
+<tr>
+<td>沙箱运行（云资源）</td>
+<td>按 <strong>Session 活跃运行时长</strong>计费</td>
+<td>仅 <code>running</code> 状态计费，<strong>按秒计量、按小时结算</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>预估消耗</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>简单问答</td>
+<td>约 1-3 Credits</td>
+</tr>
+<tr>
+<td>日常文档或文案生成</td>
+<td>约 10-15 Credits</td>
+</tr>
+<tr>
+<td>复杂任务（多轮对话 + 工具调用）</td>
+<td>约 20-50 Credits</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>以上为典型估算，实际以 Credits 消耗明细为准；<strong>沙箱运行</strong>通常仅占单次 Session 总消耗的 <strong>5%-10%</strong> - <strong>大头永远在模型调用</strong>。</p>
+</blockquote>
+<h3 id="沙箱计费：状态机（2026-08-10-起正式收费）"><a href="#沙箱计费：状态机（2026-08-10-起正式收费）" class="headerlink" title="沙箱计费：状态机（2026-08-10 起正式收费）"></a>沙箱计费：状态机（2026-08-10 起正式收费）</h3><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    stateDiagram-v2
+    direction LR
+    state &quot;💰 running（唯一计费状态）&quot; as R
+    state &quot;🆓 idle（休眠）&quot; as I
+    state &quot;🆓 pause&quot; as P
+    state &quot;🆓 terminated&quot; as T
+
+    [*] --&gt; R: 创建并激活
+    R --&gt; I: turn 结束（休眠）
+    I --&gt; R: 新事件唤醒
+    R --&gt; P: 暂停
+    P --&gt; R: 恢复
+    R --&gt; T: 结束
+    I --&gt; T: 归档 &#x2F; 超时
+    P --&gt; T
+  </pre></div>
+
+<h2 id="存储限时免费"><a href="#存储限时免费" class="headerlink" title="存储限时免费"></a>存储限时免费</h2><table>
+<thead>
+<tr>
+<th>免费项</th>
+<th>对应本系列章节</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>对话历史与任务记录</td>
+<td>-</td>
+</tr>
+<tr>
+<td>任务生成数据（报告&#x2F;代码&#x2F;文件）</td>
+<td>Files（Agent 产出）</td>
+</tr>
+<tr>
+<td>上传的附件与文件</td>
+<td>Files（<code>POST /files</code>）</td>
+</tr>
+<tr>
+<td>空间私有 Skill 仓库存储</td>
+<td>-</td>
+</tr>
+<tr>
+<td>持久化个人用户数据存储</td>
+<td>Memory Stores</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>存储计费规则后续可能调整 - 当前相当于<strong>平台补贴对象存储成本</strong>（印证「文件上传」Q1 的存储模型推断）。</p>
+</blockquote>
+<h2 id="扣减与出账"><a href="#扣减与出账" class="headerlink" title="扣减与出账"></a>扣减与出账</h2><ol>
+<li><strong>统一扣减</strong>：所有费用从 <strong>Credits</strong> 余额扣</li>
+<li><strong>失败不扣费</strong>：模型调用失败不扣该次 Credits；成功的按实际消耗计</li>
+<li><strong>结算粒度</strong>：沙箱<strong>按秒计量、按小时结算</strong>；模型调用按实际折算</li>
+</ol>
+<h2 id="计费模型全景"><a href="#计费模型全景" class="headerlink" title="计费模型全景"></a>计费模型全景</h2><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    subgraph USE[&quot;🔥 消耗项&quot;]
+        LLM[&quot;模型调用&lt;br&#x2F;&gt;按 Token 折算&lt;br&#x2F;&gt;失败不扣费&quot;]
+        SBX[&quot;沙箱云资源&lt;br&#x2F;&gt;仅 running · 按秒计量&lt;br&#x2F;&gt;约占总消耗 5%-10%&quot;]
+    end
+
+    LLM --&gt;|&quot;按小时结算&quot;| BAL[(&quot;Credits 余额&lt;br&#x2F;&gt;统一扣减&quot;)]
+    SBX --&gt;|&quot;按秒计量 · 按小时结算&quot;| BAL
+
+    subgraph PS[&quot;👤 个人空间（PAT）&quot;]
+        PKG1[&quot;共享 Credits 资源包&lt;br&#x2F;&gt;阿里云国际市场购买&lt;br&#x2F;&gt;经 Teams 分配给 PAT 用户&quot;]
+    end
+
+    subgraph ES[&quot;🏢 企业空间（SA）&quot;]
+        PKG2[&quot;服务账号专用资源包&lt;br&#x2F;&gt;云市场兑换码创建&quot;]
+        LIM[&quot;每 SA 可设 Credits 限额&lt;br&#x2F;&gt;创建 &#x2F; 查看 &#x2F; 编辑&quot;]
+    end
+
+    PKG1 --&gt; BAL
+    PKG2 --&gt; LIM --&gt; BAL
+
+    classDef use fill:#fce8e6,stroke:#ea4335
+    classDef personal fill:#e8f0fe,stroke:#4285f4
+    classDef enterprise fill:#e6f4ea,stroke:#34a853
+    class LLM,SBX use
+    class PKG1 personal
+    class PKG2,LIM enterprise
+  </pre></div>
+
+<h2 id="机制剖析：计费状态机暴露了架构状态机"><a href="#机制剖析：计费状态机暴露了架构状态机" class="headerlink" title="机制剖析：计费状态机暴露了架构状态机"></a>机制剖析：计费状态机暴露了架构状态机</h2><table>
+<thead>
+<tr>
+<th>计费规则</th>
+<th>架构印证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>idle &#x2F; pause &#x2F; terminated 不计费</strong></td>
+<td>直接印证「文件上传」Q2 的 <strong>serverless 休眠模型</strong> - 休眠时容器真被<strong>冻结&#x2F;回收</strong>，平台不付<strong>计算成本</strong>，所以不收钱。<strong>计费粒度与架构粒度对齐</strong></td>
+</tr>
+<tr>
+<td>按秒计量、按小时结算</td>
+<td>面向大量<strong>短 Session</strong> 的聚合账单设计</td>
+</tr>
+<tr>
+<td>模型调用失败不扣费</td>
+<td>计费与执行成败对齐（重试不产生双重计费）</td>
+</tr>
+<tr>
+<td>沙箱仅占 5%-10%</td>
+<td>平台定价锚定<strong>模型 Token</strong>，云资源接近<strong>成本价</strong></td>
+</tr>
+<tr>
+<td>购买渠道是<strong>阿里云国际市场</strong></td>
+<td>商业底座在阿里云（资源包经云市场售卖、兑换码开通）</td>
+</tr>
+</tbody></table>
+<h2 id="小结-2"><a href="#小结-2" class="headerlink" title="小结"></a>小结</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>消耗项</td>
+<td><strong>模型调用</strong>（Token 折算）+ <strong>沙箱</strong>（running 秒）——仅此两类</td>
+</tr>
+<tr>
+<td>沙箱计费状态</td>
+<td><strong>只有 <code>running</code> 计费</strong>；idle&#x2F;pause&#x2F;terminated 免费</td>
+</tr>
+<tr>
+<td>沙箱成本占比</td>
+<td>约 5%-10%（大头在模型）</td>
+</tr>
+<tr>
+<td>失败调用</td>
+<td>不扣费</td>
+</tr>
+<tr>
+<td>存储</td>
+<td>五类限时免费（含 Files 上传与 Memory Stores）</td>
+</tr>
+<tr>
+<td>个人模式定位</td>
+<td>Credits 预付费，<strong>不建议生产调度</strong>（仅测试&#x2F;POC）</td>
+</tr>
+<tr>
+<td>企业空间计费</td>
+<td>SA 专用资源包，<strong>不占组织席位 Credits</strong>，每 <strong>SA</strong> 可设<strong>限额</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一图流记忆</strong>：烧脑按 Token、烧机按秒；<strong>只罚 running，休眠免费</strong> - 计费表就是架构图的影子。</p>
+</blockquote>
+<h1 id="个人空间与企业空间"><a href="#个人空间与企业空间" class="headerlink" title="个人空间与企业空间"></a>个人空间与企业空间</h1><ol>
+<li>空间是 Cloud Agents 的<strong>顶层账号上下文</strong>：个人空间用 <strong>PAT</strong>，企业空间绑定<strong>服务账号（Service Account，SA）</strong></li>
+<li>两个空间<strong>完全隔离</strong>：个人空间的资源不会因加入组织而出现在企业空间</li>
+<li>每个组织有<strong>一个</strong>企业空间，由<strong>管理员 + 配置管理员</strong>共同管理</li>
+</ol>
+<h2 id="空间对比"><a href="#空间对比" class="headerlink" title="空间对比"></a>空间对比</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>👤 个人空间</th>
+<th>🏢 企业空间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>认证</td>
+<td>个人 <strong>PAT</strong></td>
+<td><strong>服务账号 SA</strong>（企业凭证页绑定）</td>
+</tr>
+<tr>
+<td>数据归属</td>
+<td>当前用户</td>
+<td>当前 <strong>Qoder 组织</strong></td>
+</tr>
+<tr>
+<td>配置与使用</td>
+<td>仅本人</td>
+<td><strong>管理员 + 配置管理员</strong>共治</td>
+</tr>
+<tr>
+<td>计费来源</td>
+<td>个人 Credits（共享资源包分配）</td>
+<td><strong>SA 专用资源包</strong>（不占席位 Credits）</td>
+</tr>
+<tr>
+<td>可用人群</td>
+<td>所有 Qoder 用户</td>
+<td>Teams &#x2F; Enterprise 组织的管理员</td>
+</tr>
+<tr>
+<td>生产建议</td>
+<td>测试 &#x2F; POC</td>
+<td><strong>对外服务与企业工作流集成</strong></td>
+</tr>
+<tr>
+<td>数量</td>
+<td>每用户一个</td>
+<td><strong>每组织一个</strong></td>
+</tr>
+</tbody></table>
+<h2 id="账号体系全景"><a href="#账号体系全景" class="headerlink" title="账号体系全景"></a>账号体系全景</h2><div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TB
+    CONSOLE[&quot;🖥️ Cloud Agents 控制台&lt;br&#x2F;&gt;左下角空间切换器&quot;]
+
+    subgraph PS[&quot;👤 个人空间&quot;]
+        direction TB
+        PAT[&quot;认证：个人 PAT&quot;]
+        OWN1[&quot;数据归属：当前用户&quot;]
+        USE1[&quot;配置与使用：仅本人&quot;]
+        C1[&quot;计费：个人 Credits&lt;br&#x2F;&gt;共享资源包&quot;]
+    end
+
+    subgraph ES[&quot;🏢 企业空间（需绑定 SA）&quot;]
+        direction TB
+        SA[&quot;认证：服务账号 SA&quot;]
+        OWN2[&quot;数据归属：Qoder 组织&quot;]
+        USE2[&quot;管理员 + 配置管理员共治&quot;]
+        C2[&quot;计费：SA 专用资源包&lt;br&#x2F;&gt;每 SA 可设 Credits 限额&quot;]
+    end
+
+    CONSOLE --&gt; PS
+    CONSOLE --&gt; ES
+    PS &lt;-.-&gt;|&quot;资源完全隔离&lt;br&#x2F;&gt;不迁移 · 不共享&quot;| ES
+
+    classDef personal fill:#e8f0fe,stroke:#4285f4
+    classDef enterprise fill:#e6f4ea,stroke:#34a853
+    class PAT,OWN1,USE1,C1 personal
+    class SA,OWN2,USE2,C2 enterprise
+  </pre></div>
+
+<h2 id="绑定企业凭证（三步）"><a href="#绑定企业凭证（三步）" class="headerlink" title="绑定企业凭证（三步）"></a>绑定企业凭证（三步）</h2><ol>
+<li>组织开通<strong>服务账号</strong>功能（灰度范围，未开通联系销售）</li>
+<li>在 Qoder 管理后台<strong>创建 SA</strong> 并完成计费配置（<strong>成员 &gt; 服务账号</strong>，可同时设 Credits 上限）</li>
+<li>回到 Cloud Agents，在<strong>企业凭证</strong>页绑定该 SA</li>
+</ol>
+<blockquote>
+<p>前提：组织须通过<strong>云市场兑换码</strong>创建（官网直购支付创建的组织暂不支持 SA 模式）。</p>
+</blockquote>
+<h2 id="机制剖析：空间与「记忆关系模型」的呼应"><a href="#机制剖析：空间与「记忆关系模型」的呼应" class="headerlink" title="机制剖析：空间与「记忆关系模型」的呼应"></a>机制剖析：空间与「记忆关系模型」的呼应</h2><table>
+<thead>
+<tr>
+<th>观察</th>
+<th>解读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>「记忆」Q4 说 Managed Mode 没有 User 实体</td>
+<td>但顶层有<strong>空间</strong>：个人空间认证主体 &#x3D; 你（PAT），企业空间认证主体 &#x3D; <strong>SA</strong> - 这就是 API 鉴权里 <strong>PAT &#x2F; SAT</strong> 分野的来源（<a href="/2026/08/21/agent-infra-cloud-agents-v4/">V4</a> Vaults 一章即已出现”Bearer PAT 或 SAT”）</td>
+</tr>
+<tr>
+<td>两空间资源<strong>完全隔离、不迁移</strong></td>
+<td>隔离发生在<strong>账号层</strong>而非<strong>资源层</strong> - Agents &#x2F; Environments &#x2F; Files &#x2F; Memory Stores 各有独立宇宙</td>
+</tr>
+<tr>
+<td>企业空间多管理员共治</td>
+<td>与 <a href="/2026/08/21/agent-infra-cloud-agents-v5/">V5</a> Forward Mode 的 <strong>Enterprise 层</strong>同构 - <strong>组织级治理</strong></td>
+</tr>
+<tr>
+<td>每 SA 可设 Credits 限额</td>
+<td>子账号级 <strong>FinOps</strong>：限额内自主、超限任务无法发起</td>
+</tr>
+</tbody></table>
+<h2 id="小结-3"><a href="#小结-3" class="headerlink" title="小结"></a>小结</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>空间是什么</td>
+<td><strong>顶层账号上下文</strong>：个人（PAT&#x2F;个人 Credits）vs 企业（SA&#x2F;专用包）</td>
+</tr>
+<tr>
+<td>切换方式</td>
+<td>控制台左下角空间切换器；<strong>每组织一个企业空间</strong></td>
+</tr>
+<tr>
+<td>数据归属</td>
+<td>个人 &#x3D; 当前用户；企业 &#x3D; Qoder 组织（管理员共治）</td>
+</tr>
+<tr>
+<td>隔离粒度</td>
+<td><strong>完全隔离</strong> - 个人空间资源不会自动进入企业空间</td>
+</tr>
+<tr>
+<td>生产建议</td>
+<td><strong>对外集成用企业空间</strong>；个人 PAT 仅测试 &#x2F; POC</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一图流记忆</strong>：个人空间是”我的实验室”，企业空间是”组织的生产线” - <strong>PAT 只做实验，SA 才上产线</strong>。</p>
+</blockquote>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/08/21/agent-infra-cloud-agents-v6/">https://blog.zhongmingmao.top/2026/08/21/agent-infra-cloud-agents-v6/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/agent-infra/">Agent Infra</a><a class="post-meta__tags" href="/tags/cloud-agents/">Cloud Agents</a></div><div class="post-share"><div class="social-share" data-image="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/08/21/agent-infra-cloud-agents-v5/" title="Agent Infra - Cloud Agents V5"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-computing_356197761.jpeg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Agent Infra - Cloud Agents V5</div></div><div class="info-2"><div class="info-item-1">Schedule 在 Forward Session 中使用自然语言创建、查询和删除 Schedule 除了调用 Schedule API，终端用户也可以在 Web 或 IM Channel 会话中描述任务内容和执行时间，由 Agent 创建 Schedule 创建后，任务会按约定时间自动运行，无需保持当前会话在线    使用前提当前会话使用的 Template 必须启用对应的 Schedule 托管工具：    能力 托管工具    创建 Schedule create_forward_schedule   查询 Schedule list_forward_schedules   删除 Schedule delete_forward_schedule   Template 默认不启用这些工具。managed_tool_config 是 Template 请求体的顶层字段，可通过以下接口配置：    场景 接口    创建 Template 时启用 POST /api/v1/forward/templates   为已有 Template 启用或调整 POST /api/v1/forward/templ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/08/21/agent-infra-cloud-agents-v5/" title="Agent Infra - Cloud Agents V5"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-computing_356197761.jpeg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-21</div><div class="info-item-2">Agent Infra - Cloud Agents V5</div></div><div class="info-2"><div class="info-item-1">Schedule 在 Forward Session 中使用自然语言创建、查询和删除 Schedule 除了调用 Schedule API，终端用户也可以在 Web 或 IM Channel 会话中描述任务内容和执行时间，由 Agent 创建 Schedule 创建后，任务会按约定时间自动运行，无需保持当前会话在线    使用前提当前会话使用的 Template 必须启用对应的 Schedule 托管工具：    能力 托管工具    创建 Schedule create_forward_schedule   查询 Schedule list_forward_schedules   删除 Schedule delete_forward_schedule   Template 默认不启用这些工具。managed_tool_config 是 Template 请求体的顶层字段，可通过以下接口配置：    场景 接口    创建 Template 时启用 POST /api/v1/forward/templates   为已有 Template 启用或调整 POST /api/v1/forward/templ...</div></div></div></a><a class="pagination-related" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v2.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-18</div><div class="info-item-2">Agent Infra - Cloud Agents V2</div></div><div class="info-2"><div class="info-item-1">Agent Skills 为 Agent 附加领域专业知识 Skills 为 Agent 附加领域专业知识 一个 Skill 是一组结构化的指令和流程，让 Agent 在特定任务上表现得更专业、更可靠    架构概览     flowchart TB     subgraph STATIC[&quot;🔵 静态层 - 配置模板（可复用、版本化）&quot;]         direction TB         AG[&quot;Agent&lt;br&#x2F;&gt;📋 配置模板&lt;br&#x2F;&gt;— · model · system&lt;br&#x2F;&gt;— tools · skills&quot;]         ENV[&quot;Environment&lt;br&#x2F;&gt;🐳 容器环境&lt;br&#x2F;&gt;— · packages · setup_script&quot;]         SK[&quot;Skill&lt;br&#x2F;&gt;🎯 领域知识&lt;br&#x2F;&gt;— · 版本化 · 可共享&quot;]   ...</div></div></div></a><a class="pagination-related" href="/2026/08/20/agent-infra-cloud-agents-v4/" title="Agent Infra - Cloud Agents V4"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloudcomputing.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-20</div><div class="info-item-2">Agent Infra - Cloud Agents V4</div></div><div class="info-2"><div class="info-item-1">使用 Vaults 认证 安全地存储凭据并注入到 Agent Session Agent 经常需要访问第三方服务 - GitHub、Jira、数据库、自建 MCP 服务器等 Vaults 提供安全的凭证托管，让你把 Token 交给我们保管，Session 运行时按需注入，无需硬编码在代码里    核心概念   概念 说明    Vault 凭证容器，可包含多个 Credential   Credential 单条凭证记录，绑定到具体 MCP 服务器 URL   auth.type 凭证鉴权类型：static_bearer 或 mcp_oauth   vault_ids Session 创建时引用的 Vault ID 列表   安全性 access_token永远不会在 API 响应中返回 token、refresh_token、client_secret 等其他密文也永远不会返回 凭证在服务端加密存储 仅关联的 Session 可在运行时访问凭证内容  完整流程整体流程图：      flowchart TB     subgraph S1[&quot;① 配置阶段：准备 Vault&quot;]  ...</div></div></div></a><a class="pagination-related" href="/2026/08/20/agent-infra-cloud-agents-v3/" title="Agent Infra - Cloud Agents V3"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-20</div><div class="info-item-2">Agent Infra - Cloud Agents V3</div></div><div class="info-2"><div class="info-item-1">启动 Session 创建、运行、查看和归档 Cloud Agent Sessions Session 是 Agent 的运行工作区 它把 Agent 快照、Environment、可选资源和可选 Vault 凭证绑定在一起 新 Session 初始为 idle，发送事件后开始执行    Session 状态生命周期Session 是一个状态机。Session 资源上的 status 字段取以下值之一：    状态 说明 可流转到    idle Session 空闲，可以发送消息 running、rescheduling、terminated   running Agent 正在处理 turn idle、rescheduling、terminated   rescheduling 底层运行时正在重新调度，期间 Session 不可用，恢复后回到 idle idle、terminated   terminated Session 已终止（终态） —        stateDiagram-v2     [*] --&gt; idle: 创建 Session          idle --&gt; ru...</div></div></div></a><a class="pagination-related" href="/2026/08/18/agent-infra-cloud-agents-v1/" title="Agent Infra - Cloud Agents V1"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-18</div><div class="info-item-2">Agent Infra - Cloud Agents V1</div></div><div class="info-2"><div class="info-item-1">概述 Qoder Cloud Agents 是一个全托管的 AI Agent 运行平台 通过 API 定义 Agent、启动 Session，即可在云端运行复杂任务并实时接收结果 为软件装上不断进化的大脑 通过 API 将持续进化的 Agent 能力嵌入你的应用 一次接入 - 智能能力随平台升级自动成长，无需修改任何代码   特性 一次调用即生产，长程执行，全程可观测 10000+ - 秒级并发实例弹性调度，按需扩缩 26 小时 - 单 Session 最长持续运行时长 1 天 - 从零到生产级 Agent 的交付时间   特点 一次调用，端到端交付 Agent 自主完成理解、规划、工具调用、代码生成、测试验证的完整链路，直接交付可用结果   长程执行，断点恢复 Session 基于事件流持久化，不绑定单一进程 支持数小时乃至数天的长时运行任务：批量审查、跨仓库重构、多轮迭代修复 中断自动恢复，进度永不丢失   安全可信，全程可观测 每个 Agent 运行在独立 Sandbox 中，租户间零数据渗透 所有行为通过 SSE 实时可观测 每一步思考、每一次工具调用、每一个输出，精确可追溯可审计     接入...</div></div></div></a><a class="pagination-related" href="/2026/05/20/agent-infra-envoy-ai-gateway/" title="Agent Infra - Envoy AI Gateway"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/gateway/envoy-ai-gateway.webp" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-20</div><div class="info-item-2">Agent Infra - Envoy AI Gateway</div></div><div class="info-2"><div class="info-item-1">OverviewEnvoy AI Gateway is an open source project for using Envoy Gateway to handle request traffic from application clients to Generative AI services.   Usage When using Envoy AI Gateway, we refer to a two-tier gateway pattern.   The Tier One Gateway functions as a centralized entry point handles authentication, top-level routing, and global rate limiting   The Tier Two Gateway handles ingress traffic to a self-hosted model serving cluster provides fine-grained control over self-hosted model access, wi...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">671</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">204</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">96</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%B8%8E%E6%8C%82%E8%BD%BD"><span class="toc-number">1.</span> <span class="toc-text">文件上传与挂载</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A8%E6%99%AF%EF%BC%9A%E4%B8%80%E5%BC%A0%E5%9B%BE%E7%9C%8B%E6%87%82"><span class="toc-number">1.1.</span> <span class="toc-text">全景：一张图看懂</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BF%83%E6%99%BA%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.2.</span> <span class="toc-text">心智模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B"><span class="toc-number">1.3.</span> <span class="toc-text">核心流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6"><span class="toc-number">1.4.</span> <span class="toc-text">上传文件</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E4%B8%8E%E7%BA%A6%E6%9D%9F"><span class="toc-number">1.4.1.</span> <span class="toc-text">参数与约束</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E5%AD%97%E6%AE%B5%E8%A7%A3%E8%AF%BB"><span class="toc-number">1.4.2.</span> <span class="toc-text">响应字段解读</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%82%E8%BD%BD%E5%88%B0-Session"><span class="toc-number">1.5.</span> <span class="toc-text">挂载到 Session</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E7%A7%8D%E6%8C%82%E8%BD%BD%E6%97%B6%E6%9C%BA"><span class="toc-number">1.5.1.</span> <span class="toc-text">两种挂载时机</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#resources-%E7%9A%84%E4%B8%89%E7%A7%8D%E7%B1%BB%E5%9E%8B%EF%BC%88%E5%90%8C%E4%B8%80%E4%B8%AA%E6%8A%BD%E8%B1%A1%EF%BC%89"><span class="toc-number">1.5.2.</span> <span class="toc-text">resources 的三种类型（同一个抽象）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#mount-path-%E8%A7%84%E5%88%99"><span class="toc-number">1.5.3.</span> <span class="toc-text">mount_path 规则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.5.4.</span> <span class="toc-text">请求示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B8%E5%9E%8B%E9%94%99%E8%AF%AF"><span class="toc-number">1.5.5.</span> <span class="toc-text">典型错误</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%BA%E5%88%B6%E5%89%96%E6%9E%90%EF%BC%9A%E4%B8%A4%E4%B8%AA%E5%85%B3%E9%94%AE%E9%97%AE%E9%A2%98"><span class="toc-number">1.6.</span> <span class="toc-text">机制剖析：两个关键问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q1%EF%BC%9A%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E8%83%8C%E5%90%8E%E6%98%AF-OSS-%E8%BF%98%E6%98%AF-NAS%EF%BC%9F"><span class="toc-number">1.6.1.</span> <span class="toc-text">Q1：文件存储背后是 OSS 还是 NAS？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q2%EF%BC%9ASession-%E8%B5%B7%E6%9D%A5%E4%B9%8B%E5%90%8E%E5%86%8D%E6%8C%82%E8%BD%BD%EF%BC%8C%E6%98%AF%E6%80%8E%E4%B9%88%E7%94%9F%E6%95%88%E7%9A%84%EF%BC%9F"><span class="toc-number">1.6.2.</span> <span class="toc-text">Q2：Session 起来之后再挂载，是怎么生效的？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%A1%E7%90%86%E6%96%87%E4%BB%B6"><span class="toc-number">1.7.</span> <span class="toc-text">管理文件</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E6%96%87%E4%BB%B6%E5%85%83%E4%BF%A1%E6%81%AF"><span class="toc-number">1.7.1.</span> <span class="toc-text">查看文件元信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B5%84%E6%BA%90%E4%B9%9F%E6%98%AF%E4%B8%80%E7%AD%89%E5%85%AC%E6%B0%91%EF%BC%9AResource-CRUD"><span class="toc-number">1.7.2.</span> <span class="toc-text">资源也是一等公民：Resource CRUD</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%97%E5%87%BA%E6%96%87%E4%BB%B6"><span class="toc-number">1.7.3.</span> <span class="toc-text">列出文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD%E6%96%87%E4%BB%B6"><span class="toc-number">1.7.4.</span> <span class="toc-text">下载文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.8.</span> <span class="toc-text">完整工作流示例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">1.9.</span> <span class="toc-text">常见问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">1.10.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8C%81%E4%B9%85%E5%8C%96%E8%AE%B0%E5%BF%86"><span class="toc-number">2.</span> <span class="toc-text">持久化记忆</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">2.1.</span> <span class="toc-text">核心概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#API-%E7%AB%AF%E7%82%B9%E4%B8%80%E8%A7%88"><span class="toc-number">2.2.</span> <span class="toc-text">API 端点一览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%99"><span class="toc-number">2.3.</span> <span class="toc-text">路径规则</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B"><span class="toc-number">2.4.</span> <span class="toc-text">完整流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-Memory-Store"><span class="toc-number">2.4.1.</span> <span class="toc-text">创建 Memory Store</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-Memory"><span class="toc-number">2.4.2.</span> <span class="toc-text">创建 Memory</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%8D%95%E6%9D%A1-Memory"><span class="toc-number">2.4.3.</span> <span class="toc-text">获取单条 Memory</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E6%96%B0-Memory"><span class="toc-number">2.4.4.</span> <span class="toc-text">更新 Memory</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8-Session-%E4%B8%AD%E4%BD%BF%E7%94%A8"><span class="toc-number">2.4.5.</span> <span class="toc-text">在 Session 中使用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Memory-%E5%9C%A8-sandbox-%E5%86%85%E7%9A%84%E8%B7%AF%E5%BE%84"><span class="toc-number">2.4.6.</span> <span class="toc-text">Memory 在 sandbox 内的路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E%E6%8C%82%E8%BD%BD%E5%88%B0%E8%AF%BB%E5%86%99%EF%BC%9A%E5%85%A8%E6%99%AF%E5%9B%BE"><span class="toc-number">2.4.7.</span> <span class="toc-text">从挂载到读写：全景图</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC%E8%BF%BD%E8%B8%AA"><span class="toc-number">2.5.</span> <span class="toc-text">版本追踪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%9F%E8%AE%A1%E5%AD%97%E6%AE%B5"><span class="toc-number">2.6.</span> <span class="toc-text">统计字段</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%BA%E5%88%B6%E5%89%96%E6%9E%90%EF%BC%9A%E4%B8%89%E4%B8%AA%E5%85%B3%E9%94%AE%E9%97%AE%E9%A2%98"><span class="toc-number">2.7.</span> <span class="toc-text">机制剖析：三个关键问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q1%EF%BC%9A%E8%AE%B0%E5%BF%86%E6%98%AF%E8%87%AA%E7%A0%94%E7%9A%84%EF%BC%8C%E8%BF%98%E6%98%AF%E9%9B%86%E6%88%90%E4%BA%86-Mem0-PolarDB-%E8%BF%99%E7%B1%BB%E6%96%B9%E6%A1%88%EF%BC%9F"><span class="toc-number">2.7.1.</span> <span class="toc-text">Q1：记忆是自研的，还是集成了 Mem0 &#x2F; PolarDB 这类方案？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q2%EF%BC%9AMem0-%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F%E4%B8%A4%E8%BE%B9%E4%B8%80%E6%A0%B7%E5%90%97%EF%BC%9F"><span class="toc-number">2.7.2.</span> <span class="toc-text">Q2：Mem0 的设计理念是什么？两边一样吗？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q3%EF%BC%9AAgent-%E6%9B%B4%E6%96%B0%E8%AE%B0%E5%BF%86%EF%BC%8C%E6%98%AF%E5%86%99%E6%96%87%E4%BB%B6%E8%BF%98%E6%98%AF%E8%B0%83-API%EF%BC%9F"><span class="toc-number">2.7.3.</span> <span class="toc-text">Q3：Agent 更新记忆，是写文件还是调 API？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q4%EF%BC%9AMemory-Store%E3%80%81Memory%E3%80%81Session%E3%80%81User-%E4%B9%8B%E9%97%B4%E6%98%AF%E4%BB%80%E4%B9%88%E5%85%B3%E7%B3%BB%EF%BC%9F"><span class="toc-number">2.7.4.</span> <span class="toc-text">Q4：Memory Store、Memory、Session、User 之间是什么关系？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98-1"><span class="toc-number">2.8.</span> <span class="toc-text">常见问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93-1"><span class="toc-number">2.9.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E6%95%B4%E7%90%86"><span class="toc-number">3.</span> <span class="toc-text">记忆整理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5-1"><span class="toc-number">3.1.</span> <span class="toc-text">核心概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="toc-number">3.2.</span> <span class="toc-text">工作流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#API-%E7%AB%AF%E7%82%B9%E4%B8%80%E8%A7%88-1"><span class="toc-number">3.3.</span> <span class="toc-text">API 端点一览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B"><span class="toc-number">3.4.</span> <span class="toc-text">快速开始</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A6%E5%8F%91%E4%B8%80%E6%AC%A1%E8%AE%B0%E5%BF%86%E6%95%B4%E7%90%86"><span class="toc-number">3.4.1.</span> <span class="toc-text">触发一次记忆整理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%BF%9B%E5%BA%A6"><span class="toc-number">3.4.2.</span> <span class="toc-text">查询进度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E7%BB%93%E6%9E%9C"><span class="toc-number">3.4.3.</span> <span class="toc-text">查看结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0"><span class="toc-number">3.5.</span> <span class="toc-text">可选参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1"><span class="toc-number">3.6.</span> <span class="toc-text">安全设计</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98-2"><span class="toc-number">3.7.</span> <span class="toc-text">常见问题</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%A1%E8%B4%B9"><span class="toc-number">4.</span> <span class="toc-text">计费</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BF%83%E6%99%BA%E6%A8%A1%E5%9E%8B-1"><span class="toc-number">4.1.</span> <span class="toc-text">心智模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Credits-%E6%B6%88%E8%80%97%E9%A1%B9"><span class="toc-number">4.2.</span> <span class="toc-text">Credits 消耗项</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B2%99%E7%AE%B1%E8%AE%A1%E8%B4%B9%EF%BC%9A%E7%8A%B6%E6%80%81%E6%9C%BA%EF%BC%882026-08-10-%E8%B5%B7%E6%AD%A3%E5%BC%8F%E6%94%B6%E8%B4%B9%EF%BC%89"><span class="toc-number">4.2.1.</span> <span class="toc-text">沙箱计费：状态机（2026-08-10 起正式收费）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%98%E5%82%A8%E9%99%90%E6%97%B6%E5%85%8D%E8%B4%B9"><span class="toc-number">4.3.</span> <span class="toc-text">存储限时免费</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%A3%E5%87%8F%E4%B8%8E%E5%87%BA%E8%B4%A6"><span class="toc-number">4.4.</span> <span class="toc-text">扣减与出账</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%A1%E8%B4%B9%E6%A8%A1%E5%9E%8B%E5%85%A8%E6%99%AF"><span class="toc-number">4.5.</span> <span class="toc-text">计费模型全景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%BA%E5%88%B6%E5%89%96%E6%9E%90%EF%BC%9A%E8%AE%A1%E8%B4%B9%E7%8A%B6%E6%80%81%E6%9C%BA%E6%9A%B4%E9%9C%B2%E4%BA%86%E6%9E%B6%E6%9E%84%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-number">4.6.</span> <span class="toc-text">机制剖析：计费状态机暴露了架构状态机</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93-2"><span class="toc-number">4.7.</span> <span class="toc-text">小结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%AA%E4%BA%BA%E7%A9%BA%E9%97%B4%E4%B8%8E%E4%BC%81%E4%B8%9A%E7%A9%BA%E9%97%B4"><span class="toc-number">5.</span> <span class="toc-text">个人空间与企业空间</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A9%BA%E9%97%B4%E5%AF%B9%E6%AF%94"><span class="toc-number">5.1.</span> <span class="toc-text">空间对比</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B4%A6%E5%8F%B7%E4%BD%93%E7%B3%BB%E5%85%A8%E6%99%AF"><span class="toc-number">5.2.</span> <span class="toc-text">账号体系全景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%91%E5%AE%9A%E4%BC%81%E4%B8%9A%E5%87%AD%E8%AF%81%EF%BC%88%E4%B8%89%E6%AD%A5%EF%BC%89"><span class="toc-number">5.3.</span> <span class="toc-text">绑定企业凭证（三步）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%BA%E5%88%B6%E5%89%96%E6%9E%90%EF%BC%9A%E7%A9%BA%E9%97%B4%E4%B8%8E%E3%80%8C%E8%AE%B0%E5%BF%86%E5%85%B3%E7%B3%BB%E6%A8%A1%E5%9E%8B%E3%80%8D%E7%9A%84%E5%91%BC%E5%BA%94"><span class="toc-number">5.4.</span> <span class="toc-text">机制剖析：空间与「记忆关系模型」的呼应</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93-3"><span class="toc-number">5.5.</span> <span class="toc-text">小结</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/08/21/agent-infra-cloud-agents-v6/" title="Agent Infra - Cloud Agents V6"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/modern-clean-digital-4d764e95.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V6"/></a><div class="content"><a class="title" href="/2026/08/21/agent-infra-cloud-agents-v6/" title="Agent Infra - Cloud Agents V6">Agent Infra - Cloud Agents V6</a><time datetime="2026-08-21T04:06:25.000Z" title="Created 2026-08-21 12:06:25">2026-08-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/21/agent-infra-cloud-agents-v5/" title="Agent Infra - Cloud Agents V5"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-computing_356197761.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V5"/></a><div class="content"><a class="title" href="/2026/08/21/agent-infra-cloud-agents-v5/" title="Agent Infra - Cloud Agents V5">Agent Infra - Cloud Agents V5</a><time datetime="2026-08-20T16:06:25.000Z" title="Created 2026-08-21 00:06:25">2026-08-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/20/agent-infra-cloud-agents-v4/" title="Agent Infra - Cloud Agents V4"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloudcomputing.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V4"/></a><div class="content"><a class="title" href="/2026/08/20/agent-infra-cloud-agents-v4/" title="Agent Infra - Cloud Agents V4">Agent Infra - Cloud Agents V4</a><time datetime="2026-08-20T04:06:25.000Z" title="Created 2026-08-20 12:06:25">2026-08-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/20/agent-infra-cloud-agents-v3/" title="Agent Infra - Cloud Agents V3"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v31.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V3"/></a><div class="content"><a class="title" href="/2026/08/20/agent-infra-cloud-agents-v3/" title="Agent Infra - Cloud Agents V3">Agent Infra - Cloud Agents V3</a><time datetime="2026-08-19T16:06:25.000Z" title="Created 2026-08-20 00:06:25">2026-08-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/cloud-agents/cloud-agents-v2.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Cloud Agents V2"/></a><div class="content"><a class="title" href="/2026/08/18/agent-infra-cloud-agents-v2/" title="Agent Infra - Cloud Agents V2">Agent Infra - Cloud Agents V2</a><time datetime="2026-08-18T04:06:25.000Z" title="Created 2026-08-18 12:06:25">2026-08-18</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
