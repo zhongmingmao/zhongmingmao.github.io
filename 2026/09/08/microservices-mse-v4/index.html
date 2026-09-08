@@ -1,0 +1,1255 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Microservices - MSE V4 | ByteCoding</title><meta name="author" content="zhongmingmao"><meta name="copyright" content="zhongmingmao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="无损上下线 为了提高系统的效率和响应速度，减少任务切换时的等待时间，同时提高系统的可用性和稳定性 本文介绍微服务治理中的流量治理模块的无损上下线功能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Microservices - MSE V4">
+<meta property="og:url" content="https://blog.zhongmingmao.top/2026/09/08/microservices-mse-v4/index.html">
+<meta property="og:site_name" content="ByteCoding">
+<meta property="og:description" content="无损上下线 为了提高系统的效率和响应速度，减少任务切换时的等待时间，同时提高系统的可用性和稳定性 本文介绍微服务治理中的流量治理模块的无损上下线功能">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg">
+<meta property="article:published_time" content="2026-09-07T16:06:25.000Z">
+<meta property="article:modified_time" content="2026-09-08T11:19:41.427Z">
+<meta property="article:author" content="zhongmingmao">
+<meta property="article:tag" content="Microservices">
+<meta property="article:tag" content="MSE">
+<meta property="article:tag" content="Sentinel">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Microservices - MSE V4",
+  "url": "https://blog.zhongmingmao.top/2026/09/08/microservices-mse-v4/",
+  "image": "https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg",
+  "datePublished": "2026-09-07T16:06:25.000Z",
+  "dateModified": "2026-09-08T11:19:41.427Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "zhongmingmao",
+      "url": "https://blog.zhongmingmao.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png"><link rel="canonical" href="https://blog.zhongmingmao.top/2026/09/08/microservices-mse-v4/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":32,"languages":{"author":"Author: zhongmingmao","link":"Link: ","source":"Source: ByteCoding","info":"Copyright belongs to the author. For commercial use, please contact the author for authorization. For non-commercial use, please indicate the source."}},
+  lightbox: 'null',
+  Snackbar: {"chs_to_cht":"You have switched to Traditional Chinese","cht_to_chs":"You have switched to Simplified Chinese","day_to_night":"You have switched to Dark Mode","night_to_day":"You have switched to Light Mode","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Microservices - MSE V4',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="ByteCoding" type="application/atom+xml">
+</head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js/themes/blue/pace-theme-minimal.min.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-image: url(/url(https:/cdn.pixabay.com/photo/2021/07/20/03/39/fisherman-6479663_1280.jpg));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">678</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">207</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">99</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ByteCoding</span></a><a class="nav-page-title" href="/"><span class="site-name">Microservices - MSE V4</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Microservices - MSE V4</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">Created</span><time datetime="2026-09-07T16:06:25.000Z" title="Created 2026-09-08 00:06:25">2026-09-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/microservices/">Microservices</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/microservices/mse/">MSE</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">16.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>56mins</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:512,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-09-08 19:19:41&quot;}" hidden></div><h1 id="无损上下线"><a href="#无损上下线" class="headerlink" title="无损上下线"></a>无损上下线</h1><ol>
+<li>为了提高系统的<strong>效率</strong>和<strong>响应速度</strong>，减少<strong>任务切换</strong>时的<strong>等待时间</strong>，同时提高系统的<strong>可用性</strong>和<strong>稳定性</strong></li>
+<li>本文介绍微服务治理中的流量治理模块的无损上下线功能</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="无损上线"><a href="#无损上线" class="headerlink" title="无损上线"></a>无损上线</h2><p>无损上线能提供相应的<strong>保护</strong>能力，包括<strong>服务延迟注册</strong>、<strong>服务小流量预热</strong>、<strong>服务就绪检查</strong>三个功能</p>
+<h2 id="无损下线"><a href="#无损下线" class="headerlink" title="无损下线"></a>无损下线</h2><ol>
+<li>在<strong>高并发</strong>下，服务<strong>提供端</strong>应用实例的<strong>直接下线</strong>，会导致服务<strong>消费端</strong>应用实例<strong>无法实时感知</strong>下游提供者实例的实时状态，因而出现继续将请求<strong>转发</strong>到<strong>已下线的实例</strong>，从而导致请求报错，<strong>流量有损</strong></li>
+<li>为了解决这类问题，MSE提供了无损下线功能，帮助您更好的应对一个线上应用，在服务更新部署等过程中的问题</li>
+</ol>
+<h2 id="使用YAML配置无损上下线"><a href="#使用YAML配置无损上下线" class="headerlink" title="使用YAML配置无损上下线"></a>使用YAML配置无损上下线</h2><p>您不仅可以在<strong>MSE控制台</strong>上配置无损上下线功能，也可以通过在容器服务<strong>ACK</strong>中配置<strong>YAML无损上下线</strong>参数方式来开启功能</p>
+<h1 id="无损上线-1"><a href="#无损上线-1" class="headerlink" title="无损上线"></a>无损上线</h1><ol>
+<li>对于任何一个线上应用来说，<strong>发布</strong>、<strong>扩容</strong>、<strong>重启</strong>等操作不可避免</li>
+<li>在<strong>应用启动</strong>各阶段，无损上线能提供相应的<strong>保护</strong>能力，包括<strong>服务延迟注册</strong>、<strong>服务小流量预热</strong>、<strong>服务就绪检查</strong>三个功能</li>
+<li>本文介绍MSE提供的无损上线功能</li>
+</ol>
+<h2 id="无损上线功能概述"><a href="#无损上线功能概述" class="headerlink" title="无损上线功能概述"></a>无损上线功能概述</h2><h3 id="延迟注册"><a href="#延迟注册" class="headerlink" title="延迟注册"></a>延迟注册</h3><ol>
+<li>微服务<strong>提供者</strong>实例会在<strong>应用启动</strong>过程中，进行<strong>服务的注册</strong></li>
+<li>一旦完成服务注册，就可以被外部服务<strong>消费者</strong>应用<strong>订阅</strong>和<strong>调用</strong></li>
+<li>对于基于<strong>Spring</strong>框架开发的Java应用而言，<strong>注册过程</strong>一般发生在<strong>Spring上下文刷新完毕之后</strong></li>
+<li>如果应用有一些<strong>异步初始化</strong>逻辑还没有执行完毕，就直接进行<strong>服务注册</strong>，此时消费者前来调用时很可能会产生<strong>请求报错</strong><ul>
+<li>比如大数据计算服务需要提前从OSS拉取几百兆数据，待数据拉取完成后才能对外提供服务</li>
+</ul>
+</li>
+<li>因此如果<strong>应用启动</strong>后<strong>直接注册服务</strong>，会导致<strong>流量</strong>因<strong>资源未就绪</strong>而报错</li>
+<li>有了延迟注册功能之后，我们可以通过设置<strong>一定的延迟时间</strong>，将原本的服务注册动作往后推迟</li>
+<li>让应用在<strong>充分初始化</strong>后再注册到<strong>注册中心</strong>对外提供服务</li>
+<li>避免了微服务提供者<strong>未准备完毕</strong>，就被外部调用，产生<strong>调用出错</strong>的情况</li>
+</ol>
+<h3 id="小流量预热"><a href="#小流量预热" class="headerlink" title="小流量预热"></a>小流量预热</h3><ol>
+<li>很多时候，<strong>刚启动的新实例</strong>会处于一种“<strong>冷机</strong>”状态</li>
+<li>冷机状态下，需要进行比如<strong>连接池的懒加载</strong>、<strong>缓存预热</strong>、<strong>热点代码生成</strong>等操作，因此这些新实例对请求的<strong>处理能力</strong>会<strong>远远小于</strong>运行很久的实例</li>
+<li>如果开发与运维人员不对这个过程进行干涉，可能会造成<strong>新实例上线</strong>这段时间内，系统<strong>整体平均RT时间</strong>变高</li>
+<li>更坏的情况下，还可能会造成服务“夯”住，导致大量请求调用<strong>超时</strong>、<strong>报错</strong>的情况</li>
+<li>以下是需要进行<strong>资源加载</strong>的实例，在<strong>尚未完成资源加载</strong>的情况下，与<strong>资源加载完毕后</strong>的两次请求调用<strong>时长对比</strong></li>
+<li>在<strong>资源加载过程</strong>中，如果有大量请求到达该实例，可能都会发生<strong>阻塞</strong>：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[arthas@37035]$ trace com.alibaba.mse.consumer.TestController eurekaRest  -n 5 \</span><br><span class="line">    --skipJDKMethod false</span><br><span class="line">Press Q or Ctrl+C to abort.</span><br><span class="line">Affect(class count: 1 , method count: 1) cost in 105 ms, listenerId: 1</span><br><span class="line">`---ts=2022-02-14 21:28:02;thread_name=http-nio-18099-exec-1;id=39;is_daemon=true;priority=5;TCCL=org.springframework.boot.web.embedded.tomcat.TomcatEmbeddedWebappClassLoader@60e5272</span><br><span class="line">    `---[464.275852ms] com.alibaba.mse.consumer.TestController:eurekaRest()</span><br><span class="line">        `---[464.018509ms] org.springframework.web.client.RestTemplate:getForObject() #50</span><br><span class="line"></span><br><span class="line">`---ts=2022-02-14 21:28:08;thread_name=http-nio-18099-exec-3;id=3b;is_daemon=true;priority=5;TCCL=org.springframework.boot.web.embedded.tomcat.TomcatEmbeddedWebappClassLoader@60e5272</span><br><span class="line">    `---[8.46028ms] com.alibaba.mse.consumer.TestController:eurekaRest()</span><br><span class="line">        `---[8.402525ms] org.springframework.web.client.RestTemplate:getForObject() #50</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>小流量预热功能的思路是，在新服务实例<strong>刚上线</strong>的这段时间里，控制<strong>消费者应用</strong>对其调用的流量大小，来避免Java应用<strong>冷启动</strong>时请求<strong>处理能力差</strong>，系统<strong>整体RT变高</strong>的问题，并且保护<strong>新启动的服务实例</strong>不会被大流量<strong>击垮</strong></li>
+<li>进入该实例的<strong>流量</strong>会按<strong>一定规则</strong>随时间<strong>不断加大</strong>，当达到设置的<strong>预热时长</strong>时，小流量预热过程结束，实例正常接收流量</li>
+<li>小流量预热使用的是在线的<strong>消费者</strong>的流量，需要该服务实例的消费者应用也接入MSE服务治理</li>
+</ol>
+<h3 id="服务注册状态检查"><a href="#服务注册状态检查" class="headerlink" title="服务注册状态检查"></a>服务注册状态检查</h3><ol>
+<li><strong>K8s</strong>提供了就绪检查机制（<strong>Readiness Probe</strong>），在进行<strong>服务发布</strong>时，新实例就绪检测通过后，就会下线旧的实例（具体情况取决于设置的发布策略）</li>
+<li>然而<strong>K8s无法感知微服务何时就绪</strong>，当<strong>端口启动</strong>时，K8s会认为应用已经就绪</li>
+<li>这可能会导致<strong>刚启动的服务还未注册到注册中心</strong>，就被<strong>K8s</strong>判定为已经<strong>就绪</strong>，进而继续推进<strong>服务发布</strong>的动作，<strong>下线正在运行的旧实例</strong></li>
+<li>从而引发<strong>消费端</strong>调用出错，并在调用过程中出现<strong>service no provider&#x2F;instance</strong>等异常</li>
+<li>无损上线的<strong>服务就绪检查</strong>功能，通过Agent的<strong>无侵入方式</strong>为应用提供一个检测其<strong>是否完成注册的HTTP接口</strong>，如果未完成注册，则返回<strong>500</strong>状态码；当应用注册完成后，会返回<strong>200</strong>状态码</li>
+<li>用户将<strong>应用的就绪检测</strong>配置成该接口后，可以<strong>帮助K8s判定应用是否就绪</strong>，保障<strong>K8s场景</strong>下服务发布上线过程中，服务消费者一直有可用的提供者，不会产生无提供者的报错</li>
+</ol>
+<h2 id="使用无损上线"><a href="#使用无损上线" class="headerlink" title="使用无损上线"></a>使用无损上线</h2><h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ol>
+<li>目前只支持通过<strong>微服务注册中心</strong>（如 <strong>Nacos</strong>）进行<strong>注册发现</strong>体系下实例的无损上线，不支持 <strong>K8s Service</strong> 体系下微服务实例的无损上线</li>
+<li>对于<strong>Spring Cloud</strong>应用，当前仅支持利用<strong>Nacos</strong>、ZooKeeper以及<strong>Eureka</strong>这三种类型的<strong>注册中心</strong>构建的应用进行<strong>服务预热</strong></li>
+<li>Spring Cloud服务预热功能是基于Spring Cloud框架默认的<code>ZoneAwareLoadBalancer</code>、<code>RoundRobinLoadBalancer</code>或<code>RandomLoadBalancer</code>负载均衡器实现的，如果应用本身修改了该配置，会导致服务预热功能失效</li>
+<li>服务预热需要<strong>提供者</strong>、<strong>消费者</strong>都接入<strong>MSE服务治理</strong>才能生效</li>
+<li>比如<strong>网关应用</strong>，是通过<strong>直接对外暴露 API</strong>的方式接收<strong>外部流量</strong>，因此MSE当前的小流量预热功能对此类应用不生效</li>
+</ol>
+<h3 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h3><h4 id="步骤一：开启无损上线"><a href="#步骤一：开启无损上线" class="headerlink" title="步骤一：开启无损上线"></a>步骤一：开启无损上线</h4><ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域</li>
+<li>在左侧导航栏，选择治理中心 &gt; 应用治理，然后单击目标应用的资源量卡片</li>
+<li>在目标应用详情页面的左侧导航栏，单击<strong>流量治理</strong>，然后选择<strong>无损上下线</strong>页签</li>
+<li>在配置信息模块，单击修改，打开无损上线按钮，单击下方确定</li>
+</ol>
+<h4 id="步骤二：配置k8s服务就绪检查"><a href="#步骤二：配置k8s服务就绪检查" class="headerlink" title="步骤二：配置k8s服务就绪检查"></a>步骤二：配置k8s服务就绪检查</h4><blockquote>
+<p>该操作会直接引起应用的<strong>重启</strong>，如果是生产环境，建议您挑选发布窗口执行该操作！</p>
+</blockquote>
+<ol>
+<li>登录容器服务管理控制台，在左侧导航栏选择集群列表</li>
+<li>在集群列表页面单击目标集群，在左侧导航栏选择工作负载 &gt; <strong>无状态</strong>，单击部署的应用操作列下的编辑，在<strong>健康检查</strong>栏处，单击<strong>就绪检查</strong>右侧的开启，并配置如下参数。完成后单击更新<ul>
+<li>路径：**&#x2F;readiness**<ul>
+<li>如果您的应用所使用的探针版本低于<strong>4.1.10</strong>，路径需要配置成&#x2F;health。查看探针版本方式：MSE 控制台 &gt; 治理中心 &gt; 应用治理 &gt; 单击对应的应用 &gt; 节点详情，右侧可以看到探针版本</li>
+</ul>
+</li>
+<li>端口：<strong>55199</strong></li>
+<li>延迟探测时间（秒）：推荐该值的配置大于<strong>应用启动所需时间</strong> + 无损上线功能模块中配置的<strong>延迟注册时间</strong>（默认0秒）二者之<strong>和</strong>，如果您不按照该建议进行配置，不会影响功能正常使用</li>
+<li>其他参数，请参见创建无状态工作负载Deployment，应用重启后，通过就绪检查前完成服务注册即可生效</li>
+</ul>
+</li>
+</ol>
+<h4 id="配置延迟注册时长-可选"><a href="#配置延迟注册时长-可选" class="headerlink" title="配置延迟注册时长 - 可选"></a>配置延迟注册时长 - 可选</h4><blockquote>
+<p>设置完毕后，在<strong>下一次应用启动</strong>时，延迟注册时长才会生效</p>
+</blockquote>
+<p>请根据业务场景需要决定是否配置，操作步骤如下：</p>
+<ol>
+<li>根据步骤一、二进入<strong>无损上线</strong>功能页面，开启无损上线功能，并配置<strong>K8s服务就绪检查</strong></li>
+<li>修改无损上下线<strong>配置信息</strong>，单击无损上线模块<strong>左侧箭头</strong>展开配置选项，在<strong>延迟注册时长（秒）</strong>处设置延迟注册时长，然后单击下方<strong>确定</strong>按钮</li>
+</ol>
+<h4 id="调整小流量预热时长"><a href="#调整小流量预热时长" class="headerlink" title="调整小流量预热时长"></a>调整小流量预热时长</h4><p>开启<strong>无损上线</strong>后，该功能会<strong>自动开启</strong>。默认<strong>预热时长</strong>为<strong>120</strong>秒。可以根据业务场景需要进行调整：</p>
+<ol>
+<li>根据步骤一、二进入<strong>无损上线</strong>功能页面，开启无损上线功能，并配置<strong>K8s服务就绪检查</strong></li>
+<li>修改无损上下线<strong>配置信息</strong>，单击无损上线模块<strong>左侧箭头</strong>展开配置选项，单击<strong>高级选项</strong>，在<strong>小流量预热时长（秒）</strong>处设置小流量预热时长，然后单击下方确定按钮</li>
+<li>如果您希望开启小流量预热的服务，其调用方是 <strong>MSE 云原生网关</strong>，那么这里配置的小流量预热<strong>无法生效</strong><ul>
+<li>对应的解决方案是在 <strong>MSE 云原生网关</strong>配置该服务的预热</li>
+<li>在云原生网关控制台中，单击目标网关实例，在左侧导航栏的<strong>路由管理</strong> &gt; <strong>服务</strong>页签中，找到该服务，单击目标服务<strong>操作</strong>列下的<strong>更多</strong> &gt; <strong>策略配置</strong>，在<strong>策略配置</strong>页签下的<strong>流量管理</strong> &gt; <strong>负载均衡配置</strong>的右侧，单击<strong>编辑</strong>，调整配置项<strong>预热时间</strong>即可</li>
+<li>注意，<strong>云原生网关默认</strong>的<strong>预热 QPS 曲线图形</strong>是<strong>一次曲线</strong>，和 <strong>MSE 服务治理</strong>提供的<strong>二次曲线</strong>略有差异，<strong>实际效果上差别不大</strong></li>
+<li><strong>一次曲线 &#x2F; 二次曲线</strong>指预热窗口内新实例分到的<strong>流量权重</strong>随时间的爬升形状，即数学里的<strong>一次函数 &#x2F; 二次函数曲线</strong>（不是圆锥曲线那个”二次曲线”）<ul>
+<li><strong>一次曲线（线性）</strong>：流量占比 &#x3D; <code>t/T</code>，随时间<strong>匀速直线上升</strong></li>
+<li><strong>二次曲线（抛物线）</strong>：流量占比 ≈ <code>(t/T)²</code>，<strong>先慢后快</strong>，前半程压得更低、临近预热结束才加速放行</li>
+<li>选二次曲线的直觉：<strong>实例最”冷”<strong>的阶段</strong>处理能力最差</strong>，且 <strong>JIT 热点编译</strong>、<strong>缓存填充</strong>等能力恢复本身就是<strong>先慢后快</strong>，抛物线正好把<strong>最少的流量</strong>分给<strong>最冷的时段</strong>，比<strong>线性</strong>更保守；文档说”实际效果差别不大”，是因为<strong>预热过半</strong>后实例通常已足够热</li>
+<li>该注意事项只在<strong>调用方是 MSE 云原生网关</strong>时才有意义（网关<strong>自带预热配置</strong>，不走治理中心）；<strong>自建网关</strong> + <strong>Spring Cloud</strong> 消费方场景下，预热由 <strong>MSE 治理的二次曲线</strong>接管，一次曲线这条碰不到</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p><strong>两条曲线的流量占比对比</strong>（同一预热进度下新实例的放行比例，最终都收敛到 100% 全量）：</p>
+<table>
+<thead>
+<tr>
+<th align="center">预热进度 t&#x2F;T</th>
+<th align="center">一次曲线（线性 t&#x2F;T）</th>
+<th align="center">二次曲线（抛物线 (t&#x2F;T)²）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">25%</td>
+<td align="center">25%</td>
+<td align="center">~6%</td>
+</tr>
+<tr>
+<td align="center">50%</td>
+<td align="center">50%</td>
+<td align="center">25%</td>
+</tr>
+<tr>
+<td align="center">75%</td>
+<td align="center">75%</td>
+<td align="center">~56%</td>
+</tr>
+<tr>
+<td align="center">100%</td>
+<td align="center">100%</td>
+<td align="center">100%</td>
+</tr>
+</tbody></table>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    xychart-beta
+    title &quot;预热期间新实例流量占比（%）&quot;
+    x-axis &quot;预热进度 t&#x2F;T（%）&quot; [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    y-axis &quot;流量占比（%）&quot; 0 --&gt; 100
+    line &quot;一次曲线 t&#x2F;T&quot; [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    line &quot;二次曲线 (t&#x2F;T)²&quot; [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+  </pre></div>
+
+<blockquote>
+<p>说明</p>
+</blockquote>
+<ol>
+<li>设置完毕后，在<strong>下一次应用启动</strong>时，调整后的小流量预热时长才会生效</li>
+<li>小流量预热方法通过在服务<strong>消费端</strong>根据各个服务<strong>提供者</strong>实例的<strong>启动时间</strong>计算<strong>权重</strong>，结合<strong>负载均衡</strong>算法，控制刚启动应用<strong>流量</strong>随<strong>启动时间</strong>逐渐递增到正常水平的过程，帮助刚启动运行的服务进行预热<ul>
+<li>同时这也要求了服务<strong>消费者</strong>也接<strong>MSE服务治理</strong></li>
+</ul>
+</li>
+<li>建议您在首次使用无损上线的小流量预热功能时，<strong>使用默认的预热时长即可</strong><ul>
+<li>如果在使用默认值预热服务的过程中发现<strong>预热效果不明显</strong>，出现<strong>流量损失</strong>，再通过调节该参数进行优化</li>
+</ul>
+</li>
+</ol>
+<h2 id="无损上线观测"><a href="#无损上线观测" class="headerlink" title="无损上线观测"></a>无损上线观测</h2><p>经过上述配置后，当您的<strong>应用再次启动</strong>时，可以在无损上下线功能页面，看到<strong>应用实例上线下线</strong>的<strong>具体时间</strong>，以及同时期该实例的<strong>QPS曲线</strong>：</p>
+<ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域。</li>
+<li>在左侧导航栏，选择治理中心 &gt; 应用治理，然后单击目标应用的资源量卡片</li>
+<li>在目标应用详情页面的左侧导航栏，单击<strong>流量治理</strong>，然后选择<strong>无损上下线</strong>页签</li>
+<li>在<strong>上下线概览</strong>中，单击左侧的<strong>上下线实例</strong>，在右侧可以看到该实例在<strong>上线阶段</strong>的<strong>QPS变化</strong>以及<strong>对应发生的事件</strong></li>
+</ol>
+<p>您可以看到，应用先后会出现<strong>服务注册</strong>、<strong>开始预热</strong>、<strong>预热结束</strong>这几个事件，并且<strong>K8s Readines检查通过</strong>的事件也发生在<strong>服务注册事件</strong>之后。<strong>QPS曲线</strong>是在<strong>预热时长内</strong>（默认 120s）<strong>逐步上升到最大值</strong>，而不是<strong>直接陡升上去</strong>。如果您的应用在上线时，事件顺序、QPS曲线形状不符合预期，可以参考<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/mse/support/lossless-start-and-shutdown-faq">FAQ</a>来解决。</p>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/image-20260908145023157.png" alt="image-20260908145023157"></p>
+<p>以一个典型配置为例，应用的<strong>K8s就绪检测</strong>配置成<code>55199/readiness</code>，并且将<strong>最小准备时间</strong>（<strong>minReadySeconds</strong>）配置成<strong>120秒</strong>，和<strong>默认的预热时长</strong>一致</p>
+<h1 id="无损下线-1"><a href="#无损下线-1" class="headerlink" title="无损下线"></a>无损下线</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><ol>
+<li>对于任何一个线上应用，在服务<strong>更新</strong>部署等过程中，需要尽量保证<strong>客户端无感知</strong>，即从<strong>应用停止</strong>到<strong>重启恢复服务</strong>这个阶段不能影响正常的业务请求</li>
+<li>在应用执行<strong>部署</strong>、<strong>停止</strong>、<strong>回滚</strong>、<strong>缩容</strong>和<strong>重置</strong>时，需要通过<strong>无损下线</strong>配置来保证<strong>应用正常关闭</strong></li>
+<li>本文介绍使用无损下线的注意事项、使用优势以及如何在控制台使用无损下线功能</li>
+</ol>
+<h2 id="为什么需要无损下线"><a href="#为什么需要无损下线" class="headerlink" title="为什么需要无损下线"></a>为什么需要无损下线</h2><p>由于微服务应用自身调用特点，在<strong>高并发</strong>下，服务<strong>提供端</strong>应用实例的<strong>直接下线</strong>，会导致服务<strong>消费端</strong>应用实例<strong>无法实时感知</strong>下游<strong>提供者</strong>实例的<strong>实时状态</strong>，因而出现继续将请求转发到已下线的实例，从而出现请求报错，<strong>流量有损</strong></p>
+<h3 id="下线感知的传播链：Eureka-拉取-vs-Nacos-推送"><a href="#下线感知的传播链：Eureka-拉取-vs-Nacos-推送" class="headerlink" title="下线感知的传播链：Eureka 拉取 vs Nacos 推送"></a>下线感知的传播链：Eureka 拉取 vs Nacos 推送</h3><p>一次“提供者下线”要走到“消费者不再调用它”，<strong>感知速度取决于注册中心的通知模型</strong>——Eureka 的<strong>纯拉取</strong>与 Nacos 原生的<strong>订阅推送</strong>是两条完全不同的链路：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart LR
+    subgraph EU[&quot;Eureka 兼容路径（纯拉取 + 多级缓存）&quot;]
+        P1[&quot;提供者下线&#x2F;注销&quot;] --&gt; S1[&quot;Eureka Server&lt;br&#x2F;&gt;readOnlyCacheMap 同步 ~30s&quot;]
+        S1 --&gt; C1[&quot;消费者定时拉取注册表&lt;br&#x2F;&gt;默认 30s（自研调优 10s）&quot;]
+        C1 --&gt; R1[&quot;Ribbon ServerList 缓存&lt;br&#x2F;&gt;（KickOut 监听器绕开）&quot;]
+        R1 --&gt; O1[&quot;消费者摘除&lt;br&#x2F;&gt;端到端最坏 ~40s+&quot;]
+        P2[&quot;提供者硬杀（进程消失）&quot;] -.-&gt;|&quot;90s 租约驱逐后才开始传播&quot;| S1
+    end
+
+    subgraph NA[&quot;Nacos 原生路径（2.x 起 gRPC 长连接）&quot;]
+        P3[&quot;提供者下线&quot;] --&gt; S2[&quot;Nacos Server&lt;br&#x2F;&gt;立即生效&quot;]
+        S2 --&gt;|&quot;订阅推送 亚秒~秒级&quot;| C2[&quot;消费者 NamingService&quot;]
+        C2 --&gt; R2[&quot;LB 列表刷新&lt;br&#x2F;&gt;（需订阅直连 SDK ≥ 1.14.6）&quot;]
+        R2 --&gt; O2[&quot;消费者摘除&lt;br&#x2F;&gt;端到端秒级&quot;]
+        P4[&quot;提供者硬杀&quot;] -.-&gt;|&quot;长连接关闭 秒级感知&quot;| S2
+    end
+
+    AG[&quot;MSE Agent 主动通知&quot;] -.-&gt;|&quot;广播绕过整条缓存链（增量最大）&quot;| O1
+    AG -.-&gt;|&quot;原生推送已秒级（增量小）&quot;| O2
+  </pre></div>
+
+<p><strong>逐环节对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>Eureka 协议（8761 兼容端点）</th>
+<th>Nacos 原生（gRPC 长连接）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>服务端感知</strong></td>
+<td>显式注销走 readOnlyCache <strong>~30s</strong> 同步；硬杀等 <strong>90s 租约驱逐</strong></td>
+<td>显式注销<strong>立即</strong>；硬杀 &#x3D; 长连接关闭<strong>秒级感知</strong>（机器失联才等 keepalive，~20s 量级）</td>
+</tr>
+<tr>
+<td><strong>通知消费者</strong></td>
+<td><strong>纯拉取</strong>：定时拉注册表（默认 30s &#x2F; 自研调优 10s）</td>
+<td><strong>订阅推送</strong>：实例列表变更沿长连接推给订阅方，亚秒~秒级</td>
+</tr>
+<tr>
+<td><strong>消费端 LB</strong></td>
+<td>Ribbon ServerList 缓存再刷一层（KickOut 监听器绕开）</td>
+<td>同样存在——需订阅直连进 LB（自研 NacosSubscriptionServerListUpdater，<strong>SDK ≥ 1.14.6</strong>）</td>
+</tr>
+<tr>
+<td><strong>端到端窗口</strong></td>
+<td>优雅下线最坏 <strong>~40s</strong>（自研调优后）&#x2F; ~90s（社区默认）</td>
+<td><strong>秒级</strong></td>
+</tr>
+</tbody></table>
+<p><strong>关键结论</strong>：</p>
+<ol>
+<li><strong>“实时感知”由客户端协议决定，不由服务端版本决定</strong>——服务端是 Nacos 3.x 也救不了 Eureka 客户端：兼容层翻译的是协议，<strong>拉取模型原样保留</strong>（“双配置、单注册”的应用正是此形态：Nacos 原生地址躺在环境变量里，走的却是慢车道）</li>
+<li>Eureka 的延迟是<strong>设计取舍</strong>而非缺陷：AP 优先 + TTL 租约 + 多级缓存扛读压力，用传播延迟换可用性（自我保护机制同源）</li>
+<li><strong>gRPC 长连接是 Nacos 2.0 引入的</strong>：1.x 客户端走 HTTP + UDP 推送（有丢包，靠定时拉取兜底），还是半个拉取模型——客户端版本由 Spring Cloud Alibaba &#x2F; 自研 SDK 决定</li>
+<li><strong>推送只到客户端内存，最后一公里在 LB</strong>：Ribbon 的 ServerList 有自己的刷新周期，需要订阅直连；实测 logan-admin-svr 的 <code>forge: 1.14.3</code> 恰好差 1.14.6 这一档——就算切到 Nacos 原生通道，不升 SDK 也拿不到即时刷新</li>
+<li>治理选型推论：<strong>主动通知在 Nacos 路径增量小（功能重叠），在 Eureka 路径是唯一秒级手段（MSE 补位）</strong>——Eureka→Nacos 客户端收尾迁移 + SDK 升级后，下线感知问题被架构消解；在那之前，主动通知是过渡期的桥</li>
+<li><strong>无损上线不受此影响</strong>：预热加权、延迟注册是上线侧能力，推送再快也给不了，Agent 价值独立存在</li>
+</ol>
+<h2 id="无损下线实现方案"><a href="#无损下线实现方案" class="headerlink" title="无损下线实现方案"></a>无损下线实现方案</h2><ol>
+<li><strong>提供者A</strong>在<strong>下线</strong>时，虽然会<strong>主动通知</strong>到<strong>注册中心</strong>，但此时<strong>消费者B</strong>可能<strong>无法实时感知</strong>到，导致消费者B<strong>继续调用已下线</strong>的提供者A</li>
+<li>为了避免这种情况的发生，在<strong>提供者A</strong>接到<strong>下线命令</strong>即将下线前，对于在<strong>等待下线阶段</strong>收到的<strong>请求</strong>，在其<strong>返回值</strong>中都增加上<strong>特殊标记</strong>，让<strong>消费者B</strong>接收到返回值并<strong>识别到相关标志</strong>后<strong>主动拉取</strong>一次注册中心服务实例，从而<strong>实时感知</strong>提供者A最新状态，从而达到提供者A的下线状态能够被消费者B实时感知</li>
+<li>此外，提供者A在<strong>下线</strong>时，还会<strong>等待一定的时间</strong>，以保证<strong>下线时</strong>已经收到的<strong>在途请求</strong>都<strong>被执行完毕</strong>，避免这些请求<strong>未被执行完毕</strong>，提供者A就已经停机</li>
+</ol>
+<h3 id="被动通知（标记-按需拉取）能打掉几级延迟"><a href="#被动通知（标记-按需拉取）能打掉几级延迟" class="headerlink" title="被动通知（标记+按需拉取）能打掉几级延迟"></a>被动通知（标记+按需拉取）能打掉几级延迟</h3><p>“标记 + 主动拉取”这套机制（被动通知）<strong>打不穿 Eureka 服务端的只读缓存</strong>——文档说“拉一次就能实时感知”，对默认配置的 Eureka 是不严谨的。把下线感知的延迟拆成四级，看它逐级打掉谁：</p>
+<table>
+<thead>
+<tr>
+<th>延迟层</th>
+<th>默认耗时</th>
+<th>被动通知（标记+拉取）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>① 服务端 readOnlyCacheMap 同步</td>
+<td>~30s</td>
+<td>❌ <strong>打不掉</strong></td>
+</tr>
+<tr>
+<td>② 消费端定时拉取周期</td>
+<td>30s（自研调优 10s）</td>
+<td>✅ 标记触发<strong>按需拉取</strong>，绕开周期</td>
+</tr>
+<tr>
+<td>③ Ribbon ServerList 刷新</td>
+<td>~30s</td>
+<td>✅ Agent 见标记直接改本地列表（KickOut 同思路）</td>
+</tr>
+<tr>
+<td>④ 在途请求</td>
+<td>RT 量级</td>
+<td>✅ 等待窗口内执行完</td>
+</tr>
+</tbody></table>
+<p><strong>机制细节与推论</strong>：</p>
+<ol>
+<li>Eureka 的<strong>显式注销&#x2F;状态变更会立即失效 readWriteCacheMap</strong>（Guava invalidate）——所以“拉一次”拿到的是否新鲜，取决于这次读走不走 readOnly：默认 <code>use-read-only-response-cache=true</code>，读由 readOnly 承接，<strong>最坏残留 ~30s</strong>；社区经典调优就是关掉它，让读直击 readWrite，显式操作后立即新鲜</li>
+<li>被动通知的真实语义：<strong>把感知窗口从周期链路（社区默认 ~90s &#x2F; 自研调优后 ~40s）压到只剩 ① 的 readOnly 残留（≤30s）</strong>，剩下交给“等待下线时间”盖住——等待窗口必须 ≥ ① 的残留 + 余量。消费方里有 Eureka 的按 30s+ 设计；Nacos 原生路径注册中心读本来就新鲜，秒级即可。这就是“优雅停机窗口按消费方注册中心类型取最坏值”的理论依据</li>
+<li><strong>标记本身是带内信号</strong>：从濒死实例的响应里直接来，就是“这个实例要下线”的第一手信息，比任何注册中心读都新鲜；按需拉取的真正价值是同步<strong>其余拓扑</strong>（比如顶上来的新实例）——对被标记的这个实例，合理实现是见标记即本地踢除，不依赖拉取结果是否新鲜</li>
+<li><strong>主动通知（Agent 广播）完全旁路注册中心</strong>，连 ① 都绕开——Dubbo READONLY_EVENT 就是连接级带内信号，连注册中心都不经过；对 Eureka 路径这才是秒级手段</li>
+<li>环境补记：公司“Eureka 服务端”实为 MSE Nacos 兼容层（8761），读路径是否照抄社区 readOnly 语义是<strong>开放问题</strong>（可直接问阿里云）；生产主动通知&#x3D;关，走的就是被动路径——<strong>生产无损下线的等待时长未实勘记录，需补记对账</strong>（是否盖住 30s 残留）</li>
+<li>补证（主动通知 FAQ，2026-09-08）：标记 &#x3D; 响应中的特殊 <strong>header</strong>，消费者识别后即“拉黑”该节点；被动通知的隐含前提是<strong>下线窗口内（~30s）有请求流过</strong>——<strong>消费者流量稀疏</strong>（窗口内一笔请求都没有）时被动机制失效，这才是必须开主动通知的判据：<strong>低频被调用的服务是主动通知的第一批候选</strong>，高频服务被动方案已足够</li>
+</ol>
+<blockquote>
+<p>当前应用只需要接入MSE，就会<strong>默认开启无损下线</strong>功能，但无损下线<strong>主动通知</strong>功能需要<strong>手动配置</strong>。同时MSE无损上下线功能提供<strong>可观测能力</strong>，帮助您判断应用是否无损下线成功。</p>
+</blockquote>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p847390.png" alt="p847390"></p>
+<ol>
+<li>在 <strong>K8s</strong> 环境中接入 <strong>MSE 服务治理无损下线</strong>时，无损下线相关的操作会以<code>lifecycle.preStop</code>的形式注入到 <strong>Pod</strong> 中，并在 <strong>Pod 停机前得以执行</strong>，因此不建议您配置自定义的<code>preStop</code></li>
+<li>如果您的<code>preStop</code>中的行为是进行<strong>微服务注册中心下线</strong>，那么完全可以将其删除，并且使用<strong>无损下线</strong>自动注入的<code>preStop</code>来实现这一需求</li>
+<li>如果您确实有一些业务上的<strong>优雅停机</strong>操作，并且已经为<strong>业务容器</strong>配置上了您自定义的<code>preStop</code>，那么无损下线<code>preStop</code>不再进行注入到您的业务容器中<ul>
+<li>相应地，无损下线会注入一个名字为<strong>gracefulshutdown</strong>的<strong>sidecar</strong>容器，并为该容器注入无损下线<code>preStop</code>，通过<strong>sidecar</strong>默认与<strong>业务容器</strong>共享<strong>网络命名空间</strong>的机制，在 Pod 停止前执行<strong>sidecar</strong>的<code>preStop</code>也能实现业务容器的无损下线</li>
+</ul>
+</li>
+<li>为了确保sidecar的preStop能够顺利执行完毕，您在<strong>业务容器</strong>自定义的<strong>preStop</strong>中，至少有 <strong>30</strong> 秒的 <strong>sleep</strong> 时间，保证<strong>在途请求</strong>被执行完毕</li>
+<li>sidecar 容器的资源消耗极低，目前配置为：<strong>CPU: 50m，Memory: 50Mi</strong></li>
+<li>由于<strong>无损下线</strong>在 <strong>K8s</strong> 场景下是基于 <strong>preStop</strong> 来实现的，目前只能支持 <strong>pod 正常停机</strong>场景的<strong>无损下线</strong>（如：<strong>缩容</strong>、<strong>重启</strong>、<strong>滚动升级</strong>等），不支持<strong>异常停机</strong>场景的无损下线（如：<strong>OOM kill</strong>）</li>
+</ol>
+<h2 id="如何开启无损下线"><a href="#如何开启无损下线" class="headerlink" title="如何开启无损下线"></a>如何开启无损下线</h2><ol>
+<li>如果您的应用部署在阿里云容器服务 <strong>ACK</strong> 环境下，在接入 MSE 服务治理后，<strong>无需</strong>额外执行开启无损下线的操作，<strong>无损下线</strong>功能<strong>默认</strong>会<strong>自动开启</strong></li>
+<li>如果您的应用部署在阿里云 <strong>ECS</strong> 环境下，那么需要您在<strong>应用的停机脚本</strong>，加入下面的内容，并在脚本运行阶段<strong>靠前优先执行</strong></li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http://127.0.0.1:54199/offline 2&gt;/tmp/null; sleep 30;</span><br></pre></td></tr></table></figure>
+
+<h2 id="无损下线观测"><a href="#无损下线观测" class="headerlink" title="无损下线观测"></a>无损下线观测</h2><p>应用接入无损下线之后，在<strong>应用实例下线</strong>时，可以在应用治理界面观测到，下线实例的<strong>流量</strong>在<strong>很短时间内被清空</strong>，QPS数据很快降为0</p>
+<ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域</li>
+<li>在左侧导航栏，选择治理中心 &gt; 应用治理，然后单击目标应用的资源量卡片</li>
+<li>在目标应用详情页面的左侧导航栏，单击<strong>流量治理</strong>，然后选择<strong>无损上下线</strong>页签</li>
+</ol>
+<p>在<strong>上下线概览</strong>处，可以看到最近一段时间内，该应用<strong>上下线过程</strong>中的发生的<strong>事件</strong>。在左侧上下线实例中找到想要查看的下线实例，单击该实例，可以在右侧看到，该实例在下线时执行了“<strong>无损下线</strong>”流程，并且在执行完该流程后，<strong>流量会被快速清空</strong>，一直到<strong>实例“停机”</strong>之前，已经<strong>不再有流量进入</strong></p>
+<p>如果观测到<strong>无损下线成功事件</strong>产生之后，<strong>QPS数据没有快速降为0</strong>，可以先确认是否存在<strong>本地调用</strong>等非来自于<strong>微服务请求调用</strong>的流量</p>
+<p>当探针版本在 <strong>4.2.0</strong> 后才会上报“应用停机”事件，如果您未观测到该事件，可以考虑升级您的探针版本</p>
+<h2 id="如何开启主动通知"><a href="#如何开启主动通知" class="headerlink" title="如何开启主动通知"></a>如何开启主动通知</h2><h3 id="什么是主动通知"><a href="#什么是主动通知" class="headerlink" title="什么是主动通知"></a>什么是主动通知</h3><ol>
+<li>主动通知是无损下线功能模块提供的一个进阶功能，默认<strong>关闭</strong></li>
+<li>一般情况下，MSE无损上下线提供的下线方案已经可以解决<strong>大部分场景</strong>下的问题</li>
+<li>而当，待下线应用使用<strong>Spring Cloud</strong>框架时，在<strong>应用下线</strong>时发现有<strong>消费者调用出错</strong>的情况，可以尝试开启该功能来解决</li>
+<li>开启后，提供者实例在下线阶段将会<strong>主动通知服务消费者</strong>，通知后，服务消费者将<strong>不再请求该提供者实例</strong></li>
+</ol>
+<h3 id="注意事项-1"><a href="#注意事项-1" class="headerlink" title="注意事项"></a>注意事项</h3><blockquote>
+<p>MSE治理中心暂不支持如下应用无损下线：</p>
+</blockquote>
+<ol>
+<li>暂不支持<strong>非Java应用体系</strong>的无损下线</li>
+<li>暂不支持<strong>非WebFlux或SpringMVC</strong>应用的无损下线</li>
+<li>暂不支持<strong>消费端</strong>为<strong>非微服务应用</strong>的下游提供者应用的无损下线</li>
+<li>需要<strong>消费者端</strong>和<strong>提供端</strong>应用都接入<strong>MSE微服务治理</strong>，才能实现应用无损下线</li>
+</ol>
+<p>由于<strong>无损下线流程</strong>中需要<strong>等待一定的时间</strong>来保证下线示例<strong>在途中的请求</strong>都能<strong>执行完毕</strong>，K8s容器中的<code>terminationGracePeriodSeconds</code> 参数值（默认值 30）需要<strong>大于30</strong>，建议配置为90</p>
+<p>如果您使用默认的30，可能会存在应用<code>shutdownhook</code>无法正常执行完毕的情况，从而导致应用停机时一些资源无法正常关闭</p>
+<h3 id="开启无损下线主动通知"><a href="#开启无损下线主动通知" class="headerlink" title="开启无损下线主动通知"></a>开启无损下线主动通知</h3><ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域</li>
+<li>在左侧导航栏，选择治理中心 &gt; 应用治理，然后单击目标应用的资源量卡片</li>
+<li>在目标应用详情页面的左侧导航栏，单击<strong>流量治理</strong>，然后选择<strong>无损上下线</strong>页签</li>
+<li>在配置信息模块，单击修改，然后单击无损下线折叠块，打开<strong>主动通知</strong>按钮，然后单击确定</li>
+</ol>
+<h1 id="基于自建Spring-Cloud-Gateway或Zuul网关实现全链路灰度"><a href="#基于自建Spring-Cloud-Gateway或Zuul网关实现全链路灰度" class="headerlink" title="基于自建Spring Cloud Gateway或Zuul网关实现全链路灰度"></a>基于自建Spring Cloud Gateway或Zuul网关实现全链路灰度</h1><h2 id="概述-1"><a href="#概述-1" class="headerlink" title="概述"></a>概述</h2><ol>
+<li><strong>Spring Cloud Gateway</strong>和<strong>Zuul</strong>是两种常用的微服务架构中的<strong>API网关</strong>，它们均能实现<strong>路由转发</strong>和<strong>过滤器处理</strong>等功能</li>
+<li>通过配置<strong>路由规则</strong>，可以将请求路由到<strong>灰度环境</strong>中，对<strong>灰度版本</strong>进行验证和测试</li>
+<li>借助MSE提供的<strong>全链路灰度能力</strong>，您<strong>无需修改业务代码</strong>，即可实现<strong>端到端</strong>的<strong>全链路流量控制</strong></li>
+<li>本文介绍如何通过配置Spring Cloud Gateway或者Zuul网关实现全链路灰度</li>
+</ol>
+<h2 id="背景信息"><a href="#背景信息" class="headerlink" title="背景信息"></a>背景信息</h2><ol>
+<li>本文通过模拟真实的调用链路为您演示MSE全链路灰度功能</li>
+<li>您<strong>无需修改任何业务代码</strong>，只需要给<strong>入口应用</strong>设置<strong>流量规则</strong>，该<strong>流量的标签</strong>会通过链路<strong>透传</strong>到<strong>下一个灰度版本</strong>中</li>
+<li>在<strong>每个应用</strong>的<strong>调用过程</strong>中，符合<strong>金丝雀</strong>条件的流量会<strong>优先调用对应的版本</strong>，如果<strong>没有</strong>对应版本则会自动切换回<strong>基线版本</strong>（即稳定版本）</li>
+<li>部署spring-cloud-gateway、spring-cloud-a、spring-cloud-b、spring-cloud-c这四个业务应用，以及注册中心<strong>Nacos Server</strong></li>
+<li>调用链路为：<strong>spring-cloud-gateway-&gt;A-&gt;B-&gt;C</strong></li>
+<li>应用之间的调用既包含了<strong>Spring Cloud</strong>服务调用，也包含了<strong>Dubbo</strong>服务调用</li>
+</ol>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/CAEQOhiBgIDZ4rSN6xgiIDFhZWE3Mzc4OTY0MzRiNzk4ZjM2MDE3MDcwNmRhMWYy4199635_20240201142154.554.svg" alt="CAEQOhiBgIDZ4rSN6xgiIDFhZWE3Mzc4OTY0MzRiNzk4ZjM2MDE3MDcwNmRhMWYy4199635_20240201142154.554"></p>
+<p>全链路灰度提供了给<strong>流量染色</strong>，并让<strong>灰度流量</strong>优先调用<strong>灰度节点</strong>的能力，帮助您进行可控的<strong>灰度验证</strong>，保障稳定性。<strong>全链路灰度验证</strong>通常采用以下策略：</p>
+<ol>
+<li>直接调用现有<strong>线上流量</strong>的一小部分进行测试，通常按照<strong>百分比</strong>控制</li>
+<li>按照<strong>特定规则</strong>筛选线上流量进行验证，如使用指定的<strong>Header</strong>或<strong>Cookie</strong>等</li>
+</ol>
+<p>本文将分别介绍上述两种策略配置方式，以便适应微服务架构中不同的灰度发布需求</p>
+<h2 id="步骤一：将应用接入MSE微服务治理"><a href="#步骤一：将应用接入MSE微服务治理" class="headerlink" title="步骤一：将应用接入MSE微服务治理"></a>步骤一：将应用接入MSE微服务治理</h2><p>将<strong>ACK微服务应用</strong>接入MSE治理中心，您可以选择您需要的方式实现应用接入 - 为<strong>单个应用</strong>开启MSE微服务治理</p>
+<ol>
+<li>进入集群工作负载-<strong>无状态</strong>应用页面，切换到应用的命名空间下</li>
+<li>找到所接入的应用，点击「查看Yaml」</li>
+<li>按以下格式编辑<strong>Labels</strong>，完成后点击「更新」</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="comment"># 填写“on”表示开启接入，需加上双引号</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="comment"># 填写接入到的治理命名空间，值不存在可自动新建</span></span><br><span class="line">        <span class="attr">mseNamespace:</span> <span class="string">default</span></span><br><span class="line">        <span class="comment"># 填写接入MSE的实际应用名称，需加上双引号</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;your-deployment-name&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="步骤二：部署应用（模拟线上场景）"><a href="#步骤二：部署应用（模拟线上场景）" class="headerlink" title="步骤二：部署应用（模拟线上场景）"></a>步骤二：部署应用（模拟线上场景）</h2><ol>
+<li>登录容器服务管理控制台，在左侧导航栏选择集群列表</li>
+<li>在集群列表页面，单击目标集群名称，然后在左侧导航栏，选择工作负载 &gt; <strong>无状态</strong></li>
+<li>在无状态页面选择命名空间，然后单击使用YAML创建资源</li>
+<li>本文示例中部署一个注册中心<strong>Nacos Server</strong>，然后部署spring-cloud-gateway、spring-cloud-a、spring-cloud-b、spring-cloud-c这四个业务应用。您也可以直接在Demo中获取对应的源码</li>
+</ol>
+<h3 id="注册中心-Nacos-Server"><a href="#注册中心-Nacos-Server" class="headerlink" title="注册中心 Nacos Server"></a>注册中心 Nacos Server</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nacos-server</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nacos-server</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;off&quot;</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nacos-server</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos-server</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&#x27;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/nacos-server:v2.1.2&#x27;</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">MODE</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">standalone</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">JVM_XMS</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">512M</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">JVM_XMX</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">512M</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">JVM_XMN</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">256M</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">livenessProbe:</span></span><br><span class="line">            <span class="attr">failureThreshold:</span> <span class="number">3</span></span><br><span class="line">            <span class="attr">initialDelaySeconds:</span> <span class="number">15</span></span><br><span class="line">            <span class="attr">periodSeconds:</span> <span class="number">10</span></span><br><span class="line">            <span class="attr">successThreshold:</span> <span class="number">1</span></span><br><span class="line">            <span class="attr">tcpSocket:</span></span><br><span class="line">              <span class="attr">port:</span> <span class="number">8848</span></span><br><span class="line">            <span class="attr">timeoutSeconds:</span> <span class="number">3</span></span><br><span class="line">          <span class="attr">readinessProbe:</span></span><br><span class="line">            <span class="attr">failureThreshold:</span> <span class="number">5</span></span><br><span class="line">            <span class="attr">initialDelaySeconds:</span> <span class="number">15</span></span><br><span class="line">            <span class="attr">periodSeconds:</span> <span class="number">15</span></span><br><span class="line">            <span class="attr">successThreshold:</span> <span class="number">1</span></span><br><span class="line">            <span class="attr">tcpSocket:</span></span><br><span class="line">              <span class="attr">port:</span> <span class="number">8848</span></span><br><span class="line">            <span class="attr">timeoutSeconds:</span> <span class="number">3</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="string">&#x27;1&#x27;</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">      <span class="attr">dnsPolicy:</span> <span class="string">ClusterFirst</span></span><br><span class="line">      <span class="attr">restartPolicy:</span> <span class="string">Always</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nacos-server</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">ClusterIP</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos-server-8848-8848</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">8848</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">8848</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos-server-9848-9848</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">9848</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">9848</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nacos-server</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="spring-cloud-c-应用"><a href="#spring-cloud-c-应用" class="headerlink" title="spring-cloud-c 应用"></a>spring-cloud-c 应用</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-c-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-c</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-c</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-c&quot;</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">&quot;spring-cloud-c&quot;</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">spring-cloud-c</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-c:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http-port</span></span><br><span class="line">            <span class="attr">containerPort:</span> <span class="number">20003</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="spring-cloud-b-应用"><a href="#spring-cloud-b-应用" class="headerlink" title="spring-cloud-b 应用"></a>spring-cloud-b 应用</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-b-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-b</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-b</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-b&quot;</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">&quot;spring-cloud-b&quot;</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">spring-cloud-b</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-b:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http-port</span></span><br><span class="line">              <span class="attr">containerPort:</span> <span class="number">20002</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="spring-cloud-a-应用"><a href="#spring-cloud-a-应用" class="headerlink" title="spring-cloud-a 应用"></a>spring-cloud-a 应用</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-a-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-a</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-a</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-a&quot;</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">&quot;spring-cloud-a&quot;</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">spring-cloud-a</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-a:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http-port</span></span><br><span class="line">              <span class="attr">containerPort:</span> <span class="number">20001</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="spring-cloud-gateway-应用"><a href="#spring-cloud-gateway-应用" class="headerlink" title="spring-cloud-gateway 应用"></a>spring-cloud-gateway 应用</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-gateway-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-gateway</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-gateway</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-gateway&quot;</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">spring-cloud-gateway</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-gateway:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">enable.auto</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">enable.rpc.invoke</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">enable.sql</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;false&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">enable.sentinel.demo.flow</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">&quot;spring-cloud-gateway&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">20000</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-gateway-service.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec:</span> <span class="string">slb.s1.small</span></span><br><span class="line">    <span class="attr">service.beta.kubernetes.io/alicloud-loadbalancer-address-type:</span> <span class="string">internet</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-gateway-slb</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">20000</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">spring-cloud-gateway</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">LoadBalancer</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>执行以下命令查看部署结果：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get svc,deploy</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>预期输出：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">NAME                               TYPE           CLUSTER-IP   EXTERNAL-IP  PORT(S)             AGE</span><br><span class="line">service/kubernetes                 ClusterIP      172.16.x.x   &lt;none&gt;       443/TCP             23h</span><br><span class="line">service/nacos-server               ClusterIP      172.16.x.x   &lt;none&gt;       8848/TCP,9848/TCP   94s</span><br><span class="line">service/spring-cloud-gateway-slb   LoadBalancer   172.16.x.x   8.130.x.x    80:32641/TCP        57s</span><br><span class="line">NAME                                   READY   UP-TO-DATE   AVAILABLE   AGE</span><br><span class="line">deployment.apps/nacos-server           1/1     1            1           94s</span><br><span class="line">deployment.apps/spring-cloud-a         1/1     1            1           66s</span><br><span class="line">deployment.apps/spring-cloud-b         1/1     1            1           74s</span><br><span class="line">deployment.apps/spring-cloud-c         1/1     1            1           83s</span><br><span class="line">deployment.apps/spring-cloud-gateway   1/1     1            1           57s</span><br></pre></td></tr></table></figure>
+
+<h2 id="步骤三：部署spring-cloud-c、spring-cloud-a应用的灰度版本"><a href="#步骤三：部署spring-cloud-c、spring-cloud-a应用的灰度版本" class="headerlink" title="步骤三：部署spring-cloud-c、spring-cloud-a应用的灰度版本"></a>步骤三：部署spring-cloud-c、spring-cloud-a应用的灰度版本</h2><blockquote>
+<p>登录容器服务管理控制台。使用如下<strong>YAML</strong>部署spring-cloud-c应用的灰度版本：</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-c-gray-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-c-gray</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-c-gray</span></span><br><span class="line">      <span class="attr">version:</span> <span class="string">gray</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-c&quot;</span></span><br><span class="line">        <span class="attr">alicloud.service.tag:</span> <span class="string">gray</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">&quot;spring-cloud-c-gray&quot;</span></span><br><span class="line">        <span class="attr">version:</span> <span class="string">gray</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">spring-cloud-c</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-c:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http-port</span></span><br><span class="line">              <span class="attr">containerPort:</span> <span class="number">20002</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>使用如下<strong>YAML</strong>部署spring-cloud-a应用的灰度版本</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Source: mse-simple-demo/templates/spring-cloud-a-gray-deployment.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">spring-cloud-a-gray</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">spring-cloud-a-gray</span></span><br><span class="line">      <span class="attr">version:</span> <span class="string">gray</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">msePilotAutoEnable:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">        <span class="attr">msePilotCreateAppName:</span> <span class="string">&quot;spring-cloud-a&quot;</span></span><br><span class="line">        <span class="attr">alicloud.service.tag:</span> <span class="string">gray</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">&quot;spring-cloud-a-gray&quot;</span></span><br><span class="line">        <span class="attr">version:</span> <span class="string">gray</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">spring-cloud-a</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/mse-governance-demo/spring-cloud-a:3.0.1&quot;</span></span><br><span class="line">          <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">          <span class="attr">env:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.host</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;nacos-server&quot;</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">nacos.namespace</span></span><br><span class="line">              <span class="attr">value:</span> <span class="string">&quot;public&quot;</span></span><br><span class="line">          <span class="attr">resources:</span></span><br><span class="line">            <span class="attr">requests:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">            <span class="attr">limits:</span></span><br><span class="line">              <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">              <span class="attr">memory:</span> <span class="string">2Gi</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http-port</span></span><br><span class="line">              <span class="attr">containerPort:</span> <span class="number">20001</span></span><br><span class="line">      <span class="attr">affinity:</span></span><br><span class="line">        <span class="attr">podAntiAffinity:</span></span><br><span class="line">          <span class="attr">preferredDuringSchedulingIgnoredDuringExecution:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">failure-domain.beta.kubernetes.io/zone</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">50</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">podAffinityTerm:</span></span><br><span class="line">                <span class="attr">topologyKey:</span> <span class="string">kubernetes.io/hostname</span></span><br><span class="line">              <span class="attr">weight:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="步骤四：创建灰度环境泳道组"><a href="#步骤四：创建灰度环境泳道组" class="headerlink" title="步骤四：创建灰度环境泳道组"></a>步骤四：创建灰度环境泳道组</h2><ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域</li>
+<li>在左侧导航栏，选择</li>
+<li>在<strong>全链路灰度</strong>页面顶部，选择<strong>微服务命名空间</strong><ul>
+<li>您选择的微服务命名空间内如果没有<strong>泳道组</strong>，请单击创建<strong>泳道组及泳道</strong>；如果已存在泳道组，则请单击+创建泳道组</li>
+</ul>
+</li>
+<li>在创建泳道组面板，单击+ 创建泳道组，在创建泳道组页面，设置如下相关配置，然后单击确定</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>泳道组名称</td>
+<td>自定义泳道组的名称</td>
+</tr>
+<tr>
+<td>入口类型</td>
+<td>选择<strong>Java服务网关</strong></td>
+</tr>
+<tr>
+<td>入口应用</td>
+<td>选择<strong>spring-cloud-gateway</strong></td>
+</tr>
+<tr>
+<td>泳道组涉及应用</td>
+<td>选择<strong>spring-cloud-a</strong>、<strong>spring-cloud-b</strong>和<strong>spring-cloud-c</strong></td>
+</tr>
+</tbody></table>
+<h2 id="步骤五：创建灰度环境泳道"><a href="#步骤五：创建灰度环境泳道" class="headerlink" title="步骤五：创建灰度环境泳道"></a>步骤五：创建灰度环境泳道</h2><blockquote>
+<p>说明</p>
+</blockquote>
+<ol>
+<li>使用<strong>全链路灰度</strong>功能时，需要您给<strong>灰度应用</strong>添加一个特殊的<code>tag</code>标记，以便将这些<strong>节点</strong>和其他节点<strong>区分</strong>开来<ul>
+<li>容器环境下需要您在<code>spec.template.metadata.labels</code>下增加<code>alicloud.service.tag: $&#123;tag&#125;</code>信息</li>
+<li>ECS 环境下需要添加Java启动参数<code>-Dalicloud.service.tag=$&#123;tag&#125;</code></li>
+</ul>
+</li>
+<li>以<strong>Java网关</strong>作为<strong>全链路灰度入口</strong>时，MSE支持<strong>两种泳道模式</strong><ul>
+<li>按<strong>请求内容</strong>灰度<ul>
+<li>当请求内容可以用于灰度识别时，建议采用此种灰度模式</li>
+<li>如果不可以，也强烈建议您通过系统改造增加此类灰度标识，以便获得更好的灰度效果</li>
+<li>比如，可以保持<strong>灰度请求前后</strong>的<strong>一致性</strong>。</li>
+</ul>
+</li>
+<li>按<strong>比例路由</strong>灰度<ul>
+<li>当请求内容无法用于<strong>灰度识别</strong>且遗留系统也无法进行改造时，可以采用此种<strong>退化</strong>的灰度模式</li>
+<li>该模式有一定弊端，可能导致<strong>同一来源的请求</strong>进入<strong>不同泳道</strong>，而造成<strong>灰度请求前后行为的不一致</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>泳道路由模式</strong>在一个<strong>泳道组</strong>中需要<strong>保持一致</strong><ul>
+<li>您只有在创建<strong>泳道组中第一条泳道</strong>时可以调整<strong>网关路由规则Path</strong>和<strong>泳道路由模式</strong></li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>步骤</p>
+</blockquote>
+<ol>
+<li>在<strong>全链路灰度</strong>页面底部，单击点击创建<strong>第一个分流泳道</strong></li>
+<li>如果您选择的微服务空间内已经创建过泳道，则单击<strong>创建泳道</strong></li>
+<li>在<strong>创建泳道</strong>面板，设置<strong>流控泳道</strong>相关配置，然后单击<strong>确定</strong></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>配置<strong>节点标签</strong></td>
+<td>需要您手工给您的<strong>灰度应用节点</strong>打上<strong>标签</strong>，用来和<strong>正常节点</strong>做区分</td>
+</tr>
+<tr>
+<td>填写泳道信息</td>
+<td><strong>泳道标签</strong>：该<strong>泳道内的匹配的流量</strong>去往的<strong>目标标签</strong><br /><strong>确认匹配关系</strong>：检查您<strong>配置</strong>了该<strong>标签的应用节点数</strong>是否<strong>符合预期</strong></td>
+</tr>
+<tr>
+<td>配置路由和灰度规则</td>
+<td>设置<strong>流量进入该泳道</strong>的规则<br />1. 输入<strong>Path</strong>：若为<strong>空</strong>则代表<strong>匹配所有路径</strong>。<br />2. <strong>灰度模式</strong>：选择<strong>按比例灰度</strong><br />3. <strong>流量比例</strong>：30%</td>
+</tr>
+</tbody></table>
+<p>您还可以为<strong>每条网关path</strong>分别设置<strong>不同的流量比例</strong>，开启该功能时，您需要注意该每条path当前在所有泳道组中配置的流量<strong>比例总和不应超过100%</strong></p>
+<h3 id="创建按请求内容路由的泳道"><a href="#创建按请求内容路由的泳道" class="headerlink" title="创建按请求内容路由的泳道"></a>创建按请求内容路由的泳道</h3><ol>
+<li>配置<strong>节点标签</strong><ul>
+<li>需要您给<strong>灰度应用节点</strong>打上<strong>标签</strong>，用来和<strong>正常节点</strong>做区分</li>
+</ul>
+</li>
+<li>填写<strong>泳道信息</strong><ul>
+<li><strong>泳道标签</strong>：该<strong>泳道内所匹配的流量</strong>去往的<strong>目标标签</strong>。本示例将泳道目标标签设置为<strong>gray</strong>。</li>
+<li><strong>确认匹配关系</strong>：检查您<strong>配置</strong>了该<strong>标签</strong>的<strong>应用节点数</strong>是否符合预期。</li>
+</ul>
+</li>
+<li>配置<strong>路由</strong>和<strong>灰度规则</strong><ul>
+<li>输入<strong>Path</strong>。若为<strong>空</strong>则代表<strong>匹配所有路径</strong>。</li>
+<li><strong>灰度模式</strong>：选择<strong>按内容灰度</strong>。</li>
+<li><strong>灰度条件</strong>：新增规则条件，选择<strong>以下条件同时满足</strong>。<ul>
+<li>本示例设置灰度条件为：请求<strong>Parameter</strong>名为<strong>name</strong>，值为<strong>xiaoming</strong>。配置如下：</li>
+<li><strong>参数类型</strong>：Parameter</li>
+<li><strong>参数</strong>：name</li>
+<li><strong>条件</strong>：&#x3D;&#x3D;</li>
+<li><strong>值</strong>：xiaoming</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="创建按比例路由的泳道"><a href="#创建按比例路由的泳道" class="headerlink" title="创建按比例路由的泳道"></a>创建按比例路由的泳道</h3><blockquote>
+<p>请确保MSE Java Agent的版本为<strong>3.2.3</strong>及以上，否则会影响百分比灰度能力</p>
+</blockquote>
+<ol>
+<li>配置<strong>节点标签</strong><ul>
+<li>需要您给<strong>灰度应用节点</strong>打上<strong>标签</strong>，用来和<strong>正常节点</strong>做区分</li>
+</ul>
+</li>
+<li>填写<strong>泳道信息</strong><ul>
+<li><strong>泳道标签</strong>：该<strong>泳道内所匹配的流量</strong>去往的<strong>目标标签</strong>。本示例将泳道目标标签设置为<strong>gray</strong>。</li>
+<li><strong>确认匹配关系</strong>：检查您<strong>配置</strong>了该<strong>标签</strong>的<strong>应用节点数</strong>是否符合预期。</li>
+</ul>
+</li>
+<li>配置<strong>路由</strong>和<strong>灰度规则</strong><ul>
+<li>输入<strong>Path</strong>。若为<strong>空</strong>则代表<strong>匹配所有路径</strong>。</li>
+<li><strong>灰度模式</strong>：选择<strong>按比例灰度</strong>。</li>
+<li><strong>流量比例</strong>：30%。</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>完成泳道创建后，在<strong>全链路灰度</strong>的<strong>流量分配</strong>区域，可以查看<strong>泳道详情</strong>，还可以进行如下操作</p>
+</blockquote>
+<ol>
+<li>在<strong>操作</strong>列，选择<strong>开启</strong>，创建的泳道将会生效，即<strong>流量</strong>会按照<strong>泳道方式</strong>进行<strong>流转</strong>，</li>
+<li><strong>满足规则的流量</strong>会<strong>优先流向标记有当前泳道</strong>对应<strong>标签</strong>的<strong>应用版本</strong>，如果没有对应标签的应用版本，则流向<strong>未打标的应用版本</strong>。</li>
+<li>在<strong>操作</strong>列，选择<strong>关闭</strong>，关闭创建的泳道，即该应用往后的流量会流向<strong>未打标</strong>的应用版本。</li>
+</ol>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/image-20260908174236217.png" alt="image-20260908174236217"></p>
+<h2 id="步骤六：测试基线及灰度版本流量"><a href="#步骤六：测试基线及灰度版本流量" class="headerlink" title="步骤六：测试基线及灰度版本流量"></a>步骤六：测试基线及灰度版本流量</h2><h3 id="测试按请求内容路由的泳道"><a href="#测试按请求内容路由的泳道" class="headerlink" title="测试按请求内容路由的泳道"></a>测试按请求内容路由的泳道</h3><p>使用curl命令测试基线流量：命令中的<code>8.130.x.x</code>是Spring Cloug Gateway暴露出的公网IP地址。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl 8.130.x.x/A/a</span><br><span class="line">A[192.168.x.x][config=base] -&gt; B[192.168.x.x] -&gt; C[192.168.x.x]</span><br></pre></td></tr></table></figure>
+
+<p>使用curl命令测试灰度流量：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl 8.130.x.x/A/a?name=xiaoming</span><br><span class="line">Agray[192.168.x.x][config=base] -&gt; B[192.168.x.x] -&gt; Cgray[192.168.x.x]</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>当参数带上<code>name=xiaoming</code>时，会命中<strong>灰度标签</strong>，并向后<strong>透传</strong>。</li>
+<li>比如灰度请求到A应用和C应用时，会请求到<strong>Agray</strong>和<strong>Cgray</strong>节点。</li>
+<li>请求到B应用时，由于不存在Bgray节点，仍然会请求B的<strong>基线节点</strong>。</li>
+</ol>
+<h3 id="测试按比例路由的泳道"><a href="#测试按比例路由的泳道" class="headerlink" title="测试按比例路由的泳道"></a>测试按比例路由的泳道</h3><blockquote>
+<p>通过如下Python3脚本测试按比例路由的分流情况（需要安装requests包）。注意将<code>x.x.x.x</code>替换为spring-cloud-gateway网关的入口SLB地址。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># pip3 install requests</span></span><br><span class="line"><span class="comment"># python3 traffic.py</span></span><br><span class="line"><span class="keyword">import</span> requests</span><br><span class="line">TOTAL_REQUEST = <span class="number">100</span></span><br><span class="line">ENTRY_URL = <span class="string">&#x27;http://x.x.x.x/A/a&#x27;</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_tag</span>(<span class="params">text:<span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    A[10.0.23.64][config=base] -&gt; B[10.0.23.65] -&gt; C[10.0.23.61]</span></span><br><span class="line"><span class="string">    Agray[10.0.23.64][config=base] -&gt; B[10.0.23.65] -&gt; Cgray[10.0.23.61]</span></span><br><span class="line"><span class="string">    Ablue[10.0.23.64][config=base] -&gt; B[10.0.23.65] -&gt; Cblue[10.0.23.61]</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="built_in">print</span>(text)</span><br><span class="line">    app_parts = text.split(<span class="string">&#x27; -&gt; &#x27;</span>)</span><br><span class="line">    <span class="comment"># tag_app: C[10.0.23.61] / Cgray[10.0.23.61]</span></span><br><span class="line">    tag_app = app_parts[-<span class="number">1</span>]</span><br><span class="line">    splits = tag_app.split(<span class="string">&#x27;[&#x27;</span>)</span><br><span class="line">    <span class="comment"># tag_part: C / Cgray</span></span><br><span class="line">    tag_part = splits[<span class="number">0</span>]</span><br><span class="line">    tag = tag_part[<span class="number">1</span>:]</span><br><span class="line">    <span class="keyword">return</span> tag <span class="keyword">if</span> <span class="built_in">len</span>(tag) &gt; <span class="number">0</span> <span class="keyword">else</span> <span class="string">&#x27;base&#x27;</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_tag</span>(<span class="params">url:<span class="built_in">str</span></span>):</span><br><span class="line">    resp = requests.get(url)</span><br><span class="line">    resp.encoding = resp.apparent_encoding</span><br><span class="line">    <span class="keyword">return</span> parse_tag(resp.text)</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cal_tag_count</span>(<span class="params">url:<span class="built_in">str</span>, total_request:<span class="built_in">int</span></span>):</span><br><span class="line">    count_map = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(total_request):</span><br><span class="line">        tag = get_tag(url)</span><br><span class="line">        <span class="keyword">if</span> tag <span class="keyword">not</span> <span class="keyword">in</span> count_map:</span><br><span class="line">            count_map[tag] = <span class="number">1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            count_map[tag] += <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Total Request:&#x27;</span>, total_request)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Traffic Distribution:&#x27;</span>, count_map)</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    cal_tag_count(ENTRY_URL, TOTAL_REQUEST)</span><br></pre></td></tr></table></figure>
+
+<p>运行以上脚本后，约有30%的流量会去往灰度环境。</p>
+<h2 id="步骤七：可观测"><a href="#步骤七：可观测" class="headerlink" title="步骤七：可观测"></a>步骤七：可观测</h2><p>若应用出现异常，您可以通过MSE提供的可观测能力查看异常数据，帮助您快速定位问题。</p>
+<h3 id="微服务治理可观测"><a href="#微服务治理可观测" class="headerlink" title="微服务治理可观测"></a>微服务治理可观测</h3><p>在MSE微服务治理的<strong>全链路灰度</strong>页面，单击目标应用，在<strong>应用 QPS 监控</strong>区域，可查看对应泳道<strong>基线版本</strong>和<strong>灰度版本</strong>的流量情况</p>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p855116.png" alt="p855116"></p>
+<ul>
+<li><strong>总QPS</strong>：该应用总的QPS。</li>
+<li><strong>异常QPS</strong>：该应用出错的请求数。</li>
+<li><strong>GrayQPS</strong>：该应用的<strong>灰度版本</strong>的QPS。</li>
+</ul>
+<h1 id="无损上下线常见问题"><a href="#无损上下线常见问题" class="headerlink" title="无损上下线常见问题"></a>无损上下线常见问题</h1><h2 id="小流量预热的原理是什么？为什么小流量预热需要提供者、消费者都接入服务治理？"><a href="#小流量预热的原理是什么？为什么小流量预热需要提供者、消费者都接入服务治理？" class="headerlink" title="小流量预热的原理是什么？为什么小流量预热需要提供者、消费者都接入服务治理？"></a>小流量预热的原理是什么？为什么小流量预热需要提供者、消费者都接入服务治理？</h2><ol>
+<li>当<strong>消费者</strong>对某个服务进行<strong>调用</strong>时，会对该服务的<strong>提供者</strong>进行<strong>选择</strong></li>
+<li>在<strong>提供者</strong>应用<strong>开启小流量预热</strong>的情况下，服务治理对这里“<strong>选择提供者</strong>”的过程进行了<strong>增强</strong></li>
+<li>在<strong>消费者</strong>选择<strong>提供者</strong>时，会计算每个提供者的<strong>权重大小</strong>（0%~100%），权重越大的提供者节点，被选择和调用的概率就会越高</li>
+<li>开启<strong>小流量预热</strong>的提供者在<strong>刚启动时</strong>，消费者对其计算的<strong>权重很低</strong>，因此预热的节点被调用的概率也会变低</li>
+<li>随着时间增加，这个权重计算结果会不断增大，最终达到<strong>100%<strong>，达到100%时，</strong>预热流程</strong>就<strong>结束</strong>了，开始和<strong>正常节点</strong>一样接收流量</li>
+<li>提供者会在<strong>服务注册</strong>的<strong>元数据</strong>中，带上<strong>自身启动的时间</strong>，以供<strong>消费者</strong>进行<strong>权重计算</strong></li>
+<li>这个过程需要<strong>提供者</strong>、<strong>消费者</strong>双方都开启服务治理才能实现</li>
+</ol>
+<blockquote>
+<p>重要</p>
+</blockquote>
+<ol>
+<li>小流量<strong>预热的“开始”</strong>会在<strong>应用</strong>收到<strong>第一笔请求</strong>后触发，当预热过程已经达到配置的<strong>预热时长后</strong>（默认120秒），<strong>小流量预热结束</strong><ul>
+<li>如果应用<strong>一直没有收到外部流量</strong>，则<strong>不会触发预热的开始</strong></li>
+</ul>
+</li>
+<li><strong>小流量预热触发</strong>的<strong>前提</strong>是有<strong>外部流量进来</strong>，这就要求<strong>服务</strong>已经<strong>完成了注册</strong><ul>
+<li>如果您发现应用<strong>还未进行服务注册</strong>，却已经<strong>开始了小流量预热</strong>（即您在控制台观察到<strong>预热开始事件</strong>出现在<strong>服务注册事件</strong>之前）</li>
+</ul>
+</li>
+</ol>
+<h2 id="为什么我的预热曲线不符合预期？该如何解决？"><a href="#为什么我的预热曲线不符合预期？该如何解决？" class="headerlink" title="为什么我的预热曲线不符合预期？该如何解决？"></a>为什么我的预热曲线不符合预期？该如何解决？</h2><blockquote>
+<p>正常情况下<strong>小流量预热</strong>时，应用的<strong>QPS</strong>曲线图如下：</p>
+</blockquote>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p847207.png" alt="p847207"></p>
+<p>但是有些时候由于<strong>不合理</strong>或<strong>不支持</strong>的使用场景，进行小流量预热的应用，其QPS曲线图形状会不太符合预期（<strong>缓慢上升</strong>），下面是两种常见的不符合预期的情况</p>
+<h3 id="QPS-曲线中途出现陡升现象"><a href="#QPS-曲线中途出现陡升现象" class="headerlink" title="QPS 曲线中途出现陡升现象"></a>QPS 曲线中途出现陡升现象</h3><p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p847211.png" alt="p847211"></p>
+<ol>
+<li>这种现象一般发生在<strong>服务发布</strong>的场景，如果在<strong>服务发布</strong>时，<strong>新节点的预热还没有达到指定时长</strong>，<strong>老节点就被下线了</strong>，那么消费者端在选择提供者时，就无法实现控制新节点被“<strong>低概率</strong>”调用到了</li>
+<li>所以会在 QPS 曲线图中看到，某个新节点的 QPS 曲线在<strong>前半段时缓慢上线</strong>的态势，达到某个时间节点后，<strong>老节点被全部下线</strong>，QPS 曲线就出现<strong>陡升</strong>现象了</li>
+</ol>
+<h3 id="QPS-曲线未呈现缓升趋势"><a href="#QPS-曲线未呈现缓升趋势" class="headerlink" title="QPS 曲线未呈现缓升趋势"></a>QPS 曲线未呈现缓升趋势</h3><p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p847214.png" alt="p847214"></p>
+<ol>
+<li>出现这种现象，建议检查对该应用发起请求的<strong>消费者</strong>应用已经接入服务治理，如果消费者端没接入，则考虑将消费者应用都接入服务治理，就可以解决该问题</li>
+<li>如果您需要预热的应用，其流量来自<strong>外部</strong>（比如Java网关），这种场景下<strong>消费者是没有接入服务治理</strong>的，小流量预热也无法支持这种场景</li>
+</ol>
+<h2 id="小流量预热的最佳实践是什么？"><a href="#小流量预热的最佳实践是什么？" class="headerlink" title="小流量预热的最佳实践是什么？"></a>小流量预热的最佳实践是什么？</h2><p>在<strong>滚动发布</strong>的情况下，经常会出现<strong>预热不充分</strong>的问题。您可以参考以下实践，来保证<strong>服务预热</strong>达到<strong>预期效果</strong>：</p>
+<ol>
+<li><strong>配置最小准备时间（推荐）</strong><ul>
+<li>您可以为工作负载配置<code>.spec.minReadySeconds</code>来控制<strong>pod就绪后达到可用状态</strong>时的<strong>时间间隔</strong>，并且设置该参数的值<strong>大于pod的小流量预热时长</strong>，以使得K8s等待 <strong>pod 预热完毕后</strong>再<strong>继续滚动发布</strong></li>
+<li>如果您使用的是<strong>ACK</strong>，您可以直接在容器平台上找到您的应用，在 <strong>更多 &gt; 升级策略 &gt; 滚动升级 &gt; 最小准备时间（minReadySeconds）</strong> 中直接设置。</li>
+<li>设置 <strong>minReadySeconds</strong> 可以在<strong>发布</strong>时，让<strong>新启动的pod状态达到ready并维持固定时长</strong>之后，才会<strong>继续发布</strong></li>
+</ul>
+</li>
+<li><strong>使用分批发布（推荐）</strong>：您可以考虑使用<strong>OpenKruise</strong>等方式，实现<strong>工作负载</strong>的<strong>分批发布</strong>，并且控制<strong>每个批次发布时的时间间隔大于小流量预热时长</strong>，保证<strong>批次内的新节点预热充分</strong>后，再继续发布<strong>一下次批次</strong>的节点</li>
+</ol>
+<p>此外，<strong>延长Readiness就绪检测的初始探测时间（不推荐）</strong>，也是一种方式，您可以增加工作负载<strong>Readiness</strong> 的<strong>首次探测延迟时长</strong>（<strong>initialDelaySeconds</strong>），并且大于<strong>小流量预热时长</strong>、<strong>延迟注册时长</strong>、<strong>应用启动时间</strong>三者之<strong>和</strong>。注意，应用启动时间一般需要观测实际日志输出来得出，并且随着业务发展，应用的启动时间也会随之变化；此外，延迟 Readiness 通过的时间，也会导致<strong>新启动的节点</strong>迟迟无法被加入到 K8s Service的<strong>Endpoint</strong>中，因此我们不推荐您使用这种方式来保证预热效果达到最佳。</p>
+<p>如果您按照最佳实践进行操作后，发现预热QPS曲线仍然不符合预期，可以考虑<strong>应用接收的流量</strong>，是否都来自于<strong>已经接入服务治理的消费者应用</strong>，如果有消费者没有接入服务治理，或者存在来自于<strong>外部负载均衡</strong>的调用流量，那么应用预热时的QPS曲线图也会不符合预期。</p>
+<p><strong>三种实践对比与决策图</strong>：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" data-config="{}" hidden>
+    flowchart TD
+    R[&quot;滚动发布&quot;] --&gt; RDY[&quot;新 Pod 达到 Ready&quot;]
+    RDY --&gt;|&quot;未配 minReadySeconds：Ready 即推进滚动&quot;| KILL[&quot;老节点成批下线&quot;]
+    KILL --&gt; GAP[&quot;新节点预热未完成（权重 ＜ 100%）&lt;br&#x2F;&gt;老节点已减少 → 预热不充分&lt;br&#x2F;&gt;QPS 曲线中途陡升&quot;]
+    GAP --&gt; FIX
+
+    subgraph FIX[&quot;三种最佳实践&quot;]
+        direction LR
+        A[&quot;① minReadySeconds（推荐）&lt;br&#x2F;&gt;值 ＞ 预热时长（如 150s ＞ 120s）&lt;br&#x2F;&gt;Ready 后再保持固定时长才继续滚动&lt;br&#x2F;&gt;ACK：更多＞升级策略＞滚动升级&quot;]
+        B[&quot;② 分批发布（推荐）&lt;br&#x2F;&gt;OpenKruise 等&lt;br&#x2F;&gt;批次间隔 ＞ 预热时长&lt;br&#x2F;&gt;批内预热充分再发下一批&quot;]
+        C[&quot;③ 延长 Readiness initialDelaySeconds&lt;br&#x2F;&gt;（不推荐）&lt;br&#x2F;&gt;需 ＞ 启动+延迟注册+预热 之和&lt;br&#x2F;&gt;副作用：节点迟迟不进 Endpoint&quot;]
+    end
+
+    FIX --&gt; CHK[&quot;按实践配置后曲线仍不符预期？&lt;br&#x2F;&gt;排查：流量是否全部来自已接入治理的消费者&lt;br&#x2F;&gt;外部 LB &#x2F; 未接入消费者的流量不参与预热&quot;]
+  </pre></div>
+
+<blockquote>
+<p><strong>测试环境实勘（2026-09-08，xp_hd1_ack_test 全部 2898 个 Deployment）</strong>：设置 <code>spec.minReadySeconds</code><br>的仅 <strong>1 个</strong>——<code>kube-system/ack-koord-manager</code>（阿里云组件自带，3s，与预热无关），<strong>业务侧 0&#x2F;2897</strong>；<br>同时<strong>未安装 Kruise&#x2F;OpenKruise</strong>（无相关 CRD），分批发布路径也缺位；logan ns 滚动策略普遍<br><code>surge=25% / unavail=0~25%</code>、<code>minReady=0</code>。即两条推荐实践都没在用：滚动节奏完全由 Ready 推进，<br>MSE 预热 120s 期间老节点照常成批退出——上文 FAQ 说的”QPS 曲线中途陡升”是公司滚动发布的<strong>默认形态</strong>。<br>低成本补法（零代码零组件）：ACK 控制台 升级策略＞滚动升级＞<strong>最小准备时间设 150s</strong>（＞ 预热 120s），<br>代价仅是每批 ready 后多等 150s、发布总时长拉长。生产集群无 kubeconfig 未勘，ACK 控制台只读确认即可。</p>
+</blockquote>
+<h2 id="55199-readiness是做什么的？为什么不配置55199-readiness会有流量跌0的风险？"><a href="#55199-readiness是做什么的？为什么不配置55199-readiness会有流量跌0的风险？" class="headerlink" title="55199&#x2F;readiness是做什么的？为什么不配置55199&#x2F;readiness会有流量跌0的风险？"></a>55199&#x2F;readiness是做什么的？为什么不配置55199&#x2F;readiness会有流量跌0的风险？</h2><ol>
+<li>55199&#x2F;readiness是MSE微服务治理提供的一套<strong>内置</strong>的、<strong>HTTP类型</strong>的<strong>就绪检查端口</strong>，当应用的<strong>K8s就绪检查</strong>配置成<strong>55199&#x2F;readiness</strong>时，在<strong>新节点上线</strong>阶段，如果该<strong>节点尚未完成服务注册</strong>，则就绪检查返回<strong>500</strong>；如果该节点<strong>已经完成服务注册</strong>，则就绪检查返回 <strong>200</strong>。</li>
+<li>按照 K8s 默认的发布策略，<strong>新节点没有就绪，老节点就不会下线</strong><ul>
+<li>当就绪检查配置了<code>55199/readiness</code>之后，<strong>新节点</strong>完成<strong>服务注册</strong>之后，才会进入<strong>就绪状态</strong>，即只有在<strong>新节点完成服务注册</strong>的情况下，<strong>老节点才会下线</strong></li>
+<li>这样就会保证注册中心上该服务一直会有可用的节点</li>
+<li>如果您不配置<code>55199/readiness</code>，可能会在<strong>服务发布</strong>时，<strong>新节点尚未注册，老节点就被下线</strong>，进而导致注册中心上该服务<strong>没有可用节点</strong>，进而导致该服务的所有消费者在调用时因为没有提供者而发生报错，从而产生该<strong>服务的流量跌0</strong></li>
+<li>因此我们<strong>强烈建议您开启无损上线，并为应用配置</strong><code>55199/readiness</code><strong>就绪检测</strong></li>
+</ul>
+</li>
+<li>如果您的应用所使用的探针版本低于<strong>4.1.10</strong>，就绪检测的路径需要配置成&#x2F;health，而非 &#x2F;readiness。查看探针版本方式：MSE 控制台 &gt; 治理中心 &gt; 应用治理 &gt; 单击对应的应用 &gt; 节点详情，右侧可以看到探针版本。</li>
+</ol>
+<h3 id="公司现状实勘与统一编排的落地路径（2026-09-08）"><a href="#公司现状实勘与统一编排的落地路径（2026-09-08）" class="headerlink" title="公司现状实勘与统一编排的落地路径（2026-09-08）"></a>公司现状实勘与统一编排的落地路径（2026-09-08）</h3><blockquote>
+<p><strong>测试环境实勘（logan ns 83 个 Deployment）</strong>：<code>55199/readiness</code> 使用数 <strong>0</strong>；统一编排模板口径 &#x3D;<br>readinessProbe <code>GET /health:8080</code>（49&#x2F;83 此形态，另见 5678&#x2F;9999 等变体、5 个无探针）+ initialDelay 60s。<br><code>/health</code>（业务口 actuator）语义 &#x3D; Spring 上下文健康，<strong>≠ 已注册</strong>——web 服务先于注册收尾起来，<br>&#x2F;health 可能提前 200；消费者看得到新节点还要再等 Eureka 传播（readOnly ~30s + 拉取 10s）。<br>initialDelay 只盖启动，不盖这段空窗</p>
+</blockquote>
+<p><strong>组合风险（比裸跑更危险的形态）</strong>：无损上线开启（延迟注册 20s，生产 xp-biz-boot 实测值）+ readiness<br>仍是业务口 <code>/health</code>——K8s 在 &#x2F;health 200 就推进滚动下老节点，而新节点注册被刻意推迟 20s + 传播 <del>40s<br>≈ 60s，老节点 preStop sleep 只有 40s，<strong>理论空窗 ~20s</strong>。“开了延迟注册却不换门”&#x3D; 把窗口拉大而门没换。<br>现有兜底：&#96;unavail&#x3D;0</del>1%<code> 先扩后缩（Endpoint 容量不掉）+ preStop DOWN + sleep40 + KickOut——自研体系的 合理性正在于此；</code>55199&#x2F;readiness&#96; 是把门从“上下文健康”换成“注册完成”。</p>
+<p><strong>统一编排下的落地（不是做不到，是改模板）</strong>——preStop 脚本进基础镜像、grace&#x3D;60、&#x2F;health 探针统一<br>都是模板下发，同一条路再走一次：</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>内容</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>① 无损规则进模板</td>
+<td>Pod labels：<code>mse.lossless.enable</code> &#x2F; <code>delayTime</code> &#x2F; <code>warmupTime</code> &#x2F; <code>notice</code>（<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/mse/user-guide/use-yaml-to-configure-graceful-start-and-shutdown">使用YAML配置无损上下线</a>）</td>
+<td><strong>YAML 优先级高于控制台</strong>（重启即覆盖控制台改动）→ 配置主权留在模板，天然防控制台散改，对统一编排是完美属性；配置变更会触发应用重启</td>
+</tr>
+<tr>
+<td>② 换门</td>
+<td>readinessProbe → <code>GET /readiness:55199</code></td>
+<td>Agent ≥4.1.10 才用 &#x2F;readiness 路径（沙箱 4.4.0 &#x2F; 生产 4.7.0 均 ✅）；探针变更触发滚动重启，选发布窗口</td>
+</tr>
+<tr>
+<td>③ 更优组合</td>
+<td><code>startupProbe</code>&#x3D;业务 &#x2F;health（管“起来没”）+ <code>readiness</code>&#x3D;55199（管“注册没”）</td>
+<td>顺带消灭 initialDelay 60&#x2F;120 魔数——冷启动时长漂移的痛点（沙箱实测 114s）</td>
+</tr>
+<tr>
+<td>④ 联动修正</td>
+<td>业务口探针请求会触发“预热开始”事件（第一笔外部请求语义，见下节 FAQ）</td>
+<td>换 55199 后探针打 Agent 端口，预期不再计入业务请求触发预热（待实验验证）；或按 FAQ 用 env <code>profile_micro_service_record_warmup_ignored_path</code> 忽略 &#x2F;health</td>
+</tr>
+</tbody></table>
+<p>沙箱 lab 是手写 YAML，不受编排约束——<strong>A‘ 对照实验可做</strong>：lab-provider readiness <code>/b:20002</code>（现状）<br>vs <code>55199/readiness</code>，滚动重启对比控制台事件顺序（服务注册 ↔ Readiness 通过）与 K8s Ready 时间戳；<br>lab 的无损配置也可直接用 <code>mse.lossless.*</code> labels 声明式下发，比控制台点选更贴近公司模板形态。</p>
+<h2 id="为什么应用先出现预热事件后出现服务注册事件？如何解决？"><a href="#为什么应用先出现预热事件后出现服务注册事件？如何解决？" class="headerlink" title="为什么应用先出现预热事件后出现服务注册事件？如何解决？"></a>为什么应用先出现预热事件后出现服务注册事件？如何解决？</h2><ol>
+<li>在当前版本下，服务收到了<strong>第一笔外部请求</strong>时，就会<strong>开始预热流程</strong>，并且<strong>上报预热开始事件</strong></li>
+<li>而有些时候，<strong>应用收到的第一笔请求</strong>，未必是<strong>微服务调用请求</strong>，因此这种请求也<strong>不会触发业务逻辑的预热</strong></li>
+<li>比如应用的工作负载配置了K8s的<strong>Liveness</strong>探针，在新节点上线时，即便还没有进行<strong>服务注册操作</strong>，只要K8s对Liveness进行了<strong>探测</strong>，就会判定预热已经开始</li>
+<li>为了避免这种情况， 您可以在<strong>提供者应用</strong>工作负载的环境变量中，配置如下参数，来<strong>忽略</strong>这些请求对预热逻辑的触发：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 忽略路径为 /xxx、/yyy/zz 的请求对预热流程的触发</span><br><span class="line">profile_micro_service_record_warmup_ignored_path=&quot;/xxx,/yyy/zz&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="主动通知是做什么的？什么时候需要开启主动通知？"><a href="#主动通知是做什么的？什么时候需要开启主动通知？" class="headerlink" title="主动通知是做什么的？什么时候需要开启主动通知？"></a>主动通知是做什么的？什么时候需要开启主动通知？</h2><ol>
+<li>主动通知是<strong>无损下线</strong>功能模块提供的一种<strong>进阶能力</strong>，该功能可以在<strong>SpringCloud提供者下线</strong>时，让提供者<strong>主动发起</strong>一次网络请求到<strong>服务消费者</strong>，告知其自身已经下线<ul>
+<li>消费者收到通知后，<strong>不会再对该节点进行调用</strong></li>
+<li>一般情况下，当<strong>提供者消费者</strong>都使用<strong>SpringCloud</strong>框架时，<strong>消费者本地</strong>会<strong>缓存提供者节点列表</strong></li>
+<li>在某些场景下，即便<strong>消费者收到注册中心的通知</strong>，也可能<strong>没有及时刷新本地缓存</strong>，进而导致消费者<strong>对下线的节点仍然发起调用</strong></li>
+<li>主动通知则很好地解决了这个问题</li>
+</ul>
+</li>
+<li>主动通知功能<strong>默认关闭</strong>，因为开启<strong>服务治理</strong>之后，默认的<strong>无损下线</strong>方案中，<strong>下线阶段的提供者收到请求时</strong>，会在响应中加入一个特殊的<code>header</code>，消费者收到响应时会识别该<code>header</code>，并且<strong>不再调用该提供者节点</strong><ul>
+<li>因此，只要在<strong>提供者下线</strong>时，消费者<strong>有流量</strong>到达下线的提供者，就会<strong>感知</strong>到该提供者已经下线，并且会自动将其“<strong>拉黑</strong>”</li>
+<li>而如果在提供者下线的这段时间内（一般30秒左右），消费者<strong>没有请求</strong>到达正在下线的提供者，消费者就有可能<strong>未感知到</strong>该提供者节点已经下线<ul>
+<li>有可能会在<strong>提供者刚好走完下线流程、即将停机时</strong>，消费者请求正好过来，此时就会出现<strong>请求报错</strong>的问题</li>
+<li>这个时候，就需要开启主动通知。换句话说，如果<strong>消费者的流量非常“稀疏”</strong>，就建议您为提供者开启主动通知的功能。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="为什么已经看到无损下线事件后，流量还是没有快速降为0？"><a href="#为什么已经看到无损下线事件后，流量还是没有快速降为0？" class="headerlink" title="为什么已经看到无损下线事件后，流量还是没有快速降为0？"></a>为什么已经看到无损下线事件后，流量还是没有快速降为0？</h2><p>一般情况下，看到无损下线事件后，流量会在<strong>短时间内快速降为0</strong>。如果没有降为0，可能的原因和解决方案如下：</p>
+<ol>
+<li>该应用收到了<strong>非微服务方式的调用</strong>，比如收到来自<strong>外部负载均衡器的流量</strong>，或者存在<strong>本地脚本</strong>、<strong>定时任务</strong>等调用方式产生了流量<ul>
+<li>目前<strong>无损上下线</strong>只支持治理<strong>内部微服务调用的流量</strong>，上述场景并不在无损上下线功能支持的范围之内</li>
+<li>建议您根据这些基础设施、框架提供的<strong>优雅下线</strong>特性来定制相应的解决方案</li>
+</ul>
+</li>
+<li>该应用需要开启<strong>主动通知</strong>，但是没有开启<ul>
+<li>建议您开启主动通知后再次观测下线曲线是否符合预期</li>
+</ul>
+</li>
+<li>该应用使用的<strong>框架版本</strong>不在支持的范围之内，服务治理无损上下线支持的框架可以参考：微服务治理支持的Java框架<ul>
+<li>Spring MVC、Spring Boot、Spring Cloud、Feign</li>
+<li>如果您发现应用使用的框架版本不再支持版本之中，可以考虑对应用的框架版本进行升级。</li>
+</ul>
+</li>
+</ol>
+<h2 id="应用接入无损上下线后，现在发版时间非常长，怎么办？"><a href="#应用接入无损上下线后，现在发版时间非常长，怎么办？" class="headerlink" title="应用接入无损上下线后，现在发版时间非常长，怎么办？"></a>应用接入无损上下线后，现在发版时间非常长，怎么办？</h2><p>您可以通过如下步骤检查应用是否开启过【通过就绪检查前完成服务预热】。</p>
+<ol>
+<li>登录MSE治理中心控制台，并在顶部菜单栏选择地域。</li>
+<li>在左侧导航栏，选择治理中心 &gt; 应用治理。</li>
+<li>在应用列表页面，单击目标应用，选择流量治理 &gt; 无损上下线页签。</li>
+<li>在无损上下线页签中，使用 F12 按键打开网页调试面板。在Network一栏中，搜索请求 GetLosslessRuleByApp （如果没看到可以刷新一下页面），在 Response 中，可以看到 Data 中 Related 字段值是否为 true。如果为 true 的话说明应用很久之前开启过【通过就绪检查前完成服务预热】这一功能（该功能目前已经不再提供），这个功能在开启的情况下可能会导致发版时间变长，建议您提交工单来关闭该功能。</li>
+</ol>
+<h2 id="MSE-服务治理提供的-55199-readiness-是做什么的？为什么有时候-mse-readiness-一直不通过？"><a href="#MSE-服务治理提供的-55199-readiness-是做什么的？为什么有时候-mse-readiness-一直不通过？" class="headerlink" title="MSE 服务治理提供的 55199&#x2F;readiness 是做什么的？为什么有时候 mse readiness 一直不通过？"></a>MSE 服务治理提供的 55199&#x2F;readiness 是做什么的？为什么有时候 mse readiness 一直不通过？</h2><p>K8s 提供了三种可选的探针检查，分别是启动探针，存活探针，就绪探针：</p>
+<ul>
+<li><strong>启动探针</strong>：用于检测应用<strong>是否启动成功</strong>。仅在 <strong>Pod 启动阶段</strong>进行探测，如果在 Pod 启动阶段，<strong>多次探测失败</strong>并达到配置的失败阈值时，<strong>会触发 Pod 重启</strong>。</li>
+<li><strong>存活探针</strong>：用于检测应用<strong>当前是否存活</strong>。会在<strong>启动探测成功后</strong>开始探测，探测会<strong>伴随 Pod 整个生命周期</strong>。多次探测失败并达到配置的失败阈值时，<strong>会触发 Pod 重启</strong>。</li>
+<li><strong>就绪探针</strong>：用于检测应用<strong>当前状态是否就绪</strong>。会在<strong>启动探测成功后</strong>开始探测，探测会<strong>伴随 Pod 整个生命周期</strong>。多次探测失败并达到配置的失败阈值时，K8s 会将 Pod 的状态置为 not ready，<strong>但不会触发 Pod 的重启</strong>。<ul>
+<li>在应用发布时，<strong>就绪探针</strong>也可以用来<strong>控制发布的节奏</strong>，按照默认的发布策略，如果<strong>新启动的 Pod 一直没有达到 ready 状态</strong>，K8s 会<strong>暂停发布流程</strong>，等待新 Pod 状态变为 ready。</li>
+</ul>
+</li>
+</ul>
+<p>在您的服务接入 MSE 服务治理后，您可以使用 MSE 服务治理内置的 <strong>55199&#x2F;readiness</strong> 来提供服务就绪检测配置。 </p>
+<p>配置后<strong>K8s 的就绪探测</strong>会在应用<strong>完成服务注册后</strong>才会<strong>通过</strong>，这样可以保证发布过程中，<strong>新拉起的 Pod</strong> 都已经完成了<strong>微服务注册中心的注册</strong>，老的 Pod 才会被 K8s 下线并且进行<strong>注册中心注销</strong>，让服务的调用方一直有可用的节点去发起调用，避免出现无可用服务的异常。关于为什么需要配置 mse readiness，可参见服务注册状态检查。</p>
+<p>如果您 mse readiness 一直没有通过，一般有三种可能的原因：</p>
+<ol>
+<li>当前服务是否<strong>未开启无损上线</strong>。未开启无损上线的情况下，<strong>mse 55199&#x2F;readiness 接口不会开放</strong>，所以 readiness 检查不会通过。</li>
+<li>当前应用<strong>没有接入服务治理</strong>。可以检查服务治理探针目录下是否存在<strong>探针日志</strong>。K8s 环境下探针目录默认为<code> /home/admin/.opt/AliyunJavaAgent</code> 或 <code>/home/admin/.opt/ArmsAgent</code>目录。如果目录下<strong>没有 logs 目录</strong>，说明应用服务治理接入失败，请<a target="_blank" rel="noopener" href="https://smartservice.console.aliyun.com/service/create-ticket">提交工单</a>联系我们。</li>
+<li>当前应用因为<strong>启动探针</strong>或<strong>存活探针</strong>失败达到阈值，一直在重启应用。因为应用<strong>没有启动完毕</strong>，所以 <strong>mse readiness 也不会通过</strong>。可以后台检查一下 Pod 的 <strong>K8s 事件</strong>，是否存在启动探针或存活探针失败相关的事件。</li>
+</ol>
+<h1 id="自建Eureka注册中心迁移到MSE-Nacos"><a href="#自建Eureka注册中心迁移到MSE-Nacos" class="headerlink" title="自建Eureka注册中心迁移到MSE Nacos"></a>自建Eureka注册中心迁移到MSE Nacos</h1><h2 id="使用限制"><a href="#使用限制" class="headerlink" title="使用限制"></a>使用限制</h2><ol>
+<li>迁移工具<strong>宕机</strong>会导致<strong>同步服务中断</strong>，因此建议最少部署<strong>2个节点</strong>。迁移流程启动后，请您尽快完成迁移操作</li>
+<li>确保自建Eureka、迁移工具和MSE Nacos三者之间的<strong>网络互相联通</strong></li>
+</ol>
+<h2 id="迁移步骤"><a href="#迁移步骤" class="headerlink" title="迁移步骤"></a>迁移步骤</h2><p>迁移的部署结构如下所示。</p>
+<p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/p500789.png" alt="p500789"></p>
+<h2 id="Eureka"><a href="#Eureka" class="headerlink" title="Eureka"></a>Eureka</h2><p>Eureka原生服务类型。</p>
+<p>此同步实例类型需要将<strong>Nacos注册的服务名小写</strong>。因为<strong>Eureka默认注册的服务名</strong>为<strong>大写</strong>，但通过同步工具<strong>MSE Sync</strong>将服务同步到Nacos时，默认会将服务名转换成<strong>小写</strong>。如果原服务名中有大写字母，同步到Nacos的服务可能不互通。</p>
+<p>例如，服务<strong>Service-1</strong>注册到<strong>Eureka</strong>的服务名是<strong>SERVICE-1</strong>，通过<strong>MSE Sync</strong>同步到<strong>Nacos</strong>的服务名是<strong>service-1</strong>，如果客户端使用<strong>nacosSDK</strong>之后注册到Nacos的服务名是<strong>Service-1</strong>，那么<strong>service-1</strong>和<strong>Service-1</strong>在Nacos中其实是两个服务，即服务中的实例信息不互通，Nacos注册的实例无法发现注册到MSE Sync同步到Nacos上的实例。若将所有的服务名改成小写，MSE Sync会将从Eureka同步的服务名转化成小写，这样两侧服务就能够互通了。</p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css"></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top">zhongmingmao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://blog.zhongmingmao.top/2026/09/08/microservices-mse-v4/">https://blog.zhongmingmao.top/2026/09/08/microservices-mse-v4/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/microservices/">Microservices</a><a class="post-meta__tags" href="/tags/mse/">MSE</a><a class="post-meta__tags" href="/tags/sentinel/">Sentinel</a></div><div class="post-share"><div class="social-share" data-image="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/09/07/microservices-mse-v3/" title="Microservices - MSE V3"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/image-20260907143633992.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Microservices - MSE V3</div></div><div class="info-2"><div class="info-item-1">流量防护规则适用场景概述 微服务的稳定性一直是您非常关注的话题 随着业务从单体架构向分布式架构演进以及部署方式的变化，服务之间的依赖关系变得越来越复杂，业务系统也面临着巨大的高可用挑战 MSE流量防护就是一款借助流量控制、热点防护等模块，来提高应用高可用能力的产品 本文介绍各个流量防护规则以及适用的场景    不稳定场景在生产环境中您可能遇到过以下不稳定的情况：  大促时瞬间洪峰流量使得系统超出最大负载、Load飙高、系统崩溃导致用户无法下单 “黑马”热点商品击穿缓存、数据库被打垮、挤占正常流量 调用端被不稳定第三方服务拖垮、线程池被占满、调用堆积，导致整个调用链路卡死  这些不稳定的场景可能会导致严重后果，但很多时候开发者容易忽视这些与流量、依赖相关的高可用防护。MSE流量防护功能就可以预防这些不稳定因素带来的影响，针对流量进行高可用的防护，从而保障服务“稳如磐石”。 核心场景流量防护各规则说明和适用的核心场景如下表所示 接口流控规则描述通过MSE配置QPS模式的流控规则，当每秒的请求量超过设定的阈值时，会自动拒绝多余的请求 核心场景适用于需要限制突发的流量，在尽可能处理请求的同时来保障服务不被击垮的...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/09/01/microservices-mse-v2/" title="Microservices - MSE V2"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/containerized-microservices-feature.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-01</div><div class="info-item-2">Microservices - MSE V2</div></div><div class="info-2"><div class="info-item-1">MSE快速入门 MSE产品包含以下模块：微服务注册配置中心、微服务治理、云原生网关 您在构建自己的微服务体系时，既可单独使用某个模块，也可搭配使用以便获得微服务生态的最佳实践    概览简介本教程覆盖微服务引擎MSE的核心能力，帮助您快速上手并理解MSE产品，预计体验时长20分钟。主要分为如下四个步骤，建议您按照顺序进行体验  在容器（ACK或ACK Serverless集群）部署示例的微服务应用，并将服务注册到Nacos 通过注册配置中心实现统一配置管理 利用云原生网关将服务暴露到公网 通过服务治理实现全链路灰度发布   适用对象本教程适用于Spring Cloud&amp;Dubbo等微服务框架的开发者、IT基础架构师、管理员和DevOps人员等计划在阿里云上实现或扩展云原生架构的相关人员 整体架构 注册配置中心：支持注册和配置中心全托管（兼容Nacos&#x2F;ZooKeeper&#x2F;Eureka），可实现对服务节点和配置信息的维护和统一管理，具备丰富完善的监控报警、控制台运维操作和引擎类型，相比开源组件，具有更高性能、SLA保障和配置能力 云原生网关：提供安全高效的符合K8s Ingre...</div></div></div></a><a class="pagination-related" href="/2026/09/01/microservices-mse-v1/" title="Microservices - MSE V1"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/example-microservices-architecture-service-mesh.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-01</div><div class="info-item-2">Microservices - MSE V1</div></div><div class="info-2"><div class="info-item-1">什么是微服务治理概述微服务治理中心能够无侵入增强主流Spring Cloud、Apache Dubbo等开源微服务框架，提供丰富的服务治理和流量防护功能，将中间件与业务解耦   微服务治理能力与应用场景全链路流量治理MSE微服务治理为微服务的各个环节提供了全面的治理解决方案，帮助企业快速构建完整且健壮的微服务体系 低成本实现微服务敏捷开发 依托于开发环境隔离能力，可以在不增加物理机器成本的前提下，低成本扩展出多套逻辑隔离的开发环境，有效地解决环境抢占和冲突问题，实现敏捷开发 开发环境隔离：通过全链路灰度这种逻辑隔离方式实现开发环境隔离，可以在不增加成本的情况下增加多套开发测试环境，助您实现敏捷开发  消除变更过程中风险依托于配置管理、无损上下线和全链路灰度能力，全面消除变更过程中的风险 无损上线通过无损上线时的延迟注册和小流量预热可有效避免新版本上线时的流量损失 无损下线通过无损下线中的自适应等待和主动通知，可有效避免旧版本下线时的流量损失 全链路灰度 通过创建泳道组与泳道可精确控制RPC、HTTP、异步消息等多种类型的流量 从前端到网关再到后端各个微服务间，实现流量在泳道内闭环，从而快速实现微服务架构...</div></div></div></a><a class="pagination-related" href="/2026/09/07/microservices-mse-v3/" title="Microservices - MSE V3"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/image-20260907143633992.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-07</div><div class="info-item-2">Microservices - MSE V3</div></div><div class="info-2"><div class="info-item-1">流量防护规则适用场景概述 微服务的稳定性一直是您非常关注的话题 随着业务从单体架构向分布式架构演进以及部署方式的变化，服务之间的依赖关系变得越来越复杂，业务系统也面临着巨大的高可用挑战 MSE流量防护就是一款借助流量控制、热点防护等模块，来提高应用高可用能力的产品 本文介绍各个流量防护规则以及适用的场景    不稳定场景在生产环境中您可能遇到过以下不稳定的情况：  大促时瞬间洪峰流量使得系统超出最大负载、Load飙高、系统崩溃导致用户无法下单 “黑马”热点商品击穿缓存、数据库被打垮、挤占正常流量 调用端被不稳定第三方服务拖垮、线程池被占满、调用堆积，导致整个调用链路卡死  这些不稳定的场景可能会导致严重后果，但很多时候开发者容易忽视这些与流量、依赖相关的高可用防护。MSE流量防护功能就可以预防这些不稳定因素带来的影响，针对流量进行高可用的防护，从而保障服务“稳如磐石”。 核心场景流量防护各规则说明和适用的核心场景如下表所示 接口流控规则描述通过MSE配置QPS模式的流控规则，当每秒的请求量超过设定的阈值时，会自动拒绝多余的请求 核心场景适用于需要限制突发的流量，在尽可能处理请求的同时来保障服务不被击垮的...</div></div></div></a><a class="pagination-related" href="/2022/07/16/cloud-native-foundation-microsservices-springcloud-service-registration/" title="Spring Cloud - Service Registration"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-3.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-07-16</div><div class="info-item-2">Spring Cloud - Service Registration</div></div><div class="info-2"><div class="info-item-1">版本匹配   自动装配 实战 </div></div></div></a><a class="pagination-related" href="/2022/07/06/cloud-native-foundation-microsservices-springcloud-jpa/" title="Spring Cloud - JPA"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/go-18.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-07-06</div><div class="info-item-2">Spring Cloud - JPA</div></div><div class="info-2"><div class="info-item-1">  </div></div></div></a><a class="pagination-related" href="/2022/09/21/microservices-governance-security-architecture/" title="Microservices - Security Architecture"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/oauth2/security-architecture.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2022-09-21</div><div class="info-item-2">Microservices - Security Architecture</div></div><div class="info-2"><div class="info-item-1">Option 1 Access Token 为透明令牌，API 网关需要去授权服务器集中校验并兑换成 JWT（自校验），然后再传递到后续的微服务缺点：授权服务器压力比较大     Option 2 全链路无状态，API 网关与授权服务器约定一致的 secret，API 网关可以直接解密 JWT（对称&#x2F;非对称）缺点：缺少集中校验 Token 的环节，无法通过授权服务器及时吊销，只能等 Token 自然过期   Option 3 生产环境最为常用：原理与 Option 1 类似，只是增加了 Redis 缓存   Reference 微服务架构实战 160 讲  </div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://zhongmingmao-1253868755.cos.ap-guangzhou.myqcloud.com/z.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">zhongmingmao</div><div class="author-info-description">Focus on Infrastructure.</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">678</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">207</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">99</div></a></div><div class="card-info-social-icons"><a class="social-icon" href="mailto:zhongmingmao0625@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">Things are always unexpected!</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E4%B8%8B%E7%BA%BF"><span class="toc-number">1.</span> <span class="toc-text">无损上下线</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF"><span class="toc-number">1.1.</span> <span class="toc-text">无损上线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF"><span class="toc-number">1.2.</span> <span class="toc-text">无损下线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8YAML%E9%85%8D%E7%BD%AE%E6%97%A0%E6%8D%9F%E4%B8%8A%E4%B8%8B%E7%BA%BF"><span class="toc-number">1.3.</span> <span class="toc-text">使用YAML配置无损上下线</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF-1"><span class="toc-number">2.</span> <span class="toc-text">无损上线</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF%E5%8A%9F%E8%83%BD%E6%A6%82%E8%BF%B0"><span class="toc-number">2.1.</span> <span class="toc-text">无损上线功能概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BB%B6%E8%BF%9F%E6%B3%A8%E5%86%8C"><span class="toc-number">2.1.1.</span> <span class="toc-text">延迟注册</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%8F%E6%B5%81%E9%87%8F%E9%A2%84%E7%83%AD"><span class="toc-number">2.1.2.</span> <span class="toc-text">小流量预热</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%8D%E5%8A%A1%E6%B3%A8%E5%86%8C%E7%8A%B6%E6%80%81%E6%A3%80%E6%9F%A5"><span class="toc-number">2.1.3.</span> <span class="toc-text">服务注册状态检查</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF"><span class="toc-number">2.2.</span> <span class="toc-text">使用无损上线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">2.2.1.</span> <span class="toc-text">注意事项</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">2.2.2.</span> <span class="toc-text">使用方式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%EF%BC%9A%E5%BC%80%E5%90%AF%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF"><span class="toc-number">2.2.2.1.</span> <span class="toc-text">步骤一：开启无损上线</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%EF%BC%9A%E9%85%8D%E7%BD%AEk8s%E6%9C%8D%E5%8A%A1%E5%B0%B1%E7%BB%AA%E6%A3%80%E6%9F%A5"><span class="toc-number">2.2.2.2.</span> <span class="toc-text">步骤二：配置k8s服务就绪检查</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E5%BB%B6%E8%BF%9F%E6%B3%A8%E5%86%8C%E6%97%B6%E9%95%BF-%E5%8F%AF%E9%80%89"><span class="toc-number">2.2.2.3.</span> <span class="toc-text">配置延迟注册时长 - 可选</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%B0%83%E6%95%B4%E5%B0%8F%E6%B5%81%E9%87%8F%E9%A2%84%E7%83%AD%E6%97%B6%E9%95%BF"><span class="toc-number">2.2.2.4.</span> <span class="toc-text">调整小流量预热时长</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E7%BA%BF%E8%A7%82%E6%B5%8B"><span class="toc-number">2.3.</span> <span class="toc-text">无损上线观测</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF-1"><span class="toc-number">3.</span> <span class="toc-text">无损下线</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">3.1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF"><span class="toc-number">3.2.</span> <span class="toc-text">为什么需要无损下线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E7%BA%BF%E6%84%9F%E7%9F%A5%E7%9A%84%E4%BC%A0%E6%92%AD%E9%93%BE%EF%BC%9AEureka-%E6%8B%89%E5%8F%96-vs-Nacos-%E6%8E%A8%E9%80%81"><span class="toc-number">3.2.1.</span> <span class="toc-text">下线感知的传播链：Eureka 拉取 vs Nacos 推送</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%A1%88"><span class="toc-number">3.3.</span> <span class="toc-text">无损下线实现方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A2%AB%E5%8A%A8%E9%80%9A%E7%9F%A5%EF%BC%88%E6%A0%87%E8%AE%B0-%E6%8C%89%E9%9C%80%E6%8B%89%E5%8F%96%EF%BC%89%E8%83%BD%E6%89%93%E6%8E%89%E5%87%A0%E7%BA%A7%E5%BB%B6%E8%BF%9F"><span class="toc-number">3.3.1.</span> <span class="toc-text">被动通知（标记+按需拉取）能打掉几级延迟</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E5%BC%80%E5%90%AF%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF"><span class="toc-number">3.4.</span> <span class="toc-text">如何开启无损下线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF%E8%A7%82%E6%B5%8B"><span class="toc-number">3.5.</span> <span class="toc-text">无损下线观测</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E5%BC%80%E5%90%AF%E4%B8%BB%E5%8A%A8%E9%80%9A%E7%9F%A5"><span class="toc-number">3.6.</span> <span class="toc-text">如何开启主动通知</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%BB%E5%8A%A8%E9%80%9A%E7%9F%A5"><span class="toc-number">3.6.1.</span> <span class="toc-text">什么是主动通知</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9-1"><span class="toc-number">3.6.2.</span> <span class="toc-text">注意事项</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%80%E5%90%AF%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF%E4%B8%BB%E5%8A%A8%E9%80%9A%E7%9F%A5"><span class="toc-number">3.6.3.</span> <span class="toc-text">开启无损下线主动通知</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E8%87%AA%E5%BB%BASpring-Cloud-Gateway%E6%88%96Zuul%E7%BD%91%E5%85%B3%E5%AE%9E%E7%8E%B0%E5%85%A8%E9%93%BE%E8%B7%AF%E7%81%B0%E5%BA%A6"><span class="toc-number">4.</span> <span class="toc-text">基于自建Spring Cloud Gateway或Zuul网关实现全链路灰度</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="toc-number">4.1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E4%BF%A1%E6%81%AF"><span class="toc-number">4.2.</span> <span class="toc-text">背景信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%B8%80%EF%BC%9A%E5%B0%86%E5%BA%94%E7%94%A8%E6%8E%A5%E5%85%A5MSE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86"><span class="toc-number">4.3.</span> <span class="toc-text">步骤一：将应用接入MSE微服务治理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%BA%8C%EF%BC%9A%E9%83%A8%E7%BD%B2%E5%BA%94%E7%94%A8%EF%BC%88%E6%A8%A1%E6%8B%9F%E7%BA%BF%E4%B8%8A%E5%9C%BA%E6%99%AF%EF%BC%89"><span class="toc-number">4.4.</span> <span class="toc-text">步骤二：部署应用（模拟线上场景）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83-Nacos-Server"><span class="toc-number">4.4.1.</span> <span class="toc-text">注册中心 Nacos Server</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spring-cloud-c-%E5%BA%94%E7%94%A8"><span class="toc-number">4.4.2.</span> <span class="toc-text">spring-cloud-c 应用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spring-cloud-b-%E5%BA%94%E7%94%A8"><span class="toc-number">4.4.3.</span> <span class="toc-text">spring-cloud-b 应用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spring-cloud-a-%E5%BA%94%E7%94%A8"><span class="toc-number">4.4.4.</span> <span class="toc-text">spring-cloud-a 应用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spring-cloud-gateway-%E5%BA%94%E7%94%A8"><span class="toc-number">4.4.5.</span> <span class="toc-text">spring-cloud-gateway 应用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%B8%89%EF%BC%9A%E9%83%A8%E7%BD%B2spring-cloud-c%E3%80%81spring-cloud-a%E5%BA%94%E7%94%A8%E7%9A%84%E7%81%B0%E5%BA%A6%E7%89%88%E6%9C%AC"><span class="toc-number">4.5.</span> <span class="toc-text">步骤三：部署spring-cloud-c、spring-cloud-a应用的灰度版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E5%9B%9B%EF%BC%9A%E5%88%9B%E5%BB%BA%E7%81%B0%E5%BA%A6%E7%8E%AF%E5%A2%83%E6%B3%B3%E9%81%93%E7%BB%84"><span class="toc-number">4.6.</span> <span class="toc-text">步骤四：创建灰度环境泳道组</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%BA%94%EF%BC%9A%E5%88%9B%E5%BB%BA%E7%81%B0%E5%BA%A6%E7%8E%AF%E5%A2%83%E6%B3%B3%E9%81%93"><span class="toc-number">4.7.</span> <span class="toc-text">步骤五：创建灰度环境泳道</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E6%8C%89%E8%AF%B7%E6%B1%82%E5%86%85%E5%AE%B9%E8%B7%AF%E7%94%B1%E7%9A%84%E6%B3%B3%E9%81%93"><span class="toc-number">4.7.1.</span> <span class="toc-text">创建按请求内容路由的泳道</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E6%8C%89%E6%AF%94%E4%BE%8B%E8%B7%AF%E7%94%B1%E7%9A%84%E6%B3%B3%E9%81%93"><span class="toc-number">4.7.2.</span> <span class="toc-text">创建按比例路由的泳道</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E5%85%AD%EF%BC%9A%E6%B5%8B%E8%AF%95%E5%9F%BA%E7%BA%BF%E5%8F%8A%E7%81%B0%E5%BA%A6%E7%89%88%E6%9C%AC%E6%B5%81%E9%87%8F"><span class="toc-number">4.8.</span> <span class="toc-text">步骤六：测试基线及灰度版本流量</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%8C%89%E8%AF%B7%E6%B1%82%E5%86%85%E5%AE%B9%E8%B7%AF%E7%94%B1%E7%9A%84%E6%B3%B3%E9%81%93"><span class="toc-number">4.8.1.</span> <span class="toc-text">测试按请求内容路由的泳道</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%8C%89%E6%AF%94%E4%BE%8B%E8%B7%AF%E7%94%B1%E7%9A%84%E6%B3%B3%E9%81%93"><span class="toc-number">4.8.2.</span> <span class="toc-text">测试按比例路由的泳道</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4%E4%B8%83%EF%BC%9A%E5%8F%AF%E8%A7%82%E6%B5%8B"><span class="toc-number">4.9.</span> <span class="toc-text">步骤七：可观测</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86%E5%8F%AF%E8%A7%82%E6%B5%8B"><span class="toc-number">4.9.1.</span> <span class="toc-text">微服务治理可观测</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%97%A0%E6%8D%9F%E4%B8%8A%E4%B8%8B%E7%BA%BF%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">5.</span> <span class="toc-text">无损上下线常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E6%B5%81%E9%87%8F%E9%A2%84%E7%83%AD%E7%9A%84%E5%8E%9F%E7%90%86%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F%E4%B8%BA%E4%BB%80%E4%B9%88%E5%B0%8F%E6%B5%81%E9%87%8F%E9%A2%84%E7%83%AD%E9%9C%80%E8%A6%81%E6%8F%90%E4%BE%9B%E8%80%85%E3%80%81%E6%B6%88%E8%B4%B9%E8%80%85%E9%83%BD%E6%8E%A5%E5%85%A5%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86%EF%BC%9F"><span class="toc-number">5.1.</span> <span class="toc-text">小流量预热的原理是什么？为什么小流量预热需要提供者、消费者都接入服务治理？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E7%9A%84%E9%A2%84%E7%83%AD%E6%9B%B2%E7%BA%BF%E4%B8%8D%E7%AC%A6%E5%90%88%E9%A2%84%E6%9C%9F%EF%BC%9F%E8%AF%A5%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%EF%BC%9F"><span class="toc-number">5.2.</span> <span class="toc-text">为什么我的预热曲线不符合预期？该如何解决？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#QPS-%E6%9B%B2%E7%BA%BF%E4%B8%AD%E9%80%94%E5%87%BA%E7%8E%B0%E9%99%A1%E5%8D%87%E7%8E%B0%E8%B1%A1"><span class="toc-number">5.2.1.</span> <span class="toc-text">QPS 曲线中途出现陡升现象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#QPS-%E6%9B%B2%E7%BA%BF%E6%9C%AA%E5%91%88%E7%8E%B0%E7%BC%93%E5%8D%87%E8%B6%8B%E5%8A%BF"><span class="toc-number">5.2.2.</span> <span class="toc-text">QPS 曲线未呈现缓升趋势</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E6%B5%81%E9%87%8F%E9%A2%84%E7%83%AD%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">5.3.</span> <span class="toc-text">小流量预热的最佳实践是什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#55199-readiness%E6%98%AF%E5%81%9A%E4%BB%80%E4%B9%88%E7%9A%84%EF%BC%9F%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E9%85%8D%E7%BD%AE55199-readiness%E4%BC%9A%E6%9C%89%E6%B5%81%E9%87%8F%E8%B7%8C0%E7%9A%84%E9%A3%8E%E9%99%A9%EF%BC%9F"><span class="toc-number">5.4.</span> <span class="toc-text">55199&#x2F;readiness是做什么的？为什么不配置55199&#x2F;readiness会有流量跌0的风险？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%AC%E5%8F%B8%E7%8E%B0%E7%8A%B6%E5%AE%9E%E5%8B%98%E4%B8%8E%E7%BB%9F%E4%B8%80%E7%BC%96%E6%8E%92%E7%9A%84%E8%90%BD%E5%9C%B0%E8%B7%AF%E5%BE%84%EF%BC%882026-09-08%EF%BC%89"><span class="toc-number">5.4.1.</span> <span class="toc-text">公司现状实勘与统一编排的落地路径（2026-09-08）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BA%94%E7%94%A8%E5%85%88%E5%87%BA%E7%8E%B0%E9%A2%84%E7%83%AD%E4%BA%8B%E4%BB%B6%E5%90%8E%E5%87%BA%E7%8E%B0%E6%9C%8D%E5%8A%A1%E6%B3%A8%E5%86%8C%E4%BA%8B%E4%BB%B6%EF%BC%9F%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%EF%BC%9F"><span class="toc-number">5.5.</span> <span class="toc-text">为什么应用先出现预热事件后出现服务注册事件？如何解决？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E5%8A%A8%E9%80%9A%E7%9F%A5%E6%98%AF%E5%81%9A%E4%BB%80%E4%B9%88%E7%9A%84%EF%BC%9F%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E9%9C%80%E8%A6%81%E5%BC%80%E5%90%AF%E4%B8%BB%E5%8A%A8%E9%80%9A%E7%9F%A5%EF%BC%9F"><span class="toc-number">5.6.</span> <span class="toc-text">主动通知是做什么的？什么时候需要开启主动通知？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%B7%B2%E7%BB%8F%E7%9C%8B%E5%88%B0%E6%97%A0%E6%8D%9F%E4%B8%8B%E7%BA%BF%E4%BA%8B%E4%BB%B6%E5%90%8E%EF%BC%8C%E6%B5%81%E9%87%8F%E8%BF%98%E6%98%AF%E6%B2%A1%E6%9C%89%E5%BF%AB%E9%80%9F%E9%99%8D%E4%B8%BA0%EF%BC%9F"><span class="toc-number">5.7.</span> <span class="toc-text">为什么已经看到无损下线事件后，流量还是没有快速降为0？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BA%94%E7%94%A8%E6%8E%A5%E5%85%A5%E6%97%A0%E6%8D%9F%E4%B8%8A%E4%B8%8B%E7%BA%BF%E5%90%8E%EF%BC%8C%E7%8E%B0%E5%9C%A8%E5%8F%91%E7%89%88%E6%97%B6%E9%97%B4%E9%9D%9E%E5%B8%B8%E9%95%BF%EF%BC%8C%E6%80%8E%E4%B9%88%E5%8A%9E%EF%BC%9F"><span class="toc-number">5.8.</span> <span class="toc-text">应用接入无损上下线后，现在发版时间非常长，怎么办？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MSE-%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86%E6%8F%90%E4%BE%9B%E7%9A%84-55199-readiness-%E6%98%AF%E5%81%9A%E4%BB%80%E4%B9%88%E7%9A%84%EF%BC%9F%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%89%E6%97%B6%E5%80%99-mse-readiness-%E4%B8%80%E7%9B%B4%E4%B8%8D%E9%80%9A%E8%BF%87%EF%BC%9F"><span class="toc-number">5.9.</span> <span class="toc-text">MSE 服务治理提供的 55199&#x2F;readiness 是做什么的？为什么有时候 mse readiness 一直不通过？</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%87%AA%E5%BB%BAEureka%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E8%BF%81%E7%A7%BB%E5%88%B0MSE-Nacos"><span class="toc-number">6.</span> <span class="toc-text">自建Eureka注册中心迁移到MSE Nacos</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E9%99%90%E5%88%B6"><span class="toc-number">6.1.</span> <span class="toc-text">使用限制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%81%E7%A7%BB%E6%AD%A5%E9%AA%A4"><span class="toc-number">6.2.</span> <span class="toc-text">迁移步骤</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Eureka"><span class="toc-number">6.3.</span> <span class="toc-text">Eureka</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/09/08/microservices-mse-v4/" title="Microservices - MSE V4"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/Microservices-scaled-1.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Microservices - MSE V4"/></a><div class="content"><a class="title" href="/2026/09/08/microservices-mse-v4/" title="Microservices - MSE V4">Microservices - MSE V4</a><time datetime="2026-09-07T16:06:25.000Z" title="Created 2026-09-08 00:06:25">2026-09-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/07/microservices-mse-v3/" title="Microservices - MSE V3"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/image-20260907143633992.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Microservices - MSE V3"/></a><div class="content"><a class="title" href="/2026/09/07/microservices-mse-v3/" title="Microservices - MSE V3">Microservices - MSE V3</a><time datetime="2026-09-06T16:06:25.000Z" title="Created 2026-09-07 00:06:25">2026-09-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/01/microservices-mse-v2/" title="Microservices - MSE V2"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/containerized-microservices-feature.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Microservices - MSE V2"/></a><div class="content"><a class="title" href="/2026/09/01/microservices-mse-v2/" title="Microservices - MSE V2">Microservices - MSE V2</a><time datetime="2026-09-01T04:06:25.000Z" title="Created 2026-09-01 12:06:25">2026-09-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/01/microservices-mse-v1/" title="Microservices - MSE V1"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://microservices-1253868755.cos.ap-guangzhou.myqcloud.com/mse/example-microservices-architecture-service-mesh.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Microservices - MSE V1"/></a><div class="content"><a class="title" href="/2026/09/01/microservices-mse-v1/" title="Microservices - MSE V1">Microservices - MSE V1</a><time datetime="2026-08-31T16:06:25.000Z" title="Created 2026-09-01 00:06:25">2026-09-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/08/23/agent-infra-agentic-database-v1/" title="Agent Infra - Agentic Database V1"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://agent-infra-1253868755.cos.ap-guangzhou.myqcloud.com/agentic-database/image-20260823161936720.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Agent Infra - Agentic Database V1"/></a><div class="content"><a class="title" href="/2026/08/23/agent-infra-agentic-database-v1/" title="Agent Infra - Agentic Database V1">Agent Infra - Agentic Database V1</a><time datetime="2026-08-22T16:06:25.000Z" title="Created 2026-08-23 00:06:25">2026-08-23</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2015 - 2026 By zhongmingmao</span></div><div class="footer_custom_text">Life is like a box of chocolates. You can't know what you'll eat until you open it.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Toggle Between Traditional and Simplified Chinese">繁</button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script></div></body></html>
